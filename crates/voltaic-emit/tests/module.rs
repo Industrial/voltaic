@@ -8,7 +8,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -34,7 +34,7 @@ fn every_import_form_emits_its_use() {
       "pub use crate::models::User;",
     ),
   ] {
-    let out = xrs(&format!("{voltaic}\n"));
+    let out = vrs(&format!("{voltaic}\n"));
     assert_eq!(out, format!("{rust}\n"), "{voltaic}");
   }
 }
@@ -43,22 +43,22 @@ fn every_import_form_emits_its_use() {
 /// which is what the comma arm writes and what rustfmt leaves alone.
 #[test]
 fn a_nested_tree_keeps_rusts_spacing() {
-  let out = xrs("import std::io::{Read, Write}\n");
+  let out = vrs("import std::io::{Read, Write}\n");
   assert!(out.contains("{Read, Write}"), "{out}");
 }
 
 /// A bodiless `module` loads a sibling file.
 #[test]
 fn a_bodiless_module_emits_a_semicolon() {
-  assert_eq!(xrs("module config\n"), "mod config;\n");
-  assert_eq!(xrs("export module parser\n"), "pub mod parser;\n");
+  assert_eq!(vrs("module config\n"), "mod config;\n");
+  assert_eq!(vrs("export module parser\n"), "pub mod parser;\n");
 }
 
 /// A body emits braces, and the two are different Rust — which is why
 /// `ModuleDecl::items` is an `Option` and not a possibly-empty `Vec`.
 #[test]
 fn a_module_body_emits_braces() {
-  let out = xrs("module inner\n  f : u32\n  f = 1\n");
+  let out = vrs("module inner\n  f : u32\n  f = 1\n");
   assert!(out.contains("mod inner {"), "{out}");
   assert!(out.contains("    fn f() -> u32 {"), "{out}");
   assert!(out.contains("        1\n"), "{out}");
@@ -69,7 +69,7 @@ fn a_module_body_emits_braces() {
 /// level.
 #[test]
 fn modules_nest() {
-  let out = xrs("module a\n  module b\n    f : u32\n    f = 1\n");
+  let out = vrs("module a\n  module b\n    f : u32\n    f = 1\n");
   assert!(out.contains("mod a {"), "{out}");
   assert!(out.contains("    mod b {"), "{out}");
   assert!(out.contains("        fn f() -> u32 {"), "{out}");
@@ -80,7 +80,7 @@ fn modules_nest() {
 /// item-list rather than per file.
 #[test]
 fn a_test_inside_a_module_stays_inside_it() {
-  let out = xrs(
+  let out = vrs(
     "module inner\n  test \"in here\"\n    assert! \\-> 1 == 1\ntest \"out there\"\n  assert! \\-> 2 == 2\n",
   );
   let inner_module = out.find("mod inner {").expect("the module");
@@ -88,7 +88,7 @@ fn a_test_inside_a_module_stays_inside_it() {
   let inner_close = out.find("\n}\n").expect("the module's close");
   assert!(inner_module < inner_test, "{out}");
   assert!(inner_test < inner_close, "the inner test is inside:\n{out}");
-  assert_eq!(out.matches("mod __rdx_tests").count(), 2, "{out}");
+  assert_eq!(out.matches("mod __vlt_tests").count(), 2, "{out}");
 }
 
 /// Items keep source order, imports included — plan 14 decision 3. The blank
@@ -97,7 +97,7 @@ fn a_test_inside_a_module_stays_inside_it() {
 /// emitter replicating rustfmt's sort.
 #[test]
 fn items_keep_source_order() {
-  let out = xrs("import z::last\nimport a::first\n");
+  let out = vrs("import z::last\nimport a::first\n");
   let z = out.find("z::last").expect("z");
   let a = out.find("a::first").expect("a");
   assert!(z < a, "source order, not sorted:\n{out}");
@@ -112,7 +112,7 @@ fn items_keep_source_order() {
 /// `fn write_ok<FMT>(…) -> FMT::Result`, which rustc rejects.
 #[test]
 fn a_lowercase_path_segment_is_not_a_type_variable() {
-  let out = xrs("write_ok : &mut String -> fmt::Result\nwrite_ok s = .write_str \"ok\" s\n");
+  let out = vrs("write_ok : &mut String -> fmt::Result\nwrite_ok s = .write_str \"ok\" s\n");
   assert!(
     out.contains("fn write_ok(s: &mut String) -> fmt::Result {"),
     "{out}"
@@ -125,7 +125,7 @@ fn a_lowercase_path_segment_is_not_a_type_variable() {
 /// whole until the lexer stopped treating it as an operator.
 #[test]
 fn a_glob_import_does_not_swallow_the_next_item() {
-  let out = xrs("import crate::models::*\n\nmain : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
+  let out = vrs("import crate::models::*\n\nmain : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
   assert!(out.contains("use crate::models::*;"), "{out}");
   assert!(out.contains("fn main() {"), "{out}");
 }
@@ -145,13 +145,13 @@ fn a_glob_import_does_not_swallow_the_next_item() {
 /// handling — which is why four ported crates went by without catching this.
 #[test]
 fn an_item_renamed_inside_a_tree_keeps_its_spaces() {
-  let out = xrs("import a::b::{C as D, E}\n");
+  let out = vrs("import a::b::{C as D, E}\n");
   assert!(out.contains("use a::b::{C as D, E};"), "{out}");
 }
 
 /// And the top-level form, which was never broken and must stay that way.
 #[test]
 fn a_top_level_rename_is_unchanged() {
-  let out = xrs("import std::fmt::Write as _\n");
+  let out = vrs("import std::fmt::Write as _\n");
   assert!(out.contains("use std::fmt::Write as _;"), "{out}");
 }

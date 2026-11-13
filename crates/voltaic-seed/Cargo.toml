@@ -3,7 +3,7 @@ name = "voltaic-seed"
 version = "0.1.1"
 edition = "2024"
 publish = false
-description = "The bootstrap seed: .sdx in, .rs out, and nothing else."
+description = "The bootstrap seed: .vlt in, .rs out, and nothing else."
 
 [[bin]]
 name = "voltaic-seed"
@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 # `compile_dir_with` and `Silent`. This is the whole of what a seed needs: walk
-# a directory, transpile every `.sdx`, write the `.rs`.
+# a directory, transpile every `.vlt`, write the `.rs`.
 voltaic-driver = { path = "../voltaic-driver" }
 # `Diagnostic` and `render(.., plain: true)`. The plain renderer touches no
 # `miette` at all — `plain_one.rs` has zero references to it where

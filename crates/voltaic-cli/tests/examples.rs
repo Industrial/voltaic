@@ -9,21 +9,21 @@ mod support;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// `lexical.sdx` exercises the lexical surface (plan 02) and deliberately does
+/// `lexical.vlt` exercises the lexical surface (plan 02) and deliberately does
 /// not parse — no grammar accepts most of its lines until later plans. A
 /// declared exemption rather than an unexplained absence.
-const NOT_PARSEABLE: [&str; 1] = ["lexical.sdx"];
+const NOT_PARSEABLE: [&str; 1] = ["lexical.vlt"];
 
 fn workspace_root() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Every `.sdx` under `examples/`, sorted so failures report in a stable order.
+/// Every `.vlt` under `examples/`, sorted so failures report in a stable order.
 fn examples() -> Vec<String> {
   let mut found: Vec<String> = std::fs::read_dir(workspace_root().join("examples"))
     .expect("examples/ should exist")
     .map(|e| e.expect("should read a directory entry").path())
-    .filter(|p| p.extension().is_some_and(|x| x == "sdx"))
+    .filter(|p| p.extension().is_some_and(|x| x == "vlt"))
     .map(|p| {
       p.file_name()
         .expect("a file name")
@@ -48,7 +48,7 @@ fn every_example_has_a_golden_expectation() {
   let golden = workspace_root().join("tests/golden");
   let missing: Vec<String> = parseable()
     .into_iter()
-    .filter(|e| !golden.join(Path::new(e).with_extension("xrs")).is_file())
+    .filter(|e| !golden.join(Path::new(e).with_extension("vrs")).is_file())
     .collect();
   assert!(
     missing.is_empty(),
@@ -104,7 +104,7 @@ fn every_example_matches_its_golden_and_is_deterministic() {
       "{example} should transpile identically twice"
     );
 
-    let expected_path = golden_dir.join(Path::new(&example).with_extension("xrs"));
+    let expected_path = golden_dir.join(Path::new(&example).with_extension("vrs"));
     if updating {
       let changed = std::fs::read_to_string(&expected_path)
         .map(|prev| prev != first)
@@ -193,27 +193,27 @@ fn collect_rs(dir: &Path, out: &mut Vec<PathBuf>) {
   }
 }
 
-/// `lexical.sdx`'s exemption is real: it must still *lex*, and must still be
+/// `lexical.vlt`'s exemption is real: it must still *lex*, and must still be
 /// rejected by the parser, so the exemption cannot quietly hide a regression.
 #[test]
 fn the_exempt_example_lexes_but_does_not_parse() {
-  let source = workspace_root().join("examples/lexical.sdx");
-  let text = std::fs::read_to_string(&source).expect("should read lexical.sdx");
+  let source = workspace_root().join("examples/lexical.vlt");
+  let text = std::fs::read_to_string(&source).expect("should read lexical.vlt");
   assert!(
     voltaic_lexer_lexes(&text),
-    "lexical.sdx must still lex; its exemption is from parsing only"
+    "lexical.vlt must still lex; its exemption is from parsing only"
   );
 
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .arg("build")
     .arg(&source)
     .arg("-o")
-    .arg(std::env::temp_dir().join("voltaic-exempt.xrs"))
+    .arg(std::env::temp_dir().join("voltaic-exempt.vrs"))
     .output()
     .expect("should run the voltaic binary");
   assert!(
     !out.status.success(),
-    "lexical.sdx is exempt because it does not parse; if it now parses, \
+    "lexical.vlt is exempt because it does not parse; if it now parses, \
      remove the exemption and give it a golden file"
   );
 }
@@ -224,13 +224,13 @@ fn the_exempt_example_lexes_but_does_not_parse() {
 fn voltaic_lexer_lexes(text: &str) -> bool {
   let dir = std::env::temp_dir().join(format!("voltaic-lexprobe-{}", std::process::id()));
   std::fs::create_dir_all(&dir).expect("should create a scratch directory");
-  let sdx = dir.join("probe.sdx");
-  std::fs::write(&sdx, text).expect("should write the probe");
+  let vlt = dir.join("probe.vlt");
+  std::fs::write(&vlt, text).expect("should write the probe");
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .arg("build")
-    .arg(&sdx)
+    .arg(&vlt)
     .arg("-o")
-    .arg(dir.join("probe.xrs"))
+    .arg(dir.join("probe.vrs"))
     .output()
     .expect("should run the voltaic binary");
   std::fs::remove_dir_all(&dir).ok();
@@ -239,7 +239,7 @@ fn voltaic_lexer_lexes(text: &str) -> bool {
   String::from_utf8_lossy(&out.stderr).contains("expected")
 }
 
-/// Plan 84 criterion 10: no `TokenKind`'s own name reaches a generated `.xrs`.
+/// Plan 84 criterion 10: no `TokenKind`'s own name reaches a generated `.vrs`.
 ///
 /// Plan 84 leaf 0 measured a bound clause the parser could not read being
 /// swallowed into the first parameter's verbatim type, with the `=>` rendering
@@ -265,7 +265,7 @@ fn no_generated_rust_contains_a_token_kind_name() {
   if let Ok(entries) = std::fs::read_dir(&golden) {
     for entry in entries.flatten() {
       let path = entry.path();
-      if path.extension().is_some_and(|e| e == "xrs") {
+      if path.extension().is_some_and(|e| e == "vrs") {
         targets.push(path);
       }
     }
@@ -276,8 +276,8 @@ fn no_generated_rust_contains_a_token_kind_name() {
     let Ok(text) = std::fs::read_to_string(path) else {
       continue;
     };
-    // Comments are skipped, and `examples/binder.sdx` is why: comments are
-    // trivia that reach the `.xrs` (doc 02 §10.1), and that example's own prose
+    // Comments are skipped, and `examples/binder.vlt` is why: comments are
+    // trivia that reach the `.vrs` (doc 02 §10.1), and that example's own prose
     // explains the defect by naming the leaked token — so the first version of
     // this test failed on the file documenting what it checks for. A leak is
     // always in *code*, never in a comment, so the narrowing costs nothing.
@@ -299,7 +299,7 @@ fn no_generated_rust_contains_a_token_kind_name() {
   );
   assert!(
     found.is_empty(),
-    "a TokenKind's Debug name reached generated Rust. The `.xrs` is a \
+    "a TokenKind's Debug name reached generated Rust. The `.vrs` is a \
      human-facing artifact (doc 02 §10.1), so a token with no source spelling \
      in it is a defect in whatever captured it verbatim — not something to \
      bless:\n  {}",

@@ -320,4 +320,159 @@ and this plan is where the saving shows up.
 
 ## 10. Result
 
-*To be filled after execution.*
+Shipped 2026-11-14. 228 `.sdx` → `.vlt`, 43 `.xrs` → `.vrs`, 13 source directories,
+507 files touched. Gate green: `moon run :lint :test`, 26 tasks, **920 tests**.
+
+### 10.1 The order that worked, and why it is not §3.2's
+
+§3.2 gives four steps — build, update, seed-refresh, bootstrap — and that is the
+*seed's* order, not the whole plan's. Executing it needed five phases, because of a
+dependency §3.2 does not mention: **the compiler that regenerates the tree is itself
+generated from the tree.**
+
+| Phase | What | Why it must be here |
+|---|---|---|
+| A | the compiler's own sources learn `.vlt`/`.vrs`/`__vlt_`/`VLT`, while every file is still named `.sdx` | the *built* compiler still reads `.sdx`, so it can compile the edited sources |
+| B | regenerate `src/`, rebuild | now the compiler in `target/` reads `.vlt` and emits `.vrs` |
+| C | `git mv` every file, with the ignore patterns in the same commit | §3.1 |
+| D | the 1,075 remaining textual references | harnesses, configs, CI, the book, editors |
+| E | regenerate, re-bless, refresh the seed, bootstrap from scratch | §3.2's four steps |
+
+Phase A before C is the whole trick, and getting it backwards is unrecoverable without
+a reset: rename the files first and the built compiler can no longer read them, so
+nothing can regenerate the compiler that would.
+
+### 10.2 Generation 1 parsed an or-pattern as a guard, silently
+
+The first attempt wrote the dual acceptance of §3.4 as an or-pattern:
+
+```
+Some "vlt" | Some "sdx" -> !.starts_with '.' name
+```
+
+It emitted
+
+```rust
+Some("vlt") if Some("sdx") => !name.starts_with('.'),
+```
+
+— the second alternative became a **guard**. This is doc 87 §2.3's claim, observed
+rather than argued: *"`|` was the guard token in the same syntactic slot, and without
+types the parser could not tell a second pattern from a guard expression."*
+
+It was caught only because `Some("sdx")` is not a `bool`, so rustc rejected it and
+`port.rs` refused to write — *"the generated `voltaic-cli` does not compile, so nothing
+was written … the bootstrap still works."* **Had the second alternative been
+bool-typed, it would have compiled and been silently wrong.** Rewritten as
+`Some e -> (e == "vlt" || e == "sdx") && …`, which generation 1 can express.
+
+That is a better argument for doc 86 §10's prediction than the prediction itself: the
+gap is not that or-patterns are unavailable, it is that they look available and mean
+something else.
+
+### 10.3 A sentinel must not be a substitution target
+
+The bare-word sweep protected the three deliberate `"sdx"` strings behind a sentinel,
+`"\x00KEEP_SDX\x00"`. The same sweep then replaced `SDX` → `VLT` — **inside its own
+sentinel** — so the restore matched nothing and three compiler sources were left
+holding `e == KEEP_VLT` with raw NUL bytes in them.
+
+Caught immediately, because the next check was *"is the dual acceptance still there"*
+and the answer was no. Fixed by restoring from the corrupted sentinel and then
+asserting **no tracked text file contains a NUL byte**, which is the check that would
+have caught it without the manual look.
+
+### 10.4 §2.1's seven traps were four, and two more were missed
+
+| | |
+|---|---|
+| **The seed does not only *emit* the old prefix — it *scans* for the old extension.** §3.2 frames the seed as an emit problem. It is also an input problem: the blob reads a directory and `compile_dir` filtered `extension == "sdx"`, so a renamed tree is invisible to it. Same fix, one more reason. |
+| **`editors/vim/ftplugin/sdx.vim` was not in leaf 3's list.** Leaf 3 names `ftdetect` and `syntax` and misses `ftplugin`. `editors.rs` caught it — *"editors/vim/ftplugin/vlt.vim should exist"*. |
+| **A nested build cache held the old path.** `examples/cargo-project/target/` cached a `.map` naming `src/greeting.sdx`, and `cargo::rerun-if-changed` pointed at a file that no longer existed, so nothing invalidated it. Cleared. |
+| **`leaf 6` assumed a gate that does not exist.** It says *"`crates/voltaic-cli/tests/` has an assertion that user identifiers may not use the hygiene prefix"*. There is none — the rule is `AGENTS.md` prose and was never machine-checked. Nothing was renamed for it, and **the gate is not built here**: it belongs with a row that owns the diagnostics surface, which is 101. |
+
+### 10.5 `GRAMMAR.md`'s paths are this row's; its grades are row 104's
+
+`grammar_inventory.rs` failed, because every `GRAMMAR.md` row cites an evidence path and
+every path moved. §6 says `GRAMMAR.md` is row 104's, and that is **half right**: the
+*regrade* is row 104's, the *paths* are whichever row moves the files.
+
+`AGENTS.md` already states the general rule — *"Gates keyed by file path go stale when
+files move, and two of them are easy to miss"* — and names `HATCH_ALLOWED` and
+`GRAMMAR.md` as the two. Both were hit. The split now applied: a rename updates a gated
+document's **citations**; a regrade changes its **verdicts**.
+
+Seven living reference documents took the path sweep — `GRAMMAR.md`, `CONFORMANCE.md`,
+`STATUS.md`, `DECLINED.md`, `RELEASING.md`, `NIXPKGS.md`, `COMPILER.md` — and
+`docs/01`–`docs/85` took none, as §9's decision requires.
+
+### 10.6 The documented seed-refresh trap fired, exactly as written
+
+`AGENTS.md`: *"`moon run :seed-refresh` replays a cached size, so the number it prints
+can be a previous run's."*
+
+It printed **1005131 bytes**. `stat` said **1005170**. The blob had changed by 39 bytes
+and the task reported the old number — the same failure that made plan 91 wave 5 misread
+its own refresh as a no-op. Verified by `stat` and `git diff --stat` instead, which is
+what that entry tells you to do.
+
+New blob: 1,005,170 bytes, blake3 `0cbf2b3f…`. All seven seed tests green, `fixpoint`
+and `bootstrap` included.
+
+### 10.7 What the corpus proved about the rename
+
+**The goldens needed no re-blessing.** 43 `tests/golden/*.vrs` were rewritten textually
+— `__rdx_` → `__vlt_` — and then the regenerated compiler produced byte-identical
+output. 920 tests, and after the seed refresh the only failures were the two generated
+documents (`STATUS.md`, `CONFORMANCE.md`) which regenerate by design.
+
+That is the strongest available evidence that this row changed spellings and nothing
+else, and it is available only because generation 1 keeps its generated output as a
+reviewable artifact rather than an intermediate.
+
+### 10.8 Criteria
+
+| | Criterion | Result |
+|---|---|---|
+| 1 | the fossil appears only in the historical record | **amended** — §10.9 |
+| 2 | full gate green, no behavioural diff | met; §10.7 |
+| 3 | from-scratch bootstrap produces no `__rdx_` | met — trees deleted, blob run, nothing in the output |
+| 4 | `voltaic build foo.sdx` works **and warns** | **partially met** — it works; there is no warning. §10.10 |
+| 5 | every editor integration still highlights | met, by `editors.rs` rather than by hand |
+| 6 | packaging validation passes | met; the eight `include` keys followed the directory |
+| 7 | `git log --follow` survives | met; `git mv` throughout |
+
+### 10.9 Criterion 1 was under-specified
+
+It allows the fossil in *"`docs/01`–`docs/85`, `docs/90 - 92`, this document, and
+`docs/MIGRATION.md`"*. The tree also, legitimately, keeps it in:
+
+- **`tools/port/batches/`, 73 occurrences** — spent one-shot scripts from plans 73–83,
+  historical in exactly the sense docs 01–85 are, and naming files that plan 91's merge
+  deleted anyway;
+- **`seed/voltaic1.wasm`** — a binary; row 102 renames it;
+- **`docs/101 - 103` and `docs/102 - 104`** — plan documents whose subject *is* the old
+  spelling;
+- **three compiler sources** — §3.4's dual acceptance, which criterion 4 requires.
+
+Amended to that list. The criterion was written from the §2.1 survey, and the survey
+was a search rather than a sweep.
+
+### 10.10 The deprecation note is row 103's
+
+§3.4 promises `.sdx` is accepted for one release *"and prints a deprecation note naming
+`voltaic migrate`"*. Acceptance shipped; the note did not, because `voltaic migrate` is
+row 103's deliverable and a note naming a subcommand that does not exist is worse than
+no note.
+
+**This is a scoping decision, not an oversight, and it leaves a user on `.sdx` with
+silence for the duration.** Row 103 owns the note, and the register's row 103 cell says
+so rather than leaving it implied.
+
+### 10.11 What this plan got wrong
+
+Four things, all above: **§3.2's order** was the seed's and not the plan's (§10.1);
+**§2.1's trap list** missed the seed's input scan, `ftplugin`, and a nested build cache
+(§10.4); **§6's claim** that `GRAMMAR.md` is entirely row 104's (§10.5); **leaf 6's
+assumption** of a hygiene gate that does not exist (§10.4). None changed the design, and
+three of the four were caught by a gate rather than by review.

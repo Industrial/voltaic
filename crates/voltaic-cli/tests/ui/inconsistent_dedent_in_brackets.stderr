@@ -1,5 +1,5 @@
-error[RDX0002]: inconsistent dedent: 6 spaces matches no enclosing indentation level
-  --> inconsistent_dedent_in_brackets.sdx:5:7
+error[VLT0002]: inconsistent dedent: 6 spaces matches no enclosing indentation level
+  --> inconsistent_dedent_in_brackets.vlt:5:7
   |
 5 |       , 3
   |       ^

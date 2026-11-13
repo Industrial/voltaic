@@ -1,13 +1,13 @@
 # Bindings and control flow
 
 ```voltaic
-{{#include ../../../examples/bindings.sdx}}
+{{#include ../../../examples/bindings.vlt}}
 ```
 
 ## Binding, and rebinding
 
 `x = e` binds. `x := e` reassigns, and requires `mut` on the original binding.
-Shadowing a name with `=` is a warning (`RDX1003`), suppressed with
+Shadowing a name with `=` is a warning (`VLT1003`), suppressed with
 `#[voltaic::allow(shadow)]` on the line above — the attribute is consumed by
 the compiler and never reaches rustc.
 
@@ -42,7 +42,7 @@ want a `Drop` guard and the value is not yours to implement one on.
 ## Blocks, labels and loops
 
 ```voltaic
-{{#include ../../../examples/local.sdx}}
+{{#include ../../../examples/local.vlt}}
 ```
 
 Block expressions have values. Labels name a loop or block so a `break` can

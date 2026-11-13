@@ -1,6 +1,6 @@
 name = "Voltaic"
 grammar = "voltaic"
-path_suffixes = ["sdx"]
+path_suffixes = ["vlt"]
 line_comments = ["-- "]
 tab_size = 2
 hard_tabs = false

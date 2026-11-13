@@ -195,7 +195,7 @@ html {
   opacity: 0.85;
 }
 
-/* ── .sdx code blocks ──────────────────────────────────────────────────── */
+/* ── .vlt code blocks ──────────────────────────────────────────────────── */
 
 pre,
 code {
@@ -203,7 +203,7 @@ code {
 }
 
 pre > code.language-voltaic,
-pre > code.language-sdx {
+pre > code.language-vlt {
   color: var(--voltaic-ink-2);
 }
 

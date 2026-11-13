@@ -1,4 +1,4 @@
-//! Plan 34 §1.4's two properties, and §1.5's inversion — over every `.sdx` in
+//! Plan 34 §1.4's two properties, and §1.5's inversion — over every `.vlt` in
 //! the repository.
 //!
 //! These are worth more than any golden. A golden asserts one output and says
@@ -15,26 +15,26 @@
 //! 3. **No text lost** — every comment and attribute survives. Doc 02 §3.2
 //!    records Emerald's formatter losing every non-doc comment, and for Voltaic
 //!    that would be a product defect, since the same trivia must reach the
-//!    `.xrs`.
+//!    `.vrs`.
 //!
 //! And §1.5: `--check` passing over `examples/` means the hand-written corpus
 //! **is** the style guide, rather than the formatter being measured against
 //! hand-written expectations.
 //!
-//! `lexical.sdx` is exempt, by the same declared exemption `examples.rs`
+//! `lexical.vlt` is exempt, by the same declared exemption `examples.rs`
 //! carries: it exercises the lexical surface and deliberately does not parse.
 
 use std::path::{Path, PathBuf};
 
 /// Plan 02's lexer fixture, which deliberately does not parse. The same
 /// exemption `examples.rs` declares, named here rather than silently skipped.
-const NOT_PARSEABLE: [&str; 1] = ["lexical.sdx"];
+const NOT_PARSEABLE: [&str; 1] = ["lexical.vlt"];
 
 fn root() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Every `.sdx` in the repository that is meant to parse — the examples, the
+/// Every `.vlt` in the repository that is meant to parse — the examples, the
 /// UI corpus and the lint corpus together.
 ///
 /// The UI corpus is included deliberately even though its cases are *invalid*
@@ -53,7 +53,7 @@ fn sources() -> Vec<PathBuf> {
     };
     for entry in entries {
       let path = entry.expect("should read an entry").path();
-      if path.extension().is_some_and(|x| x == "sdx")
+      if path.extension().is_some_and(|x| x == "vlt")
         && !NOT_PARSEABLE.contains(&path.file_name().unwrap().to_str().unwrap())
       {
         found.push(path);

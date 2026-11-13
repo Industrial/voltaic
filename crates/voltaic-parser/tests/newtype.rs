@@ -118,8 +118,8 @@ fn a_newtype_with_no_constructor_is_refused() {
 
 /// The legal form still parses, which is the half that must not regress.
 ///
-/// Both corpus `newtype`s are this shape — `examples/data.sdx:35`'s
-/// `newtype Meters = Meters f64` and `examples/fallible.sdx:19`'s
+/// Both corpus `newtype`s are this shape — `examples/data.vlt:35`'s
+/// `newtype Meters = Meters f64` and `examples/fallible.vlt:19`'s
 /// `newtype Tag = Tag String`.
 #[test]
 fn a_newtype_with_one_field_still_parses() {

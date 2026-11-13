@@ -31,7 +31,7 @@
 //
 // # The error case is a *refusal*, not a token
 //
-// Doc 03 §3.1's `RDX0002` is a dedent to a width matching no enclosing level.
+// Doc 03 §3.1's `VLT0002` is a dedent to a width matching no enclosing level.
 // This scanner reports it by emitting **nothing**: tree-sitter then has no
 // token where it needs one and produces an ERROR node, which is what
 // criterion 4 asks for. Accepting the line and guessing a depth — which is
@@ -186,7 +186,7 @@ static bool skip_to_content(TSLexer *lexer, uint16_t *width, bool *crossed_a_lin
     if (is_space(lexer->lookahead)) {
       // A tab counts as one column, as Voltaic's own lexer counts it. The two
       // agreeing matters more than either being clever: a file mixing tabs
-      // and spaces is already `RDX0002`'s business.
+      // and spaces is already `VLT0002`'s business.
       (*width)++;
       lexer->advance(lexer, true);
       continue;
@@ -385,7 +385,7 @@ bool tree_sitter_voltaic_external_scanner_scan(void *payload, TSLexer *lexer,
     // The inconsistent-dedent check, and the whole of criterion 4. After
     // closing every level deeper than this line, the width must *be* a level
     // that is still open. If it sits between two there is no block to return
-    // to and no token to emit — doc 03 §3.1's `RDX0002`, as an ERROR node.
+    // to and no token to emit — doc 03 §3.1's `VLT0002`, as an ERROR node.
     if (scanner->widths[scanner->len - 1 - closing] != width) {
       return false;
     }

@@ -5,7 +5,7 @@ should be cheap to write and cheap to read, so parentheses are for grouping
 rather than for calling.
 
 ```voltaic
-{{#include ../../../examples/expressions.sdx}}
+{{#include ../../../examples/expressions.vlt}}
 ```
 
 ## Parenless calls are canonical everywhere
@@ -28,7 +28,7 @@ different thing — and is the mistake to expect if you come from Rust.
 ## The pipeline operator
 
 ```voltaic
-{{#include ../../../examples/compose.sdx}}
+{{#include ../../../examples/compose.vlt}}
 ```
 
 `x |> f` passes `x` as `f`'s **receiver**, not as its first argument. That is
@@ -38,7 +38,7 @@ jumping position at every step.
 ## Operator sections
 
 ```voltaic
-{{#include ../../../examples/section.sdx}}
+{{#include ../../../examples/section.vlt}}
 ```
 
 `(+ 1)` is a closure adding one. `(.f)` is a **field** section — it emits

@@ -315,14 +315,14 @@ fn render(root: &Path) -> String {
     "\n---\n\n## {heading} crates are no longer a count\n\n\
      The table above measures what *could* be ported. {heading} crates **have** been, and \
      for them the question is settled by rustc rather than by a blocker count: {list} are \
-     written in Voltaic, their `.sdx` living in `crates/<crate>/sdx/` beside the `src/` it \
+     written in Voltaic, their `.vlt` living in `crates/<crate>/vlt/` beside the `src/` it \
      generates, and the generated Rust is compiled as part of the workspace.\n\n\
      So **the compiler is now{partly} compiled from Voltaic** — {ported_files} files of it. \
      That corrects what this document said until plan 70: *\"nothing in the build depends \
      on `conformance/`, and the compiler is not compiled from it\"*, which was true when \
      plan 48 lifted one 45-line module out of a crate and checked it with `syn`, and \
      stopped being true the moment a whole crate's `src/` was generated.\n\n\
-     Plan 48's probe is retired with that sentence. `conformance/clause.sdx` was \
+     Plan 48's probe is retired with that sentence. `conformance/clause.vlt` was \
      `clause.rs` expressed in Voltaic and checked by `syn::parse_file`, because one module \
      lifted out of a crate cannot resolve `crate::Stmt`; the real port has no extraction \
      to concede to, so the weaker oracle expired. Its no-escape-hatch assertion now runs \
@@ -337,7 +337,7 @@ fn render(root: &Path) -> String {
      Doc 02 §4.8 corrects doc 01 §34's own wording: keep the Rust implementation \
      *\"permanently rather than as a 'fallback'\"*. {remainder} The {lower} that \
      are ported keep their generated Rust **committed**, which is what doc 02 §4.8 means \
-     by *\"commit the generated `.xrs` so the bootstrap never breaks\"* — the committed \
+     by *\"commit the generated `.vrs` so the bootstrap never breaks\"* — the committed \
      output is the previous-version compiler every self-hosting language needs, stored as \
      reviewable source rather than as a binary.\n",
     heading = word(n),

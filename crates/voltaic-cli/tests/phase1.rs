@@ -11,7 +11,7 @@
 //!
 //! | Assertion | Now in |
 //! |---|---|
-//! | the generated text | `tests/golden/phase1.xrs` |
+//! | the generated text | `tests/golden/phase1.vrs` |
 //! | what it prints | `examples/phase1.stdout` |
 //! | the shapes below | here |
 //!

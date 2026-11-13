@@ -9,7 +9,7 @@ Rust paths, types, traits and macros are available as themselves. `import`
 brings a path into scope exactly as `use` does.
 
 ```voltaic
-{{#include ../../../examples/reachability.sdx}}
+{{#include ../../../examples/reachability.vlt}}
 ```
 
 That example is the repository's own map of what a Voltaic program can reach,
@@ -51,4 +51,4 @@ Nothing is wrapped. A Voltaic `data` becomes a Rust `enum` or `struct` with the
 same name and the same fields; a Voltaic function becomes a Rust `fn`. Other
 Rust code can call it without knowing Voltaic was involved, and
 `examples/cargo-project/` is a worked example of exactly that — a normal cargo
-crate whose build script transpiles `.sdx` into `OUT_DIR`.
+crate whose build script transpiles `.vlt` into `OUT_DIR`.

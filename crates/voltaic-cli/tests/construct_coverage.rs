@@ -8,7 +8,7 @@
 //!
 //! The measurement that forced it: `$` — doc 18 §2.1's low-precedence
 //! application operator — was fully implemented, fully specified, and appeared
-//! in no example, while `examples/lexical.sdx` explained its absence by
+//! in no example, while `examples/lexical.vlt` explained its absence by
 //! calling it unlexed. Nothing caught that, because nothing checked the corpus
 //! against the language.
 //!
@@ -17,7 +17,7 @@
 //! | Side | Source | Built by |
 //! |---|---|---|
 //! | what the language has | `docs/GRAMMAR.md`, graded `SUGARED` / `PASSTHROUGH` | plan 46 |
-//! | what the corpus shows | `examples/*.sdx`, `tests/{ui,run}/*.sdx` | plans 08, 13, 43 |
+//! | what the corpus shows | `examples/*.vlt`, `tests/{ui,run}/*.vlt` | plans 08, 13, 43 |
 //! | the assertion | every row on the left appears somewhere on the right | plan 51 |
 //!
 //! `UNREACHABLE` rows are out of scope **by construction**: plan 46 requires
@@ -37,7 +37,7 @@
 //! 3. **The match is lexical.** A construct is witnessed by a pattern over
 //!    `voltaic_lexer::lex`'s token stream, never by a substring of the file.
 //!    `|>` inside a comment is not coverage, and `$` inside a string is not
-//!    coverage; `tests/construct_coverage/decoy.sdx` is a file that contains
+//!    coverage; `tests/construct_coverage/decoy.vlt` is a file that contains
 //!    nine constructs textually and none of them lexically, and
 //!    [`a_construct_inside_a_comment_or_a_string_does_not_count`] asserts both
 //!    halves.
@@ -122,7 +122,7 @@ const ALLOW: &[(&str, &str)] = &[
     "doc 18 §2.4 spells this `data Marker = Marker` — one constructor named \
      for the type, with no fields — and the corpus has thirteen `data`, \
      `newtype` and `union` declarations, every one of which has fields or \
-     alternatives. The row cites `examples/data.sdx`, which declares an enum \
+     alternatives. The row cites `examples/data.vlt`, which declares an enum \
      of unit *variants* instead; those are a different Rust shape. Closing it \
      is a declaration in a running example, and the example has to use the \
      value or rustc's `dead_code` fires",
@@ -131,27 +131,27 @@ const ALLOW: &[(&str, &str)] = &[
     "Raw pointers",
     "a type is verbatim text (doc 03 §14.1), so `*const u8` needs no parser \
      work and is certainly reachable — but no corpus file contains a `*` in a \
-     type. The row cites `examples/reachability.sdx` for being the file where \
+     type. The row cites `examples/reachability.vlt` for being the file where \
      verbatim types live, not for containing a pointer. Closing it needs an \
      `unsafe` block to dereference in, which that file already has",
   ),
   (
     "Trait objects dyn Trait",
     "same shape as the raw-pointer row: verbatim type text, reachable by \
-     construction, and the cited `examples/generic.sdx` contains no `dyn`. A \
+     construction, and the cited `examples/generic.vlt` contains no `dyn`. A \
      `dyn` witness also has to be *used*, because this corpus requires rustc \
      to emit nothing",
   ),
   (
     "impl Trait, argument and return",
-    "the cited `examples/generic.sdx` contains no `impl` token at all — the \
+    "the cited `examples/generic.vlt` contains no `impl` token at all — the \
      only `impl` anywhere in the corpus is the word inside a comment in \
-     `examples/errors.sdx`, which is exactly the match a substring scan would \
+     `examples/errors.vlt`, which is exactly the match a substring scan would \
      have accepted and this one does not",
   ),
   (
     "Function pointers and Fn bounds",
-    "the cited `examples/generic.sdx` has three bound clauses and none of them \
+    "the cited `examples/generic.vlt` has three bound clauses and none of them \
      is an `Fn` bound, and no corpus file writes a `fn(T) -> U` type. Both \
      halves are verbatim type text, so this is a missing example rather than \
      a missing feature",
@@ -159,7 +159,7 @@ const ALLOW: &[(&str, &str)] = &[
   (
     "move closures",
     "`move` is reserved (`Keyword::Move`) and the row cites \
-     `examples/async.sdx`, which has four `async` constructs and no `move`. \
+     `examples/async.vlt`, which has four `async` constructs and no `move`. \
      Unlike the four rows above, this one is a *marker* on a lambda rather \
      than verbatim type text, so whether the parser accepts it is unverified \
      here — plan 51's §6 is explicit that this gate cannot tell a missing \
@@ -566,7 +566,7 @@ const WITNESSES: &[Covers] = &[
   Covers {
     row: "do .method — the named bind",
     // `do` then `.` then a name. The `do` alone would be satisfied by
-    // `tests/ui/reserved_do.sdx`, which writes the word precisely to have it
+    // `tests/ui/reserved_do.vlt`, which writes the word precisely to have it
     // refused — so the witness has to carry the method reference that makes it
     // a construct rather than an error.
     spelling: "`do .and_then` and `do .flat_map`",
@@ -619,7 +619,7 @@ const WITNESSES: &[Covers] = &[
     // `«id»` placeholder does not distinguish case, so the witness leans on
     // the *shape* — a name, a name, `=` at item level — which an ordinary
     // two-name equation head also has. That is accepted: the row is about the
-    // emitted parameter, and `examples/synonym.sdx` is where it is asserted by
+    // emitted parameter, and `examples/synonym.vlt` is where it is asserted by
     // running.
     spelling: "`describe Origin = \"the origin\"`",
     witness: Witness::Toks(&["«id»", "«id»", "=", "«str»"]),
@@ -657,7 +657,7 @@ const WITNESSES: &[Covers] = &[
   //
   // Each of these six was `UNREACHABLE` with a fixture under
   // `tests/unreachable/` until plan 84 leaf 1, and each is witnessed by its own
-  // signature in `examples/binder.sdx` rather than by the `given` keyword
+  // signature in `examples/binder.vlt` rather than by the `given` keyword
   // alone. That distinction is the lesson plan 57 §11.6 paid for from the other
   // side: a witness broad enough to be satisfied by *any* use of the construct
   // is satisfied by the file that introduces it and asserts nothing about the
@@ -743,7 +743,7 @@ const WITNESSES: &[Covers] = &[
     // witnessing a method call. So the call is witnessed by what makes it
     // **different**, which is *position*: a `.` in head position calls and a
     // `.` after an expression selects. Neither new run can be met by a field
-    // access, a selector, or by `tests/ui/retired_method_call.sdx`, which
+    // access, a selector, or by `tests/ui/retired_method_call.vlt`, which
     // this corpus reads and which contains `s.len (1)`.
     spelling: "`p.x`, `.len xs`, `xs |> .len`, and a left section like `(1 <)`",
     witness: Witness::All(&[
@@ -1153,15 +1153,15 @@ fn every_allowance_names_a_real_row_and_gives_a_reason() {
 /// The scan is lexical, and this is the file that proves it.
 ///
 /// Plan 51 §5 criterion 6 and §9 decision 2: `|>` inside a comment is not
-/// coverage. `tests/construct_coverage/decoy.sdx` contains nine constructs as
+/// coverage. `tests/construct_coverage/decoy.vlt` contains nine constructs as
 /// text and none as tokens, so a substring search finds every one of them and
 /// the token stream finds none — which is the difference between this gate and
 /// the one it would have been easy to write.
 #[test]
 fn a_construct_inside_a_comment_or_a_string_does_not_count() {
-  let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/construct_coverage/decoy.sdx");
+  let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/construct_coverage/decoy.vlt");
   let text = std::fs::read_to_string(&path).expect("the decoy fixture should exist");
-  let decoy = Source::new("decoy.sdx".to_owned(), text).expect("the decoy should lex");
+  let decoy = Source::new("decoy.vlt".to_owned(), text).expect("the decoy should lex");
 
   let decoys: &[(&str, &[&str])] = &[
     ("case … of", &["case", "«any»", "of"]),
@@ -1198,7 +1198,7 @@ fn a_construct_inside_a_comment_or_a_string_does_not_count() {
 /// chosen to lack it.
 #[test]
 fn a_witness_can_actually_fail() {
-  let empty = Source::new("empty.sdx".to_owned(), String::new()).expect("the empty file lexes");
+  let empty = Source::new("empty.vlt".to_owned(), String::new()).expect("the empty file lexes");
   let without = [empty];
 
   let mut unmet = 0;

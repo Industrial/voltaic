@@ -1,5 +1,5 @@
-error[RDX0010]: hexadecimal literal has no digits
-  --> radix_without_digits.sdx:3:19
+error[VLT0010]: hexadecimal literal has no digits
+  --> radix_without_digits.vlt:3:19
   |
 3 |   println! \-> "#{0x}"
   |                   ^^

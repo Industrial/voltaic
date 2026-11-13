@@ -7,7 +7,7 @@
 //! happen: four of the five corpus cases were written by hand and four of them
 //! were wrong about the tree.
 //!
-//! The assertion with teeth is **every `.sdx` that is meant to build parses
+//! The assertion with teeth is **every `.vlt` that is meant to build parses
 //! with no `ERROR` node**. The corpus already covers every construct the
 //! language has, it is maintained by the compiler's own gate, and a grammar
 //! that drifts from the language fails without anyone writing a new
@@ -56,18 +56,18 @@ fn parses_cleanly(path: &Path) -> bool {
   output.status.success()
 }
 
-/// Every `.sdx` in a directory, sorted.
+/// Every `.vlt` in a directory, sorted.
 fn sources(dir: &Path) -> Vec<PathBuf> {
   let mut found: Vec<PathBuf> = std::fs::read_dir(dir)
     .unwrap_or_else(|e| panic!("should read {}: {e}", dir.display()))
     .map(|entry| entry.expect("should read an entry").path())
-    .filter(|path| path.extension().is_some_and(|x| x == "sdx"))
+    .filter(|path| path.extension().is_some_and(|x| x == "vlt"))
     .collect();
   found.sort();
   found
 }
 
-/// Criterion 3: every example parses with no `ERROR`, `lexical.sdx` included.
+/// Criterion 3: every example parses with no `ERROR`, `lexical.vlt` included.
 ///
 /// That one file is exempt from `examples.rs` and from the formatter's
 /// properties, because it does not *parse* — and it is included here for plan
@@ -116,13 +116,13 @@ fn every_lint_case_parses_with_no_error() {
 /// A grammar whose scanner accepted any indentation would pass the sweep and
 /// be wrong in the one place this row is meant to be precise. Plan 43 §10.1
 /// records getting this exactly backwards once — its first negative case used
-/// a *deeper* line, which lexes correctly, when `RDX0002` is about a **dedent**
+/// a *deeper* line, which lexes correctly, when `VLT0002` is about a **dedent**
 /// landing between two levels.
 #[test]
 fn an_inconsistent_dedent_is_an_error() {
   let dir = std::env::temp_dir().join("voltaic-tree-sitter-negative");
   std::fs::create_dir_all(&dir).expect("should create a scratch directory");
-  let path = dir.join("inconsistent.sdx");
+  let path = dir.join("inconsistent.vlt");
   // Opens at four, then dedents to two, which matches neither 0 nor 4.
   std::fs::write(
     &path,
@@ -136,7 +136,7 @@ fn an_inconsistent_dedent_is_an_error() {
   );
   // And its positive counterpart, so the case is not failing for an unrelated
   // reason — the other half of plan 43 §10.1's correction.
-  let nested = dir.join("nested.sdx");
+  let nested = dir.join("nested.vlt");
   std::fs::write(
     &nested,
     "main : ()\nmain =\n  if c\n    println! \\-> \"#{1}\"\n  println! \\-> \"#{2}\"\n",
@@ -211,7 +211,7 @@ fn the_highlight_query_loads_and_matches() {
     .current_dir(grammar_dir())
     .arg("query")
     .arg("queries/highlights.scm")
-    .arg(root().join("examples/hello.sdx"))
+    .arg(root().join("examples/hello.vlt"))
     .output()
     .expect("tree-sitter should be on PATH");
   assert!(

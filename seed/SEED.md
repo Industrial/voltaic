@@ -3,13 +3,13 @@
 Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 3.
 
 This directory holds **one binary**, and it is the only binary this repository
-tracks. It is `crates/voltaic-seed` compiled to `wasm32-wasip1`: `.sdx` in, `.rs`
+tracks. It is `crates/voltaic-seed` compiled to `wasm32-wasip1`: `.vlt` in, `.rs`
 out, and nothing else — no `check`, no `fmt`, no `watch`, no colour.
 
 ## What it is for
 
 `crates/voltaic-ast` and `crates/voltaic-fmt` are **written in Voltaic**. The Rust
-under each one's `src/` is generated from the `.sdx` beside it. Something has
+under each one's `src/` is generated from the `.vlt` beside it. Something has
 to break the resulting cycle, because `voltaic-cli` is built from `voltaic-fmt`,
 which is built from `voltaic-ast` — so on a clean clone with those trees
 untracked, nothing exists that could generate them.
@@ -29,9 +29,9 @@ verified by a compiler the seed is supposed to underwrite.
 
 | | |
 |---|---|
-| built from commit | `151df7a97a1789dda0b500f8db69f2e9cc0b0dd9` |
-| size | 1005131 bytes |
-| blake3 | `c9382bcba0d86e974c2f0f82c56480df4b5f690559613cf4e459a62922bf3e64` |
+| built from commit | `667e727` **plus plan 93's rename**, which lands in the same commit as this row |
+| size | 1005170 bytes |
+| blake3 | `0cbf2b3fab61987ae909388209cd4e5b7f53eca130c104447d40af212dd9fc2d` |
 
 `crates/voltaic-seed/tests/blob.rs` recomputes the hash and fails if it does not
 match this table, so a hand-edited blob and a stale row are the same failure.
@@ -67,7 +67,7 @@ larger for no reason. `devenv.nix` pins both `binaryen` (for `wasm-opt`) and
 
 ## When to rebuild it
 
-**Whenever the seed can no longer parse this repository's own `.sdx`.** That is
+**Whenever the seed can no longer parse this repository's own `.vlt`.** That is
 the version-skew rule, and `AGENTS.md` carries it:
 
 > A surface row that the seed cannot parse must refresh the seed in the same
@@ -85,11 +85,11 @@ that does not delta-compress, so the rule is a trigger and not a cadence.
 ## Running it
 
 ```bash
-wasmtime run --dir . seed/voltaic1.wasm crates/voltaic-ast/sdx <out-dir>
+wasmtime run --dir . seed/voltaic1.wasm crates/voltaic-ast/vlt <out-dir>
 ```
 
 `--dir .` is required — WASI grants no filesystem access by default, so without
-a preopened directory the seed cannot read a single `.sdx`.
+a preopened directory the seed cannot read a single `.vlt`.
 
 The output is **not** what is committed until rustfmt has run on it. Voltaic
 targets rustfmt's defaults and this repository sets `tab_spaces = 2`, so the

@@ -291,7 +291,7 @@ fn a_tight_colon_colon_is_still_a_path() {
 ///
 /// Before leaf 2, `prefix` reached only the one-line `then` production, so an
 /// indented `if` was available as a function's tail — where `stmt` sends it to
-/// `control_flow` — and was `RDX0101` anywhere a value was read.
+/// `control_flow` — and was `VLT0101` anywhere a value was read.
 ///
 /// This asserted **both** spellings until leaf 7 retired `then`. What went
 /// with it is `reaches_a_then`, the depth-zero scan that chose between them,
@@ -317,7 +317,7 @@ fn an_if_parses_as_a_value() {
 
 /// A bare indented block is an expression, and `'name` labels one — leaf 7.
 ///
-/// `do` and `do 'search` spelled these, and the word is now `RDX0114`. The
+/// `do` and `do 'search` spelled these, and the word is now `VLT0114`. The
 /// third case is the one that could not be written at all before: a block as
 /// a binding's value with nothing on the `=` line.
 #[test]
@@ -345,11 +345,11 @@ fn a_statement_if_needs_no_else() {
 /// A field access as a **non-final** argument is an argument, not a method
 /// call — plan 79.
 ///
-/// `RDX0115`'s two halves split on whitespace: `postfix` refuses the adjacent
+/// `VLT0115`'s two halves split on whitespace: `postfix` refuses the adjacent
 /// `x.f(a)` Rust writes, and `application` refuses a field as an application's
 /// head, which is every spaced form. Testing for any following `(` at all put
 /// both halves on the adjacent case and refused this, which is the ordinary
-/// receiver-last call — `voltaic-cli`'s `run/usage.sdx` writes it, and the
+/// receiver-last call — `voltaic-cli`'s `run/usage.vlt` writes it, and the
 /// formatter then round-tripped the parentheses off a working program.
 #[test]
 fn a_field_access_may_be_a_non_final_argument() {
@@ -380,7 +380,7 @@ fn a_field_access_may_be_a_non_final_argument() {
 }
 
 /// And the adjacent spelling is still refused, which is the half that must not
-/// regress — `tests/ui/retired_method_call.sdx` pins all four shapes.
+/// regress — `tests/ui/retired_method_call.vlt` pins all four shapes.
 #[test]
 fn an_adjacent_paren_is_still_the_retired_method_call() {
   let errs = errors("main : ()\nmain =\n  s = String::new ()\n  a = s.len(1)\n  ()\n");
@@ -395,7 +395,7 @@ fn an_adjacent_paren_is_still_the_retired_method_call() {
 /// asked for.
 ///
 /// Doc 69 found that `pick = if … else …` followed by `.push pick out` read as
-/// `(if …).push(…)` and was refused as `RDX0115`, recorded it as a surface
+/// `(if …).push(…)` and was refused as `VLT0115`, recorded it as a surface
 /// decision, and deferred the parse question: *"whether a `Dedent` terminates
 /// a binding, which wants a row"*. Its pinning contrast — *"a block in
 /// statement position never reaches `postfix`"* — is true of `if` and **false

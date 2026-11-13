@@ -1,5 +1,5 @@
-error[RDX0118]: `print` is not a construct any more — macros are callable, so write `println! \-> "#{x}"`, or `eprintln!` to write to stderr
-  --> retired_spelling.sdx:21:3
+error[VLT0118]: `print` is not a construct any more — macros are callable, so write `println! \-> "#{x}"`, or `eprintln!` to write to stderr
+  --> retired_spelling.vlt:21:3
    |
 21 |   print "hello"
    |   ^^^^^

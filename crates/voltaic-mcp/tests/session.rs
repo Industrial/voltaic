@@ -162,7 +162,7 @@ async fn each_remaining_tool_is_callable() {
     .call_tool(call(
       "voltaic_source_map",
       serde_json::json!({
-        "path": case.sibling("clean.xrs").display().to_string(),
+        "path": case.sibling("clean.vrs").display().to_string(),
         "line": 1,
       }),
     ))
@@ -174,7 +174,7 @@ async fn each_remaining_tool_is_callable() {
     .expect("structured content");
   assert!(
     structured.get("source").is_some(),
-    "it should name the .sdx it is about: {structured:#}"
+    "it should name the .vlt it is about: {structured:#}"
   );
 
   client.cancel().await.ok();
@@ -191,7 +191,7 @@ async fn an_unreadable_path_is_a_protocol_error() {
   let result = client
     .call_tool(call(
       "voltaic_fmt",
-      serde_json::json!({ "path": "/nonexistent/nowhere.sdx" }),
+      serde_json::json!({ "path": "/nonexistent/nowhere.vlt" }),
     ))
     .await;
   let error = result.expect_err("a missing file is not an answer about a program");

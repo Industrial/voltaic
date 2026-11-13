@@ -1,7 +1,7 @@
 # Modules and metaprogramming
 
 ```voltaic
-{{#include ../../../examples/module.sdx}}
+{{#include ../../../examples/module.vlt}}
 ```
 
 ## `module` and `import`
@@ -10,8 +10,8 @@
 knowing before you name things:
 
 **A module may not be named after a keyword.** `class`, `data`, `test`, `type`
-and `errors` are all keywords, so `module test` is `RDX0103` — and item
-recovery then reports a dozen `RDX0101`s on the lines *after* it. Read the
+and `errors` are all keywords, so `module test` is `VLT0103` — and item
+recovery then reports a dozen `VLT0101`s on the lines *after* it. Read the
 first diagnostic, not the loudest run of them.
 
 **Paths use `::` with no spaces around it.** A spaced separator is its own
@@ -21,7 +21,7 @@ saying so is more useful than failing.
 ## Attributes
 
 ```voltaic
-{{#include ../../../examples/attributes.sdx}}
+{{#include ../../../examples/attributes.vlt}}
 ```
 
 Rust's attributes, passed through. The exceptions are Voltaic's own
@@ -30,7 +30,7 @@ Rust's attributes, passed through. The exceptions are Voltaic's own
 ## Macros
 
 ```voltaic
-{{#include ../../../examples/macros.sdx}}
+{{#include ../../../examples/macros.vlt}}
 ```
 
 Macro *invocation* uses `\->` to introduce a token stream. Macro *definition*
@@ -38,7 +38,7 @@ has no Voltaic surface and is reached through the inline-Rust fence.
 
 ## Module-scope bindings
 
-A binding at module scope is an error (`RDX0019`-family), because Rust has no
+A binding at module scope is an error (`VLT0019`-family), because Rust has no
 such thing and silently promoting one to a `static` or a `const` would be
 Voltaic deciding something that is not its to decide. Use `const`.
 

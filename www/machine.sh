@@ -34,7 +34,7 @@ BASE="${ORIGIN}${SITE_URL%/}"
 HTML="${1:-book/html}"
 SRC="src"
 DIST="../design/dist/web"
-DESC="A source-to-source compiler: .sdx in, ordinary Rust out."
+DESC="A source-to-source compiler: .vlt in, ordinary Rust out."
 
 [ -d "$HTML" ] || { echo "error: $HTML does not exist. Run 'mdbook build' first." >&2; exit 1; }
 

@@ -142,8 +142,8 @@ fn every_sample_comes_from_the_gated_example_corpus() {
       );
       assert_eq!(
         resolved.extension().and_then(|e| e.to_str()),
-        Some("sdx"),
-        "{} includes {target}, which is not a .sdx source",
+        Some("vlt"),
+        "{} includes {target}, which is not a .vlt source",
         page.display()
       );
       seen += 1;
@@ -482,11 +482,11 @@ fn the_samples_are_highlighted_by_the_lexers_own_classes() {
   // The off-side rule means indentation *is* structure, and the highlighter
   // reassembles from spans. A sample whose leading spaces were lost would
   // still look plausible, so it is asserted rather than eyeballed.
-  let hello = std::fs::read_to_string(root().join("examples/hello.sdx")).expect("hello.sdx");
+  let hello = std::fs::read_to_string(root().join("examples/hello.vlt")).expect("hello.vlt");
   let indented = hello.lines().filter(|l| l.starts_with("  ")).count();
   assert!(
     indented > 0,
-    "hello.sdx should have indented lines to check"
+    "hello.vlt should have indented lines to check"
   );
   let index = std::fs::read_to_string(dest.join("html/index.html")).expect("the index");
   let block = index

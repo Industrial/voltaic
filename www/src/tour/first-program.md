@@ -1,7 +1,7 @@
 # Your first program
 
 ```voltaic
-{{#include ../../../examples/hello.sdx}}
+{{#include ../../../examples/hello.vlt}}
 ```
 
 Four things are happening, and three of them are the surface decisions that
@@ -29,20 +29,20 @@ tail is the `println!` and one whose tail is `()`.
 ## Build it
 
 ```bash
-voltaic build hello.sdx     # emit hello.xrs - ordinary, readable Rust
-voltaic check hello.sdx     # run rustc, report against hello.sdx
-voltaic run hello.sdx       # build, compile and execute
+voltaic build hello.vlt     # emit hello.vrs - ordinary, readable Rust
+voltaic check hello.vlt     # run rustc, report against hello.vlt
+voltaic run hello.vlt       # build, compile and execute
 ```
 
 `check` is the one to reach for while writing. It compiles the generated Rust
-and then **remaps every diagnostic back onto your `.sdx`**, so a borrow error
+and then **remaps every diagnostic back onto your `.vlt`**, so a borrow error
 arrives pointing at the source you wrote rather than at generated code you
 did not.
 
-## The `.xrs` is meant to be read
+## The `.vrs` is meant to be read
 
-`voltaic build` writes `hello.xrs`, and that file is an artifact you are
+`voltaic build` writes `hello.vrs`, and that file is an artifact you are
 expected to open. Comments survive into it — they are trivia, and trivia is
 never discarded — so the output reads as reviewable Rust rather than as a
-compiler's scratch file. If you ever stop using Voltaic, the `.xrs` is your
+compiler's scratch file. If you ever stop using Voltaic, the `.vrs` is your
 program.

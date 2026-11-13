@@ -6,12 +6,12 @@
 //! it. So a pipeline too wide for one line has exactly one multi-line spelling
 //! that parses — one stage per continuation line, indented beneath the
 //! receiver — and the formatter had none at all, which is how it produced an
-//! 89-character line out of `examples/application.sdx`.
+//! 89-character line out of `examples/application.vlt`.
 //!
 //! The width is `PIPELINE_WIDTH`, which is rustfmt's `chain_width` and the
 //! emitter's `CHAIN_WIDTH`. Both halves of the rule are asserted here, and the
-//! second is the one the corpus needs: `examples/lexical.sdx` and
-//! `examples/section.sdx` are full of short pipelines that must not be
+//! second is the one the corpus needs: `examples/lexical.vlt` and
+//! `examples/section.vlt` are full of short pipelines that must not be
 //! reflowed.
 
 use std::path::PathBuf;
@@ -22,7 +22,7 @@ fn fixtures() -> PathBuf {
 
 /// The fixture's source and its formatted form.
 fn formatted(stem: &str) -> (String, String) {
-  let path = fixtures().join(format!("{stem}.sdx"));
+  let path = fixtures().join(format!("{stem}.vlt"));
   let source =
     std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("{} should exist", path.display()));
   let program = voltaic_parser::parse_source(&source)
@@ -33,7 +33,7 @@ fn formatted(stem: &str) -> (String, String) {
 
 /// Compare against the recorded expectation, or rewrite it and fail.
 fn against_canonical(stem: &str, printed: &str) {
-  let path = fixtures().join(format!("{stem}.canonical.sdx"));
+  let path = fixtures().join(format!("{stem}.canonical.vlt"));
   if std::env::var_os("VOLTAIC_UPDATE").is_some() {
     std::fs::write(&path, printed).expect("should write the expectation");
     panic!("updated {} — review the diff", path.display());
@@ -108,7 +108,7 @@ fn only_a_pipeline_too_wide_for_its_line_is_broken() {
 /// A continuation line sits one level in from the statement it continues.
 ///
 /// Two spaces at the top level and four inside `main`, which is §3 row 11's
-/// one level and the layout `examples/application.sdx` writes.
+/// one level and the layout `examples/application.vlt` writes.
 #[test]
 fn a_continuation_is_one_level_in_from_its_statement() {
   let (_, printed) = formatted("pipeline");

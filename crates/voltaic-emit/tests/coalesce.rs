@@ -20,7 +20,7 @@ fn body(src: &str) -> String {
 fn coalesce_lowers_to_a_match() {
   let out = body("name = opt ?? \"anonymous\"");
   assert!(out.contains("match opt {"), "{out}");
-  assert!(out.contains("Some(__rdx_v) => __rdx_v,"), "{out}");
+  assert!(out.contains("Some(__vlt_v) => __vlt_v,"), "{out}");
   assert!(out.contains("None => \"anonymous\","), "{out}");
   assert!(!out.contains("unwrap_or_else"), "{out}");
 }

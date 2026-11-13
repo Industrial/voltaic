@@ -1,5 +1,5 @@
-error[RDX0116]: the `(|> name)` method reference is retired
-  --> retired_pipeline_section.sdx:15:16
+error[VLT0116]: the `(|> name)` method reference is retired
+  --> retired_pipeline_section.vlt:15:16
    |
 15 |   method_ref = (|> len)
    |                ^^^^^^^

@@ -16,7 +16,7 @@
 ;
 ; `then` and `do` left this list with plan 55 leaf 7, for two different
 ; reasons. `then`'s construct is gone and so is the word. `do` is still
-; **reserved** (`RDX0114`) and is coloured one line down: `grammar.js` declares
+; **reserved** (`VLT0114`) and is coloured one line down: `grammar.js` declares
 ; it through `reserved` and a `reserved_word` rule, so what the grammar has is
 ; the named node and not a `"do"` token — and a query may only name a node the
 ; grammar has, a hard `Invalid node type` error rather than a dead pattern.

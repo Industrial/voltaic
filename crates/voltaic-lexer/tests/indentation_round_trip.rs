@@ -22,9 +22,9 @@ fn root() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Every `.sdx` in the repository.
+/// Every `.vlt` in the repository.
 ///
-/// **`lexical.sdx` is included**, unlike in every other corpus sweep. It is
+/// **`lexical.vlt` is included**, unlike in every other corpus sweep. It is
 /// exempt elsewhere because it does not *parse*; this property is about
 /// lexing, which it must do — so it is the most valuable input here rather
 /// than the one to skip. Plan 43's criterion 3.
@@ -40,7 +40,7 @@ fn sources() -> Vec<PathBuf> {
     };
     for entry in entries {
       let path = entry.expect("should read an entry").path();
-      if path.extension().is_some_and(|x| x == "sdx") {
+      if path.extension().is_some_and(|x| x == "vlt") {
         found.push(path);
       }
     }
@@ -126,7 +126,7 @@ fn opens_its_line(source: &str, offset: usize) -> bool {
 /// the second line is token depth 0 at text width 2, against the width 0 that
 /// every other top-level line in the file records for depth 0. It passed for
 /// as long as it did only because no corpus file had an indented
-/// continuation; `examples/application.sdx` added the first and this
+/// continuation; `examples/application.vlt` added the first and this
 /// assertion failed on it, naming a byte inside the `filter` call. The
 /// property is sound — the sampling was wider than the sentence above it.
 ///
@@ -146,7 +146,7 @@ fn opens_its_line(source: &str, offset: usize) -> bool {
 /// No corpus file has that shape, and none can: `voltaic fmt` normalises a
 /// spread list onto one line, so `every_example_is_already_canonical` rejects
 /// the layout before this property ever sees it. Measured — adding one to
-/// `examples/arrays.sdx` failed that test, this one, and the tree-sitter
+/// `examples/arrays.vlt` failed that test, this one, and the tree-sitter
 /// grammar together. So the witness for the alignment case lives in
 /// `continuation.rs` as a direct `lex` call, and if a corpus file ever gains
 /// the shape, **this property is what needs the carve-out** rather than the
@@ -156,7 +156,7 @@ fn token_depth_tracks_the_texts_indentation() {
   for path in sources() {
     let source = std::fs::read_to_string(&path).expect("should read");
     let Ok(tokens) = lex(&source) else {
-      // A file that does not lex is `RDX0002`'s business, asserted separately.
+      // A file that does not lex is `VLT0002`'s business, asserted separately.
       continue;
     };
 
@@ -222,7 +222,7 @@ fn token_depth_tracks_the_texts_indentation() {
 /// Criterion 2: the property's negative case.
 ///
 /// A property test over a corpus that all passes cannot distinguish *the
-/// property holds* from *the property is vacuous*. Doc 03 §3.1's `RDX0002`
+/// property holds* from *the property is vacuous*. Doc 03 §3.1's `VLT0002`
 /// exists because an indentation width matching no enclosing level is an
 /// error, and this is the assertion that it is one rather than a silently
 /// chosen depth.
@@ -232,13 +232,13 @@ fn inconsistent_indentation_is_rejected() {
   //
   // The first version of this case used a *deeper* second line — two spaces
   // then three — and it lexed fine, correctly: a deeper line opens a block.
-  // `RDX0002` is about a **dedent** landing between two levels, which is the
+  // `VLT0002` is about a **dedent** landing between two levels, which is the
   // only way the width stack can be asked for a level it does not hold.
   let source = "main : ()\nmain =\n    println! \\-> \"#{1}\"\n  println! \\-> \"#{2}\"\n";
   let failed = lex(source);
   assert!(
     failed.is_err(),
-    "a dedent matching no enclosing level must be RDX0002, got {:?}",
+    "a dedent matching no enclosing level must be VLT0002, got {:?}",
     failed.map(|t| t.len())
   );
 }

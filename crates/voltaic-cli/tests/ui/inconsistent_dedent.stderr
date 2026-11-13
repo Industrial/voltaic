@@ -1,5 +1,5 @@
-error[RDX0002]: inconsistent dedent: 2 spaces matches no enclosing indentation level
-  --> inconsistent_dedent.sdx:4:3
+error[VLT0002]: inconsistent dedent: 2 spaces matches no enclosing indentation level
+  --> inconsistent_dedent.vlt:4:3
   |
 4 |   println! \-> "#{2}"
   |   ^

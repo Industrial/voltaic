@@ -5,18 +5,18 @@ which is what "off-side rule" means: a construct's body is everything indented
 past the column where the construct began.
 
 ```voltaic
-{{#include ../../../examples/control.sdx}}
+{{#include ../../../examples/control.vlt}}
 ```
 
 ## Three rules, and that is all of them
 
-**Indent with spaces.** A tab in indentation is `RDX0001`, reported with
+**Indent with spaces.** A tab in indentation is `VLT0001`, reported with
 *"indent with spaces"*. There is no configurable width and no mixed mode,
 because the alternative is a language where two files that look identical are
 not.
 
 **A dedent must land on a column that is already open.** Returning to a level
-that was never established is `RDX0002` — *"match an enclosing indentation
+that was never established is `VLT0002` — *"match an enclosing indentation
 level"*. This is the error that catches a half-finished refactor, where a line
 ends up between two levels and would otherwise silently attach to the wrong
 block.

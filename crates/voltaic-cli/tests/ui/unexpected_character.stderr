@@ -1,5 +1,5 @@
-error[RDX0011]: unexpected character '§'
-  --> unexpected_character.sdx:3:22
+error[VLT0011]: unexpected character '§'
+  --> unexpected_character.vlt:3:22
   |
 3 |   println! \-> "#{(1 § 2)}"
   |                      ^

@@ -26,13 +26,13 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Every `.sdx` under `tests/lint/`, sorted.
+/// Every `.vlt` under `tests/lint/`, sorted.
 fn cases() -> Vec<PathBuf> {
   let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/lint");
   let mut found: Vec<PathBuf> = std::fs::read_dir(&dir)
     .unwrap_or_else(|e| panic!("should read {}: {e}", dir.display()))
     .map(|e| e.expect("should read an entry").path())
-    .filter(|p| p.extension().is_some_and(|x| x == "sdx"))
+    .filter(|p| p.extension().is_some_and(|x| x == "vlt"))
     .collect();
   found.sort();
   found
@@ -48,7 +48,7 @@ fn stderr_of(source: &Path) -> String {
     .arg(source)
     .arg("--plain")
     .arg("-o")
-    .arg(std::env::temp_dir().join("voltaic-lint-discard.xrs"))
+    .arg(std::env::temp_dir().join("voltaic-lint-discard.vrs"))
     .output()
     .expect("should run the voltaic binary");
   assert!(
@@ -106,7 +106,7 @@ fn every_lint_case_matches_its_expectation() {
   );
 }
 
-/// A `.stderr` with no `.sdx` beside it is a stale expectation nothing reads —
+/// A `.stderr` with no `.vlt` beside it is a stale expectation nothing reads —
 /// the same guard `ui.rs` carries, for the same reason.
 #[test]
 fn every_expectation_has_a_case() {
@@ -115,7 +115,7 @@ fn every_expectation_has_a_case() {
     let path = entry.expect("should read an entry").path();
     if path.extension().is_some_and(|x| x == "stderr") {
       assert!(
-        path.with_extension("sdx").exists(),
+        path.with_extension("vlt").exists(),
         "{} has no case beside it",
         path.display()
       );

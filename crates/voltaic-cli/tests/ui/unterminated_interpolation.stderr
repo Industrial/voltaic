@@ -1,5 +1,5 @@
-error[RDX0005]: unterminated interpolation; expected `}`
-  --> unterminated_interpolation.sdx:3:19
+error[VLT0005]: unterminated interpolation; expected `}`
+  --> unterminated_interpolation.vlt:3:19
   |
 3 |   println! \-> "a #{1 + 2"
   |                   ^^^^^^^^^

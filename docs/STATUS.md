@@ -54,13 +54,13 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.sdx` | 44 | the CI-checked source of truth for what works |
-| `tests/golden/*.xrs` | 43 | the generated Rust, as exact text |
-| `crates/voltaic-cli/tests/ui/*.sdx` | 55 | the diagnostic a bad program gets |
-| `tests/unreachable/*.sdx` | 7 | the gaps below, asserted to **still fail** |
-| `benchmarks/pairs/*.sdx` | 10 | generated and hand-written Rust, as identical IR |
+| `examples/*.vlt` | 44 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 43 | the generated Rust, as exact text |
+| `crates/voltaic-cli/tests/ui/*.vlt` | 55 | the diagnostic a bad program gets |
+| `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
+| `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**44 examples and 43 goldens is not an error.** `examples/lexical.sdx` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "44 examples, all green" would be rounding up by exactly one file.
+**44 examples and 43 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "44 examples, all green" would be rounding up by exactly one file.
 
 ---
 
@@ -70,14 +70,14 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Construct | Fixture |
 |---|---|
-| Macro definitions | `tests/unreachable/macro_def.sdx` |
-| Macro invocation with a non-expression argument | `tests/unreachable/macro_item_argument.sdx` |
-| `as` casts | `tests/unreachable/as_cast.sdx` |
-| `extern "C" fn` (export) | `tests/unreachable/extern_fn_abi.sdx` |
-| `ref` and `ref mut` | `tests/unreachable/ref_pattern.sdx` |
-| `unsafe impl` | `tests/unreachable/unsafe_class.sdx` |
-| `unsafe trait` | `tests/unreachable/unsafe_class.sdx` |
-| `|` or-patterns | `tests/unreachable/or_pattern.sdx` |
+| Macro definitions | `tests/unreachable/macro_def.vlt` |
+| Macro invocation with a non-expression argument | `tests/unreachable/macro_item_argument.vlt` |
+| `as` casts | `tests/unreachable/as_cast.vlt` |
+| `extern "C" fn` (export) | `tests/unreachable/extern_fn_abi.vlt` |
+| `ref` and `ref mut` | `tests/unreachable/ref_pattern.vlt` |
+| `unsafe impl` | `tests/unreachable/unsafe_class.vlt` |
+| `unsafe trait` | `tests/unreachable/unsafe_class.vlt` |
+| `|` or-patterns | `tests/unreachable/or_pattern.vlt` |
 
 Full grading, with the nearest working alternative for each: `docs/GRAMMAR.md`. Deliberate refusals are a different thing and live in `docs/DECLINED.md`.
 

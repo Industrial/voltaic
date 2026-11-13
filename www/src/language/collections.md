@@ -1,13 +1,13 @@
 # Collections
 
 ```voltaic
-{{#include ../../../examples/arrays.sdx}}
+{{#include ../../../examples/arrays.vlt}}
 ```
 
 ## Comprehensions, at two levels
 
 ```voltaic
-{{#include ../../../examples/comprehension.sdx}}
+{{#include ../../../examples/comprehension.vlt}}
 ```
 
 A comprehension builds a collection from a generator, optional filters, and an

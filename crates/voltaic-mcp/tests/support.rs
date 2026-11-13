@@ -1,21 +1,21 @@
 //! Fixtures for the MCP tests.
 //!
-//! Plan 50. AGENTS.md: *"Every `.sdx` fixture is a file, and tests reference
+//! Plan 50. AGENTS.md: *"Every `.vlt` fixture is a file, and tests reference
 //! files."* These tests need files on disk — a tool takes a **path** — so each
 //! case copies a committed fixture from `tests/fixtures/` into a scratch
 //! directory and works on the copy. Nothing here writes into the repository,
-//! and `voltaic_build` writes an `.xrs` beside its input.
+//! and `voltaic_build` writes an `.vrs` beside its input.
 
 use std::path::{Path, PathBuf};
 
 /// A scratch copy of a committed fixture.
 pub struct Case {
   dir: PathBuf,
-  pub sdx: PathBuf,
+  pub vlt: PathBuf,
 }
 
 impl Case {
-  /// Copy `tests/fixtures/<name>.sdx` into a fresh scratch directory.
+  /// Copy `tests/fixtures/<name>.vlt` into a fresh scratch directory.
   ///
   /// `temp_dir()` rather than the repository tree, for `examples.rs`'s reason:
   /// the repository's own tooling config applies inside it.
@@ -28,14 +28,14 @@ impl Case {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("should create a scratch directory");
 
-    let from = fixtures().join(format!("{name}.sdx"));
-    let sdx = dir.join(format!("{name}.sdx"));
-    std::fs::copy(&from, &sdx).unwrap_or_else(|e| panic!("should copy {}: {e}", from.display()));
-    Self { dir, sdx }
+    let from = fixtures().join(format!("{name}.vlt"));
+    let vlt = dir.join(format!("{name}.vlt"));
+    std::fs::copy(&from, &vlt).unwrap_or_else(|e| panic!("should copy {}: {e}", from.display()));
+    Self { dir, vlt }
   }
 
   pub fn path(&self) -> String {
-    self.sdx.display().to_string()
+    self.vlt.display().to_string()
   }
 
   pub fn sibling(&self, name: &str) -> PathBuf {

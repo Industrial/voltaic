@@ -7,7 +7,7 @@ edition = "2024"
 # gives: every crate under `crates/` is written in Voltaic, and this one is
 # Rust because it links the lexer directly.
 publish = false
-description = "mdBook preprocessor: highlights .sdx blocks with Voltaic's own lexer."
+description = "mdBook preprocessor: highlights .vlt blocks with Voltaic's own lexer."
 license.workspace = true
 
 [[bin]]

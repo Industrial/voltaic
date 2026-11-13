@@ -1,13 +1,13 @@
 //! The seed reproduces a ported crate's committed Rust.
 //!
 //! Plan 72 leaf 1. This is the assertion that makes the seed worth checking
-//! in: given a crate's `.sdx` tree, the seed must produce exactly the `.rs`
+//! in: given a crate's `.vlt` tree, the seed must produce exactly the `.rs`
 //! that is committed under that crate's `src/` — because on a clean clone with
 //! that `src/` untracked, what the seed produces is all there is.
 //!
 //! # Why this is not `tests/port.rs`
 //!
-//! `port.rs` grades the **committed** Rust against the `.sdx`, by invoking
+//! `port.rs` grades the **committed** Rust against the `.vlt`, by invoking
 //! `voltaic build` once per file and then rustfmt. It proves the two trees agree.
 //! This proves the **seed** agrees with them — a different claim, because the
 //! seed is a different binary with a different dependency graph, a directory
@@ -62,12 +62,12 @@ fn collect(root: &Path, dir: &Path, into: &mut Vec<PathBuf>) {
 }
 
 /// `voltaic-ast`, because it is the smaller of the two ported crates and its
-/// `.sdx` tree is nested three deep — which is the shape that found
+/// `.vlt` tree is nested three deep — which is the shape that found
 /// `compile_dir`'s flat walk.
 #[test]
 fn the_seed_reproduces_a_ported_crates_committed_rust() {
   let root = workspace_root();
-  let sdx = root.join("crates/voltaic-ast/sdx");
+  let vlt = root.join("crates/voltaic-ast/vlt");
   let committed = root.join("crates/voltaic-ast/src");
 
   let out = root.join("target/voltaic-seed-test");
@@ -75,7 +75,7 @@ fn the_seed_reproduces_a_ported_crates_committed_rust() {
   std::fs::create_dir_all(&out).expect("should create the output directory");
 
   let run = Command::new(env!("CARGO_BIN_EXE_voltaic-seed"))
-    .arg(&sdx)
+    .arg(&vlt)
     .arg(&out)
     .output()
     .expect("should run voltaic-seed");

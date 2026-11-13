@@ -25,11 +25,11 @@
 #      contains Rust. Check 6 is the one that matters most here — see below
 #
 # WHY CHECK 6 EXISTS. Every crate under `crates/` is written in Voltaic: `src/`
-# is generated from `sdx/` and is `.gitignore`d. `cargo package` enumerates
+# is generated from `vlt/` and is `.gitignore`d. `cargo package` enumerates
 # files from git, so without an `include` key it packages **no Rust at all** and
 # the published crate is an unbuildable empty shell that uploads without a
 # warning. Measured before the `include` keys were added: `cargo package
-# -p voltaic-ast --list` emitted `Cargo.toml`, `moon.yml` and `sdx/*.sdx`, and
+# -p voltaic-ast --list` emitted `Cargo.toml`, `moon.yml` and `vlt/*.vlt`, and
 # nothing else. An `include` switches cargo to a filesystem walk, which does see
 # the generated tree. Check 6 is the standing guard on that, and it reads the
 # built `.crate` rather than the manifest because the manifest is not the thing
@@ -269,7 +269,7 @@ for crate in "${ORDER[@]}"; do
         echo "ERROR: $archive contains no src/**/*.rs — the published crate would not build"
         echo "  → crates/$crate/src/ is generated and .gitignore'd, so cargo's git file"
         echo "    listing skips it. The manifest needs:"
-        echo "      include = [\"src/**/*.rs\", \"sdx/**/*.sdx\", \"Cargo.toml\"]"
+        echo "      include = [\"src/**/*.rs\", \"vlt/**/*.vlt\", \"Cargo.toml\"]"
         echo "  → See the header of this script, and docs/RELEASING.md."
         failed=1
         continue

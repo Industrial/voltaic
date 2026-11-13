@@ -1,6 +1,6 @@
 # Voltaic
 
-Voltaic is a source-to-source compiler. You write `.sdx`; it emits `.xrs`
+Voltaic is a source-to-source compiler. You write `.vlt`; it emits `.vrs`
 containing **ordinary Rust**, which `rustc` then compiles with no runtime, no
 shim and no library of its own.
 
@@ -15,7 +15,7 @@ receiver-last methods, pipelines, comprehensions, and a `where` that holds
 local definitions.
 
 ```voltaic
-{{#include ../../examples/hello.sdx}}
+{{#include ../../examples/hello.vlt}}
 ```
 
 Every sample in this book is included from `examples/` in the repository, and
@@ -41,5 +41,5 @@ library — crates.io is the standard library — and no plan implements a libra
 function. It is not a dialect that hides Rust: types, lifetimes and traits are
 Rust's, spelled differently, and `rustc` is the final word on all of them.
 
-Diagnostics are reported against the `.sdx` you wrote, at the line and column
+Diagnostics are reported against the `.vlt` you wrote, at the line and column
 of your source rather than of the generated Rust.

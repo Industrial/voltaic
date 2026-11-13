@@ -1,6 +1,6 @@
 //! The crates written in Voltaic — plans 68 and 69.
 //!
-//! `crates/<crate>/sdx/**/*.sdx` is the **source**; the `.rs` under
+//! `crates/<crate>/vlt/**/*.vlt` is the **source**; the `.rs` under
 //! `crates/<crate>/src/` is generated from it, and cargo compiles that exactly
 //! as it compiled the hand-written Rust. So the whole workspace and all of its
 //! tests run against Voltaic-generated code, which is the assertion plan 48's
@@ -27,7 +27,7 @@
 //! `examples/cargo-project/` is its witness.
 //!
 //! Regeneration being a test rather than a build step catches both failure
-//! directions with one assertion: a `.sdx` edited without regenerating, and a
+//! directions with one assertion: a `.vlt` edited without regenerating, and a
 //! hand edit to the generated Rust.
 //!
 //! The second direction got harder to see at plan 72 leaf 5 and this test got
@@ -69,7 +69,7 @@ fn workspace_root() -> PathBuf {
 /// of them were stale when `voltaic-diag` landed.
 use support::ported;
 
-/// Every `.sdx` of the port, with the `.rs` it generates.
+/// Every `.vlt` of the port, with the `.rs` it generates.
 ///
 /// The mirror is one file for one file and the same relative path. Plan 91
 /// retired one-construct-per-file, so what the mirror now carries across is
@@ -83,35 +83,35 @@ fn pairs() -> Vec<(PathBuf, PathBuf)> {
 /// Where one ported crate's Voltaic source lives.
 ///
 /// This and [`src_root`] are the **only** two places that know the layout.
-/// `the_sdx_tree_mirrors_the_rust_tree` used to build the `.sdx` path itself,
-/// which meant plan 70's move to `crates/<crate>/sdx/` changed one of two
+/// `the_vlt_tree_mirrors_the_rust_tree` used to build the `.vlt` path itself,
+/// which meant plan 70's move to `crates/<crate>/vlt/` changed one of two
 /// copies and the mirror's reverse direction searched a deleted directory —
 /// the one-predicate-two-positions defect plan 34 §10.31 found five times and
 /// leaf 0 of plan 69 had just removed from this file's crate name.
-fn sdx_root(crate_name: &str) -> PathBuf {
-  workspace_root().join("crates").join(crate_name).join("sdx")
+fn vlt_root(crate_name: &str) -> PathBuf {
+  workspace_root().join("crates").join(crate_name).join("vlt")
 }
 
-/// Where the Rust generated from [`sdx_root`] is committed.
+/// Where the Rust generated from [`vlt_root`] is committed.
 fn src_root(crate_name: &str) -> PathBuf {
   workspace_root().join("crates").join(crate_name).join("src")
 }
 
-/// One ported crate's `.sdx` sources, each with the `.rs` it generates.
+/// One ported crate's `.vlt` sources, each with the `.rs` it generates.
 fn pairs_of(crate_name: &str) -> Vec<(PathBuf, PathBuf)> {
-  let from = sdx_root(crate_name);
+  let from = vlt_root(crate_name);
   let into = src_root(crate_name);
   let mut found = Vec::new();
   collect(&from, &mut found);
   found.sort();
   found
     .into_iter()
-    .map(|sdx| {
-      let rel = sdx
+    .map(|vlt| {
+      let rel = vlt
         .strip_prefix(&from)
-        .expect("under the crate's sdx/")
+        .expect("under the crate's vlt/")
         .with_extension("rs");
-      (sdx.clone(), into.join(rel))
+      (vlt.clone(), into.join(rel))
     })
     .collect()
 }
@@ -124,27 +124,27 @@ fn collect(dir: &Path, into: &mut Vec<PathBuf>) {
     let path = entry.path();
     if path.is_dir() {
       collect(&path, into);
-    } else if path.extension().is_some_and(|e| e == "sdx") {
+    } else if path.extension().is_some_and(|e| e == "vlt") {
       into.push(path);
     }
   }
 }
 
 /// `voltaic build` on one file, then rustfmt with the repository's config.
-fn generate(sdx: &Path) -> String {
+fn generate(vlt: &Path) -> String {
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .arg("build")
-    .arg(sdx)
+    .arg(vlt)
     .output()
     .expect("should run voltaic build");
   assert!(
     out.status.success(),
     "{} should transpile:\n{}",
-    sdx.display(),
+    vlt.display(),
     String::from_utf8_lossy(&out.stdout)
   );
-  let xrs = sdx.with_extension("xrs");
-  let rust = std::fs::read_to_string(&xrs).expect("should read the generated .xrs");
+  let vrs = vlt.with_extension("vrs");
+  let rust = std::fs::read_to_string(&vrs).expect("should read the generated .vrs");
   support::rustfmt_in_place(&rust)
 }
 
@@ -178,25 +178,25 @@ fn staged_crate_compiles(root: &Path, crate_name: &str, staging: &Path) -> bool 
 
 /// Criterion 1 and 4's other half: the trees are the same shape.
 ///
-/// Both directions. A `.sdx` with no `.rs` means the port was never
-/// regenerated; a `.rs` with no `.sdx` means a file was added to the crate in
+/// Both directions. A `.vlt` with no `.rs` means the port was never
+/// regenerated; a `.rs` with no `.vlt` means a file was added to the crate in
 /// Rust, which is the failure mode this row exists to prevent — the crate is
 /// written in Voltaic now, and a hand-written module would compile and silently
 /// not be.
 #[test]
-fn the_sdx_tree_mirrors_the_rust_tree() {
+fn the_vlt_tree_mirrors_the_rust_tree() {
   let pairs = pairs();
   assert!(
     !pairs.is_empty(),
-    "each ported crate's sdx/ should hold its source"
+    "each ported crate's vlt/ should hold its source"
   );
 
   let mut missing = Vec::new();
-  for (sdx, rs) in &pairs {
+  for (vlt, rs) in &pairs {
     if !rs.exists() {
       missing.push(format!(
         "  {} has no generated {}",
-        sdx.display(),
+        vlt.display(),
         rs.display()
       ));
     }
@@ -212,9 +212,9 @@ fn the_sdx_tree_mirrors_the_rust_tree() {
       let rel = path
         .strip_prefix(&src)
         .expect("under src")
-        .with_extension("sdx");
-      if !sdx_root(crate_name).join(&rel).exists() {
-        unported.push(format!("  {} has no .sdx source", path.display()));
+        .with_extension("vlt");
+      if !vlt_root(crate_name).join(&rel).exists() {
+        unported.push(format!("  {} has no .vlt source", path.display()));
       }
     }
   }
@@ -255,8 +255,8 @@ fn the_port_regenerates_the_committed_rust() {
   let updating = std::env::var("VOLTAIC_UPDATE").is_ok();
   let mut stale = Vec::new();
   let mut fresh = Vec::new();
-  for (sdx, rs) in pairs() {
-    let generated = generate(&sdx);
+  for (vlt, rs) in pairs() {
+    let generated = generate(&vlt);
     if updating {
       fresh.push((rs, generated));
       continue;
@@ -274,7 +274,7 @@ fn the_port_regenerates_the_committed_rust() {
   // dependency root — so `cargo run -p voltaic-cli` could no longer build the
   // compiler that would regenerate it. `git checkout -- crates/voltaic-ast/src/`
   // is the recovery, and it works only because the generated Rust is
-  // **committed**: doc 02 §4.8's *"commit the generated `.xrs` so the
+  // **committed**: doc 02 §4.8's *"commit the generated `.vrs` so the
   // bootstrap never breaks"* earning its keep.
   //
   // So the files go to a staging directory, `cargo check -p voltaic-ast` runs
@@ -319,9 +319,9 @@ fn the_port_regenerates_the_committed_rust() {
 
   assert!(
     updating || stale.is_empty(),
-    "these generated files no longer match their .sdx source:\n  {}\n\
-     Either the .sdx was edited without regenerating, or the .rs was edited by \
-     hand — the .sdx is the source. Regenerate with:\n  \
+    "these generated files no longer match their .vlt source:\n  {}\n\
+     Either the .vlt was edited without regenerating, or the .rs was edited by \
+     hand — the .vlt is the source. Regenerate with:\n  \
      VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test port",
     stale.join("\n  ")
   );
@@ -331,7 +331,7 @@ fn the_port_regenerates_the_committed_rust() {
   );
 }
 
-/// The only `.sdx` files in the port allowed an inline-Rust block, with the
+/// The only `.vlt` files in the port allowed an inline-Rust block, with the
 /// reason each one needs it.
 ///
 /// **Doc 02 §4.8's answer is "almost", and this list is the "almost".** The
@@ -345,7 +345,7 @@ fn the_port_regenerates_the_committed_rust() {
 /// number in a generated document is harder to forget than a list in a test.
 const HATCH_ALLOWED: &[(&str, &str)] = &[
   (
-    "crates/voltaic-emit/sdx/expr.sdx",
+    "crates/voltaic-emit/vlt/expr.vlt",
     "`thread_local!`'s body is a `static` declaration, and a Voltaic macro \
      argument is an *expression* (plan 64 §6). The table must be \
      thread-local — the suite's parallel tests must not see each other's \
@@ -353,17 +353,17 @@ const HATCH_ALLOWED: &[(&str, &str)] = &[
      `Sync`. This one is the arity table",
   ),
   (
-    "crates/voltaic-emit/sdx/binding.sdx",
+    "crates/voltaic-emit/vlt/binding.vlt",
     "the same `thread_local!`, for the same reason, twice: over \
      `BindingTable` and over a `Cell<BindMode>`",
   ),
   (
-    "crates/voltaic-emit/sdx/pattern.sdx",
+    "crates/voltaic-emit/vlt/pattern.vlt",
     "the same `thread_local!`, for the same reason, over a \
      `RefCell<SynonymTable>` — plan 87's pattern synonyms",
   ),
   (
-    "crates/voltaic-emit/sdx/template.sdx",
+    "crates/voltaic-emit/vlt/template.vlt",
     "the same `thread_local!`, for the same reason, over a \
      `RefCell<TemplateTable>` — plan 89's deriving templates. **Five tables \
      of one shape, in four files.** That is the finding rather than five \
@@ -379,7 +379,7 @@ const HATCH_ALLOWED: &[(&str, &str)] = &[
 ///
 /// Doc 02 §4.8's criterion is that the compiler's source is expressible
 /// **without** inline Rust, so an undeclared `rust` block would make the claim
-/// vacuous. Plan 48 asserts the same thing for `clause.sdx` by looking at the
+/// vacuous. Plan 48 asserts the same thing for `clause.vlt` by looking at the
 /// generated output; this looks at the source, which is stricter — plan 64
 /// leaf 4 gave the hatch an expression position, and `rust("` no longer
 /// appears in everything it generates.
@@ -393,16 +393,16 @@ const HATCH_ALLOWED: &[(&str, &str)] = &[
 #[test]
 fn the_port_uses_no_undeclared_escape_hatch() {
   let mut offenders = Vec::new();
-  for (sdx, _) in pairs() {
-    let shown = sdx.display().to_string().replace('\\', "/");
+  for (vlt, _) in pairs() {
+    let shown = vlt.display().to_string().replace('\\', "/");
     if HATCH_ALLOWED.iter().any(|(f, _)| shown.ends_with(f)) {
       continue;
     }
-    let text = std::fs::read_to_string(&sdx).expect("should read the port source");
+    let text = std::fs::read_to_string(&vlt).expect("should read the port source");
     for (n, line) in text.lines().enumerate() {
       let code = line.split("--").next().unwrap_or("");
       if code.split_whitespace().any(|w| w == "rust") && code.contains("\"\"\"") {
-        offenders.push(format!("  {}:{}", sdx.display(), n + 1));
+        offenders.push(format!("  {}:{}", vlt.display(), n + 1));
       }
     }
   }
@@ -449,22 +449,22 @@ fn every_hatch_allowance_is_used() {
   );
 }
 
-/// **A ported crate's `.sdx` is in git.** The mirror of
+/// **A ported crate's `.vlt` is in git.** The mirror of
 /// `bootstrap.rs`'s `the_generated_trees_are_ignored`: one asserts the
 /// generated Rust is *not* tracked, and until plan 75 nothing asserted the
 /// source *is*.
 ///
 /// Plan 75 added `voltaic-fuzz` to `seed/PORTED`, regenerated it, and got a green
-/// clippy and a green port suite with the whole `.sdx` tree untracked. The
-/// failure surfaced in the clean-clone test — *"crates/voltaic-fuzz/sdx is
+/// clippy and a green port suite with the whole `.vlt` tree untracked. The
+/// failure surfaced in the clean-clone test — *"crates/voltaic-fuzz/vlt is
 /// missing, so voltaic-fuzz has no source to generate from"* — which is late,
 /// and reads as a bootstrap problem rather than a forgotten `git add`.
 #[test]
-fn every_ported_crates_sdx_is_tracked() {
+fn every_ported_crates_vlt_is_tracked() {
   let root = workspace_root();
   let mut missing = Vec::new();
   for (crate_name, _) in &ported() {
-    let dir = format!("crates/{crate_name}/sdx");
+    let dir = format!("crates/{crate_name}/vlt");
     let listed = Command::new("git")
       .args(["ls-files", "--", &dir])
       .current_dir(&root)
@@ -473,7 +473,7 @@ fn every_ported_crates_sdx_is_tracked() {
     let count = String::from_utf8_lossy(&listed.stdout).lines().count();
     let on_disk = pairs()
       .iter()
-      .filter(|(sdx, _)| sdx.starts_with(root.join(&dir)))
+      .filter(|(vlt, _)| vlt.starts_with(root.join(&dir)))
       .count();
     if count < on_disk {
       missing.push(format!("  {dir}: {on_disk} files, {count} tracked"));
@@ -481,7 +481,7 @@ fn every_ported_crates_sdx_is_tracked() {
   }
   assert!(
     missing.is_empty(),
-    "a ported crate's `.sdx` is its source and must be in git — a clean clone \
+    "a ported crate's `.vlt` is its source and must be in git — a clean clone \
      has nothing to bootstrap from otherwise:\n{}\n\
      Run `git add` on the listed directories.",
     missing.join("\n")

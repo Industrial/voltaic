@@ -35,7 +35,7 @@ uses plan 41's grammar directly.
    that will drift from plan 41's. Neovim avoids it by reading the query text at
    setup time, which Helix has no equivalent of.
 
-`.xrs` is deliberately not claimed. It is ordinary Rust — the compiler's whole
+`.vrs` is deliberately not claimed. It is ordinary Rust — the compiler's whole
 premise — so Helix's own `rust` language handles it, and claiming it here would
 take highlighting *away* from the file.
 

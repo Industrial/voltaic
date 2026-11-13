@@ -3,8 +3,8 @@
 #
 # Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 5.
 #
-# `crates/voltaic-ast` and `crates/voltaic-fmt` are written in Voltaic: the `.sdx`
-# under each one's `sdx/` is the source, and the `.rs` under its `src/` is
+# `crates/voltaic-ast` and `crates/voltaic-fmt` are written in Voltaic: the `.vlt`
+# under each one's `vlt/` is the source, and the `.rs` under its `src/` is
 # generated and **not tracked**. So a clean clone has no `voltaic-ast` crate at
 # all, and nothing that could build the compiler which would generate it.
 #
@@ -49,7 +49,7 @@ for tool in wasmtime rustfmt; do
 done
 
 for crate in "${PORTED[@]}"; do
-    src="crates/$crate/sdx"
+    src="crates/$crate/vlt"
     out="crates/$crate/src"
     if [ ! -d "$src" ]; then
         echo "error: $src is missing, so $crate has no source to generate from." >&2

@@ -1,5 +1,5 @@
-error[RDX0008]: unterminated byte literal
-  --> unterminated_byte_literal.sdx:3:19
+error[VLT0008]: unterminated byte literal
+  --> unterminated_byte_literal.vlt:3:19
   |
 3 |   println! \-> "#{b'a}"
   |                   ^^^

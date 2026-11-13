@@ -20,7 +20,7 @@ pub(crate) struct Source {
 
 impl Source {
   pub(crate) fn new(name: String, text: String) -> Option<Self> {
-    // A `.sdx` the lexer rejects contributes nothing, and several UI fixtures
+    // A `.vlt` the lexer rejects contributes nothing, and several UI fixtures
     // exist precisely to be rejected. Skipping them is correct; panicking
     // would make this test fail for the lexer's reasons rather than its own.
     let tokens = lex(&text).ok()?;
@@ -114,8 +114,8 @@ fn matches(pattern: &str, token: &Token, spelling: &str) -> bool {
 
 /// The three corpora plan 51 §1.2 names, lexed.
 ///
-/// Note the paths: the `.sdx` side of the golden corpus is `examples/`, not
-/// `tests/golden/` — that directory holds only the expected `.xrs` — and the
+/// Note the paths: the `.vlt` side of the golden corpus is `examples/`, not
+/// `tests/golden/` — that directory holds only the expected `.vrs` — and the
 /// UI and run corpora live under `crates/voltaic-cli/tests/`, not at the
 /// repository root.
 pub(crate) fn corpus() -> Vec<Source> {
@@ -132,7 +132,7 @@ pub(crate) fn corpus() -> Vec<Source> {
       .unwrap_or_else(|e| panic!("should read the corpus at {}: {e}", dir.display()));
     for entry in entries {
       let path = entry.expect("should read a corpus entry").path();
-      if path.extension().is_some_and(|ext| ext == "sdx") {
+      if path.extension().is_some_and(|ext| ext == "vlt") {
         paths.push(path);
       }
     }

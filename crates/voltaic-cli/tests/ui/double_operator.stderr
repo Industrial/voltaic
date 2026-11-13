@@ -1,5 +1,5 @@
-error[RDX0102]: expected an expression
-  --> double_operator.sdx:3:24
+error[VLT0102]: expected an expression
+  --> double_operator.vlt:3:24
   |
 3 |   println! \-> "#{(1 + + 2)}"
   |                        ^

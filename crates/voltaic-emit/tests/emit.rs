@@ -6,7 +6,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -14,7 +14,7 @@ fn xrs(src: &str) -> String {
 #[test]
 fn emits_the_hello_slice() {
   assert_eq!(
-    xrs("-- The smallest Voltaic program.\nmain : ()\nmain =\n  println! \\-> \"hello\"\n  ()\n"),
+    vrs("-- The smallest Voltaic program.\nmain : ()\nmain =\n  println! \\-> \"hello\"\n  ()\n"),
     "// The smallest Voltaic program.\nfn main() {\n    println!(\"hello\");\n    ();\n}\n"
   );
 }
@@ -22,19 +22,19 @@ fn emits_the_hello_slice() {
 /// Plan 01 acceptance criterion 5.
 #[test]
 fn a_comment_survives_into_the_generated_rust() {
-  let out = xrs("-- kept\nmain : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
+  let out = vrs("-- kept\nmain : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
   assert!(out.starts_with("// kept\n"), "{out}");
 }
 
 #[test]
 fn an_inline_comment_survives_into_the_generated_rust() {
-  let out = xrs("main : ()\nmain =\n  println! \\-> \"x\" -- why\n  ()\n");
+  let out = vrs("main : ()\nmain =\n  println! \\-> \"x\" -- why\n  ()\n");
   assert!(out.contains("println!(\"x\"); // why\n"), "{out}");
 }
 
 #[test]
 fn a_comment_at_end_of_file_survives() {
-  let out = xrs("main : ()\nmain =\n  println! \\-> \"x\"\n  ()\n-- the end\n");
+  let out = vrs("main : ()\nmain =\n  println! \\-> \"x\"\n  ()\n-- the end\n");
   assert!(out.ends_with("// the end\n"), "{out}");
 }
 
@@ -42,26 +42,26 @@ fn a_comment_at_end_of_file_survives() {
 #[test]
 fn emission_is_deterministic() {
   let src = "-- a\nmain : ()\nmain =\n  println! \\-> \"x\"\n  ()\n\nother : ()\nother =\n  println! \\-> \"y\"\n  ()\n";
-  assert_eq!(xrs(src), xrs(src));
+  assert_eq!(vrs(src), vrs(src));
 }
 
 #[test]
 fn separates_items_with_one_blank_line() {
   assert_eq!(
-    xrs("a : ()\na =\n  println! \\-> \"1\"\n  ()\nb : ()\nb =\n  println! \\-> \"2\"\n  ()\n"),
+    vrs("a : ()\na =\n  println! \\-> \"1\"\n  ()\nb : ()\nb =\n  println! \\-> \"2\"\n  ()\n"),
     "fn a() {\n    println!(\"1\");\n    ();\n}\n\nfn b() {\n    println!(\"2\");\n    ();\n}\n"
   );
 }
 
 #[test]
 fn emits_four_space_indentation() {
-  let out = xrs("main : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
+  let out = vrs("main : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
   assert!(out.contains("\n    println!"), "{out}");
 }
 
 #[test]
 fn a_non_print_call_keeps_its_name() {
-  assert!(xrs("main : ()\nmain =\n  log \"x\"\n  ()\n").contains("log(\"x\");"));
+  assert!(vrs("main : ()\nmain =\n  log \"x\"\n  ()\n").contains("log(\"x\");"));
 }
 
 /// Regression: the fixture's own final newline used to append a stray blank
@@ -75,7 +75,7 @@ fn ends_with_exactly_one_newline() {
     "main : ()\nmain =\n  println! \\-> \"x\"\n  ()\n\n\n",
     "main : ()\nmain =\n  println! \\-> \"x\"\n  ()\n-- tail\n",
   ] {
-    let out = xrs(src);
+    let out = vrs(src);
     assert!(out.ends_with('\n'), "{out:?}");
     assert!(!out.ends_with("\n\n"), "{out:?}");
   }
@@ -84,7 +84,7 @@ fn ends_with_exactly_one_newline() {
 /// Line-preserving discipline: source lines 1-3 map to output lines 1-3.
 #[test]
 fn preserves_line_positions_for_the_slice() {
-  let out = xrs("-- one\nmain : ()\nmain =\n  println! \\-> \"three\"\n  ()\n");
+  let out = vrs("-- one\nmain : ()\nmain =\n  println! \\-> \"three\"\n  ()\n");
   let lines: Vec<&str> = out.lines().collect();
   assert_eq!(lines[0], "// one");
   assert_eq!(lines[1], "fn main() {");

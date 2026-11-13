@@ -4,13 +4,13 @@ Rust's `Result` and `Option`, with the three operators that remove the
 boilerplate around them.
 
 ```voltaic
-{{#include ../../../examples/errors.sdx}}
+{{#include ../../../examples/errors.vlt}}
 ```
 
 ## `?` propagates
 
 ```voltaic
-{{#include ../../../examples/fallible.sdx}}
+{{#include ../../../examples/fallible.vlt}}
 ```
 
 As Rust's. One trap, found the hard way: **`?` binds inside a parenthesised
@@ -19,7 +19,7 @@ argument**, so where you put the parentheses changes what is propagated.
 ## `??` and `??=`
 
 ```voltaic
-{{#include ../../../examples/coalesce.sdx}}
+{{#include ../../../examples/coalesce.vlt}}
 ```
 
 `a ?? b` is `a` if it is present and `b` otherwise. `??=` assigns only if
@@ -40,7 +40,7 @@ than the whole function.
 ## Typed domain errors
 
 ```voltaic
-{{#include ../../../examples/bind.sdx}}
+{{#include ../../../examples/bind.vlt}}
 ```
 
 An `errors` declaration defines a domain error type with its variants and
@@ -49,7 +49,7 @@ declaration plus a `Display` implementation plus a `From` chain.
 
 ## `unwrap` is discouraged, not forbidden
 
-`.unwrap` raises `RDX1001`. If the panic is intended, say so on the line above
+`.unwrap` raises `VLT1001`. If the panic is intended, say so on the line above
 with `#[voltaic::allow(unwrap)]` — an attribute the compiler consumes, so it
 never reaches rustc, which would reject it as an unknown lint.
 

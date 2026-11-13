@@ -23,9 +23,9 @@ fn root() -> PathBuf {
   Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Every `.sdx` in the repository, as bytes, sorted by path.
+/// Every `.vlt` in the repository, as bytes, sorted by path.
 ///
-/// `lexical.sdx` is **included** — it does not parse, which makes it the most
+/// `lexical.vlt` is **included** — it does not parse, which makes it the most
 /// valuable seed here rather than the one to skip. Plan 43 criterion 3 and plan
 /// 41 decision 5 made the same call for the same reason.
 fn corpus() -> Vec<(String, Vec<u8>)> {
@@ -40,7 +40,7 @@ fn corpus() -> Vec<(String, Vec<u8>)> {
     };
     let mut paths: Vec<PathBuf> = entries
       .map(|entry| entry.expect("should read an entry").path())
-      .filter(|path| path.extension().is_some_and(|x| x == "sdx"))
+      .filter(|path| path.extension().is_some_and(|x| x == "vlt"))
       .collect();
     paths.sort();
     for path in paths {
@@ -79,7 +79,7 @@ fn hostile() -> Vec<(&'static str, Vec<u8>)> {
     ),
     ("unterminated fence", b"{- open\na : ()\n".to_vec()),
     ("unbalanced delimiter", b"a : ()\na = (((\n".to_vec()),
-    // Doc 03 §3.1's `RDX0002`: a dedent to a width matching no enclosing
+    // Doc 03 §3.1's `VLT0002`: a dedent to a width matching no enclosing
     // level. The one input this file asserts is *rejected*.
     (
       "inconsistent dedent",
@@ -228,7 +228,7 @@ fn no_target_panics() {
 ///
 /// The emitted Rust is a dangling `///`, which is exactly correct, and `syn`
 /// rejects it. `voltaic check` reports rustc's own *"expected item after doc
-/// comment"* against the **`.sdx`**, at the right line and column, through
+/// comment"* against the **`.vlt`**, at the right line and column, through
 /// plan 07's remapping — so the author sees it on their own source and the
 /// design is working.
 ///
@@ -241,18 +241,18 @@ fn no_target_panics() {
 ///
 /// **An inline `rust """` fence is outside this oracle, and that is a design
 /// boundary rather than a gap.** Doc 01 23.1 escape hatch emits its body
-/// verbatim and undecoded - `examples/reachability.sdx` says so in its own
+/// verbatim and undecoded - `examples/reachability.vlt` says so in its own
 /// comment - so the bytes inside a fence are rustc to judge and not
 /// Voltaic, and `voltaic check` is what reports rustc verdict on them
-/// against the `.sdx`. A mutation that corrupts a fence therefore produces
+/// against the `.vlt`. A mutation that corrupts a fence therefore produces
 /// Rust that is *correctly* unparseable, and asserting otherwise would assert
 /// that Voltaic validates a construct it deliberately does not.
 ///
 /// Found at the Redox -> Voltaic rename. `mutate` picks its offset with
 /// `index * 2654435761 % seed.len()`, so every byte-length change reshuffles
 /// which offsets are visited; the new name is two bytes longer, which moved
-/// `reachability.sdx` mutation 5 onto a space inside the fence above and
-/// flipped it to a NUL. Outside a fence that NUL is rejected with `RDX0011`
+/// `reachability.vlt` mutation 5 onto a space inside the fence above and
+/// flipped it to a NUL. Outside a fence that NUL is rejected with `VLT0011`
 /// *"unexpected character"* - verified directly - so the lexer is doing its
 /// job and only the fence passes it through. The corpus is right here and the
 /// oracle was overclaiming; the dangling-`///` case above was the reverse.
@@ -308,13 +308,13 @@ fn the_generated_rust_always_parses() {
 /// proves nothing about rejection. Plan 43 §10.1 and plan 41's criterion 4
 /// record the same discipline, and plan 43 records getting it backwards once:
 /// its first negative case used a *deeper* line, which lexes correctly, when
-/// `RDX0002` is about a **dedent** landing between two levels.
+/// `VLT0002` is about a **dedent** landing between two levels.
 #[test]
 fn an_input_that_must_be_rejected_is_rejected() {
   let bad = b"main : ()\nmain =\n    println! \\-> \"#{1}\"\n  println! \\-> \"#{2}\"\n";
   assert!(
     voltaic_lexer::lex(&String::from_utf8_lossy(bad)).is_err(),
-    "a dedent matching no enclosing level must be RDX0002"
+    "a dedent matching no enclosing level must be VLT0002"
   );
   assert!(
     voltaic_fuzz::roundtrip(bad).is_none(),

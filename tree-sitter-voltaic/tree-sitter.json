@@ -6,7 +6,7 @@
 			"camelcase": "Voltaic",
 			"scope": "source.voltaic",
 			"path": ".",
-			"file-types": ["sdx"],
+			"file-types": ["vlt"],
 			"highlights": ["queries/highlights.scm"],
 			"injections": ["queries/injections.scm"],
 			"locals": ["queries/locals.scm"]

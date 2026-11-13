@@ -8,7 +8,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -18,7 +18,7 @@ fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)
@@ -39,7 +39,7 @@ fn body(src: &str) -> String {
 /// rustfmt would do with the width, not from the author having written a
 /// one-line conditional. So the retirement cost this lowering nothing.
 ///
-/// The `if` stays on the `=` line, which is `examples/control.sdx`'s
+/// The `if` stays on the `=` line, which is `examples/control.vlt`'s
 /// `labelled`. Pushing it to the next line is **also** legal and means the
 /// same thing — leaf 7 made a bare indented block an expression, so the value
 /// becomes a block holding one `if` and Rust gets a redundant `{ … }` that
@@ -160,7 +160,7 @@ fn a_labelled_block_emits_a_labelled_block() {
 /// and the label are independent and each pair is one line of emitter.
 #[test]
 fn break_and_continue_emit_their_rust() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("break", "break;"),
     ("break v", "break v;"),
     ("break 'l", "break 'l;"),
@@ -169,9 +169,9 @@ fn break_and_continue_emit_their_rust() {
     ("continue 'l", "continue 'l;"),
   ] {
     assert_eq!(
-      body(&format!("  loop\n    {sdx}\n")),
+      body(&format!("  loop\n    {vlt}\n")),
       format!("loop {{\n    {want}\n}}"),
-      "{sdx}"
+      "{vlt}"
     );
   }
 }
@@ -181,14 +181,14 @@ fn break_and_continue_emit_their_rust() {
 /// A label reaches every loop keyword, and goes before it.
 #[test]
 fn a_label_prefixes_any_loop() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("'a while c", "'a: while c {"),
     ("'a until c", "'a: while !(c) {"),
     ("'a for x in xs", "'a: for x in xs {"),
     ("'a loop", "'a: loop {"),
   ] {
-    let out = body(&format!("  {sdx}\n    break 'a\n"));
-    assert!(out.starts_with(want), "{sdx} gave {out}");
+    let out = body(&format!("  {vlt}\n    break 'a\n"));
+    assert!(out.starts_with(want), "{vlt} gave {out}");
   }
 }
 
@@ -221,14 +221,14 @@ fn return_works_inside_a_loop() {
 /// `plain_assignment_emits_rusts_bare_equals` below is its half of this pair.
 #[test]
 fn the_five_compound_operators_assign() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("n += 1", "n += 1;"),
     ("n -= 1", "n -= 1;"),
     ("n *= 2", "n *= 2;"),
     ("n /= 2", "n /= 2;"),
     ("n %= 2", "n %= 2;"),
   ] {
-    assert_eq!(body(&format!("  {sdx}\n")), want, "{sdx}");
+    assert_eq!(body(&format!("  {vlt}\n")), want, "{vlt}");
   }
 }
 
@@ -276,14 +276,14 @@ fn plain_assignment_emits_rusts_bare_equals() {
 /// and *"every check rustc can make, rustc makes"*.
 #[test]
 fn assignment_targets_every_place_form() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("n := 1", "n = 1;"),
     ("self.value := 1", "self.value = 1;"),
     ("v[0] := 1", "v[0] = 1;"),
     ("*r := 1", "*r = 1;"),
     ("(a, b) := (b, a)", "(a, b) = (b, a);"),
   ] {
-    assert_eq!(body(&format!("  {sdx}\n")), want, "{sdx}");
+    assert_eq!(body(&format!("  {vlt}\n")), want, "{vlt}");
   }
 }
 

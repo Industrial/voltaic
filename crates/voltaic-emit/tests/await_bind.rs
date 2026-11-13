@@ -11,7 +11,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -23,7 +23,7 @@ fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)

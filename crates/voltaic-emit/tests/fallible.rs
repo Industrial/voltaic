@@ -8,7 +8,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -17,7 +17,7 @@ fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)
@@ -38,7 +38,7 @@ fn body(src: &str) -> String {
 fn catch_emits_a_match_on_result() {
   assert_eq!(
     body("  n = parse s catch 0\n"),
-    "let n = match parse(s) {\n    Ok(__rdx_v) => __rdx_v,\n    Err(_) => 0,\n};"
+    "let n = match parse(s) {\n    Ok(__vlt_v) => __vlt_v,\n    Err(_) => 0,\n};"
   );
 }
 
@@ -48,7 +48,7 @@ fn catch_emits_a_match_on_result() {
 fn a_lambda_fallback_binds_the_error() {
   assert_eq!(
     body("  n = parse s catch (\\e -> e)\n"),
-    "let n = match parse(s) {\n    Ok(__rdx_v) => __rdx_v,\n    Err(e) => e,\n};"
+    "let n = match parse(s) {\n    Ok(__vlt_v) => __vlt_v,\n    Err(e) => e,\n};"
   );
 }
 
@@ -84,7 +84,7 @@ fn catch_sits_at_coalesces_precedence() {
 
 // --- §5.5 to §5.7: the `?.` chain, retired by plan 57 ---------------------
 
-/// `?.` is **retired** — `RDX0117`, plan 57 leaf 4.
+/// `?.` is **retired** — `VLT0117`, plan 57 leaf 4.
 ///
 /// The token is gone from the lexer, so refusing it is an *adjacency* check
 /// and not a branch. That is the only thing standing between the deletion and
@@ -174,7 +174,7 @@ fn a_one_statement_try_works() {
 #[test]
 fn question_dot_is_refused_and_a_spaced_one_is_not() {
   let refused = parse_source("main : ()\nmain =\n  n = user?.profile\n  ()\n")
-    .expect_err("the glued spelling is `RDX0117`");
+    .expect_err("the glued spelling is `VLT0117`");
   assert!(
     format!("{refused:?}").contains("OptionalChaining"),
     "{refused:?}"

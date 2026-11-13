@@ -1,5 +1,5 @@
-error[RDX0012]: unbalanced delimiter: this is never closed
-  --> unbalanced_delimiter.sdx:3:19
+error[VLT0012]: unbalanced delimiter: this is never closed
+  --> unbalanced_delimiter.vlt:3:19
   |
 3 |   println! \-> "#{(1 + 2}"
   |                   ^

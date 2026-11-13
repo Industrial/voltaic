@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Write a ported body into `crates/$CRATE/sdx/<rel>.sdx`, merging imports.
+"""Write a ported body into `crates/$CRATE/vlt/<rel>.vlt`, merging imports.
 
 Generic over the crate, where `p73write.py` and `p74write.py` were copies. The
 crate comes from the `CRATE` environment variable, which `.tmp/port.sh` sets.
@@ -31,7 +31,7 @@ import re
 
 CRATE = os.environ.get('CRATE')
 assert CRATE, 'set CRATE'
-ROOT = '/home/tom/Code/rust/voltaic/crates/%s/sdx/' % CRATE
+ROOT = '/home/tom/Code/rust/voltaic/crates/%s/vlt/' % CRATE
 
 # The first line that begins a construct rather than describing one.
 CONSTRUCT = re.compile(
@@ -45,7 +45,7 @@ IMPORT = re.compile(r'^(export )?import ')
 
 
 def write(rel, text):
-    p = ROOT + rel + '.sdx'
+    p = ROOT + rel + '.vlt'
     lines = io.open(p, encoding='utf-8').read().splitlines()
     todo = next(
         (i for i, l in enumerate(lines) if l.startswith('-- TODO plan 68')), None
@@ -97,7 +97,7 @@ def write(rel, text):
     # **A leading `-- !` block stays first.** Rust requires `//!` to precede
     # every item in a file, so hoisting the imports above it emits
     # `E0753: expected outer doc comment`. Plan 76 found it on
-    # `voltaic-bench/main.sdx` — the first ported file whose head carries module
+    # `voltaic-bench/main.vlt` — the first ported file whose head carries module
     # docs *and* imports, which is why three crates went by without it.
     module_doc = []
     at = 0

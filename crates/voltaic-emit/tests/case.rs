@@ -8,14 +8,14 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
 /// Doc 18 §2.3's own example, and the lowering it specifies.
 #[test]
 fn the_doc_example_lowers_to_a_match() {
-  let out = xrs(
+  let out = vrs(
     "label : u32 -> &'static str\n\
      label age = case age of\n  \
        n | n > 65 -> \"senior\"\n  \
@@ -35,7 +35,7 @@ fn the_doc_example_lowers_to_a_match() {
 /// would fail if alternation ever took Rust's bar.
 #[test]
 fn the_bar_after_a_pattern_is_the_guard() {
-  let out = xrs("f : u32 -> u32\nf n = case n of\n  m | m > 0 -> m\n  _ -> 0\n");
+  let out = vrs("f : u32 -> u32\nf n = case n of\n  m | m > 0 -> m\n  _ -> 0\n");
   assert!(out.contains("m if m > 0 => m,"), "{out}");
   assert!(!out.contains("m | m"), "not alternation:\n{out}");
 }
@@ -43,7 +43,7 @@ fn the_bar_after_a_pattern_is_the_guard() {
 /// An exclusive range keeps its own spelling.
 #[test]
 fn an_exclusive_range_is_not_made_inclusive() {
-  let out = xrs("f : u32 -> u32\nf n = case n of\n  0..10 -> 1\n  _ -> 0\n");
+  let out = vrs("f : u32 -> u32\nf n = case n of\n  0..10 -> 1\n  _ -> 0\n");
   assert!(out.contains("0..10 => 1,"), "{out}");
 }
 
@@ -51,7 +51,7 @@ fn an_exclusive_range_is_not_made_inclusive() {
 /// clause body — no statement form, and no second lowering.
 #[test]
 fn a_case_is_an_expression() {
-  let out = xrs(
+  let out = vrs(
     "main : ()\nmain =\n  r = case 1 of\n    1 -> \"one\"\n    _ -> \"other\"\n  println! \\-> \"#{r}\"\n  ()\n",
   );
   assert!(out.contains("let r = match 1 {"), "{out}");
@@ -69,11 +69,11 @@ fn a_case_is_an_expression() {
 /// `-> do` stood beside this spelling for one milestone and emitted the same
 /// Rust character for character, which is what made leaf 7's removal a
 /// removal of a *spelling* rather than of a form (plan 55 §10.4, §10.10). It
-/// is now `RDX0114`, and a refusal is a parse property rather than an emit
-/// one — `crates/voltaic-cli/tests/ui/reserved_do.sdx` carries it.
+/// is now `VLT0114`, and a refusal is a parse property rather than an emit
+/// one — `crates/voltaic-cli/tests/ui/reserved_do.vlt` carries it.
 #[test]
 fn an_indented_block_is_an_arm_body() {
-  let out = xrs("f : u32 -> u32\nf n = case n of\n  0 ->\n    a = 1\n    a\n  _ -> n\n");
+  let out = vrs("f : u32 -> u32\nf n = case n of\n  0 ->\n    a = 1\n    a\n  _ -> n\n");
   assert!(out.contains("0 => {"), "{out}");
   assert!(out.contains("let a = 1;"), "{out}");
   assert!(out.contains("        }\n        _ => n,"), "{out}");
@@ -84,27 +84,27 @@ fn an_indented_block_is_an_arm_body() {
 /// `emit_arm` makes for a clause, and for the same reason.
 #[test]
 fn a_block_of_one_expression_collapses() {
-  let out = xrs("f : u32 -> u32\nf n = case n of\n  0 ->\n    1\n  _ -> n\n");
+  let out = vrs("f : u32 -> u32\nf n = case n of\n  0 ->\n    1\n  _ -> n\n");
   assert!(out.contains("0 => 1,"), "{out}");
   assert!(!out.contains("0 => {"), "{out}");
 }
 
 /// A comment on that one line keeps the braces: a collapsed arm has no line
-/// to put one on, and a comment must reach the `.xrs` (doc 02 §10.1).
+/// to put one on, and a comment must reach the `.vrs` (doc 02 §10.1).
 #[test]
 fn a_comment_keeps_a_one_expression_arm_braced() {
-  let out = xrs("f : u32 -> u32\nf n = case n of\n  0 ->\n    -- why\n    1\n  _ -> n\n");
+  let out = vrs("f : u32 -> u32\nf n = case n of\n  0 ->\n    -- why\n    1\n  _ -> n\n");
   assert!(out.contains("0 => {"), "{out}");
   assert!(out.contains("// why"), "{out}");
 }
 
 /// Criterion 3's second half: a compound assignment is a legal arm body, and
-/// so is plan 54's `:=`. `RDX0101` before this leaf — `parse_expr` stops at
+/// so is plan 54's `:=`. `VLT0101` before this leaf — `parse_expr` stops at
 /// the `+=`, and only `Parser::stmt` read what followed, which is why
 /// `assign_tail` is now shared between the two positions.
 #[test]
 fn an_assignment_is_an_arm_body() {
-  let out = xrs(
+  let out = vrs(
     "main : ()\n\
      main =\n  \
        mut n = 0\n  \
@@ -123,6 +123,6 @@ fn an_assignment_is_an_arm_body() {
 /// second thing the keyword commit bought.
 #[test]
 fn the_scrutinee_may_be_a_whole_expression() {
-  let out = xrs("f : u32 -> u32\nf n = case n + 1 of\n  1 -> 1\n  _ -> 0\n");
+  let out = vrs("f : u32 -> u32\nf n = case n + 1 of\n  1 -> 1\n  _ -> 0\n");
   assert!(out.contains("match n + 1 {"), "{out}");
 }

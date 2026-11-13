@@ -1,5 +1,5 @@
-error[RDX0119]: these `where` bindings depend on each other in a cycle: a, b
-  --> where_cycle.sdx:17:5
+error[VLT0119]: these `where` bindings depend on each other in a cycle: a, b
+  --> where_cycle.vlt:17:5
    |
 17 |     a = b + n
    |     ^^^^^^^^^

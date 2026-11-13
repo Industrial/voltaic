@@ -26,7 +26,7 @@ languages/voltaic/injections.scm
 languages/voltaic/locals.scm
 ```
 
-`.sdx` is claimed; `.xrs` is not. It is ordinary Rust — the compiler's whole
+`.vlt` is claimed; `.vrs` is not. It is ordinary Rust — the compiler's whole
 premise — so Zed's own Rust support handles it, and claiming it here would take
 highlighting *away* from the file.
 

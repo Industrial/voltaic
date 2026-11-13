@@ -37,7 +37,7 @@ module.exports = grammar({
 
 	word: ($) => $.identifier,
 
-	// `do` is **reserved and names no construct** — plan 55 leaf 7, `RDX0114`.
+	// `do` is **reserved and names no construct** — plan 55 leaf 7, `VLT0114`.
 	// §1.7 retired the construct and §9 decision 4 kept the word, for plan 60's
 	// sake, and this is how the second parser says the same thing: a reserved
 	// word may not be matched where `word` — `identifier` — is expected, and `do`
@@ -58,7 +58,7 @@ module.exports = grammar({
 	// ERROR node, while `do = 2` produces one — `test/corpus/block_expressions.txt`
 	// asserts the second. That is tree-sitter's lossy recovery, the same class
 	// plan 65 recorded when `tree-sitter parse` could not see a missing hidden
-	// rule. `RDX0114` is the authority on the refusal; this makes the word a
+	// rule. `VLT0114` is the authority on the refusal; this makes the word a
 	// keyword rather than an identifier, which is what an editor needs.
 	//
 	// Named through [`reserved_word`](#reserved_word) rather than as a bare
@@ -537,7 +537,7 @@ module.exports = grammar({
 		// `tree_sitter.rs`'s examples sweep cannot report it. `a : u32 -> ()`,
 		// `a : &Self -> ()` and `a : &self -> ()` all do it; the same lines at
 		// item level parse as a signature, which is why
-		// `classify : i32 -> ()` in `examples/control.sdx` never showed it, and
+		// `classify : i32 -> ()` in `examples/control.vlt` never showed it, and
 		// why doc 18 §2.5's own `increment : &mut Self -> ()` would have shown it
 		// long before plan 67's `bump : &mut self -> ()` did.
 		//
@@ -633,7 +633,7 @@ module.exports = grammar({
 					// the `=` and the `?` respectively.
 					//
 					// Worth recording how nearly that was missed. The first check was
-					// `tree-sitter parse examples/binder.sdx` run from inside
+					// `tree-sitter parse examples/binder.vlt` run from inside
 					// `tree-sitter-voltaic/`, where that path does not exist — the
 					// command failed, a grep for `ERROR` found none, and it read as a
 					// clean parse. `AGENTS.md` says to run the input; it does not say
@@ -686,7 +686,7 @@ module.exports = grammar({
 						optional($.where_clause),
 					),
 					// The receiver on the `=` line and the pipeline's stages indented
-					// beneath it — `examples/application.sdx`'s multi-line `|>` chain,
+					// beneath it — `examples/application.vlt`'s multi-line `|>` chain,
 					// and the one layout it says parses.
 					//
 					// A **pre-existing** gap, found by this row's sweep and not caused
@@ -756,7 +756,7 @@ module.exports = grammar({
 				// Plan 55 leaf 5: a declaration is a block element. The set is the
 				// Rust parser's `starts_a_declaration` rather than `_item` —
 				// `test_declaration` and `module` are absent on purpose, because
-				// `RDX0112` refuses a local `test` (rustc does not collect a nested
+				// `VLT0112` refuses a local `test` (rustc does not collect a nested
 				// `#[test]`) and a bodiless `module` loads a file. Accepting here
 				// what the compiler refuses is exactly the drift this grammar is
 				// cross-checked to prevent.
@@ -813,7 +813,7 @@ module.exports = grammar({
 						seq($._expression, $._newline),
 						$._block_expression,
 						// The one position a bare block stands in — plan 55 leaf 7, and
-						// `examples/control.sdx`'s `shadowed` and `first_square_over`.
+						// `examples/control.vlt`'s `shadowed` and `first_square_over`.
 						// See `_block_expression`'s note for why it is named here and
 						// not there.
 						$.block_expression,
@@ -845,7 +845,7 @@ module.exports = grammar({
 				// `( operand operator )`, so a **one**-segment selector `(.age)` lands
 				// there, and a composed one `(.addr.zip.code)` is a flat `.`-led run
 				// and lands in `parenthesized`. Both are accepted here; which of them
-				// is a path is the compiler's question, and `RDX0127` is its answer.
+				// is a path is the compiler's question, and `VLT0127` is its answer.
 				//
 				// Demanding `section` alone was tried first and put an `ERROR` node
 				// inside every composed selector — found by `tree-sitter parse` on the
@@ -864,7 +864,7 @@ module.exports = grammar({
 				// is a `wildcard` *pattern*, so `_ := pick 1 2` parsed as a binding
 				// of a wildcard and then reported the `:=` as an `ERROR`.
 				//
-				// Pre-existing, and `examples/hole.sdx` is the first corpus file to
+				// Pre-existing, and `examples/hole.vlt` is the first corpus file to
 				// write the construct — which is how plan 85 found it. The
 				// `docs/GRAMMAR.md` assignment row lists *"a name, a field, an index,
 				// a deref target and Rust's destructuring assignment"* and did not
@@ -997,7 +997,7 @@ module.exports = grammar({
 				$.wildcard,
 				$.identifier,
 				// `Poll::Ready v` — a constructor reached through a module is a path,
-				// and `examples/async.sdx` writes one in a condition.
+				// and `examples/async.vlt` writes one in a condition.
 				$.path,
 				$.type_identifier,
 				$.number,
@@ -1164,7 +1164,7 @@ module.exports = grammar({
 
 		// Plan 55 leaf 7: an indented block **is** an expression, and `'name`
 		// labels one. `do` and `do 'label` spelled this until the leaf retired
-		// the keyword and reserved the word (`RDX0114`), so what left this rule
+		// the keyword and reserved the word (`VLT0114`), so what left this rule
 		// is one literal.
 		//
 		// Reached from `binding` only, for the reason `_block_expression`
@@ -1188,7 +1188,7 @@ module.exports = grammar({
 		// what lets the word be a construct again without taking the reservation
 		// away from every other position — which is exactly the split the
 		// compiler makes, where `bind_block` reads `do .name` and raises
-		// `RDX0114` for every other `do`.
+		// `VLT0114` for every other `do`.
 		bind_block: ($) =>
 			seq(
 				$.reserved_word,
@@ -1281,7 +1281,7 @@ module.exports = grammar({
 					// reachable in the surface and was an `ERROR` node here,
 					// invisibly, because it appeared in no corpus file. Plan 59
 					// §11.10 gave it a job — a factory is a nullary lambda over
-					// the binding's name — and `examples/bindings.sdx` is the
+					// the binding's name — and `examples/bindings.vlt` is the
 					// first file to write one.
 					field(
 						"parameters",
@@ -1362,7 +1362,7 @@ module.exports = grammar({
 				1,
 				seq(
 					// A plain variable too: `r = p { x = 99 }` is the functional-update
-					// form over a binding, which `examples/record.sdx` writes.
+					// form over a binding, which `examples/record.vlt` writes.
 					field("path", choice($.type_identifier, $.path, $.identifier)),
 					"{",
 					optional(sep1($.record_literal_field, ",")),
@@ -1454,7 +1454,7 @@ module.exports = grammar({
 					"$",
 					"?",
 					// `?.` left with optional chaining — plan 57 leaf 4. `?` and `.`
-					// are two tokens now, and the glued spelling is `RDX0117`.
+					// are two tokens now, and the glued spelling is `VLT0117`.
 					"@",
 					"@@",
 					".",
@@ -1517,7 +1517,7 @@ module.exports = grammar({
 		// The fence is **external**, because it nests: `{- a {- b -} c -}` is one
 		// comment and a regex cannot count. Getting it wrong miscolours everything
 		// after a nested comment, which is the most visible kind of highlighting
-		// bug there is — and `examples/lexical.sdx` has one.
+		// bug there is — and `examples/lexical.vlt` has one.
 		comment: ($) => choice($._line_comment, $._fenced_comment),
 
 		_line_comment: (_) => token(seq("--", /[^\n]*/)),

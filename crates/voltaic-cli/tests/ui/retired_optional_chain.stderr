@@ -1,5 +1,5 @@
-error[RDX0117]: `?.` is retired
-  --> retired_optional_chain.sdx:25:13
+error[VLT0117]: `?.` is retired
+  --> retired_optional_chain.vlt:25:13
    |
 25 |   glued = &u?.tag
    |             ^^

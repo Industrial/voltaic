@@ -12,7 +12,7 @@
 name = "voltaic"
 scope = "source.voltaic"
 injection-regex = "voltaic"
-file-types = ["sdx"]
+file-types = ["vlt"]
 comment-tokens = ["--"]
 block-comment-tokens = []
 indent = { tab-width = 2, unit = "  " }
@@ -20,7 +20,7 @@ language-servers = ["voltaic-lsp"]
 auto-format = false
 roots = ["Cargo.toml"]
 
-# `.xrs` is deliberately absent. It is ordinary Rust — the compiler's whole
+# `.vrs` is deliberately absent. It is ordinary Rust — the compiler's whole
 # premise — so Helix's own `rust` language handles it, and claiming it here
 # would take highlighting away from the file rather than add it.
 

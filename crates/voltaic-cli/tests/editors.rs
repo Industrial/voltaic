@@ -168,11 +168,11 @@ fn neovim_runs_the_committed_config() {
   );
   assert!(
     out.contains("filetype: voltaic"),
-    "and `.sdx` should be filetype `voltaic`:\n{out}"
+    "and `.vlt` should be filetype `voltaic`:\n{out}"
   );
   assert!(
-    out.contains("xrs filetype: rust"),
-    "and `.xrs` should be filetype `rust` — it is ordinary Rust:\n{out}"
+    out.contains("vrs filetype: rust"),
+    "and `.vrs` should be filetype `rust` — it is ordinary Rust:\n{out}"
   );
   for name in ["highlights", "injections", "locals"] {
     assert!(
@@ -210,8 +210,8 @@ if not ok then print('setup: FAILED ' .. tostring(mod)) return end
 mod.setup({ grammar_dir = '@@GRAMMAR@@', parser = '@@PARSER@@', lsp = false })
 print('setup: ok')
 
-print('filetype: ' .. tostring(vim.filetype.match({ filename = 'a.sdx' })))
-print('xrs filetype: ' .. tostring(vim.filetype.match({ filename = 'a.xrs' })))
+print('filetype: ' .. tostring(vim.filetype.match({ filename = 'a.vlt' })))
+print('vrs filetype: ' .. tostring(vim.filetype.match({ filename = 'a.vrs' })))
 
 for _, name in ipairs({ 'highlights', 'injections', 'locals' }) do
   local good, q = pcall(vim.treesitter.query.get, 'voltaic', name)
@@ -261,20 +261,20 @@ fn vim_syntax_colours_a_keyword_under_nvim() {
   let out = nvim_lua(&dir, &script);
 
   assert!(
-    out.contains("current_syntax: sdx"),
-    "sourcing editors/vim/syntax/sdx.vim should set b:current_syntax:\n{out}"
+    out.contains("current_syntax: vlt"),
+    "sourcing editors/vim/syntax/vlt.vim should set b:current_syntax:\n{out}"
   );
   assert!(
-    out.contains("group: sdxKeyword"),
-    "`data` at the start of a line should be sdxKeyword:\n{out}"
+    out.contains("group: vltKeyword"),
+    "`data` at the start of a line should be vltKeyword:\n{out}"
   );
   assert!(
-    out.contains("comment group: sdxComment"),
-    "and a `--` comment should be sdxComment, or keywords inside comments \
+    out.contains("comment group: vltComment"),
+    "and a `--` comment should be vltComment, or keywords inside comments \
      would be coloured:\n{out}"
   );
   assert!(
-    out.contains("in-comment group: sdxComment"),
+    out.contains("in-comment group: vltComment"),
     "including a keyword inside one — which is the whole reason the comment \
      rules come first in the file:\n{out}"
   );
@@ -289,8 +289,8 @@ vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
   'data C = C { a : i32 }',
   '-- a comment mentioning data',
 })
-vim.bo.filetype = 'sdx'
-vim.cmd('runtime! syntax/sdx.vim')
+vim.bo.filetype = 'vlt'
+vim.cmd('runtime! syntax/vlt.vim')
 print('current_syntax: ' .. tostring(vim.b.current_syntax))
 local function group(line, col)
   return vim.fn.synIDattr(vim.fn.synID(line, col, 1), 'name')
@@ -439,7 +439,7 @@ fn zed_config_parses_and_its_queries_match_the_grammar() {
   assert_eq!(
     config["path_suffixes"].as_array().map(Vec::len),
     Some(1),
-    "`sdx` only — `.xrs` is ordinary Rust and gets Zed's own Rust support"
+    "`vlt` only — `.vrs` is ordinary Rust and gets Zed's own Rust support"
   );
 
   for name in ["highlights", "injections", "locals"] {
@@ -499,11 +499,11 @@ fn every_grammar_keyword_is_coloured() {
     .expect("should read highlights.scm");
   let keyword_block = between(&highlights, "[", "] @keyword")
     .expect("highlights.scm should have a bracketed @keyword alternation");
-  let vim = std::fs::read_to_string(editors_dir().join("vim/syntax/sdx.vim"))
+  let vim = std::fs::read_to_string(editors_dir().join("vim/syntax/vlt.vim"))
     .expect("should read the Vim syntax file");
   let vim_keywords: String = vim
     .lines()
-    .filter(|l| l.trim_start().starts_with("syn keyword sdxKeyword"))
+    .filter(|l| l.trim_start().starts_with("syn keyword vltKeyword"))
     .collect::<Vec<_>>()
     .join(" ");
   let textmate =
@@ -516,7 +516,7 @@ fn every_grammar_keyword_is_coloured() {
       missing.push(format!("  {keyword}: tree-sitter queries/highlights.scm"));
     }
     if !vim_keywords.split_whitespace().any(|w| w == keyword) {
-      missing.push(format!("  {keyword}: editors/vim/syntax/sdx.vim"));
+      missing.push(format!("  {keyword}: editors/vim/syntax/vlt.vim"));
     }
     if !textmate.contains(&format!("|{keyword}|"))
       && !textmate.contains(&format!("({keyword}|"))
@@ -542,7 +542,7 @@ fn every_grammar_keyword_is_coloured() {
 ///
 /// A retirement leaves a dead word behind. Plan 49's cross-check **found four**
 /// when it was written; plan 55 leaf 7 retired `then` and found four more — in
-/// `highlights.scm`, the Zed copy of it, `sdx.vim` and `voltaic.tmLanguage.json`
+/// `highlights.scm`, the Zed copy of it, `vlt.vim` and `voltaic.tmLanguage.json`
 /// — and found them **by grep**, because nothing asserted this direction. A
 /// highlighter that colours a word the compiler rejects tells an author the
 /// word is live, which is the opposite of what a highlighter is for.
@@ -585,12 +585,12 @@ fn every_coloured_keyword_is_still_in_the_grammar() {
   ///
   /// `Self` is a type rather than a keyword, coloured by its own
   /// `variable.language.self` rule; it reaches a list this test reads only in
-  /// Vim, under the separate `sdxSelf` group.
+  /// Vim, under the separate `vltSelf` group.
   ///
   /// `from` is the interesting one: it is Voltaic's **only contextual keyword**.
   /// `error_variant.rs` reads it as `TokenKind::Ident(text) if text == "from"`,
   /// so the lexer hands it over as an identifier and position is what makes it
-  /// syntax — `examples/errors.sdx` has `from std::num::ParseIntError as
+  /// syntax — `examples/errors.vlt` has `from std::num::ParseIntError as
   /// Parse`. It is in no `Keyword` table and in no `grammar.js` literal, which
   /// is why neither direction of this cross-check finds it on its own.
   ///
@@ -601,7 +601,7 @@ fn every_coloured_keyword_is_still_in_the_grammar() {
   /// uncoloured — is worse.
   /// `pattern` is the **second** contextual keyword, and it arrived the hard
   /// way: plan 87 reserved it, found that `voltaic-ast` stopped transpiling with
-  /// `RDX0103` because `pattern` is a field name in four of its own
+  /// `VLT0103` because `pattern` is a field name in four of its own
   /// declarations, and reverted to a contextual reading. `grammar.js` carries it
   /// as a literal, so the forward direction demands it of every highlighter;
   /// `Keyword::from_text` rejects it, so this direction needs it here.
@@ -654,17 +654,17 @@ fn every_coloured_keyword_is_still_in_the_grammar() {
 
   let mut dead = Vec::new();
 
-  // Vim: the words on `syn keyword sdxKeyword` lines. The other groups —
-  // `sdxBoolean`, `sdxSelf` — colour constructs that are not keywords.
-  let vim = std::fs::read_to_string(editors_dir().join("vim/syntax/sdx.vim"))
+  // Vim: the words on `syn keyword vltKeyword` lines. The other groups —
+  // `vltBoolean`, `vltSelf` — colour constructs that are not keywords.
+  let vim = std::fs::read_to_string(editors_dir().join("vim/syntax/vlt.vim"))
     .expect("should read the Vim syntax file");
   for line in vim
     .lines()
-    .filter(|l| l.trim_start().starts_with("syn keyword sdxKeyword"))
+    .filter(|l| l.trim_start().starts_with("syn keyword vltKeyword"))
   {
     for word in line.split_whitespace().skip(3) {
       if !known(word) {
-        dead.push(format!("  {word}: editors/vim/syntax/sdx.vim"));
+        dead.push(format!("  {word}: editors/vim/syntax/vlt.vim"));
       }
     }
   }
@@ -712,7 +712,7 @@ fn every_coloured_keyword_is_still_in_the_grammar() {
 ///
 /// [`every_coloured_keyword_is_still_in_the_grammar`] closes the reverse
 /// direction for keywords. It does not cover operators, and plan 66 found what
-/// that costs: `editors/vim/syntax/sdx.vim` and
+/// that costs: `editors/vim/syntax/vlt.vim` and
 /// `editors/vscode/syntaxes/voltaic.tmLanguage.json` were both still colouring
 /// **`?.`**, which plan 57 deleted, and **`<|`**, which has never been a Voltaic
 /// token at all. Two dead spellings in the same regex that row was editing,
@@ -730,7 +730,7 @@ fn every_coloured_keyword_is_still_in_the_grammar() {
 /// `Or`. Neither needs a list to be recognised as gone.
 #[test]
 fn every_coloured_operator_lexes_as_one_token() {
-  let vim = std::fs::read_to_string(editors_dir().join("vim/syntax/sdx.vim"))
+  let vim = std::fs::read_to_string(editors_dir().join("vim/syntax/vlt.vim"))
     .expect("should read the Vim syntax file");
   let textmate =
     std::fs::read_to_string(editors_dir().join("vscode/syntaxes/voltaic.tmLanguage.json"))
@@ -738,16 +738,16 @@ fn every_coloured_operator_lexes_as_one_token() {
 
   let mut sources: Vec<(&str, Vec<String>)> = Vec::new();
 
-  // Vim: the `sdxOperator` match, whose alternatives are separated by `\|`.
+  // Vim: the `vltOperator` match, whose alternatives are separated by `\|`.
   let line = vim
     .lines()
-    .find(|l| l.trim_start().starts_with("syn match   sdxOperator"))
-    .expect("the Vim syntax file should carry an `sdxOperator` match");
+    .find(|l| l.trim_start().starts_with("syn match   vltOperator"))
+    .expect("the Vim syntax file should carry an `vltOperator` match");
   // Not `between`: it locates the *close* marker first, so it cannot handle a
   // pair of identical delimiters.
   let body = line.split('"').nth(1).expect("the match should be quoted");
   sources.push((
-    "editors/vim/syntax/sdx.vim",
+    "editors/vim/syntax/vlt.vim",
     body.split("\\|").map(|a| a.replace('\\', "")).collect(),
   ));
 
@@ -1003,9 +1003,9 @@ fn every_path_a_config_names_exists() {
 
   for relative in [
     "neovim/lua/voltaic/init.lua",
-    "vim/syntax/sdx.vim",
-    "vim/ftplugin/sdx.vim",
-    "vim/ftdetect/sdx.vim",
+    "vim/syntax/vlt.vim",
+    "vim/ftplugin/vlt.vim",
+    "vim/ftdetect/vlt.vim",
     "helix/languages.toml",
     "zed/extension.toml",
     "zed/languages/voltaic/config.toml",
@@ -1077,9 +1077,9 @@ fn every_path_a_config_names_is_tracked() {
         "neovim/README.md",
         "neovim/lua/voltaic/init.lua",
         "vim/README.md",
-        "vim/syntax/sdx.vim",
-        "vim/ftplugin/sdx.vim",
-        "vim/ftdetect/sdx.vim",
+        "vim/syntax/vlt.vim",
+        "vim/ftplugin/vlt.vim",
+        "vim/ftdetect/vlt.vim",
         "helix/README.md",
         "helix/languages.toml",
         "zed/README.md",
@@ -1197,12 +1197,12 @@ fn every_assignable_operator_is_in_the_grammar() {
   );
 }
 
-/// Every `.sdx` in a directory, sorted.
+/// Every `.vlt` in a directory, sorted.
 fn sources(dir: &Path) -> Vec<PathBuf> {
   let mut found: Vec<PathBuf> = std::fs::read_dir(dir)
     .unwrap_or_else(|e| panic!("should read {}: {e}", dir.display()))
     .map(|entry| entry.expect("should read an entry").path())
-    .filter(|path| path.extension().is_some_and(|x| x == "sdx"))
+    .filter(|path| path.extension().is_some_and(|x| x == "vlt"))
     .collect();
   found.sort();
   found

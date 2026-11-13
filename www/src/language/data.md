@@ -1,7 +1,7 @@
 # Data declarations
 
 ```voltaic
-{{#include ../../../examples/data.sdx}}
+{{#include ../../../examples/data.vlt}}
 ```
 
 ## One keyword for both
@@ -16,7 +16,7 @@ cannot share a module.** `TokenKind::Or` and `Keyword::Or` in one file is
 ## Records
 
 ```voltaic
-{{#include ../../../examples/record.sdx}}
+{{#include ../../../examples/record.vlt}}
 ```
 
 Field punning in initialisation as well as in patterns: a field whose value is
@@ -29,13 +29,13 @@ construct that replaces a chain of intermediate bindings. It is also the only
 place the grammar reaches a method reference.
 
 ```voltaic
-{{#include ../../../examples/optic.sdx}}
+{{#include ../../../examples/optic.vlt}}
 ```
 
 ## `derive`
 
 ```voltaic
-{{#include ../../../examples/synonym.sdx}}
+{{#include ../../../examples/synonym.vlt}}
 ```
 
 Rust's derives, by name. Voltaic adds no derive macros of its own.
@@ -43,7 +43,7 @@ Rust's derives, by name. Voltaic adds no derive macros of its own.
 ## Visibility
 
 ```voltaic
-{{#include ../../../examples/visibility.sdx}}
+{{#include ../../../examples/visibility.vlt}}
 ```
 
 `export` is `pub`; `export(crate)` is `pub(crate)`. Default is private, and
@@ -54,7 +54,7 @@ from the code that used it.
 ## Constants, aliases, unit and tuple structs
 
 ```voltaic
-{{#include ../../../examples/constants.sdx}}
+{{#include ../../../examples/constants.vlt}}
 ```
 
 ---

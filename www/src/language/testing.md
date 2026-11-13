@@ -1,18 +1,18 @@
 # Testing
 
 ```voltaic
-{{#include ../../../examples/testing.sdx}}
+{{#include ../../../examples/testing.vlt}}
 ```
 
 ## `test` is a declaration
 
 `test "name"` declares a test, and emits a `#[test] fn` into a generated
-`mod __rdx_tests` in the same file. The name is a string, so it can be a
+`mod __vlt_tests` in the same file. The name is a string, so it can be a
 sentence rather than a mangled identifier.
 
 ## What goes in the generated module
 
-Only tests. Voltaic cannot place anything else inside `mod __rdx_tests`, so a
+Only tests. Voltaic cannot place anything else inside `mod __vlt_tests`, so a
 helper that several tests share has to sit at module scope under
 `#[cfg(test)]`. That is a known rough edge rather than a design: it was
 recorded as owed a surface decision of its own.

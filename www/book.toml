@@ -33,7 +33,7 @@ no-section-label = false
 additional-css = ["theme/tokens.css", "theme/syntax.css", "theme/voltaic.css"]
 additional-js = ["theme/palette.js"]
 
-# `.sdx` has no highlight.js grammar, so the fenced blocks are tagged
+# `.vlt` has no highlight.js grammar, so the fenced blocks are tagged
 # `voltaic` and coloured by `theme/voltaic.css` against the token palette
 # rather than by highlight.js guessing.
 [output.html.playground]

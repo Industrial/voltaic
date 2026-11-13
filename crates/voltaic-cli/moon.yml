@@ -39,11 +39,11 @@ tasks:
       - '@group(dependency_sources)'
       - '/crates/**/*.rs'
       # The self-hosted crates' Voltaic source. `/crates/**/*.rs` does not match
-      # a `.sdx`, so without this line `tests/port.rs` — which grades the
-      # `.sdx` against the committed `.rs` — stays cached green when a `.sdx`
+      # a `.vlt`, so without this line `tests/port.rs` — which grades the
+      # `.vlt` against the committed `.rs` — stays cached green when a `.vlt`
       # is edited and not regenerated, which is the exact failure it exists to
       # catch. Measured: the same task hash before and after the edit.
-      - '/crates/*/sdx/**/*'
+      - '/crates/*/vlt/**/*'
       - '/examples/**/*'
       - '/tests/**/*'
       - '/docs/**/*.md'

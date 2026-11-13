@@ -1,5 +1,5 @@
-error[RDX0111]: a `newtype` has exactly one constructor, and this declaration has 2 — write `data` for a choice between constructors
-  --> newtype_two_constructors.sdx:8:25
+error[VLT0111]: a `newtype` has exactly one constructor, and this declaration has 2 — write `data` for a choice between constructors
+  --> newtype_two_constructors.vlt:8:25
   |
 8 | newtype Shade = Light | Dark
   |                         ^^^^

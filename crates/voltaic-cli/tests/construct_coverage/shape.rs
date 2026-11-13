@@ -207,14 +207,14 @@ pub(crate) fn has_shadowing(file: &Source) -> bool {
 /// Whether any declaration keyword begins a line inside a **function body**.
 ///
 /// Plan 55 leaf 5's witness, and it took three tries, each hollow in a
-/// different way and each proved so by moving `examples/local.sdx` aside and
+/// different way and each proved so by moving `examples/local.vlt` aside and
 /// watching this gate stay green:
 ///
 /// 1. `Toks(["import", "«id»"])` — matched a **module-scope** `import`.
 /// 2. "a declaration keyword at depth above zero" — matched an inline
 ///    `module`'s items, which the inventory grades as *Modules, inline and
 ///    nested*.
-/// 3. the same, excluding `module` bodies — matched `examples/class.sdx`'s
+/// 3. the same, excluding `module` bodies — matched `examples/class.vlt`'s
 ///    `const SIDES : u32`, an **associated constant**, graded as *Associated
 ///    types and constants*.
 ///
@@ -231,7 +231,7 @@ pub(crate) fn has_shadowing(file: &Source) -> bool {
 /// text at its parent's token depth.
 ///
 /// `test` and `module` are absent from the keyword list, matching the parser.
-/// `RDX0112` refuses a local `test`, because rustc does not collect a nested
+/// `VLT0112` refuses a local `test`, because rustc does not collect a nested
 /// `#[test]`; a bodiless `module` loads a file, which a block cannot do.
 pub(crate) fn has_a_local_declaration(file: &Source) -> bool {
   const KEYWORDS: &[&str] = &[
@@ -285,7 +285,7 @@ fn any_line_head(file: &Source, mut test: impl FnMut(usize, bool) -> bool) -> bo
 ///
 /// `Toks(["do"])` witnessed *Blocks as expressions* until the leaf retired the
 /// keyword, and it had to go for a second reason worth recording: this gate
-/// reads `tests/ui/` too, so `tests/ui/reserved_do.sdx` — the fixture that
+/// reads `tests/ui/` too, so `tests/ui/reserved_do.vlt` — the fixture that
 /// asserts `do` is **refused** — kept the old witness green. A token run
 /// cannot tell a construct from its own refusal fixture.
 ///

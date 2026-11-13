@@ -92,7 +92,7 @@ const SOURCE: &str = "-- A cached program.\nmain : ()\nmain =\n  println! \\-> \
 #[test]
 fn an_unchanged_file_hits_and_produces_identical_output() {
   let project = Project::new("hit");
-  project.write("a.sdx", SOURCE);
+  project.write("a.vlt", SOURCE);
 
   let (first, hits) = project.compile();
   assert_eq!(hits, vec![false], "the first compile cannot be a hit");
@@ -106,10 +106,10 @@ fn an_unchanged_file_hits_and_produces_identical_output() {
 #[test]
 fn a_changed_source_misses() {
   let project = Project::new("changed");
-  project.write("a.sdx", SOURCE);
+  project.write("a.vlt", SOURCE);
   let (first, _) = project.compile();
 
-  project.write("a.sdx", &SOURCE.replace("#{1}", "#{2}"));
+  project.write("a.vlt", &SOURCE.replace("#{1}", "#{2}"));
   let (second, hits) = project.compile();
 
   assert_eq!(hits, vec![false], "changed content must miss");
@@ -124,7 +124,7 @@ fn a_changed_source_misses() {
 #[test]
 fn wiping_the_cache_changes_nothing_but_speed() {
   let project = Project::new("wipe");
-  project.write("a.sdx", SOURCE);
+  project.write("a.vlt", SOURCE);
 
   let (cached, _) = project.compile();
   assert_eq!(project.compile().1, vec![true], "warm");
@@ -144,7 +144,7 @@ fn wiping_the_cache_changes_nothing_but_speed() {
 #[test]
 fn a_corrupt_cache_entry_is_a_miss() {
   let project = Project::new("corrupt");
-  project.write("a.sdx", SOURCE);
+  project.write("a.vlt", SOURCE);
   let (good, _) = project.compile();
 
   // Truncate and garble every entry.
@@ -186,8 +186,8 @@ fn a_different_compiler_invalidates_the_cache() {
 #[test]
 fn the_cache_reports_through_the_caller_not_stdout() {
   let project = Project::new("reporter");
-  project.write("a.sdx", SOURCE);
-  project.write("b.sdx", SOURCE.replace("#{1}", "#{2}").as_str());
+  project.write("a.vlt", SOURCE);
+  project.write("b.vlt", SOURCE.replace("#{1}", "#{2}").as_str());
 
   let reporter = Collect::new();
   voltaic_driver::compile_dir_with(&project.src, &project.out, &reporter).expect("should compile");
@@ -196,7 +196,7 @@ fn the_cache_reports_through_the_caller_not_stdout() {
   assert_eq!(seen.len(), 2, "one event per file: {seen:?}");
   let labels: Vec<&str> = seen.iter().map(|(l, _)| l.as_str()).collect();
   assert!(
-    labels.contains(&"a.sdx") && labels.contains(&"b.sdx"),
+    labels.contains(&"a.vlt") && labels.contains(&"b.vlt"),
     "{labels:?}"
   );
 }
@@ -205,12 +205,12 @@ fn the_cache_reports_through_the_caller_not_stdout() {
 #[test]
 fn compile_dir_still_takes_two_paths() {
   let project = Project::new("signature");
-  project.write("a.sdx", SOURCE);
+  project.write("a.vlt", SOURCE);
 
   let compiled =
     voltaic_driver::compile_dir(&project.src, &project.out).expect("should compile unchanged");
   assert_eq!(compiled.inputs.len(), 1);
-  assert!(compiled.outputs[0].ends_with("a.sdx".replace(".sdx", ".rs")));
+  assert!(compiled.outputs[0].ends_with("a.vlt".replace(".vlt", ".rs")));
 }
 
 /// Two files with identical contents share a cache entry.
@@ -221,8 +221,8 @@ fn compile_dir_still_takes_two_paths() {
 #[test]
 fn identical_contents_share_an_entry_across_names() {
   let project = Project::new("shared");
-  project.write("a.sdx", SOURCE);
-  project.write("b.sdx", SOURCE);
+  project.write("a.vlt", SOURCE);
+  project.write("b.vlt", SOURCE);
 
   let reporter = Collect::new();
   voltaic_driver::compile_dir_with(&project.src, &project.out, &reporter).expect("should compile");

@@ -19,7 +19,7 @@ generator and an unpinned one cannot be regenerated identically.
 ## They are checked against each other
 
 `docs/GRAMMAR.md` is the row-by-row grading of every Rust construct, and
-`grammar_inventory.rs` asserts that the `.sdx` paths it cites exist. A test
+`grammar_inventory.rs` asserts that the `.vlt` paths it cites exist. A test
 also asks the *lexer* — not `grammar.js` — whether every highlighted keyword is
 still in the grammar, because `grammar.js` is the thing most likely to be
 behind.

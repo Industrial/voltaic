@@ -13,7 +13,7 @@ use voltaic_diag::{SourceMap, parse_map, render_map};
 
 /// The examples every assertion here runs over.
 ///
-/// `lexical.sdx` is excluded for the reason plan 02 recorded: it exercises the
+/// `lexical.vlt` is excluded for the reason plan 02 recorded: it exercises the
 /// lexer with constructs the parser does not yet accept, so it has no
 /// generated output to map.
 const EXAMPLES: &[&str] = &["hello", "phase1", "expressions", "comments"];
@@ -21,12 +21,12 @@ const EXAMPLES: &[&str] = &["hello", "phase1", "expressions", "comments"];
 fn emit(example: &str) -> (String, String, SourceMap) {
   let path = Path::new(env!("CARGO_MANIFEST_DIR"))
     .join("../../examples")
-    .join(format!("{example}.sdx"));
+    .join(format!("{example}.vlt"));
   let source = std::fs::read_to_string(&path)
     .unwrap_or_else(|e| panic!("should read {}: {e}", path.display()));
   let program =
-    voltaic_parser::parse_source(&source).unwrap_or_else(|_| panic!("{example}.sdx should parse"));
-  let (rust, map) = voltaic_emit::emit_with_map(&program, &source, &format!("{example}.sdx"));
+    voltaic_parser::parse_source(&source).unwrap_or_else(|_| panic!("{example}.vlt should parse"));
+  let (rust, map) = voltaic_emit::emit_with_map(&program, &source, &format!("{example}.vlt"));
   (source, rust, map)
 }
 
@@ -106,10 +106,10 @@ fn a_resolved_position_agrees_with_the_source_text() {
 }
 
 /// Criterion 3: one claim written out in full, so a reader can check it
-/// against `examples/phase1.sdx` without running anything.
+/// against `examples/phase1.vlt` without running anything.
 ///
 /// ```text
-/// phase1.sdx                      phase1.xrs
+/// phase1.vlt                      phase1.vrs
 /// 1  -- Doc 01 §31 …          1  // Doc 01 §31 …
 /// 2  -- print. Prints 30 …    2  // print. Prints 30 …
 /// 3  add : i32 -> i32 -> i32 3  fn add(a: i32, b: i32) -> i32 {
@@ -123,7 +123,7 @@ fn a_resolved_position_agrees_with_the_source_text() {
 /// two numbers differ at all — and why the map exists.
 ///
 /// The literal numbers are the point. Plan 08 added two comment lines to
-/// `phase1.sdx` and this test failed; doc 18's two-line declaration form moved
+/// `phase1.vlt` and this test failed; doc 18's two-line declaration form moved
 /// it again. Both times the failure was the map test doing its job — a test
 /// that computed the line from the file would have passed while proving
 /// nothing.
@@ -170,11 +170,11 @@ fn the_sidecar_round_trips() {
   }
 }
 
-/// Criterion 5: `voltaic build` leaves the sidecar beside the `.xrs`, and what
+/// Criterion 5: `voltaic build` leaves the sidecar beside the `.vrs`, and what
 /// it wrote parses.
 #[test]
 fn build_writes_a_parseable_sidecar() {
-  let case = support::transpile("phase1.sdx");
+  let case = support::transpile("phase1.vlt");
   let map_path = case.map_path();
   let text = std::fs::read_to_string(&map_path)
     .unwrap_or_else(|e| panic!("should read {}: {e}", map_path.display()));
@@ -183,10 +183,10 @@ fn build_writes_a_parseable_sidecar() {
   assert_eq!(
     map.len(),
     case.rust.lines().count(),
-    "the sidecar covers every line of the `.xrs` beside it"
+    "the sidecar covers every line of the `.vrs` beside it"
   );
   assert!(
-    map.source_path.ends_with("phase1.sdx"),
+    map.source_path.ends_with("phase1.vlt"),
     "the header names the input: {}",
     map.source_path
   );

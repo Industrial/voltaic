@@ -154,7 +154,7 @@ png "$DIST/web/monochrome-512.png" 512 "$tmp/monochrome.svg"
 
 jq -n --arg copper "$COPPER_L" --arg ground "$GROUND_L" '{
   name: "Voltaic", short_name: "Voltaic",
-  description: "A source-to-source compiler: .sdx in, ordinary Rust out.",
+  description: "A source-to-source compiler: .vlt in, ordinary Rust out.",
   start_url: "/voltaic/", display: "standalone",
   background_color: $ground, theme_color: $copper,
   icons: [
@@ -243,7 +243,7 @@ banner() {
         printf '  </g>\n'
         printf '  <text x="%s" y="%s" font-family="Archivo" font-size="%s" font-weight="800" letter-spacing="%.2f" fill="%s">VOLTAIC</text>\n' \
             "$tx" "$ty" "$fs" "$(awk -v f="$fs" 'BEGIN{printf "%.2f", f*0.14}')" "$ink"
-        printf '  <text x="%s" y="%s" font-family="Archivo" font-size="%.2f" font-weight="500" fill="%s" opacity="0.72">.sdx in, ordinary Rust out.</text>\n' \
+        printf '  <text x="%s" y="%s" font-family="Archivo" font-size="%.2f" font-weight="500" fill="%s" opacity="0.72">.vlt in, ordinary Rust out.</text>\n' \
             "$tx" "$sy" "$(awk -v f="$fs" 'BEGIN{printf "%.2f", f*0.30}')" "$ink"
         printf '</svg>\n'
     } > "$tmp/banner.svg"

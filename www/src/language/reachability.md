@@ -3,7 +3,7 @@
 What a Voltaic program can express, stated as a map rather than a promise.
 
 ```voltaic
-{{#include ../../../examples/reachability.sdx}}
+{{#include ../../../examples/reachability.vlt}}
 ```
 
 That file is the map, it is in CI, and it is the honest answer.

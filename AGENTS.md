@@ -27,7 +27,7 @@ no gate. Every push was therefore blocked by it.
 **396 of the 514 were documented rather than discarded**, one line per
 construct in the style `voltaic-diag` set at plan 56: `voltaic-lexer`,
 `voltaic-driver`, `voltaic-emit`, `voltaic-lsp`, `voltaic-mcp`, `voltaic-bench` and
-`voltaic-fuzz` in Rust, and `voltaic-ast` and `voltaic-fmt` **in their `.sdx`**, then
+`voltaic-fuzz` in Rust, and `voltaic-ast` and `voltaic-fmt` **in their `.vlt`**, then
 regenerated. Those doc comments stay.
 
 What retired the lint is the **118 that could not be written**: all of them are
@@ -109,7 +109,7 @@ magnitude faster than cargo on an incremental edit.
 ```bash
 blaze check          # the fast inner-loop verdict while editing
 blaze test           # unit, integration and doctests in one command
-blaze run -p voltaic-cli -- build examples/hello.sdx
+blaze run -p voltaic-cli -- build examples/hello.vlt
 ```
 
 **Moon does not invoke it, and neither does CI.** That split is deliberate and
@@ -156,7 +156,7 @@ release itself and run it instead of the Nix-pinned one.
 
 ## Layout
 
-Voltaic is a source-to-source compiler: `.sdx` in, `.xrs` containing ordinary Rust out. The
+Voltaic is a source-to-source compiler: `.vlt` in, `.vrs` containing ordinary Rust out. The
 workspace splits along pipeline stages (`docs/02 - Voltaic Update Blueprint.md` §5.4).
 
 - `crates/voltaic-lexer/` — off-side-rule lexer; emits spans, trivia and whitespace adjacency
@@ -168,12 +168,12 @@ workspace splits along pipeline stages (`docs/02 - Voltaic Update Blueprint.md` 
   driver and the canonical formatter, filled by plans 05, 10 and 34. This bullet said
   *"declared empty"* until plan 70; all three have shipped
 - **Every crate under `crates/` is written in Voltaic.** All thirteen, as of plan 83: the
-  `.sdx` under a crate's `sdx/` is the source, and the `.rs` under its `src/` is generated
+  `.vlt` under a crate's `vlt/` is the source, and the `.rs` under its `src/` is generated
   from it, **`.gitignore`d, and not in the index**. `seed/PORTED` is the single list of
   which crate was ported by which plan, and four things read it — `port.rs`,
   `conformance.rs`, `bootstrap.rs` and `bootstrap.sh`.
 
-  Edit the `.sdx`, never the `.rs`. Regenerate with
+  Edit the `.vlt`, never the `.rs`. Regenerate with
   `VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test port`, which compiles the generated tree
   before writing it and refuses a generation that does not compile — so a bad port leaves
   `src/` untouched rather than broken.
@@ -194,8 +194,8 @@ workspace splits along pipeline stages (`docs/02 - Voltaic Update Blueprint.md` 
   previous-version compiler stored once instead of thirteen times — so the rule is
   withdrawn, and `the_generated_trees_are_ignored` now asserts the reverse of what it used
   to
-- `examples/*.sdx` — the CI-checked source of truth for what works today
-- `tests/golden/` — `.sdx` beside its expected `.xrs`, compared as exact text
+- `examples/*.vlt` — the CI-checked source of truth for what works today
+- `tests/golden/` — `.vlt` beside its expected `.vrs`, compared as exact text
 - `docs/` — numbered: 01 specification, 02 blueprint, 03 surface design, 04 plan of plans,
   `05 - NN -` one per plan, 06 code architecture; plus `COMPILER.md` for toolchain decisions
 - `.maestro/` — harness state (read `.maestro/AGENTS.md` first)
@@ -226,7 +226,7 @@ see the first bullet under *Conventions that are load-bearing* and
     `TokenKind::Or` and `Keyword::Or` in one module are E0659, and a pattern match on the
     bare name then binds instead of matching (E0170).
   - **The 1,500-line cap is on the *generated* `.rs`**, which runs about 1.6 lines per
-    line of `.sdx` code. `voltaic-parser` therefore needs 13 files, not the 8 estimated.
+    line of `.vlt` code. `voltaic-parser` therefore needs 13 files, not the 8 estimated.
 - **`src/` is a module tree, not a flat directory.** Every file directly under `src/` must
   be the module root, a **module head** (a construct with a sibling `<name>/` holding its
   children), or a **grouping module** (child declarations and a doc comment, no construct).
@@ -243,7 +243,7 @@ see the first bullet under *Conventions that are load-bearing* and
   `#[cfg(test)]` modules. An inline test can reach private internals and eventually will.
   Inline tests are for private constructs only.
 - **A port counts the crate's tests, before and after.** `port.rs` compares the
-  `.sdx`'s doc comments against the generated Rust's, which is how plan 73 caught a
+  `.vlt`'s doc comments against the generated Rust's, which is how plan 73 caught a
   doubling — and it *structurally cannot* do the same for tests, because once a port
   lands the pre-port Rust is gone. Plan 74 dropped `scan_number.rs`'s seven inline
   tests by reading the file's body and stopping above its `mod tests`, and every gate
@@ -252,24 +252,24 @@ see the first bullet under *Conventions that are load-bearing* and
   script is pinned to. **A check that compares generated output to its source cannot
   see something absent from both.**
 
-- **Every `.sdx` fixture is a file, and tests reference files.** Never embed language source
+- **Every `.vlt` fixture is a file, and tests reference files.** Never embed language source
   as a string literal in a Rust test. Emerald's one syntax cutover missed 113 fixtures that
   lived as string literals inside test modules; that cost is paid once per syntax change,
   forever.
-- **No comments in the compiler's own `.sdx`.** Zero, enforced over every ported crate by
+- **No comments in the compiler's own `.vlt`.** Zero, enforced over every ported crate by
   `crates/voltaic-cli/tests/no_comments.rs`. Reasoning belongs in `docs/` and in commit
   messages, which is where it can be dated and corrected; a comment beside code is a
   claim with no gate on it. This is about the compiler's *source* and not about what the
   compiler *does* — see the next bullet, which is the opposite rule for user code.
-- **Comments are trivia, never discarded.** They must reach the generated `.xrs` — the
-  `.xrs` is a human-facing artifact. Doc 02 §10.1 corrects doc 01 §4.1 on this.
+- **Comments are trivia, never discarded.** They must reach the generated `.vrs` — the
+  `.vrs` is a human-facing artifact. Doc 02 §10.1 corrects doc 01 §4.1 on this.
 - **Every AST node carries a byte span.** Emerald found a whole node type with no span at
   all twenty-one plans after its diagnostics plan shipped, by which point the fix was judged
   too large and it settled for a workaround.
-- **Generated identifiers use the `__rdx_` prefix**, and user identifiers may not.
+- **Generated identifiers use the `__vlt_` prefix**, and user identifiers may not.
 - **A surface row the seed cannot parse must refresh the seed in the same commit.**
   `crates/voltaic-ast` and `crates/voltaic-fmt` have no tracked Rust: their `src/` is
-  generated by `seed/voltaic1.wasm` and `.gitignore`d, so **their `.sdx` can only use syntax
+  generated by `seed/voltaic1.wasm` and `.gitignore`d, so **their `.vlt` can only use syntax
   that blob understands.** Change the surface in a way the seed cannot read and the
   repository stops bootstrapping — on a clean clone, not here, because the files stay on
   disk locally.
@@ -312,8 +312,8 @@ see the first bullet under *Conventions that are load-bearing* and
 ### Working on the compiler
 
 ```bash
-cargo run -p voltaic-cli -- build examples/hello.sdx   # transpile to examples/hello.xrs
-cargo run -p voltaic-cli -- check examples/hello.sdx   # run rustc, report against the .sdx
+cargo run -p voltaic-cli -- build examples/hello.vlt   # transpile to examples/hello.vrs
+cargo run -p voltaic-cli -- check examples/hello.vlt   # run rustc, report against the .vlt
 ```
 
 **Three updatable corpora**, each asserting a different thing about a program. There is no
@@ -321,7 +321,7 @@ cargo run -p voltaic-cli -- check examples/hello.sdx   # run rustc, report again
 found this command had been wrong since it was written:
 
 ```bash
-VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test examples  # tests/golden/*.xrs — the text
+VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test examples  # tests/golden/*.vrs — the text
 VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test ui        # tests/ui/*.stderr — the diagnostic
 VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test run       # *.stdout — what it prints
 ```
@@ -329,7 +329,7 @@ VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test run       # *.stdout — what 
 An update rewrites the expectations and then fails the run, so a changed expectation is always
 reviewed rather than absorbed into a green build.
 
-A run expectation lives **beside its program**: `examples/phase1.sdx` has
+A run expectation lives **beside its program**: `examples/phase1.vlt` has
 `examples/phase1.stdout`, and `tests/run/` holds cases too narrow to be an example. Never
 write an expectation as a string literal in a Rust test — `no_literal_expectations.rs`
 fails if you do, and plan 08 §10.2 records the two places it had already happened.
@@ -447,7 +447,7 @@ result, which is why they are written down rather than rediscovered.
   a real rustc and hid the mistake for as long as nobody ran the blaze path.
 
 - **A single `watch` test failing at exactly 20 seconds is the load-dependent flake, not your
-  change.** `crates/voltaic-cli/tests/watch.rs` polls the generated `.xrs` for expected content
+  change.** `crates/voltaic-cli/tests/watch.rs` polls the generated `.vrs` for expected content
   with a 20-second `CEILING`, and under the **full** `voltaic-cli` suite one of its six tests
   intermittently exhausts it. Measured 2026-11-10 while doing plan 50 leaf 1:
 
@@ -543,7 +543,7 @@ result, which is why they are written down rather than rediscovered.
   `class` is parsed and read by `borrowed_head` when an instance member is parsed — so the
   parser learns a member's signature from the class declaration, and **each file gets a
   fresh `Parser`**. An instance in another file parses as a run of top-level declarations
-  and fails with `RDX0101` *"expected `:` after the name"* on every name in the line, which
+  and fails with `VLT0101` *"expected `:` after the name"* on every name in the line, which
   looks nothing like the actual cause.
 
   It is a constraint, not a defect: the parser needs the member's *shape*, not its types,
@@ -553,12 +553,12 @@ result, which is why they are written down rather than rediscovered.
 
 - **`module <keyword>` cannot parse, and the diagnostic cascades past the cause.** `class`,
   `data`, `test`, `type` and `errors` are all keywords, so a module may not be named after
-  one. The seed reports it exactly — `RDX0103` *"expected the module's name"* on the right
-  line — and then item-boundary recovery emits a dozen `RDX0101`s on the lines *after* it.
+  one. The seed reports it exactly — `VLT0103` *"expected the module's name"* on the right
+  line — and then item-boundary recovery emits a dozen `VLT0101`s on the lines *after* it.
   **Read the first diagnostic, not the loudest run of them.** Plan 91 wave 4.
 
 - **`(.f)` is a field section, not a method reference.** It emits
-  `|__rdx_1| __rdx_1.f` with no call, because plan 57 §1.1 made `.` field access and
+  `|__vlt_1| __vlt_1.f` with no call, because plan 57 §1.1 made `.` field access and
   nothing else. `.f x` is the method call `x.f()` with the receiver last, so the two are
   different constructs and eta-reducing `(\c -> .is_ascii_digit c)` to `(.is_ascii_digit)`
   is `E0615` *"method, not a field"*. There is a `MethodRef` node, but the grammar reaches
@@ -573,8 +573,8 @@ result, which is why they are written down rather than rediscovered.
   of `Parser`'s members, not the whole `impl`. Plan 91 wave 4.
 
 - **Gates keyed by file path go stale when files move, and two of them are easy to miss.**
-  `HATCH_ALLOWED` in `crates/voltaic-cli/tests/port.rs` names the `.sdx` files permitted
-  inline Rust, and `docs/GRAMMAR.md`'s rows cite `.sdx` paths that
+  `HATCH_ALLOWED` in `crates/voltaic-cli/tests/port.rs` names the `.vlt` files permitted
+  inline Rust, and `docs/GRAMMAR.md`'s rows cite `.vlt` paths that
   `grammar_inventory.rs` checks exist. A merge or rename invalidates both. Plan documents
   cite paths too and **nothing gates those** — five had gone stale by wave 10. When you
   move a file, re-point a citation at the file that now *defines* the construct, verified

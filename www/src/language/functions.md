@@ -1,7 +1,7 @@
 # Functions
 
 ```voltaic
-{{#include ../../../examples/application.sdx}}
+{{#include ../../../examples/application.vlt}}
 ```
 
 ## Signature, then definition
@@ -21,7 +21,7 @@ case plus its step.
 ## `where` — local definitions
 
 ```voltaic
-{{#include ../../../examples/wheres.sdx}}
+{{#include ../../../examples/wheres.vlt}}
 ```
 
 `where` after a body introduces definitions local to that body. This is the
@@ -37,11 +37,11 @@ collide.
 ## Receiver-last methods, and currying
 
 ```voltaic
-{{#include ../../../examples/receiver.sdx}}
+{{#include ../../../examples/receiver.vlt}}
 ```
 
 ```voltaic
-{{#include ../../../examples/currying.sdx}}
+{{#include ../../../examples/currying.vlt}}
 ```
 
 `.len x` is `x.len()`. Partial application works as the signature's arrows

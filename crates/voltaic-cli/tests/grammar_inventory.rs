@@ -67,7 +67,7 @@ fn rows(text: &str) -> Vec<Row> {
       .join("|")
       .split('`')
       .map(str::trim)
-      .filter(|s| s.contains('/') && (s.ends_with(".sdx") || s.ends_with(".rs")))
+      .filter(|s| s.contains('/') && (s.ends_with(".vlt") || s.ends_with(".rs")))
       .map(str::to_owned)
       .collect();
     out.push(Row {
@@ -149,7 +149,7 @@ fn every_unreachable_fixture_still_fails() {
 
 /// Whether `voltaic check` accepts the file — rustc's verdict, not the parser's.
 ///
-/// `check` rather than `build` on purpose: `or_pattern.sdx` **parses**, because
+/// `check` rather than `build` on purpose: `or_pattern.vlt` **parses**, because
 /// `|` is a guard in this surface, and fails only when rustc types it. A gap
 /// list that asked the parser would have missed it.
 fn compiles(path: &Path) -> bool {

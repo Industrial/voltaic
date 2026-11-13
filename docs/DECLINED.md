@@ -55,7 +55,7 @@ of one the project's load-bearing constraint.
 > written, because choosing between `Ok`, `Some` and `iter::once` would be the
 > inference the clause forbids.
 >
-> `examples/bind.sdx` is the witness, `docs/GRAMMAR.md` grades it, and the
+> `examples/bind.vlt` is the witness, `docs/GRAMMAR.md` grades it, and the
 > *Reopenable* table below is down to one entry.
 
 > **Lifted 2026-11-11 by plan 90: custom operator declaration.** The row read
@@ -73,7 +73,7 @@ of one the project's load-bearing constraint.
 > be named `<+>`, so the emitter would have to invent one, which is the
 > fabricated API doc 03 §8.7 refuses for default arguments.
 >
-> `examples/operator.sdx` is the witness, `docs/GRAMMAR.md` grades it, and plan
+> `examples/operator.vlt` is the witness, `docs/GRAMMAR.md` grades it, and plan
 > 90 §1.1 has the correction in full. This is the third row in this document
 > whose *reason* was replaced rather than whose verdict was reversed on new
 > evidence — plan 47 §1.4 restated two that cited a deleted section, and the
@@ -104,7 +104,7 @@ of one the project's load-bearing constraint.
 >
 > What plan 87 did ship is pattern **synonyms**, which lower by textual
 > substitution and so leave the `match` intact — `docs/GRAMMAR.md` grades them
-> and `examples/synonym.sdx` is the witness.
+> and `examples/synonym.vlt` is the witness.
 
 ## Declined because Rust has no target for it
 
@@ -208,7 +208,7 @@ limits : Effect<Arc<Thresholds>, Never, GateEnv>
 limits = need () |> .effect
 ```
 
-`need::<Thresholds> ()` is `RDX0103`, so the working spelling was a lambda parameter annotation.
+`need::<Thresholds> ()` is `VLT0103`, so the working spelling was a lambda parameter annotation.
 Verified by compiling the hand-written Rust against `id_effect 0.13.0`: **inference reaches it
 from the signature alone.** `need().effect()` resolves `T = Thresholds` from the declared return
 type, and so do `need().map(|t: Arc<Thresholds>| …)` and a fully unannotated variant. All three
@@ -232,7 +232,7 @@ Worth stating, because the difference is the whole point of this document being 
 
 - **Macro invocation** is `UNREACHABLE`, not declined. Doc 18 §7 retired `!` as a suffix and
   nothing has replaced it as a spelling; a row that proposes one is welcome. The fixture is
-  `tests/unreachable/macro_call.sdx`.
+  `tests/unreachable/macro_call.vlt`.
 - **Macro definition** is **both**, and is the one construct in that position: doc 03 §23 item
   3 declines it explicitly — *"accept permanently that Voltaic macros require inline Rust"* —
   and it is also unreachable. It appears in both documents, deliberately.

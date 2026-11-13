@@ -66,7 +66,7 @@ Nix instead.
 
 | | From |
 |---|---|
-| `.sdx` recognised, `--` comments, bracket pairs, 2-space indent | `language-configuration.json` |
+| `.vlt` recognised, `--` comments, bracket pairs, 2-space indent | `language-configuration.json` |
 | Colour on a cold open, before the server starts | `syntaxes/voltaic.tmLanguage.json` |
 | Diagnostics, document symbols, semantic tokens, formatting | `voltaic-lsp` (plan 40) |
 | `voltaic_build`, `voltaic_check`, `voltaic_fmt`, `voltaic_source_map` for Cursor's agent | `voltaic-mcp` (plan 50), registered in Cursor's `mcp.json` |

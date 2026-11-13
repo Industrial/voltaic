@@ -128,15 +128,15 @@ fn is_historical_record(relative: &str) -> bool {
 /// Generated output, which asserts nothing — it only restates its source.
 ///
 /// Flagging a generated file would duplicate `port.rs`, the gate that compares a
-/// `.sdx` against the Rust it produces, and would fail on a tree whose artifacts
+/// `.vlt` against the Rust it produces, and would fail on a tree whose artifacts
 /// are merely stale rather than whose documents disagree. It found exactly that
-/// when plan 92 landed: `server.sdx` was amended and its `src/server.rs` and
-/// transient `sdx/server.xrs` still carried the old string, which is a
+/// when plan 92 landed: `server.vlt` was amended and its `src/server.rs` and
+/// transient `vlt/server.vrs` still carried the old string, which is a
 /// regeneration to run and not a charter to fix.
 ///
 /// Both rules are `AGENTS.md`'s: every crate under `crates/` is written in
 /// Voltaic, so the `.rs` under its `src/` is generated and `.gitignore`d, and
-/// `voltaic build` drops a transient `.xrs` beside each `.sdx` while the port
+/// `voltaic build` drops a transient `.vrs` beside each `.vlt` while the port
 /// harness reads it.
 fn is_generated(relative: &str) -> bool {
   let generated_tree = relative.starts_with("crates/")
@@ -145,7 +145,7 @@ fn is_generated(relative: &str) -> bool {
       .nth(2)
       .is_some_and(|directory| directory == "src");
 
-  generated_tree || relative.ends_with(".xrs") || relative.ends_with(".xrs.map")
+  generated_tree || relative.ends_with(".vrs") || relative.ends_with(".vrs.map")
 }
 
 fn files_under(root: &std::path::Path, prefix: &str, found: &mut Vec<(String, String)>) {

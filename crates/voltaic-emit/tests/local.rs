@@ -3,22 +3,22 @@
 //! Rust lets a `fn` body hold items, and doc 03 §8.3 presumed it. Voltaic could
 //! not express one: there was no AST carrier, `Parser::stmt` never called
 //! `item`, and a declaration keyword in a body reached the expression parser
-//! and became `RDX0102`. Plan 55 §1.4 said Rust's acceptance made the
+//! and became `VLT0102`. Plan 55 §1.4 said Rust's acceptance made the
 //! construct reachable; it made it *lowerable*, which is not the same claim.
 //!
-//! `examples/local.sdx` is the running witness, compiled and executed with
+//! `examples/local.vlt` is the running witness, compiled and executed with
 //! zero rustc output. These are the unit assertions underneath it.
 
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
 /// A function body holding `src`, with `fn main() {` and `}` stripped.
 fn body(src: &str) -> String {
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   out
     .lines()
     .skip(1)
@@ -37,7 +37,7 @@ fn body(src: &str) -> String {
 /// difference was deliberate.
 #[test]
 fn every_local_declaration_lowers_to_a_nested_item() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("  import std::cmp::max\n", "use std::cmp::max;"),
     ("  const K : i32 = 2\n", "const K: i32 = 2;"),
     ("  type N = i32\n", "type N = i32;"),
@@ -46,11 +46,11 @@ fn every_local_declaration_lowers_to_a_nested_item() {
     ("  errors E\n    Gone  \"gone\"\n", "enum E {"),
     ("  class C\n    f : &self -> u32\n", "trait C {"),
   ] {
-    let out = body(sdx);
+    let out = body(vlt);
     assert!(
       out.contains(want),
       "`{}` should emit `{want}`, got:\n{out}",
-      sdx.trim()
+      vlt.trim()
     );
   }
 }

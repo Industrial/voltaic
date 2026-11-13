@@ -47,11 +47,11 @@ impl Watching {
     let n = NEXT.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("voltaic-watch-{tag}-{}-{n}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("should create the scratch directory");
-    std::fs::write(dir.join("main.sdx"), initial).expect("should write the source");
+    std::fs::write(dir.join("main.vlt"), initial).expect("should write the source");
 
     let child = Command::new(env!("CARGO_BIN_EXE_voltaic"))
       .arg("watch")
-      .arg(dir.join("main.sdx"))
+      .arg(dir.join("main.vlt"))
       .arg("--plain")
       .stdout(Stdio::piped())
       .stderr(Stdio::piped())
@@ -62,7 +62,7 @@ impl Watching {
   }
 
   fn write(&self, text: &str) {
-    std::fs::write(self.dir.join("main.sdx"), text).expect("should rewrite the source");
+    std::fs::write(self.dir.join("main.vlt"), text).expect("should rewrite the source");
   }
 
   /// Rewrite the source the way an editor does: write a temporary, then
@@ -74,22 +74,22 @@ impl Watching {
   /// after the first such save, which is why `Target` watches the parent
   /// directory — and this is what proves it.
   fn replace(&self, text: &str) {
-    let temporary = self.dir.join("main.sdx.tmp-editor");
+    let temporary = self.dir.join("main.vlt.tmp-editor");
     std::fs::write(&temporary, text).expect("should write the temporary");
-    std::fs::rename(&temporary, self.dir.join("main.sdx")).expect("should rename over the source");
+    std::fs::rename(&temporary, self.dir.join("main.vlt")).expect("should rename over the source");
   }
 
-  /// Wait until `.xrs` contains `needle`, or the ceiling elapses.
+  /// Wait until `.vrs` contains `needle`, or the ceiling elapses.
   ///
   /// Polls the *output file* rather than parsing the child's stderr: stderr
   /// would mean reading a pipe that may block, and the artifact is the thing
   /// the user actually cares about.
   fn wait_for_output(&self, needle: &str) -> Result<String, String> {
-    let xrs = self.dir.join("main.xrs");
+    let vrs = self.dir.join("main.vrs");
     let deadline = std::time::Instant::now() + CEILING;
     let mut last = String::new();
     while std::time::Instant::now() < deadline {
-      if let Ok(text) = std::fs::read_to_string(&xrs) {
+      if let Ok(text) = std::fs::read_to_string(&vrs) {
         if text.contains(needle) {
           return Ok(text);
         }
@@ -99,7 +99,7 @@ impl Watching {
     }
     Err(format!(
       "`{needle}` never appeared in {} within {CEILING:?}; last saw:\n{last}",
-      xrs.display()
+      vrs.display()
     ))
   }
 }
@@ -263,7 +263,7 @@ fn the_cli_reports_watch_as_ready() {
 #[test]
 fn a_missing_target_is_refused() {
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
-    .args(["watch", "/nonexistent/main.sdx"])
+    .args(["watch", "/nonexistent/main.vlt"])
     .output()
     .expect("should run");
   assert!(!out.status.success());

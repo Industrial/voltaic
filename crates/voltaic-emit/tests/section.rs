@@ -1,7 +1,7 @@
 //! Doc 18 §4's sections.
 //!
 //! An operator with one side supplied, lowered to a one-parameter closure
-//! over the reserved name `__rdx_1` — so a section is a *value* and needs no
+//! over the reserved name `__vlt_1` — so a section is a *value* and needs no
 //! special call site.
 
 use voltaic_emit::emit;
@@ -15,7 +15,7 @@ fn body(src: &str) -> String {
 #[test]
 fn a_right_section_supplies_the_right_operand() {
   let out = body("f = (+ 1)");
-  assert!(out.contains("let f = |__rdx_1| __rdx_1 + 1;"), "{out}");
+  assert!(out.contains("let f = |__vlt_1| __vlt_1 + 1;"), "{out}");
 }
 
 /// New in doc 18 §4, and what closes doc 03 §5.4's gap: with only right
@@ -23,7 +23,7 @@ fn a_right_section_supplies_the_right_operand() {
 #[test]
 fn a_left_section_supplies_the_left_operand() {
   let out = body("f = (10 -)");
-  assert!(out.contains("let f = |__rdx_1| 10 - __rdx_1;"), "{out}");
+  assert!(out.contains("let f = |__vlt_1| 10 - __vlt_1;"), "{out}");
 }
 
 /// A comparison lowers to the **method** form, because an iterator adaptor
@@ -32,9 +32,9 @@ fn a_left_section_supplies_the_left_operand() {
 #[test]
 fn a_comparison_section_uses_the_method_form() {
   let out = body("f = (> 0)");
-  assert!(out.contains("let f = |__rdx_1| __rdx_1.gt(&0);"), "{out}");
+  assert!(out.contains("let f = |__vlt_1| __vlt_1.gt(&0);"), "{out}");
   assert!(
-    !out.contains("__rdx_1 > 0"),
+    !out.contains("__vlt_1 > 0"),
     "not the operator form:\n{out}"
   );
 }
@@ -58,14 +58,14 @@ fn every_comparison_has_its_method() {
     ("(>= 0)", "ge"),
   ] {
     let out = body(&format!("f = {section}"));
-    assert!(out.contains(&format!("__rdx_1.{method}(&0)")), "{out}");
+    assert!(out.contains(&format!("__vlt_1.{method}(&0)")), "{out}");
   }
 }
 
 #[test]
 fn a_field_section_selects() {
   let out = body("f = (.name)");
-  assert!(out.contains("let f = |__rdx_1| __rdx_1.name;"), "{out}");
+  assert!(out.contains("let f = |__vlt_1| __vlt_1.name;"), "{out}");
 }
 
 /// A **bare** `.name` is the method reference — plan 57, which retired the
@@ -81,7 +81,7 @@ fn a_field_section_selects() {
 #[test]
 fn a_bare_dot_name_is_a_method_reference() {
   let out = body("f = .len");
-  assert!(out.contains("let f = |__rdx_1| __rdx_1.len();"), "{out}");
+  assert!(out.contains("let f = |__vlt_1| __vlt_1.len();"), "{out}");
   assert_ne!(body("f = (.len)"), out, "a field is not a method");
   let refused =
     parse_source("main : ()\nmain =\n  f = (|> len)\n  ()\n").expect_err("`(|> .name)` is retired");
@@ -111,7 +111,7 @@ fn a_method_takes_its_receiver_last() {
 
 /// `x |> .name args`, which §11.1 is the trap for: `emit/pipeline.rs`'s
 /// `other =>` arm appends `()`, so a zero-argument `x |> .name` reaching it
-/// lowers to `x.(|__rdx_1| __rdx_1.name())()`.
+/// lowers to `x.(|__vlt_1| __vlt_1.name())()`.
 #[test]
 fn a_pipeline_feeds_a_method_its_receiver() {
   assert!(body("f = x |> .trim").contains("let f = x.trim();"), "zero");
@@ -128,7 +128,7 @@ fn a_pipeline_feeds_a_method_its_receiver() {
 fn a_leading_minus_is_negation_not_a_section() {
   let out = body("f = (- 1)");
   assert!(out.contains("-1"), "{out}");
-  assert!(!out.contains("__rdx_1"), "not a section:\n{out}");
+  assert!(!out.contains("__vlt_1"), "not a section:\n{out}");
 }
 
 /// An ordinary grouping must still be a grouping — the section reader puts
@@ -137,7 +137,7 @@ fn a_leading_minus_is_negation_not_a_section() {
 fn a_grouping_is_still_a_grouping() {
   let out = body("f = (1 + 2) * 3");
   assert!(out.contains("let f = (1 + 2) * 3;"), "{out}");
-  assert!(!out.contains("__rdx_1"), "{out}");
+  assert!(!out.contains("__vlt_1"), "{out}");
 }
 
 /// A section is a value, so it is an argument with nothing added.
@@ -145,7 +145,7 @@ fn a_grouping_is_still_a_grouping() {
 fn a_section_is_an_argument() {
   let out = body("r = xs |> .filter (> 0) |> .count");
   assert!(
-    out.contains("xs.filter(|__rdx_1| __rdx_1.gt(&0)).count()"),
+    out.contains("xs.filter(|__vlt_1| __vlt_1.gt(&0)).count()"),
     "{out}"
   );
 }

@@ -70,16 +70,16 @@ pub fn ported() -> Vec<(String, u32)> {
 
 pub struct Case {
   pub rust: String,
-  xrs: PathBuf,
+  vrs: PathBuf,
   dir: PathBuf,
 }
 
 impl Case {
-  /// The source map `voltaic build` wrote beside the `.xrs` (plan 06).
+  /// The source map `voltaic build` wrote beside the `.vrs` (plan 06).
   pub fn map_path(&self) -> PathBuf {
-    let mut name = self.xrs.file_name().expect("a name").to_os_string();
+    let mut name = self.vrs.file_name().expect("a name").to_os_string();
     name.push(".map");
-    self.xrs.with_file_name(name)
+    self.vrs.with_file_name(name)
   }
 
   /// Compile the generated Rust with real rustc and run it, returning stdout.
@@ -92,7 +92,7 @@ impl Case {
     let out = Command::new(rustc())
       .args(["--edition", "2024", "-o"])
       .arg(&bin)
-      .arg(&self.xrs)
+      .arg(&self.vrs)
       .output()
       .expect("should run rustc");
     assert!(
@@ -102,7 +102,7 @@ impl Case {
     );
     assert!(
       out.status.success(),
-      "rustc should compile the generated .xrs"
+      "rustc should compile the generated .vrs"
     );
 
     let run = Command::new(&bin).output().expect("should run the binary");
@@ -119,7 +119,7 @@ impl Case {
   ///
   /// A no-op for a file with no test module, so every case can call it.
   pub fn run_tests(&self) {
-    let rust = std::fs::read_to_string(&self.xrs).expect("should read the .xrs");
+    let rust = std::fs::read_to_string(&self.vrs).expect("should read the .vrs");
     if !rust.contains("#[cfg(test)]") {
       return;
     }
@@ -128,7 +128,7 @@ impl Case {
     let out = Command::new(rustc())
       .args(["--edition", "2024", "--test", "-o"])
       .arg(&bin)
-      .arg(&self.xrs)
+      .arg(&self.vrs)
       .output()
       .expect("should run rustc");
     assert!(
@@ -257,7 +257,7 @@ pub fn rustfmt_in_place(rust: &str) -> String {
 ///
 /// Keyed by a counter as well as the pid: keying on the tag alone let two
 /// concurrent tests share a directory, so one test's `Case::drop` deleted the
-/// `.xrs` another was still compiling. Found by running the suite, not by
+/// `.vrs` another was still compiling. Found by running the suite, not by
 /// reading it.
 fn scratch(tag: &str) -> PathBuf {
   use std::sync::atomic::{AtomicUsize, Ordering};
@@ -273,7 +273,7 @@ pub fn transpile(example: &str) -> Case {
   transpile_path(&workspace_root().join("examples").join(example))
 }
 
-/// Transpile the `.sdx` at `source`, wherever it lives.
+/// Transpile the `.vlt` at `source`, wherever it lives.
 ///
 /// Plan 08 (`docs/13 - 08 - Run Expectations.md`) leaf 1: the run corpus is
 /// under `tests/run/`, not `examples/`, so it needs a path rather than a name.
@@ -363,21 +363,21 @@ pub fn skip_without_cargo(test: &str) -> bool {
 /// `examples/` as a file (doc 06 §7).
 pub fn transpile_source(tag: &str, src: &str) -> String {
   let dir = scratch(tag);
-  let sdx = dir.join(format!("{tag}.sdx"));
-  std::fs::write(&sdx, src).expect("should write the source");
+  let vlt = dir.join(format!("{tag}.vlt"));
+  std::fs::write(&vlt, src).expect("should write the source");
   // Cloned rather than moved: `Case::drop` deletes the scratch directory, so
   // the field cannot be moved out of it.
-  build(&sdx, tag).rust.clone()
+  build(&vlt, tag).rust.clone()
 }
 
 fn build(source: &Path, tag: &str) -> Case {
   let dir = scratch(tag);
-  let xrs = dir.join(format!("{tag}.xrs"));
+  let vrs = dir.join(format!("{tag}.vrs"));
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .arg("build")
     .arg(source)
     .arg("-o")
-    .arg(&xrs)
+    .arg(&vrs)
     .output()
     .expect("should run the voltaic binary");
   assert!(
@@ -388,10 +388,10 @@ fn build(source: &Path, tag: &str) -> Case {
   );
   // **Voltaic's own diagnostics count too, as of plan 38.** The corpus has
   // always demanded zero *rustc* output; it said nothing about Voltaic's,
-  // because until `RDX1001` every Voltaic diagnostic was fatal and
+  // because until `VLT1001` every Voltaic diagnostic was fatal and
   // `status.success()` covered them all.
   //
-  // A warning broke that: `examples/fallible.sdx` emitted three `RDX1001`s
+  // A warning broke that: `examples/fallible.vlt` emitted three `VLT1001`s
   // that nothing noticed. An example is exemplary code, so a lint firing on
   // one is either a bug in the example or a deliberate exception that should
   // say so with the pragma. Plan 38 §10 records it.
@@ -401,6 +401,6 @@ fn build(source: &Path, tag: &str) -> Case {
      if a warning is intended, suppress it at the call site and say why",
     String::from_utf8_lossy(&out.stderr)
   );
-  let rust = std::fs::read_to_string(&xrs).expect("should read the generated .xrs");
-  Case { rust, xrs, dir }
+  let rust = std::fs::read_to_string(&vrs).expect("should read the generated .vrs");
+  Case { rust, vrs, dir }
 }

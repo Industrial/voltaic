@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "The Voltaic compiler: .sdx in, .xrs containing ordinary Rust out."
+description = "The Voltaic compiler: .vlt in, .vrs containing ordinary Rust out."
 readme = "README.md"
 keywords = ["compiler", "transpiler", "language", "voltaic"]
 categories = ["development-tools", "compilers", "command-line-utilities"]
@@ -13,7 +13,7 @@ categories = ["development-tools", "compilers", "command-line-utilities"]
 # Why `include` is not optional here — see `crates/voltaic-diag/Cargo.toml`.
 # `README.md` is listed because this is the crate a user reaches for with
 # `cargo install`, so it is the one whose crates.io page needs to say something.
-include = ["src/**/*.rs", "sdx/**/*.sdx", "README.md", "Cargo.toml"]
+include = ["src/**/*.rs", "vlt/**/*.vlt", "README.md", "Cargo.toml"]
 
 # The shipped binary is `voltaic`; the crate stays `voltaic-cli` so
 # `cargo build -p voltaic-cli` keeps working. Emerald's own convention, adopted

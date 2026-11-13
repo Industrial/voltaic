@@ -3,12 +3,12 @@
 //! Await is doc 30's `x <- f`, already shipped. This row supplies the two
 //! things that let one be written: `async` on a signature and `async` as a
 //! block expression. Doc 03 §14.3 provides no executor, so the running proof
-//! is `examples/async.sdx`, which brings its own in nine lines.
+//! is `examples/async.vlt`, which brings its own in nine lines.
 
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -17,7 +17,7 @@ fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)
@@ -32,7 +32,7 @@ fn body(src: &str) -> String {
 
 #[test]
 fn the_marker_emits_async_fn() {
-  let out = xrs("f : async i32 -> i32\nf n = n\n");
+  let out = vrs("f : async i32 -> i32\nf n = n\n");
   assert!(out.starts_with("async fn f(n: i32) -> i32 {"), "{out}");
 }
 
@@ -42,7 +42,7 @@ fn the_marker_emits_async_fn() {
 /// exactly what happened to `const` before plan 16 consumed it.
 #[test]
 fn the_marker_does_not_leak_into_the_first_type() {
-  let out = xrs("f : async i32 -> i32\nf n = n\n");
+  let out = vrs("f : async i32 -> i32\nf n = n\n");
   assert!(!out.contains("async i32"), "{out}");
   assert!(!out.contains("ASYNC"), "{out}");
 }
@@ -51,7 +51,7 @@ fn the_marker_does_not_leak_into_the_first_type() {
 /// consumed before the spine is read and touches nothing after.
 #[test]
 fn the_marker_composes_with_the_rest_of_a_signature() {
-  let out = xrs("export f : Ord t => async Option<t> -> t\nf xs = .unwrap xs\n");
+  let out = vrs("export f : Ord t => async Option<t> -> t\nf xs = .unwrap xs\n");
   assert!(out.contains("pub async fn f"), "{out}");
   // Doc 18 §5.3 uppercases a lowercase type variable, so the bound reads
   // `T: Ord` — and the marker survives in front of `fn` rather than being
@@ -64,7 +64,7 @@ fn the_marker_composes_with_the_rest_of_a_signature() {
 /// check Voltaic cannot make better than rustc does.
 #[test]
 fn both_markers_emit_and_rustc_objects() {
-  let out = xrs("f : const async i32 -> i32\nf n = n\n");
+  let out = vrs("f : const async i32 -> i32\nf n = n\n");
   assert!(out.starts_with("const async fn f"), "{out}");
 }
 
@@ -102,7 +102,7 @@ fn an_async_block_is_not_a_try_block() {
 /// exist before doc 30's conversion could be proved by running.
 #[test]
 fn an_await_outside_async_still_emits_and_rustc_objects() {
-  let out = xrs("f : i32 -> i32\nf n =\n  m <- g n\n  m\n");
+  let out = vrs("f : i32 -> i32\nf n =\n  m <- g n\n  m\n");
   assert!(out.starts_with("fn f(n: i32) -> i32 {"), "{out}");
   assert!(out.contains("let m = g(n).await;"), "{out}");
 }

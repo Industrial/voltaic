@@ -7,8 +7,8 @@
 //! A run expectation lives **beside its program**, under the same stem:
 //!
 //! ```text
-//! examples/phase1.sdx         examples/phase1.stdout
-//! tests/run/strings.sdx       tests/run/strings.stdout
+//! examples/phase1.vlt         examples/phase1.stdout
+//! tests/run/strings.vlt       tests/run/strings.stdout
 //! ```
 //!
 //! Two directories, one rule. `examples/` holds the programs a reader should
@@ -16,7 +16,7 @@
 //! today — and `tests/run/` holds cases too narrow to earn a place there, like
 //! one lexical hazard per line. Putting the expectation beside the program
 //! rather than in a parallel tree is what keeps the two from drifting, and is
-//! why `examples/expressions.sdx` is not duplicated here: it already *is* the
+//! why `examples/expressions.vlt` is not duplicated here: it already *is* the
 //! precedence case.
 //!
 //! Every case is compiled by **real rustc** and executed. Doc 02 §8.1–8.2 is
@@ -42,12 +42,12 @@ use std::path::{Path, PathBuf};
 
 /// Examples that cannot run, with the reason.
 ///
-/// Mirrors `examples.rs`'s `NOT_PARSEABLE`: `lexical.sdx` exercises the lexer
+/// Mirrors `examples.rs`'s `NOT_PARSEABLE`: `lexical.vlt` exercises the lexer
 /// with constructs the parser does not accept yet, so it has no behaviour to
 /// assert. Listed rather than inferred from a missing `.stdout`, because
 /// inferring it would make *forgetting* an expectation indistinguishable from
 /// declaring one unnecessary.
-const CANNOT_RUN: &[&str] = &["lexical.sdx"];
+const CANNOT_RUN: &[&str] = &["lexical.vlt"];
 
 fn workspace_root() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -57,11 +57,11 @@ fn corpus() -> PathBuf {
   Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/run")
 }
 
-fn sdx_in(dir: &Path) -> Vec<PathBuf> {
+fn vlt_in(dir: &Path) -> Vec<PathBuf> {
   let mut found: Vec<PathBuf> = std::fs::read_dir(dir)
     .unwrap_or_else(|e| panic!("should read {}: {e}", dir.display()))
     .map(|e| e.expect("should read an entry").path())
-    .filter(|p| p.extension().is_some_and(|x| x == "sdx"))
+    .filter(|p| p.extension().is_some_and(|x| x == "vlt"))
     .collect();
   found.sort();
   found
@@ -69,12 +69,12 @@ fn sdx_in(dir: &Path) -> Vec<PathBuf> {
 
 /// Every program with a run expectation, from both directories.
 fn cases() -> Vec<PathBuf> {
-  let mut all = sdx_in(&workspace_root().join("examples"));
+  let mut all = vlt_in(&workspace_root().join("examples"));
   all.retain(|p| {
     let name = p.file_name().expect("a name").to_string_lossy().to_string();
     !CANNOT_RUN.contains(&name.as_str())
   });
-  all.extend(sdx_in(&corpus()));
+  all.extend(vlt_in(&corpus()));
   all
 }
 
@@ -120,7 +120,7 @@ fn every_run_case_prints_its_expectation() {
 
 /// Criterion 3: no half-pairs, in either direction.
 ///
-/// A `.stdout` with no `.sdx` is a stale expectation nothing reads. A runnable
+/// A `.stdout` with no `.vlt` is a stale expectation nothing reads. A runnable
 /// program with no `.stdout` is coverage someone meant to add and did not.
 ///
 /// Skipped under `VOLTAIC_UPDATE`, because updating is when the expectations are
@@ -146,8 +146,8 @@ fn every_case_is_a_complete_pair() {
       let path = entry.expect("should read an entry").path();
       if path.extension().is_some_and(|x| x == "stdout") {
         assert!(
-          path.with_extension("sdx").exists(),
-          "{} has no .sdx beside it",
+          path.with_extension("vlt").exists(),
+          "{} has no .vlt beside it",
           path.display()
         );
       }
@@ -163,7 +163,7 @@ fn the_corpus_holds_only_cases_and_expectations() {
     let path = entry.expect("should read an entry").path();
     let ext = path.extension().and_then(|x| x.to_str());
     assert!(
-      matches!(ext, Some("sdx" | "stdout")),
+      matches!(ext, Some("vlt" | "stdout")),
       "{} is neither a case nor an expectation",
       path.display()
     );
@@ -174,8 +174,8 @@ fn the_corpus_holds_only_cases_and_expectations() {
 /// reaches the generated Rust.
 ///
 /// A `.stdout` cannot hold a comment, so the reasoning — why `2 + 3 * 4` is
-/// `14` and not `20` — lives in the `.sdx`. Asserting it survives into the
-/// `.xrs` exercises trivia preservation (doc 02 §10.1) on every case, free.
+/// `14` and not `20` — lives in the `.vlt`. Asserting it survives into the
+/// `.vrs` exercises trivia preservation (doc 02 §10.1) on every case, free.
 #[test]
 fn every_case_documents_itself_and_keeps_its_comments() {
   if support::skip_without_rustc("every_case_documents_itself_and_keeps_its_comments") {

@@ -1,13 +1,13 @@
-//! End-to-end: `.sdx` to a running binary.
+//! End-to-end: `.vlt` to a running binary.
 //!
 //! Plan 01 (`docs/05 - 01 - Vertical Slice.md`), leaf 7. Adapted from
 //! `/data/Code/emerald/crates/emerald-cli/tests/hello_em.rs` — the harness
 //! shape is Emerald's (locate the fixture via `CARGO_MANIFEST_DIR`, invoke the
 //! genuinely-built binary via `CARGO_BIN_EXE_*`, assert exact stdout, clean
 //! up), with one step Emerald has no need for: Voltaic emits Rust source, so the
-//! harness invokes real `rustc` on the generated `.xrs` before running it.
+//! harness invokes real `rustc` on the generated `.vrs` before running it.
 //!
-//! Plan 01 §2 measured that rustc compiles a `.xrs` file directly, with zero
+//! Plan 01 §2 measured that rustc compiles a `.vrs` file directly, with zero
 //! stderr, settling doc 01 §1.1's open question about input-file extension
 //! handling — so no `.rs` staging file is needed here.
 //!
@@ -29,16 +29,16 @@ fn scratch(tag: &str) -> PathBuf {
   dir
 }
 
-/// Transpile `example`, returning the generated Rust and the `.xrs` path.
+/// Transpile `example`, returning the generated Rust and the `.vrs` path.
 fn transpile(example: &str, dir: &Path) -> (String, PathBuf) {
   let source = workspace_root().join("examples").join(example);
-  let xrs = dir.join(Path::new(example).with_extension("xrs"));
+  let vrs = dir.join(Path::new(example).with_extension("vrs"));
 
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .arg("build")
     .arg(&source)
     .arg("-o")
-    .arg(&xrs)
+    .arg(&vrs)
     .output()
     .expect("should run the voltaic binary");
 
@@ -48,8 +48,8 @@ fn transpile(example: &str, dir: &Path) -> (String, PathBuf) {
     String::from_utf8_lossy(&out.stderr)
   );
 
-  let rust = std::fs::read_to_string(&xrs).expect("should read the generated .xrs");
-  (rust, xrs)
+  let rust = std::fs::read_to_string(&vrs).expect("should read the generated .vrs");
+  (rust, vrs)
 }
 
 /// The toolchain's rustc, from `voltaic_driver::rustc_path`.
@@ -95,15 +95,15 @@ fn skip_without_rustc(test: &str) -> bool {
   true
 }
 
-/// Compile `xrs` with real rustc and run it, returning its stdout.
-fn compile_and_run(xrs: &Path, dir: &Path) -> String {
+/// Compile `vrs` with real rustc and run it, returning its stdout.
+fn compile_and_run(vrs: &Path, dir: &Path) -> String {
   let bin = dir.join("program");
   let out = Command::new(rustc())
     .arg("--edition")
     .arg("2024")
     .arg("-o")
     .arg(&bin)
-    .arg(xrs)
+    .arg(vrs)
     .output()
     .expect("should run rustc");
 
@@ -117,7 +117,7 @@ fn compile_and_run(xrs: &Path, dir: &Path) -> String {
   );
   assert!(
     out.status.success(),
-    "rustc should compile the generated .xrs"
+    "rustc should compile the generated .vrs"
   );
 
   let run = Command::new(&bin)
@@ -129,23 +129,23 @@ fn compile_and_run(xrs: &Path, dir: &Path) -> String {
 
 /// Plan 01 §3's concrete proof, end to end.
 #[test]
-fn hello_sdx_transpiles_compiles_and_prints_hello() {
-  if skip_without_rustc("hello_sdx_transpiles_compiles_and_prints_hello") {
+fn hello_vlt_transpiles_compiles_and_prints_hello() {
+  if skip_without_rustc("hello_vlt_transpiles_compiles_and_prints_hello") {
     return;
   }
   let dir = scratch("hello");
-  let (rust, xrs) = transpile("hello.sdx", &dir);
+  let (rust, vrs) = transpile("hello.vlt", &dir);
 
-  // The generated text is asserted by `tests/golden/hello.xrs` and the output
+  // The generated text is asserted by `tests/golden/hello.vrs` and the output
   // by `examples/hello.stdout`, both regenerated. Plan 08 §2.1: this file held
-  // the whole `.xrs` as an escaped literal, duplicating the golden in a form
+  // the whole `.vrs` as an escaped literal, duplicating the golden in a form
   // only a human editing Rust could update.
   assert!(
     rust.contains("println!"),
     "the program should print:\n{rust}"
   );
 
-  assert_eq!(compile_and_run(&xrs, &dir), "hello\n");
+  assert_eq!(compile_and_run(&vrs, &dir), "hello\n");
   std::fs::remove_dir_all(&dir).ok();
 }
 
@@ -156,7 +156,7 @@ fn comments_survive_into_the_generated_rust() {
     return;
   }
   let dir = scratch("comments");
-  let (rust, xrs) = transpile("comments.sdx", &dir);
+  let (rust, vrs) = transpile("comments.vlt", &dir);
 
   assert!(
     rust.contains("// Trivia must survive"),
@@ -171,7 +171,7 @@ fn comments_survive_into_the_generated_rust() {
     "a trailing comment should survive:\n{rust}"
   );
 
-  assert_eq!(compile_and_run(&xrs, &dir), "one\ntwo\n");
+  assert_eq!(compile_and_run(&vrs, &dir), "one\ntwo\n");
   std::fs::remove_dir_all(&dir).ok();
 }
 
@@ -179,8 +179,8 @@ fn comments_survive_into_the_generated_rust() {
 #[test]
 fn transpiling_twice_produces_identical_bytes() {
   let dir = scratch("determinism");
-  let (first, _) = transpile("comments.sdx", &dir);
-  let (second, _) = transpile("comments.sdx", &dir);
+  let (first, _) = transpile("comments.vlt", &dir);
+  let (second, _) = transpile("comments.vlt", &dir);
   assert_eq!(first, second);
   std::fs::remove_dir_all(&dir).ok();
 }
@@ -190,7 +190,7 @@ fn transpiling_twice_produces_identical_bytes() {
 #[test]
 fn rejects_a_tab_in_indentation_with_a_located_diagnostic() {
   let dir = scratch("tab");
-  let bad = dir.join("tab.sdx");
+  let bad = dir.join("tab.vlt");
   std::fs::write(&bad, "main : ()\nmain =\n\tprint \"x\"\n").expect("should write the fixture");
 
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
@@ -202,7 +202,7 @@ fn rejects_a_tab_in_indentation_with_a_located_diagnostic() {
   assert!(!out.status.success(), "a tab should be a build failure");
   let stderr = String::from_utf8_lossy(&out.stderr);
   assert!(stderr.contains("tab"), "{stderr}");
-  assert!(stderr.contains("tab.sdx:3:1"), "{stderr}");
+  assert!(stderr.contains("tab.vlt:3:1"), "{stderr}");
   std::fs::remove_dir_all(&dir).ok();
 }
 
@@ -210,7 +210,7 @@ fn rejects_a_tab_in_indentation_with_a_located_diagnostic() {
 #[test]
 fn rejects_an_inconsistent_dedent_with_a_located_diagnostic() {
   let dir = scratch("dedent");
-  let bad = dir.join("dedent.sdx");
+  let bad = dir.join("dedent.vlt");
   std::fs::write(
     &bad,
     "main : ()\nmain =\n    println! \\-> \"a\"\n  println! \\-> \"b\"\n",
@@ -226,15 +226,15 @@ fn rejects_an_inconsistent_dedent_with_a_located_diagnostic() {
   assert!(!out.status.success(), "an inconsistent dedent should fail");
   let stderr = String::from_utf8_lossy(&out.stderr);
   assert!(stderr.contains("inconsistent dedent"), "{stderr}");
-  assert!(stderr.contains("dedent.sdx:4:"), "{stderr}");
+  assert!(stderr.contains("dedent.vlt:4:"), "{stderr}");
   std::fs::remove_dir_all(&dir).ok();
 }
 
 /// The default output mapping of doc 01 §3.4, exercised for real.
 #[test]
-fn writes_a_sibling_xrs_when_no_output_is_given() {
+fn writes_a_sibling_vrs_when_no_output_is_given() {
   let dir = scratch("default-output");
-  let src = dir.join("prog.sdx");
+  let src = dir.join("prog.vlt");
   std::fs::write(&src, "main : ()\nmain =\n  println! \\-> \"x\"\n  ()\n")
     .expect("should write the fixture");
 
@@ -245,7 +245,7 @@ fn writes_a_sibling_xrs_when_no_output_is_given() {
     .expect("should run the voltaic binary");
 
   assert!(status.success());
-  assert!(dir.join("prog.xrs").exists(), "prog.xrs should exist");
+  assert!(dir.join("prog.vrs").exists(), "prog.vrs should exist");
   std::fs::remove_dir_all(&dir).ok();
 }
 

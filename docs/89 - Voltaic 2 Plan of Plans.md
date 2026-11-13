@@ -63,7 +63,28 @@ than applied silently. Plan 92 is that record.
 
 | # | Plan | Scope | Status | Depends on |
 |---|---|---|---|---|
-| 93 | Extensions and Nomenclature | `.sdx`→`.vlt`, `.xrs`→`.vrs`, `.xrs.map`→`.vrs.map`, `crates/*/sdx/`→`crates/*/vlt/`, `__rdx_`→`__vlt_`, `RDX####`→`VLT####`. 2,644 occurrences, 1,158 outside `docs/`. | `planned` | 92 |
+| 93 | Extensions and Nomenclature | `.sdx`→`.vlt`, `.xrs`→`.vrs`, `.xrs.map`→`.vrs.map`, `crates/*/sdx/`→`crates/*/vlt/`, `__rdx_`→`__vlt_`, `RDX####`→`VLT####`. 2,644 occurrences, 1,158 outside `docs/`. | `done` 2026-11-14 | 92 |
+
+Row 93 landed 228 `.sdx`, 43 `.xrs`, 13 directories and 507 files, with the gate green
+at 920 tests and the goldens needing **no re-blessing** — the strongest evidence
+available that it changed spellings and nothing else. Doc 91 §10 has five findings worth
+carrying forward, and two change later rows:
+
+- **`GRAMMAR.md`'s paths belong to whichever row moves the files; only its grades belong
+  to row 104.** §6 of that plan claimed the whole document was 104's and the gate
+  disagreed immediately. The same split applies to `HATCH_ALLOWED`.
+- **The deprecation note for `.sdx` is row 103's, not 93's** (§10.10). Acceptance
+  shipped; the note did not, because it names `voltaic migrate` and that subcommand is
+  row 103's. A user on `.sdx` gets silence until then.
+- **Generation 1 parses an or-pattern as a guard, silently** (§10.2) — observed, not
+  argued, and a sharper statement of doc 86 §10's prediction than the prediction: the
+  gap is not that or-patterns are unavailable but that they look available and mean
+  something else.
+- **Leaf 6 assumed a hygiene gate that does not exist.** `AGENTS.md` says user
+  identifiers may not use the reserved prefix; nothing checks it. Reassigned to row 101,
+  which owns the diagnostics surface.
+- **The seed scans by extension as well as emitting the old prefix** (§10.4), so the
+  blob is an input dependency of a rename and not only an output one.
 
 Deliberately **before** any language work. The rename touches editor configs, CI
 workflows, `.gitignore`, `.gitattributes`, moon inputs, the seed scripts, the website
@@ -121,7 +142,7 @@ can lose work if they are got wrong.
 |---|---|---|---|---|
 | 101 | Diagnostics Without Signatures | The four new code ranges, constraint-provenance rendering, definition-boundary reporting, `tests/explain/`, UI fixtures per range. | `planned` | 94–97 |
 | 102 | The Seed Across the Turn | Generation-tagged seeds. Build generation 2's front end **in generation 1**. `seed/GENERATION`, two-generation bootstrap, `fixpoint` on g2, retire g1. | `planned` | 99 |
-| 103 | The Generation Migrator | `voltaic migrate`: mechanical `.sdx`→`.vlt` rewriting, classified auto/review/manual, gated on **byte-identical generated Rust**. Then the simplification pass. | `planned` | 99, 102 |
+| 103 | The Generation Migrator | `voltaic migrate`: mechanical `.sdx`→`.vlt` rewriting, classified auto/review/manual, gated on **byte-identical generated Rust**. Then the simplification pass. **Also the `.sdx` deprecation note row 93 could not ship** (doc 91 §10.10), because it names this subcommand. | `planned` | 99, 102 |
 | 104 | The Reference Docs Rewrite | Regrade `GRAMMAR.md`; rewrite `DECLINED.md` against doc 87 §22 and re-point `declined.rs`; rewrite `CONFORMANCE.md`; regenerate `STATUS.md`; add `.vlt.sig` to `dependency_sources`. | `planned` | 103 |
 
 ### Why 104 is last, and why that is a finding rather than scheduling

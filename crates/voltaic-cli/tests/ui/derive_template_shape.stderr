@@ -1,5 +1,5 @@
-error[RDX0122]: a deriving template's `instance` must be for `Target`
-  --> derive_template_shape.sdx:8:20
+error[VLT0122]: a deriving template's `instance` must be for `Target`
+  --> derive_template_shape.vlt:8:20
   |
 8 |   instance Display Meters
   |                    ^^^^^^

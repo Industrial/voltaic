@@ -1,6 +1,6 @@
-# The self-hosted crates' Rust is **generated** from the `.sdx` beside it.
+# The self-hosted crates' Rust is **generated** from the `.vlt` beside it.
 #
-# `crates/voltaic-ast/sdx/**` and `crates/voltaic-fmt/sdx/**` are the source; the
+# `crates/voltaic-ast/vlt/**` and `crates/voltaic-fmt/vlt/**` are the source; the
 # `.rs` under each crate's `src/` is written by `voltaic build` and committed,
 # because the committed output *is* this project's previous-version compiler
 # (doc 02 §4.8) — stored as reviewable Rust rather than as a prebuilt binary,

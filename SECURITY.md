@@ -9,7 +9,7 @@ This opens a draft GitHub Security Advisory (GHSA) that only the maintainers and
 Do not open a public issue, pull request or discussion for a suspected vulnerability.
 
 Please include the affected crate(s), the commit you saw it on, a description of the impact, and a
-minimal reproduction if you have one — a `.sdx` file is the ideal form.
+minimal reproduction if you have one — a `.vlt` file is the ideal form.
 
 ## Response times
 
@@ -36,23 +36,23 @@ replaced with a real support matrix at the first release.
 
 ## Scope
 
-Voltaic is a source-to-source compiler: `.sdx` in, `.xrs` containing ordinary Rust out. Two things
+Voltaic is a source-to-source compiler: `.vlt` in, `.vrs` containing ordinary Rust out. Two things
 follow, and they shape what counts as a vulnerability here.
 
 **Voltaic has no borrow checker and no exhaustiveness checker, by design** — rustc is the
 authority on types and borrows (`AGENTS.md`). Voltaic *infers* types, effects and borrow modes and
 writes them into the generated Rust explicitly, so rustc checks a program that states its own
 types. So "Voltaic accepted a program rustc then rejected" is a *diagnostics* issue, not a
-soundness one — an inference bug, filed against Voltaic rather than against the author. Generated `.xrs` that rustc accepts but
+soundness one — an inference bug, filed against Voltaic rather than against the author. Generated `.vrs` that rustc accepts but
 which is unsound would be a rustc issue, unless Voltaic emitted `unsafe` the input did not ask for.
 
 **In scope:**
 
-- Generated `.xrs` that does something the `.sdx` did not say — a lowering that changes the
+- Generated `.vrs` that does something the `.vlt` did not say — a lowering that changes the
   meaning of a program, injects `unsafe`, or silently drops a check.
 - Path traversal or arbitrary writes from `voltaic build` / `voltaic fmt` / the driver's cache or
   output paths.
-- Code execution while *compiling* untrusted `.sdx` — the compiler is expected to read hostile
+- Code execution while *compiling* untrusted `.vlt` — the compiler is expected to read hostile
   input and only ever write Rust.
 - `seed/voltaic1.wasm` not matching the provenance recorded in `seed/SEED.md` (`blob.rs` asserts
   this agreement; a mismatch means the blob was replaced).

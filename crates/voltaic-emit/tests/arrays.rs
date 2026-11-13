@@ -8,7 +8,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -18,7 +18,7 @@ fn body(src: &str) -> String {
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`, and the `pop` is what keeps the unit tail asserted rather
   // than merely tolerated.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)
@@ -63,15 +63,15 @@ fn an_ascribed_literal_becomes_a_vec() {
 /// would have passed a narrower test.
 #[test]
 fn the_count_may_be_any_expression() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("[0u8; 4]", "[0u8; 4]"),
     ("[7; WIDTH]", "[7; WIDTH]"),
     ("[0; n + 1]", "[0; n + 1]"),
   ] {
     assert_eq!(
-      body(&format!("  a = {sdx}\n")),
+      body(&format!("  a = {vlt}\n")),
       format!("let a = {want};"),
-      "{sdx}"
+      "{vlt}"
     );
   }
 }

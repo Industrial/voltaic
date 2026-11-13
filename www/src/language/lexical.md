@@ -4,13 +4,13 @@ What a Voltaic token is. Most of it is Rust's, and the differences are few
 enough to list.
 
 ```voltaic
-{{#include ../../../examples/comments.sdx}}
+{{#include ../../../examples/comments.vlt}}
 ```
 
 ## Comments are trivia, and trivia survives
 
-`--` opens a comment and `-- |` a doc comment. Both reach the generated `.xrs`,
-because the `.xrs` is a human-facing artifact and a compiler that throws your
+`--` opens a comment and `-- |` a doc comment. Both reach the generated `.vrs`,
+because the `.vrs` is a human-facing artifact and a compiler that throws your
 comments away produces output nobody wants to read.
 
 Inside the compiler's own source the rule is reversed: zero comments, enforced
@@ -40,7 +40,7 @@ pattern-test operator `is` read as English with them and as line noise without.
 
 ## This example does not compile, deliberately
 
-`examples/lexical.sdx` is the error-path example: it exercises token forms that
+`examples/lexical.vlt` is the error-path example: it exercises token forms that
 no parser rule accepts, so it is the one file in the corpus asserted to
 **fail**. That is also why the repository has 44 examples and 43 goldens, which
 is not an off-by-one.

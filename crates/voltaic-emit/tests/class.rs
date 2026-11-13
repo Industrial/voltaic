@@ -14,13 +14,13 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
 #[test]
 fn a_class_becomes_a_trait() {
-  let out = xrs("class Shape\n  area : &self -> f64\n");
+  let out = vrs("class Shape\n  area : &self -> f64\n");
   assert!(out.contains("trait Shape {"), "{out}");
   assert!(out.contains("    fn area(&self) -> f64;"), "{out}");
 }
@@ -31,9 +31,9 @@ fn a_class_becomes_a_trait() {
 /// there is no variable left for it to name.
 #[test]
 fn superclasses_become_supertrait_bounds() {
-  let one = xrs("class Debug => Shape\n  area : &self -> f64\n");
+  let one = vrs("class Debug => Shape\n  area : &self -> f64\n");
   assert!(one.contains("trait Shape: Debug {"), "{one}");
-  let two = xrs("class (Debug, Clone) => Shape\n  area : &self -> f64\n");
+  let two = vrs("class (Debug, Clone) => Shape\n  area : &self -> f64\n");
   assert!(two.contains("trait Shape: Debug + Clone {"), "{two}");
 }
 
@@ -43,7 +43,7 @@ fn superclasses_become_supertrait_bounds() {
 /// rewinds.
 #[test]
 fn a_class_without_constraints_keeps_its_name() {
-  let out = xrs("class Shape\n  area : &self -> f64\n");
+  let out = vrs("class Shape\n  area : &self -> f64\n");
   assert!(out.contains("trait Shape {"), "{out}");
   assert!(!out.contains(": "), "no stray bound:\n{out}");
 }
@@ -52,11 +52,11 @@ fn a_class_without_constraints_keeps_its_name() {
 /// parameters, which is what makes `trait From<T>` reachable — §1.4.
 #[test]
 fn a_classs_parameters_become_the_traits_generic_list() {
-  let one = xrs("class Convert t\n  wrap : t -> Self\n");
+  let one = vrs("class Convert t\n  wrap : t -> Self\n");
   assert!(one.contains("trait Convert<T> {"), "{one}");
-  assert!(one.contains("fn wrap(__rdx_a0: T) -> Self;"), "{one}");
+  assert!(one.contains("fn wrap(__vlt_a0: T) -> Self;"), "{one}");
   // Source order, because the emitter's output has to be byte-stable.
-  let two = xrs("class Pair t u\n  fst : &self -> t\n  snd : &self -> u\n");
+  let two = vrs("class Pair t u\n  fst : &self -> t\n  snd : &self -> u\n");
   assert!(two.contains("trait Pair<T, U> {"), "{two}");
 }
 
@@ -64,7 +64,7 @@ fn a_classs_parameters_become_the_traits_generic_list() {
 /// list binds to the name and the bound follows the whole head.
 #[test]
 fn a_parameter_list_and_a_superclass_coexist() {
-  let out = xrs("class Debug => Convert t\n  wrap : t -> Self\n");
+  let out = vrs("class Debug => Convert t\n  wrap : t -> Self\n");
   assert!(out.contains("trait Convert<T>: Debug {"), "{out}");
 }
 
@@ -72,7 +72,7 @@ fn a_parameter_list_and_a_superclass_coexist() {
 /// `;` where a body would be.
 #[test]
 fn a_method_without_equations_is_required() {
-  let out = xrs("class Shape\n  area : &self -> f64\n");
+  let out = vrs("class Shape\n  area : &self -> f64\n");
   assert!(out.contains("fn area(&self) -> f64;"), "{out}");
   assert!(!out.contains("fn area(&self) -> f64 {"), "{out}");
 }
@@ -81,14 +81,14 @@ fn a_method_without_equations_is_required() {
 /// can be, it can be — several clauses and guard ladders included.
 #[test]
 fn a_default_method_carries_its_body() {
-  let out = xrs("class Shape\n  name : &self -> u32\n  name self = 1\n");
+  let out = vrs("class Shape\n  name : &self -> u32\n  name self = 1\n");
   assert!(out.contains("fn name(&self) -> u32 {"), "{out}");
   assert!(out.contains("        1\n"), "{out}");
 }
 
 #[test]
 fn associated_types_and_constants_pass_through() {
-  let out = xrs("class Shape\n  type Unit\n  const SIDES : u32\n");
+  let out = vrs("class Shape\n  type Unit\n  const SIDES : u32\n");
   assert!(out.contains("    type Unit;"), "{out}");
   assert!(out.contains("    const SIDES: u32;"), "{out}");
 }
@@ -97,7 +97,7 @@ fn associated_types_and_constants_pass_through() {
 /// not enforce the pairing, because rustc does.
 #[test]
 fn an_associated_constant_may_carry_a_value() {
-  let out = xrs("instance Shape Square\n  const SIDES : u32 = 4\n");
+  let out = vrs("instance Shape Square\n  const SIDES : u32 = 4\n");
   assert!(out.contains("    const SIDES: u32 = 4;"), "{out}");
 }
 
@@ -106,17 +106,17 @@ fn an_associated_constant_may_carry_a_value() {
 /// this half of doc 18 §2.5 exactly as it was.
 #[test]
 fn every_receiver_form_comes_from_the_type() {
-  let shared = xrs("class C\n  f : &self -> u32\n");
+  let shared = vrs("class C\n  f : &self -> u32\n");
   assert!(shared.contains("fn f(&self) -> u32;"), "{shared}");
-  let unique = xrs("class C\n  f : &mut self -> u32\n");
+  let unique = vrs("class C\n  f : &mut self -> u32\n");
   assert!(unique.contains("fn f(&mut self) -> u32;"), "{unique}");
-  let owned = xrs("class C\n  f : self -> u32\n");
+  let owned = vrs("class C\n  f : self -> u32\n");
   assert!(owned.contains("fn f(self) -> u32;"), "{owned}");
   // Rust's fourth form, which plan 67's list of three missed and plan 74
   // found porting `voltaic-lexer`: a by-value receiver the method may mutate.
-  // Before the fix this emitted `fn f(__rdx_a0: mut self)` — not Rust, and
+  // Before the fix this emitted `fn f(__vlt_a0: mut self)` — not Rust, and
   // reported by rustc rather than by Voltaic.
-  let owned_mut = xrs("class C\n  f : mut self -> u32\n");
+  let owned_mut = vrs("class C\n  f : mut self -> u32\n");
   assert!(owned_mut.contains("fn f(mut self) -> u32;"), "{owned_mut}");
 }
 
@@ -125,22 +125,22 @@ fn every_receiver_form_comes_from_the_type() {
 /// all, and so does this. `Self` in **return** position is not a marker.
 #[test]
 fn a_member_with_no_marker_is_an_associated_function() {
-  let out = xrs("class C\n  unit : f64 -> Self\n");
-  assert!(out.contains("fn unit(__rdx_a0: f64) -> Self;"), "{out}");
+  let out = vrs("class C\n  unit : f64 -> Self\n");
+  assert!(out.contains("fn unit(__vlt_a0: f64) -> Self;"), "{out}");
   assert!(!out.contains("self"), "{out}");
 }
 
 /// Plan 67 §1.2, asserted rather than argued: **position carries no
 /// meaning.** A two-argument method written receiver-first and receiver-last
 /// emits byte-identical Rust, generated parameter name included — `receiver`
-/// numbers `__rdx_aN` by its place in the Rust signature for exactly this.
+/// numbers `__vlt_aN` by its place in the Rust signature for exactly this.
 #[test]
 fn a_two_argument_method_emits_the_same_rust_in_either_order() {
-  let first = xrs("class C\n  scaled : &self -> f64 -> Self\n");
-  let last = xrs("class C\n  scaled : f64 -> &self -> Self\n");
+  let first = vrs("class C\n  scaled : &self -> f64 -> Self\n");
+  let last = vrs("class C\n  scaled : f64 -> &self -> Self\n");
   assert_eq!(first, last, "the two orders are the same declaration");
   assert!(
-    first.contains("fn scaled(&self, __rdx_a1: f64) -> Self;"),
+    first.contains("fn scaled(&self, __vlt_a1: f64) -> Self;"),
     "{first}"
   );
 }
@@ -149,8 +149,8 @@ fn a_two_argument_method_emits_the_same_rust_in_either_order() {
 /// the body is written against it either way.
 #[test]
 fn a_bound_two_argument_method_is_the_same_in_either_order() {
-  let first = xrs("instance C\n  scaled : &self -> f64 -> f64\n  scaled self k = k\n");
-  let last = xrs("instance C\n  scaled : f64 -> &self -> f64\n  scaled k self = k\n");
+  let first = vrs("instance C\n  scaled : &self -> f64 -> f64\n  scaled self k = k\n");
+  let last = vrs("instance C\n  scaled : f64 -> &self -> f64\n  scaled k self = k\n");
   assert_eq!(first, last, "the two orders are the same declaration");
   assert!(
     first.contains("fn scaled(&self, k: f64) -> f64 {"),
@@ -164,16 +164,16 @@ fn a_bound_two_argument_method_is_the_same_in_either_order() {
 /// §1.6's claim about plan 63's resolver.
 #[test]
 fn a_class_parameter_elsewhere_becomes_its_rust_name() {
-  let out = xrs("class Combine t\n  combine : &self -> t -> t\n");
+  let out = vrs("class Combine t\n  combine : &self -> t -> t\n");
   assert!(
-    out.contains("fn combine(&self, __rdx_a1: T) -> T;"),
+    out.contains("fn combine(&self, __vlt_a1: T) -> T;"),
     "{out}"
   );
 }
 
 #[test]
 fn a_trait_instance_becomes_an_impl_for() {
-  let out = xrs("instance Shape Square\n  area : &self -> f64\n  area self = 1.0\n");
+  let out = vrs("instance Shape Square\n  area : &self -> f64\n  area self = 1.0\n");
   assert!(out.contains("impl Shape for Square {"), "{out}");
   assert!(out.contains("fn area(&self) -> f64 {"), "{out}");
 }
@@ -183,7 +183,7 @@ fn a_trait_instance_becomes_an_impl_for() {
 /// the Rust it becomes.
 #[test]
 fn the_last_name_in_an_instance_head_is_the_implementing_type() {
-  let out = xrs("instance Convert f64 Meters\n  wrap : f64 -> Self\n  wrap n = Meters n\n");
+  let out = vrs("instance Convert f64 Meters\n  wrap : f64 -> Self\n  wrap n = Meters n\n");
   assert!(out.contains("impl Convert<f64> for Meters {"), "{out}");
 }
 
@@ -192,7 +192,7 @@ fn the_last_name_in_an_instance_head_is_the_implementing_type() {
 /// `TypeApp::is_var` grew `primitive_type`'s correction.
 #[test]
 fn a_primitive_class_argument_is_not_a_type_variable() {
-  let out = xrs("instance Convert f64 Meters\n  wrap : f64 -> Self\n  wrap n = Meters n\n");
+  let out = vrs("instance Convert f64 Meters\n  wrap : f64 -> Self\n  wrap n = Meters n\n");
   assert!(!out.contains("F64"), "{out}");
   assert!(
     !out.contains("impl<"),
@@ -203,7 +203,7 @@ fn a_primitive_class_argument_is_not_a_type_variable() {
 /// No class name, so no `for`.
 #[test]
 fn an_inherent_instance_has_no_for() {
-  let out = xrs("instance Counter\n  get : &self -> u32\n  get self = 1\n");
+  let out = vrs("instance Counter\n  get : &self -> u32\n  get self = 1\n");
   assert!(out.contains("impl Counter {"), "{out}");
   assert!(!out.contains(" for "), "{out}");
 }
@@ -213,7 +213,7 @@ fn an_inherent_instance_has_no_for() {
 #[test]
 fn the_generic_list_is_synthesised() {
   let out =
-    xrs("instance Display t => Describe (Wrapper t)\n  show : &self -> u32\n  show self = 1\n");
+    vrs("instance Display t => Describe (Wrapper t)\n  show : &self -> u32\n  show self = 1\n");
   assert!(
     out.contains("impl<T: Display> Describe for Wrapper<T> {"),
     "{out}"
@@ -224,7 +224,7 @@ fn the_generic_list_is_synthesised() {
 /// byte-stable.
 #[test]
 fn several_variables_keep_source_order() {
-  let out = xrs("instance Keyed (Pair k v)\n  key : &self -> u32\n  key self = 1\n");
+  let out = vrs("instance Keyed (Pair k v)\n  key : &self -> u32\n  key self = 1\n");
   assert!(out.contains("impl<K, V> Keyed for Pair<K, V> {"), "{out}");
 }
 
@@ -233,7 +233,7 @@ fn several_variables_keep_source_order() {
 /// does.
 #[test]
 fn a_parenthesised_first_type_is_the_target() {
-  let out = xrs("instance (Wrapper t)\n  get : &self -> u32\n  get self = 1\n");
+  let out = vrs("instance (Wrapper t)\n  get : &self -> u32\n  get self = 1\n");
   assert!(out.contains("impl<T> Wrapper<T> {"), "{out}");
   assert!(!out.contains(" for "), "{out}");
 }
@@ -244,7 +244,7 @@ fn a_parenthesised_first_type_is_the_target() {
 /// as well.
 #[test]
 fn self_is_an_expression_and_a_binder() {
-  let out = xrs("instance C\n  get : &self -> u32\n  get self = self.value\n");
+  let out = vrs("instance C\n  get : &self -> u32\n  get self = self.value\n");
   assert!(out.contains("self.value"), "{out}");
 }
 
@@ -256,7 +256,7 @@ fn self_is_an_expression_and_a_binder() {
 /// rather than left to the corpus.
 #[test]
 fn the_marker_synthesises_no_generic_parameter() {
-  let out = xrs("class C\n  area : &self -> f64\n");
+  let out = vrs("class C\n  area : &self -> f64\n");
   assert!(out.contains("fn area(&self) -> f64;"), "{out}");
   assert!(!out.contains("fn area<"), "no generic list:\n{out}");
 }

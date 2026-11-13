@@ -8,7 +8,7 @@
 # Taken from Industrial/id_effect's script of the same name, which is already
 # generic over the package. The one thing worth knowing that is specific to this
 # repository: the `.crate` being uploaded contains Rust that was *generated* from
-# `.sdx` by `./bootstrap.sh`, so the digest check below is load-bearing in a way
+# `.vlt` by `./bootstrap.sh`, so the digest check below is load-bearing in a way
 # it is not there. If the seed's output is not byte-reproducible, two jobs
 # packaging "the same tree" produce different bytes and this is what catches it.
 # `publish.yml`'s `determinism` step exists to fail earlier and more legibly.

@@ -22,7 +22,7 @@ ROOT = '/home/tom/Code/rust/voltaic/'
 _c = [a[6:] for a in sys.argv[1:] if a.startswith('crate=')]
 CRATE = _c[0] if _c else 'voltaic-ast'
 SRC = ROOT + 'crates/' + CRATE + '/src/'
-OUT = ROOT + 'crates/' + CRATE + '/sdx/'
+OUT = ROOT + 'crates/' + CRATE + '/vlt/'
 
 VIS = {
     'pub ': 'export ',
@@ -35,7 +35,7 @@ VIS = {
 # **Keyword collisions get `r#`, rather than a parse error.** Owed since row 75
 # and hit seven times by row 80: `data` (a fuzz parameter), `rust` (a `Pair`
 # field, then a `Cached` field), `class` and `data` again (`voltaic-lsp`), and
-# `with` (a `voltaic-driver` module). Each one arrived as `RDX0103` naming a line
+# `with` (a `voltaic-driver` module). Each one arrived as `VLT0103` naming a line
 # whose author chose the name freely in Rust, and the fix was always the same
 # three characters.
 #
@@ -49,7 +49,7 @@ VIS = {
 #
 # `self`, `Self`, `crate` and `super` are excluded: `r#self` is not a legal raw
 # identifier, and a Rust field or module cannot be called one of them anyway.
-_KW_SDX = ROOT + 'crates/voltaic-lexer/sdx/token/keyword.sdx'
+_KW_VLT = ROOT + 'crates/voltaic-lexer/vlt/token/keyword.vlt'
 RUST_RESERVED = (
     'final', 'become', 'priv', 'typeof', 'unsized', 'virtual', 'abstract',
     'override', 'box', 'macro', 'yield', 'gen',
@@ -57,7 +57,7 @@ RUST_RESERVED = (
 NEVER_RAW = ('self', 'Self', 'crate', 'super')
 KEYWORDS = (
     set(re.findall(r'"([a-zA-Z_][a-zA-Z_0-9]*)" -> Some ',
-                   io.open(_KW_SDX, encoding='utf-8').read()))
+                   io.open(_KW_VLT, encoding='utf-8').read()))
     | set(RUST_RESERVED)
 ) - set(NEVER_RAW)
 
@@ -150,7 +150,7 @@ def translate(path):
         # **An inner attribute passes through verbatim.** `#![allow(…)]` does
         # not start with `#[`, so without this branch it reached `PARTIAL`'s
         # TODO marker — which does not report a failure, it writes a *shorter
-        # file*. `lib.sdx` lost its twenty `module` declarations and every
+        # file*. `lib.vlt` lost its twenty `module` declarations and every
         # re-export to that, and the only symptom was a TODO count of 1.
         if line.startswith('#!['):
             out.extend(pending)
@@ -196,7 +196,7 @@ def translate(path):
         # the width, and the match below is single-line — so a wrapped `use`
         # fell through to the generic token path, which lost the spaces around
         # `as` and sometimes dropped the statement entirely. Both are quiet:
-        # the `.sdx` parses and rustc then reports a missing type in a file
+        # the `.vlt` parses and rustc then reports a missing type in a file
         # whose author never touched the import.
         if re.match(r'(pub )?use [^;]*$', line):
             joined = line
@@ -462,7 +462,7 @@ def record_variant(lines, i, out):
         out.extend('    ' + p for p in pending)
         pending = []
         # **No visibility**: `pub` on an enum variant's field is `E0449`,
-        # which rustc reports against the `.sdx` line. Dropped rather than
+        # which rustc reports against the `.vlt` line. Dropped rather than
         # translated, because there is nothing to translate it to.
         out.append('    %s : %s,' % (raw_ident(m.group(2)), m.group(3)))
         i += 1
@@ -482,7 +482,7 @@ if __name__ == '__main__':
         except Fail as e:
             failed.append(str(e))
             continue
-        dest = OUT + rel[:-3] + '.sdx'
+        dest = OUT + rel[:-3] + '.vlt'
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         io.open(dest, 'w', encoding='utf-8').write(text)
         done += 1

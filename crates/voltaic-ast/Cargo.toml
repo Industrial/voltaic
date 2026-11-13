@@ -8,7 +8,7 @@ homepage.workspace = true
 description = "Syntax tree types for the Voltaic language."
 
 # Why `include` is not optional here — see `crates/voltaic-diag/Cargo.toml`.
-include = ["src/**/*.rs", "sdx/**/*.sdx", "Cargo.toml"]
+include = ["src/**/*.rs", "vlt/**/*.vlt", "Cargo.toml"]
 
 [dependencies]
 voltaic-lexer.workspace = true

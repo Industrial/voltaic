@@ -6,7 +6,7 @@
 //!
 //! While each ported crate's generated Rust is **committed**, a reviewer can
 //! read the stage0 — it is 6,397 lines of ordinary Rust, and `tests/port.rs`
-//! grades it against the `.sdx`. Once that tree is untracked and the stage0 is
+//! grades it against the `.vlt`. Once that tree is untracked and the stage0 is
 //! `seed/voltaic1.wasm`, nobody can read it. `tests/blob.rs` then says the blob
 //! is the one `SEED.md` claims, which is provenance and not behaviour.
 //!
@@ -26,7 +26,7 @@
 //! 3. those same committed trees.
 //!
 //! The native binary is therefore *built from* the committed Rust. So asserting
-//! `seed(sdx) == native(sdx) == committed` says: the stage0 emits exactly the
+//! `seed(vlt) == native(vlt) == committed` says: the stage0 emits exactly the
 //! sources the stage1 compiler was built from, and the stage1 compiler emits
 //! exactly the same sources again. That is `stage1 == stage2` — reached without
 //! a second cargo build, because the equality on the third artifact is what
@@ -96,12 +96,12 @@ fn format_tree(dir: &Path) {
   }
 }
 
-/// Transpile `sdx` into a fresh directory under `target/`, and format it.
-fn generate(label: &str, sdx: &Path, run: impl FnOnce(&Path, &Path)) -> PathBuf {
+/// Transpile `vlt` into a fresh directory under `target/`, and format it.
+fn generate(label: &str, vlt: &Path, run: impl FnOnce(&Path, &Path)) -> PathBuf {
   let out = workspace_root().join("target").join(label);
   let _ = std::fs::remove_dir_all(&out);
   std::fs::create_dir_all(&out).expect("should create the output directory");
-  run(sdx, &out);
+  run(vlt, &out);
   format_tree(&out);
   out
 }
@@ -109,15 +109,15 @@ fn generate(label: &str, sdx: &Path, run: impl FnOnce(&Path, &Path)) -> PathBuf 
 #[test]
 fn stage1_equals_stage2() {
   let root = workspace_root();
-  let sdx = root.join("crates/voltaic-ast/sdx");
+  let vlt = root.join("crates/voltaic-ast/vlt");
   let committed = root.join("crates/voltaic-ast/src");
   let blob = root.join("seed/voltaic1.wasm");
 
   // ---------------------------------------------------------------- stage0
-  let from_seed = generate("voltaic-fixpoint-stage0", &sdx, |sdx, out| {
+  let from_seed = generate("voltaic-fixpoint-stage0", &vlt, |vlt, out| {
     // **Relative to the preopen, not absolute.** `--dir .` grants exactly one
     // directory, and an absolute host path reaches nothing through it — the
-    // seed sees no `.sdx`, writes nothing, and used to exit 0 while doing it.
+    // seed sees no `.vlt`, writes nothing, and used to exit 0 while doing it.
     // That is how this test found `run.rs`'s missing empty-output check.
     let rel = |p: &Path| {
       p.strip_prefix(&root)
@@ -127,11 +127,11 @@ fn stage1_equals_stage2() {
     let run = Command::new("wasmtime")
       .arg("run")
       // WASI grants no filesystem access at all without a preopen, so the
-      // seed cannot read one `.sdx` without this. It is not a sandbox
+      // seed cannot read one `.vlt` without this. It is not a sandbox
       // convenience, it is the whole interface.
       .args(["--dir", "."])
       .arg(rel(&blob))
-      .arg(rel(sdx))
+      .arg(rel(vlt))
       .arg(rel(out))
       .current_dir(&root)
       .output()
@@ -144,9 +144,9 @@ fn stage1_equals_stage2() {
   });
 
   // ---------------------------------------------------------------- stage1
-  let from_native = generate("voltaic-fixpoint-stage1", &sdx, |sdx, out| {
+  let from_native = generate("voltaic-fixpoint-stage1", &vlt, |vlt, out| {
     let run = Command::new(env!("CARGO_BIN_EXE_voltaic-seed"))
-      .arg(sdx)
+      .arg(vlt)
       .arg(out)
       .output()
       .expect("should run the native voltaic-seed");

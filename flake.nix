@@ -1,5 +1,5 @@
 {
-  description = "Voltaic — a source-to-source compiler: .sdx in, .xrs containing ordinary Rust out";
+  description = "Voltaic — a source-to-source compiler: .vlt in, .vrs containing ordinary Rust out";
 
   # One input, deliberately. `devenv.nix` owns the development shell and the
   # pinned toolchain; this flake exists so that *other* flakes can consume the
@@ -58,7 +58,7 @@
         # `bootstrap.sh` and `seed/` are present.
         #
         # So the derivation has to do what `AGENTS.md` tells a human to do
-        # before the first build: run the seed over every `.sdx`. `wasmtime`
+        # before the first build: run the seed over every `.vlt`. `wasmtime`
         # runs `seed/voltaic1.wasm` and `rustfmt` formats what it writes; both
         # are `bootstrap.sh`'s own declared tool requirements.
         #

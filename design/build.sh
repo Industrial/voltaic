@@ -24,7 +24,7 @@
 #
 # `--check` regenerates into a temporary directory and diffs, so CI can prove
 # the committed assets match their sources instead of trusting that someone
-# re-ran this. Same split as `sdx-fmt.sh`.
+# re-ran this. Same split as `vlt-fmt.sh`.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

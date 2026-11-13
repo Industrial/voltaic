@@ -21,7 +21,7 @@ name: Publish to crates.io
 # Adapted from Industrial/id_effect's publish.yml. The structural difference is
 # the same one ci.yml opens with: **a clean checkout has no generated Rust.**
 # Every crate under crates/ is written in Voltaic and its src/ is generated from
-# sdx/ by the seed, so every job that runs cargo must bootstrap first. That is
+# vlt/ by the seed, so every job that runs cargo must bootstrap first. That is
 # what .github/actions/setup-voltaic does.
 on:
   push:

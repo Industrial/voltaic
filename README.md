@@ -1,7 +1,7 @@
 # Voltaic
 
-**A Haskell-shaped surface over Rust's semantics.** Voltaic is a source-to-source compiler: `.sdx`
-in, `.xrs` containing ordinary Rust out. You get equations, guards, pattern rows, type classes,
+**A Haskell-shaped surface over Rust's semantics.** Voltaic is a source-to-source compiler: `.vlt`
+in, `.vrs` containing ordinary Rust out. You get equations, guards, pattern rows, type classes,
 pipelines, sections and composition — and then rustc type-checks and borrow-checks the result,
 because rustc is the authority on types and borrows. Voltaic infers them and writes them down; it
 has no borrow checker of its own and must never grow one.
@@ -29,7 +29,7 @@ output *is* Rust — Voltaic's answer to "where is the `Vec`" is "crates.io".
 
 ## The language, in one file
 
-This is `examples/guards.sdx`, unedited:
+This is `examples/guards.vlt`, unedited:
 
 ```voltaic
 -- A ladder, including `otherwise` as the final catch-all.
@@ -46,7 +46,7 @@ fib 1 = 1
 fib n = fib (n - 1) + fib (n - 2)
 ```
 
-and this is the `.xrs` it compiles to, also unedited:
+and this is the `.vrs` it compiles to, also unedited:
 
 ```rust
 // A ladder, including `otherwise` as the final catch-all.
@@ -61,8 +61,8 @@ fn tier(spend: u64) -> &'static str {
 }
 
 // Several equations, each with a short body on the `=` line.
-fn fib(__rdx_a0: u64) -> u64 {
-    match __rdx_a0 {
+fn fib(__vlt_a0: u64) -> u64 {
+    match __vlt_a0 {
         0 => 0,
         1 => 1,
         n => fib(n - 1) + fib(n - 2),
@@ -72,7 +72,7 @@ fn fib(__rdx_a0: u64) -> u64 {
 
 Three things in that output are deliberate and load-bearing.
 
-**The comments survived.** Comments are trivia, never discarded — the `.xrs` is a human-facing
+**The comments survived.** Comments are trivia, never discarded — the `.vrs` is a human-facing
 artifact, not an intermediate you are supposed to ignore. You can read it, review it, and step
 through it in a debugger.
 
@@ -80,7 +80,7 @@ through it in a debugger.
 ladder is an `if`/`else` chain; pattern rows are a `match`. If you can read Rust, you can audit
 what Voltaic did.
 
-**Generated names are namespaced.** Anything Voltaic invents carries the `__rdx_` prefix, and your
+**Generated names are namespaced.** Anything Voltaic invents carries the `__vlt_` prefix, and your
 identifiers may not use it — so a generated binder can never shadow one of yours.
 
 ---
@@ -241,7 +241,7 @@ println! \-> "hello #{name}, you are #{age} years old"
 ## It compiles itself
 
 **All thirteen crates under `crates/` are written in Voltaic.** The compiler's lexer, parser,
-emitter, formatter, diagnostics, driver, CLI, LSP server and MCP server are `.sdx` files;
+emitter, formatter, diagnostics, driver, CLI, LSP server and MCP server are `.vlt` files;
 27,600 lines of them. The Rust under each crate's `src/` is *generated*, `.gitignore`d, and not
 in the index.
 
@@ -266,7 +266,7 @@ To *use* Voltaic, install the compiler from crates.io — no clone, no bootstrap
 
 ```bash
 cargo install voltaic-cli      # installs the `voltaic` binary
-voltaic build hello.sdx        # -> hello.xrs
+voltaic build hello.vlt        # -> hello.vrs
 ```
 
 [Install](https://industrial.github.io/voltaic/tour/install.html) in the book covers the other
@@ -285,15 +285,15 @@ cargo build
 Then:
 
 ```bash
-cargo run -p voltaic-cli -- build examples/hello.sdx   # -> examples/hello.xrs
-cargo run -p voltaic-cli -- check examples/hello.sdx   # run rustc, report against the .sdx
-cargo run -p voltaic-cli -- fmt   examples/hello.sdx   # the canonical formatter
+cargo run -p voltaic-cli -- build examples/hello.vlt   # -> examples/hello.vrs
+cargo run -p voltaic-cli -- check examples/hello.vlt   # run rustc, report against the .vlt
+cargo run -p voltaic-cli -- fmt   examples/hello.vlt   # the canonical formatter
 ```
 
-Diagnostics are reported against the `.sdx` you wrote, with 1-based line and column in
+Diagnostics are reported against the `.vlt` you wrote, with 1-based line and column in
 characters — not against the generated Rust.
 
-`examples/*.sdx` is the CI-checked source of truth for what works today: 37 programs, each one
+`examples/*.vlt` is the CI-checked source of truth for what works today: 37 programs, each one
 compiled, run, and compared against its expected output.
 
 ---
@@ -339,7 +339,7 @@ moon run :format         # treefmt: Rust, Nix, shell, JS/TS, YAML, TOML
 The Rust targets are **per-crate and cached**, defined once in `.moon/tasks/tag-crate.yml`. A
 one-line edit re-checks one crate, not thirteen.
 
-**Edit the `.sdx`, never the `.rs`.** After a change, regenerate with:
+**Edit the `.vlt`, never the `.rs`.** After a change, regenerate with:
 
 ```bash
 VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test port
@@ -351,7 +351,7 @@ compile — so a bad change leaves `src/` untouched rather than broken.
 Three blessable corpora, each asserting a different thing about a program:
 
 ```bash
-VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test examples  # tests/golden/*.xrs — the text
+VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test examples  # tests/golden/*.vrs — the text
 VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test ui        # tests/ui/*.stderr — the diagnostic
 VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test run       # *.stdout — what it prints
 ```

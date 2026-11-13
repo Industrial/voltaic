@@ -1,5 +1,5 @@
-warning[RDX1001]: `unwrap` and `expect` panic — the ergonomic path is `?`, `??` or `catch` (doc 03 §12.7)
-  --> unwrap_warning.sdx:13:11
+warning[VLT1001]: `unwrap` and `expect` panic — the ergonomic path is `?`, `??` or `catch` (doc 03 §12.7)
+  --> unwrap_warning.vlt:13:11
    |
 13 |   port = .unwrap raw
    |           ^^^^^^

@@ -20,7 +20,7 @@ members = [
   # Rust it generates.
   "crates/voltaic-seed",
   # Identity and documentation site wave 11. The mdBook preprocessor that
-  # highlights `.sdx` blocks with the lexer itself rather than with a third
+  # highlights `.vlt` blocks with the lexer itself rather than with a third
   # grammar. Under `tools/` rather than `crates/`, because every crate under
   # `crates/` is written in Voltaic and this one links the lexer directly.
   "tools/mdbook-voltaic",

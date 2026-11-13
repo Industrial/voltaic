@@ -145,7 +145,7 @@ impl Drop for Session {
 }
 
 fn uri() -> Uri {
-  Uri::from_str("file:///probe.sdx").expect("a literal URI should parse")
+  Uri::from_str("file:///probe.vlt").expect("a literal URI should parse")
 }
 
 fn fixture(name: &str) -> String {
@@ -170,7 +170,7 @@ fn fixture(name: &str) -> String {
 /// terms. The three that arrived are **not** the three plan 40 §6 declined: §6
 /// refused the hover that reports a *type* and the definition that follows an
 /// *import*, both of which need name resolution. Each of these is a span lookup
-/// over an AST that already carries spans, and `capabilities.sdx`'s own doc
+/// over an AST that already carries spans, and `capabilities.vlt`'s own doc
 /// comment carries the table of what each one never does.
 ///
 /// What stays declined is below, and the reason is unchanged: `completion`,
@@ -197,7 +197,7 @@ fn capabilities_are_exactly_the_seven_implemented() {
   assert!(advertised.code_action_provider.is_none(), "no code actions");
 }
 
-/// Criterion 2: a syntax error is reported against the `.sdx`, with its `RDX`
+/// Criterion 2: a syntax error is reported against the `.vlt`, with its `VLT`
 /// code.
 #[test]
 fn a_syntax_error_publishes_an_rdx_diagnostic() {
@@ -219,7 +219,7 @@ fn a_syntax_error_publishes_an_rdx_diagnostic() {
     lsp_types::NumberOrString::Number(n) => n.to_string(),
   };
   assert!(
-    code.starts_with("RDX"),
+    code.starts_with("VLT"),
     "the code should be Voltaic's own, got {code}"
   );
   assert_eq!(
@@ -229,14 +229,14 @@ fn a_syntax_error_publishes_an_rdx_diagnostic() {
   );
 }
 
-/// Criterion 3: `RDX1001` is a **warning**, and the pragma suppresses it.
+/// Criterion 3: `VLT1001` is a **warning**, and the pragma suppresses it.
 ///
 /// Plan 38 built both halves. This asserts they survive the trip through the
 /// protocol, where a severity is an integer and an off-by-one is invisible.
 ///
 /// Plan 53 made it three cases rather than two. The attribute silences the
 /// warning outright and is consumed, so the document is clean; the comment
-/// silences it and raises `RDX1002` in its place, which is the deprecation
+/// silences it and raises `VLT1002` in its place, which is the deprecation
 /// replacing what used to be a silent no-op.
 #[test]
 fn the_unwrap_lint_is_a_warning_and_the_pragma_silences_it() {
@@ -256,7 +256,7 @@ fn the_unwrap_lint_is_a_warning_and_the_pragma_silences_it() {
     lsp_types::NumberOrString::String(text) => text.clone(),
     lsp_types::NumberOrString::Number(n) => n.to_string(),
   };
-  assert_eq!(code, "RDX1001");
+  assert_eq!(code, "VLT1001");
 
   let pragma = Session::start();
   pragma.open(
@@ -284,8 +284,8 @@ fn the_unwrap_lint_is_a_warning_and_the_pragma_silences_it() {
     .collect();
   assert_eq!(
     codes,
-    vec!["RDX1002".to_string()],
-    "the comment should suppress `RDX1001` and deprecate itself: {published:?}"
+    vec!["VLT1002".to_string()],
+    "the comment should suppress `VLT1001` and deprecate itself: {published:?}"
   );
 }
 
@@ -293,7 +293,7 @@ fn the_unwrap_lint_is_a_warning_and_the_pragma_silences_it() {
 #[test]
 fn document_symbols_are_the_items() {
   let session = Session::start();
-  let source = fixture("examples/class.sdx");
+  let source = fixture("examples/class.vlt");
   session.open(&uri(), &source);
 
   let value = session.request(
@@ -344,7 +344,7 @@ fn formatting_edits_only_what_is_not_canonical() {
   );
 
   let canonical = Session::start();
-  canonical.open(&uri(), &fixture("examples/hello.sdx"));
+  canonical.open(&uri(), &fixture("examples/hello.vlt"));
   assert!(
     formatting_of(&canonical, 2).is_empty(),
     "an example is already canonical, so there is nothing to edit"
@@ -463,7 +463,7 @@ fn a_broken_document_answers_everything() {
   let tokens: SemanticTokens =
     serde_json::from_value(tokens_of(&session, 3)).expect("a token response");
   // No assertion on the count: unbalanced parentheses are a **lex** error in
-  // Voltaic, not a parse one — `RDX0012`, `UnbalancedDelimiter`, because the
+  // Voltaic, not a parse one — `VLT0012`, `UnbalancedDelimiter`, because the
   // lexer tracks bracket depth to decide where a continuation line ends. So
   // this file does not lex and has no tokens, which is the right answer and
   // not the one the first version of this test assumed.
@@ -528,7 +528,7 @@ fn an_unknown_method_is_answered_with_null() {
 #[test]
 fn hover_names_the_declaration_under_the_cursor() {
   let session = Session::start();
-  let source = fixture("examples/operator.sdx");
+  let source = fixture("examples/operator.vlt");
   session.open(&uri(), &source);
 
   let at = position_of(&source, "merge a b =");
@@ -606,7 +606,7 @@ fn hover_outside_a_declaration_is_none() {
 #[test]
 fn definition_finds_the_declaration_in_this_file() {
   let session = Session::start();
-  let source = fixture("examples/operator.sdx");
+  let source = fixture("examples/operator.vlt");
   session.open(&uri(), &source);
 
   // The `merge` on the `infixl` line is a **use**; the declaration is above it.
@@ -680,7 +680,7 @@ fn definition_of_a_name_this_file_does_not_declare_is_none() {
 #[test]
 fn folding_ranges_are_the_indented_blocks() {
   let session = Session::start();
-  let source = fixture("examples/operator.sdx");
+  let source = fixture("examples/operator.vlt");
   session.open(&uri(), &source);
 
   let value = session.request(

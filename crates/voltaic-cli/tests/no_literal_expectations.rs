@@ -3,14 +3,14 @@
 //! Plan 08 (`docs/13 - 08 - Run Expectations.md`) leaf 4. AGENTS.md states the
 //! rule for fixtures:
 //!
-//! > **Every `.sdx` fixture is a file, and tests reference files.** Never embed
+//! > **Every `.vlt` fixture is a file, and tests reference files.** Never embed
 //! > language source as a string literal in a Rust test. Emerald's one syntax
 //! > cutover missed 113 fixtures that lived as string literals inside test
 //! > modules; that cost is paid once per syntax change, forever.
 //!
 //! The rule had been applied to *sources* and not to *expectations*, and plan
-//! 08 §2.1 found the gap: `phase1.rs` held the whole generated `.xrs` as an
-//! escaped literal, duplicating `tests/golden/phase1.xrs`, plus a ten-line
+//! 08 §2.1 found the gap: `phase1.rs` held the whole generated `.vrs` as an
+//! escaped literal, duplicating `tests/golden/phase1.vrs`, plus a ten-line
 //! `concat!` of expected output. Both were updatable only by hand, and one of
 //! them could disagree with the generated copy of the same fact.
 //!
@@ -165,7 +165,7 @@ fn the_heuristic_detects_what_it_claims_to() {
   let rust_literal = r#"assert_eq!(case.rust, "fn main() {\n    println!();\n}\n");"#;
   assert!(
     holds_generated_rust(rust_literal),
-    "should flag an embedded .xrs"
+    "should flag an embedded .vrs"
   );
 
   let output_literal = r#"concat!("14\n", "5\n", "20\n",)"#;

@@ -36,7 +36,7 @@ construct the language has:
 cargo fuzz run parse_program ../examples
 ```
 
-`lexical.sdx` is **included** deliberately, unlike in the compiler's own corpus
+`lexical.vlt` is **included** deliberately, unlike in the compiler's own corpus
 sweeps. It is exempt there because it does not parse, which makes it the most
 valuable seed here rather than the one to skip — plan 43 criterion 3 and plan
 41 decision 5 made the same call.
@@ -65,7 +65,7 @@ deeply nested input aborted the process — not a panic that can be caught, an
 abort, which takes the whole program with it.
 
 Measured rather than guessed: 24 levels of nested parentheses parse and 32
-abort, in a debug build. `voltaic_parser::MAX_NESTING` is now 16 and `RDX0109`
+abort, in a debug build. `voltaic_parser::MAX_NESTING` is now 16 and `VLT0109`
 reports it.
 
 Found by handing the parser three hundred nested parentheses, which nothing had

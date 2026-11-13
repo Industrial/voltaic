@@ -1,4 +1,4 @@
-//! An mdBook preprocessor that highlights `.sdx` blocks with Voltaic's lexer.
+//! An mdBook preprocessor that highlights `.vlt` blocks with Voltaic's lexer.
 //!
 //! Identity and documentation site
 //! (`.cursor/plans/voltaic-identity-and-site.plan.md`) wave 11.
@@ -23,7 +23,7 @@
 //! the published HTML carries the spans and needs no JavaScript — which is what
 //! a crawler and a language model see too. And a block that does not lex is
 //! reported on stderr and emitted as plain text rather than failing the build:
-//! `examples/lexical.sdx` is deliberately unlexable, and the book quotes it.
+//! `examples/lexical.vlt` is deliberately unlexable, and the book quotes it.
 
 use std::io::{Read, Write};
 
@@ -159,7 +159,7 @@ fn rewrite(markdown: &str) -> (String, usize) {
       continue;
     };
     let lang = info.trim();
-    if lang != "voltaic" && lang != "sdx" {
+    if lang != "voltaic" && lang != "vlt" {
       out.push_str(line);
       out.push('\n');
       continue;
@@ -211,7 +211,7 @@ fn render(source: &str) -> String {
 /// the block structure. Reassembling from tokens would lose it.
 fn classify(source: &str) -> Vec<(String, Option<&'static str>)> {
   let Ok(tokens) = lex(source) else {
-    // `examples/lexical.sdx` is the error-path example and is quoted in the
+    // `examples/lexical.vlt` is the error-path example and is quoted in the
     // book on purpose, so an unlexable block is plain text and a note, not a
     // failed build.
     eprintln!("mdbook-voltaic: a block did not lex; emitted as plain text");

@@ -36,10 +36,10 @@ fn a_punned_field_uses_rusts_shorthand() {
 #[test]
 fn a_lowercase_head_updates() {
   let out = body("r = p { x = 99 }");
-  assert!(out.contains("let mut __rdx_r = p;"), "{out}");
-  assert!(out.contains("__rdx_r.x = 99;"), "{out}");
+  assert!(out.contains("let mut __vlt_r = p;"), "{out}");
+  assert!(out.contains("__vlt_r.x = 99;"), "{out}");
   assert!(
-    out.contains("__rdx_r\n"),
+    out.contains("__vlt_r\n"),
     "the block yields the record:\n{out}"
   );
   assert!(
@@ -52,7 +52,7 @@ fn a_lowercase_head_updates() {
 #[test]
 fn a_punned_update_field_assigns_the_name() {
   let out = body("r = p { x }");
-  assert!(out.contains("__rdx_r.x = x;"), "{out}");
+  assert!(out.contains("__vlt_r.x = x;"), "{out}");
 }
 
 /// A path is judged by its last segment, so a qualified constructor still
@@ -61,7 +61,7 @@ fn a_punned_update_field_assigns_the_name() {
 fn a_qualified_constructor_still_constructs() {
   let out = body("p = shapes::Point { x = 1 }");
   assert!(out.contains("shapes::Point { x: 1 }"), "{out}");
-  assert!(!out.contains("__rdx_r"), "{out}");
+  assert!(!out.contains("__vlt_r"), "{out}");
 }
 
 /// Past rustfmt's `struct_lit_width`, a literal expands — because the

@@ -1,5 +1,5 @@
-error[RDX0103]: expected a name to begin a declaration
-  --> expected_name.sdx:6:1
+error[VLT0103]: expected a name to begin a declaration
+  --> expected_name.vlt:6:1
   |
 6 | "x" : ()
   | ^^^

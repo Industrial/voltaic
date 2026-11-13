@@ -2,8 +2,8 @@
 //! *assert*.
 //!
 //! Plan 56 (`docs/50 - 56 - Currying.md`) criteria 1, 2, 5, 6 and 7.
-//! `tests/golden/currying.xrs` already pins every byte of
-//! `examples/currying.sdx`, so none of this is about whether the text is
+//! `tests/golden/currying.vrs` already pins every byte of
+//! `examples/currying.vlt`, so none of this is about whether the text is
 //! right — `examples.rs` says that, and `run.rs` says the program prints the
 //! right numbers.
 //!
@@ -21,29 +21,29 @@
 
 mod support;
 
-/// The generated Rust for `examples/currying.sdx`, transpiled once per test.
+/// The generated Rust for `examples/currying.vlt`, transpiled once per test.
 fn generated() -> String {
-  support::transpile("currying.sdx").rust.clone()
+  support::transpile("currying.vlt").rust.clone()
 }
 
 /// Criterion 6: one lowering path, so one closure shape — and **no `move`**
 /// on either side.
 ///
-/// §1.3 asked for `move |__rdx_1| add(1, __rdx_1)` and §11.2 measured that
+/// §1.3 asked for `move |__vlt_1| add(1, __vlt_1)` and §11.2 measured that
 /// sections carry no capture annotation at all, so the two halves of the
 /// criterion could not both hold. Sections are the side that does not change:
 /// `move` on a closure capturing a borrowed argument turns rustc's borrow
-/// error into a move error, and `tests/check/borrowed_capture.sdx` is the
+/// error into a move error, and `tests/check/borrowed_capture.vlt` is the
 /// fixture that wants the borrow error.
 #[test]
 fn a_section_and_a_partial_application_write_the_same_closure() {
   let rust = generated();
   assert!(
-    rust.contains(".map(|__rdx_1| __rdx_1 + 1)"),
+    rust.contains(".map(|__vlt_1| __vlt_1 + 1)"),
     "the operator section's closure:\n{rust}"
   );
   assert!(
-    rust.contains(".map(|__rdx_1| add(1, __rdx_1))"),
+    rust.contains(".map(|__vlt_1| add(1, __vlt_1))"),
     "the partial application's closure, the same shape in the same position:\n{rust}"
   );
   assert!(
@@ -83,7 +83,7 @@ fn a_saturated_call_is_still_one_call() {
 fn one_of_three_binds_both_missing_parameters() {
   let rust = generated();
   assert!(
-    rust.contains("|__rdx_1, __rdx_2| tagged(\"sum\", __rdx_1, __rdx_2)"),
+    rust.contains("|__vlt_1, __vlt_2| tagged(\"sum\", __vlt_1, __vlt_2)"),
     "two parameters missing, two bound, in one flat list:\n{rust}"
   );
 }
@@ -93,7 +93,7 @@ fn one_of_three_binds_both_missing_parameters() {
 ///
 /// `op`, `inc` and `two` are all `where` locals, so no signature in the file
 /// names any of them — §11.1's finding, and the whole of the row's safety
-/// argument. The same `.sdx` holds both halves, which is what "asserted both
+/// argument. The same `.vlt` holds both halves, which is what "asserted both
 /// ways" asks for.
 #[test]
 fn an_unknowable_arity_stays_a_call() {

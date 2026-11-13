@@ -114,7 +114,7 @@ Worth pre-empting in the PR body, because all three look odd without the reason:
 - **It builds from a checked-in `.wasm`.** `seed/voltaic1.wasm` is the
   previous-stage compiler. Voltaic is written in Voltaic, so a source checkout
   contains no Rust at all and something has to generate it; `preBuild` runs the
-  seed over every `.sdx`. This is the same bootstrap problem every self-hosting
+  seed over every `.vlt`. This is the same bootstrap problem every self-hosting
   language has. `seed/SEED.md` is the blob's provenance.
 - **`wasmtime` and `rustfmt` are build inputs.** They are what runs that seed
   and formats what it writes. Both are `bootstrap.sh`'s own declared

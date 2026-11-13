@@ -10,7 +10,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -19,7 +19,7 @@ fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)
@@ -48,12 +48,12 @@ fn an_interpolation_becomes_a_format_hole() {
 /// `#{if a then 1 else 2}` was the fifth case and is gone with plan 55 leaf
 /// 7: an interpolation is scanned inside **one string token**, so there is no
 /// line for an indented branch to go on and a conditional cannot be written
-/// here at all. `examples/control.sdx`'s `bracketed` records the cost and
+/// here at all. `examples/control.vlt`'s `bracketed` records the cost and
 /// calls one instead — the only position where the retirement took a
 /// spelling away rather than moving it.
 #[test]
 fn an_interpolation_holds_an_expression() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("#{a + b}", "format!(\"{}\", a + b)"),
     ("#{user.name}", "format!(\"{}\", user.name)"),
     ("#{f x}", "format!(\"{}\", f(x))"),
@@ -61,9 +61,9 @@ fn an_interpolation_holds_an_expression() {
     ("#{tier n}", "format!(\"{}\", tier(n))"),
   ] {
     assert_eq!(
-      body(&format!("  s = \"{sdx}\"\n")),
+      body(&format!("  s = \"{vlt}\"\n")),
       format!("let s = {want};"),
-      "{sdx}"
+      "{vlt}"
     );
   }
 }
@@ -86,7 +86,7 @@ fn an_interpolation_may_hold_a_string_literal() {
 /// because "every Rust format spec is reachable" has to mean something.
 #[test]
 fn a_format_spec_is_copied_verbatim() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("#{x:.2}", "{:.2}"),
     ("#{x:?}", "{:?}"),
     ("#{x:>8}", "{:>8}"),
@@ -95,9 +95,9 @@ fn a_format_spec_is_copied_verbatim() {
     ("#{x:+e}", "{:+e}"),
   ] {
     assert_eq!(
-      body(&format!("  s = \"{sdx}\"\n")),
+      body(&format!("  s = \"{vlt}\"\n")),
       format!("let s = format!(\"{want}\", x);"),
-      "{sdx}"
+      "{vlt}"
     );
   }
 }
@@ -181,7 +181,7 @@ fn a_brace_in_a_plain_string_doubles_only_in_a_template() {
 /// §11.3's refusal to add regex literals honest.
 #[test]
 fn every_literal_kind_passes_through() {
-  for sdx in [
+  for vlt in [
     "r\"^\\d+$\"",
     "r#\"he said \"yes\"\"#",
     "b\"bytes\"",
@@ -189,8 +189,8 @@ fn every_literal_kind_passes_through() {
     "b'x'",
     "'R'",
   ] {
-    let out = body(&format!("  s = {sdx}\n"));
-    assert_eq!(out, format!("let s = {sdx};"), "{sdx}");
+    let out = body(&format!("  s = {vlt}\n"));
+    assert_eq!(out, format!("let s = {vlt};"), "{vlt}");
   }
 }
 

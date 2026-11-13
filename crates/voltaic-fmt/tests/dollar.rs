@@ -7,15 +7,15 @@
 //! them apart, and none needs to.
 //!
 //! The formatter is the exception, and it got this wrong: printing
-//! `examples/application.sdx` turned every `$` in the file back into the
+//! `examples/application.vlt` turned every `$` in the file back into the
 //! parenthesis `$` exists to avoid, which makes the construct unusable in any
 //! codebase that runs `voltaic fmt`. `Expr::Call`'s `is_dollar` is the memory
 //! that fixes it, and this file is what reads the bit back out.
 //!
 //! Three assertions, as leaf 3 and leaf 5 make them:
 //!
-//! 1. the **fixture pair** — every spelling in `fmt/dollar.sdx` against its
-//!    canonical form in `fmt/dollar.canonical.sdx`, a file rather than a
+//! 1. the **fixture pair** — every spelling in `fmt/dollar.vlt` against its
+//!    canonical form in `fmt/dollar.canonical.vlt`, a file rather than a
 //!    literal for AGENTS.md's reason;
 //! 2. **meaning preservation** — the printed text re-parses to the program it
 //!    was printed from;
@@ -29,7 +29,7 @@ fn fixtures() -> PathBuf {
 
 /// The fixture's source and its formatted form.
 fn formatted(stem: &str) -> (String, String) {
-  let path = fixtures().join(format!("{stem}.sdx"));
+  let path = fixtures().join(format!("{stem}.vlt"));
   let source =
     std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("{} should exist", path.display()));
   let program = voltaic_parser::parse_source(&source)
@@ -43,7 +43,7 @@ fn formatted(stem: &str) -> (String, String) {
 /// The update-then-fail shape is the corpus's: a changed expectation is always
 /// reviewed rather than absorbed into a green build.
 fn against_canonical(stem: &str, printed: &str) {
-  let path = fixtures().join(format!("{stem}.canonical.sdx"));
+  let path = fixtures().join(format!("{stem}.canonical.vlt"));
   if std::env::var_os("VOLTAIC_UPDATE").is_some() {
     std::fs::write(&path, printed).expect("should write the expectation");
     panic!("updated {} — review the diff", path.display());

@@ -13,15 +13,15 @@ mod support;
 
 use support::Case;
 
-/// Criterion 2: a rustc error arrives as data, with a `.sdx` position.
+/// Criterion 2: a rustc error arrives as data, with a `.vlt` position.
 ///
 /// The code asserted is **rustc's**. Voltaic infers types but never checks them
 /// — AGENTS.md: every check rustc can make, rustc makes — so this is the whole
-/// value of the tool, and a fixture carrying an `RDX` code would not exercise it. The
+/// value of the tool, and a fixture carrying an `VLT` code would not exercise it. The
 /// fixture's own doc comment records that the first one did.
 #[test]
-fn check_reports_a_rustc_error_against_the_sdx() {
-  if support::skip_without_rustc("check_reports_a_rustc_error_against_the_sdx") {
+fn check_reports_a_rustc_error_against_the_vlt() {
+  if support::skip_without_rustc("check_reports_a_rustc_error_against_the_vlt") {
     return;
   }
   let case = Case::new("type_error");
@@ -47,11 +47,11 @@ fn check_reports_a_rustc_error_against_the_sdx() {
   assert!(
     first["path"]
       .as_str()
-      .is_some_and(|p| p.ends_with("type_error.sdx")),
-    "reported against the .sdx the user wrote, not the generated .xrs: {json:#}"
+      .is_some_and(|p| p.ends_with("type_error.vlt")),
+    "reported against the .vlt the user wrote, not the generated .vrs: {json:#}"
   );
   // The mismatched argument is on the last line of the fixture.
-  let source = std::fs::read_to_string(&case.sdx).expect("should read the fixture");
+  let source = std::fs::read_to_string(&case.vlt).expect("should read the fixture");
   let expected = source
     .lines()
     .position(|l| l.contains("double \"two\""))
@@ -96,7 +96,7 @@ fn check_on_a_clean_program_reports_nothing() {
 #[test]
 fn a_missing_file_is_an_error_and_not_a_diagnostic() {
   let response = voltaic_mcp::check(&voltaic_mcp::CheckRequest {
-    path: "/nonexistent/nowhere.sdx".to_string(),
+    path: "/nonexistent/nowhere.vlt".to_string(),
   });
   let message = response.expect_err("a missing file is not an answer about a program");
   assert!(
@@ -105,10 +105,10 @@ fn a_missing_file_is_an_error_and_not_a_diagnostic() {
   );
 }
 
-/// Criterion 4: `voltaic_build` writes the `.xrs` **and** the map, and names
+/// Criterion 4: `voltaic_build` writes the `.vrs` **and** the map, and names
 /// both.
 #[test]
-fn build_writes_the_xrs_and_its_map_and_names_them() {
+fn build_writes_the_vrs_and_its_map_and_names_them() {
   let case = Case::new("clean");
   let response = voltaic_mcp::build(&voltaic_mcp::BuildRequest { path: case.path() })
     .expect("the environment should answer");
@@ -116,17 +116,17 @@ fn build_writes_the_xrs_and_its_map_and_names_them() {
   assert!(response.ok, "a clean program builds: {response:?}");
   let output = response.output.as_ref().expect("an output path");
   let map = response.map.as_ref().expect("a map path");
-  assert!(output.ends_with("clean.xrs"), "{output}");
+  assert!(output.ends_with("clean.vrs"), "{output}");
   assert!(
-    map.ends_with("clean.xrs.map"),
+    map.ends_with("clean.vrs.map"),
     "the sidecar is the stem plus `.map`, which plan 07 relies on: {map}"
   );
-  assert!(case.sibling("clean.xrs").is_file(), "the .xrs should exist");
+  assert!(case.sibling("clean.vrs").is_file(), "the .vrs should exist");
   assert!(
-    case.sibling("clean.xrs.map").is_file(),
+    case.sibling("clean.vrs.map").is_file(),
     "and so should the map — `voltaic_source_map` cannot answer without it"
   );
-  let rust = std::fs::read_to_string(case.sibling("clean.xrs")).expect("should read");
+  let rust = std::fs::read_to_string(case.sibling("clean.vrs")).expect("should read");
   assert!(
     rust.contains("fn main()"),
     "and it should be the generated Rust: {rust}"
@@ -143,7 +143,7 @@ fn build_writes_nothing_when_the_program_does_not_parse() {
   assert!(!response.ok);
   assert!(response.output.is_none(), "nothing was written");
   assert!(
-    !case.sibling("parse_error.xrs").exists(),
+    !case.sibling("parse_error.vrs").exists(),
     "and nothing is on disk"
   );
   let json = serde_json::to_value(&response).expect("should serialise");
@@ -151,7 +151,7 @@ fn build_writes_nothing_when_the_program_does_not_parse() {
     .as_str()
     .unwrap_or_else(|| panic!("a diagnostic with a code: {json:#}"));
   assert!(
-    code.starts_with("RDX"),
+    code.starts_with("VLT"),
     "a parse error is Voltaic's own and never reaches rustc: {code}"
   );
 }
@@ -160,7 +160,7 @@ fn build_writes_nothing_when_the_program_does_not_parse() {
 #[test]
 fn format_returns_the_canonical_text_and_writes_nothing() {
   let case = Case::new("unformatted");
-  let before = std::fs::read_to_string(&case.sdx).expect("should read");
+  let before = std::fs::read_to_string(&case.vlt).expect("should read");
 
   let response = voltaic_mcp::format(&voltaic_mcp::FormatRequest { path: case.path() })
     .expect("the environment should answer");
@@ -173,7 +173,7 @@ fn format_returns_the_canonical_text_and_writes_nothing() {
   let formatted = response.formatted.as_ref().expect("the canonical text");
   assert_ne!(formatted, &before, "and it should differ from the file");
   assert_eq!(
-    std::fs::read_to_string(&case.sdx).expect("should read"),
+    std::fs::read_to_string(&case.vlt).expect("should read"),
     before,
     "the file on disk must be untouched — the tool reads only (§10)"
   );
@@ -181,7 +181,7 @@ fn format_returns_the_canonical_text_and_writes_nothing() {
   // Idempotence, through this interface: formatting the canonical text again
   // changes nothing. Plan 34 leaf 5's property, asserted here because an MCP
   // caller will round-trip.
-  let canonical = case.sibling("canonical.sdx");
+  let canonical = case.sibling("canonical.vlt");
   std::fs::write(&canonical, formatted).expect("should write");
   let again = voltaic_mcp::format(&voltaic_mcp::FormatRequest {
     path: canonical.display().to_string(),
@@ -200,7 +200,7 @@ fn format_returns_the_canonical_text_and_writes_nothing() {
 #[test]
 fn format_refuses_a_file_it_cannot_parse() {
   let case = Case::new("parse_error");
-  let before = std::fs::read_to_string(&case.sdx).expect("should read");
+  let before = std::fs::read_to_string(&case.vlt).expect("should read");
 
   let response = voltaic_mcp::format(&voltaic_mcp::FormatRequest { path: case.path() })
     .expect("a parse failure is an answer about the program");
@@ -214,23 +214,23 @@ fn format_refuses_a_file_it_cannot_parse() {
   assert!(!response.changed);
   assert!(!response.diagnostics.is_empty(), "and it says why");
   assert_eq!(
-    std::fs::read_to_string(&case.sdx).expect("should read"),
+    std::fs::read_to_string(&case.vlt).expect("should read"),
     before
   );
 }
 
 /// Criterion 6: the source map answers, from the sidecar `voltaic_build` wrote.
 #[test]
-fn source_map_resolves_a_generated_line_to_its_sdx_line() {
+fn source_map_resolves_a_generated_line_to_its_vlt_line() {
   let case = Case::new("clean");
   let built =
     voltaic_mcp::build(&voltaic_mcp::BuildRequest { path: case.path() }).expect("should build");
-  let xrs = built.output.expect("an output path");
+  let vrs = built.output.expect("an output path");
 
   // Ask about the line the generated Rust actually puts `print` on, rather
   // than a line number guessed from the fixture — the emitter owns the layout
   // and a hard-coded number would be testing a coincidence.
-  let rust = std::fs::read_to_string(&xrs).expect("should read the .xrs");
+  let rust = std::fs::read_to_string(&vrs).expect("should read the .vrs");
   let gen_line = rust
     .lines()
     .position(|l| l.contains("println!"))
@@ -238,7 +238,7 @@ fn source_map_resolves_a_generated_line_to_its_sdx_line() {
     + 1;
 
   let response = voltaic_mcp::source_map(&voltaic_mcp::SourceMapRequest {
-    path: xrs.clone(),
+    path: vrs.clone(),
     line: gen_line,
     column: None,
   })
@@ -249,23 +249,23 @@ fn source_map_resolves_a_generated_line_to_its_sdx_line() {
     response.reason.is_none(),
     "a real line is not a miss: {json:#}"
   );
-  let sdx_line = response.line.unwrap_or_else(|| panic!("a line: {json:#}"));
-  let source = std::fs::read_to_string(&case.sdx).expect("should read");
+  let vlt_line = response.line.unwrap_or_else(|| panic!("a line: {json:#}"));
+  let source = std::fs::read_to_string(&case.vlt).expect("should read");
   let expected = source
     .lines()
     .position(|l| l.trim_start().starts_with("println! "))
     .expect("the fixture should print")
     + 1;
   assert_eq!(
-    sdx_line, expected,
+    vlt_line, expected,
     "the generated print should map back to the source print: {json:#}"
   );
   assert!(
     response
       .source
       .as_ref()
-      .is_some_and(|p| p.ends_with("clean.sdx")),
-    "and name the .sdx it is about: {json:#}"
+      .is_some_and(|p| p.ends_with("clean.vlt")),
+    "and name the .vlt it is about: {json:#}"
   );
 }
 
@@ -279,9 +279,9 @@ fn source_map_distinguishes_a_synthetic_line_from_an_out_of_range_one() {
   let case = Case::new("clean");
   let built =
     voltaic_mcp::build(&voltaic_mcp::BuildRequest { path: case.path() }).expect("should build");
-  let xrs = built.output.expect("an output path");
+  let vrs = built.output.expect("an output path");
 
-  // A synthetic line: one the emitter wrote with no `.sdx` behind it — a
+  // A synthetic line: one the emitter wrote with no `.vlt` behind it — a
   // closing brace, or the blank between two items. Found by asking the map
   // rather than by counting braces.
   let map_text =
@@ -293,7 +293,7 @@ fn source_map_distinguishes_a_synthetic_line_from_an_out_of_range_one() {
     .expect("the generated Rust has at least a closing brace");
 
   let response = voltaic_mcp::source_map(&voltaic_mcp::SourceMapRequest {
-    path: xrs.clone(),
+    path: vrs.clone(),
     line: synthetic,
     column: None,
   })
@@ -306,7 +306,7 @@ fn source_map_distinguishes_a_synthetic_line_from_an_out_of_range_one() {
   );
 
   let past = voltaic_mcp::source_map(&voltaic_mcp::SourceMapRequest {
-    path: xrs,
+    path: vrs,
     line: map.len() + 1_000,
     column: None,
   })
@@ -324,7 +324,7 @@ fn source_map_distinguishes_a_synthetic_line_from_an_out_of_range_one() {
 fn source_map_without_a_sidecar_says_how_to_make_one() {
   let case = Case::new("clean");
   let message = voltaic_mcp::source_map(&voltaic_mcp::SourceMapRequest {
-    path: case.sibling("clean.xrs").display().to_string(),
+    path: case.sibling("clean.vrs").display().to_string(),
     line: 1,
     column: None,
   })

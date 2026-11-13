@@ -37,13 +37,13 @@ tasks:
       - '@group(dependency_sources)'
       # `tests/seed.rs` transpiles `voltaic-ast`'s real Voltaic source and compares
       # against the committed Rust, so that tree is an input. Plan 70 §10.1 is
-      # the measured reason this line is not optional: a `.sdx` matches none of
+      # the measured reason this line is not optional: a `.vlt` matches none of
       # the default globs, and without it an edit there leaves this crate's
       # verdict cached green.
       #
       # Named rather than globbed. `moon_project_graph.rs`'s `declared_sources`
       # scans *every* line of this file for `- '/crates/<name>/`, so
-      # `/crates/*/sdx/**/*` would contribute a crate called `*` and fail the
+      # `/crates/*/vlt/**/*` would contribute a crate called `*` and fail the
       # transitive-dependency check — `voltaic-cli` carries that shape only
       # because its `/crates/**/*.rs` line is special-cased there.
-      - '/crates/voltaic-ast/sdx/**/*'
+      - '/crates/voltaic-ast/vlt/**/*'

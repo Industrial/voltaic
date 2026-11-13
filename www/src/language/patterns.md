@@ -4,7 +4,7 @@ Rust's patterns, plus the forms that let a pattern be used where Rust needs a
 match arm.
 
 ```voltaic
-{{#include ../../../examples/case.sdx}}
+{{#include ../../../examples/case.vlt}}
 ```
 
 ## `switch`
@@ -19,13 +19,13 @@ removes the most common reason to write a guard. Guards remain for the cases
 that need a whole expression:
 
 ```voltaic
-{{#include ../../../examples/guards.sdx}}
+{{#include ../../../examples/guards.vlt}}
 ```
 
 ## Record patterns and destructuring
 
 ```voltaic
-{{#include ../../../examples/destructuring.sdx}}
+{{#include ../../../examples/destructuring.vlt}}
 ```
 
 Field punning works: naming a field binds it to a variable of the same name.
@@ -37,7 +37,7 @@ The `...` rest pattern is **declined** — see
 
 Voltaic does not check that a `switch` covers its scrutinee, and will not grow
 a checker that does. Rust already errors on a non-exhaustive match, against
-your `.sdx` through the diagnostic remap, so a second checker could only
+your `.vlt` through the diagnostic remap, so a second checker could only
 disagree with the first.
 
 ---

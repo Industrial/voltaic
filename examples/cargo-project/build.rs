@@ -1,4 +1,4 @@
-//! Compile this crate's `.sdx` sources into `OUT_DIR`.
+//! Compile this crate's `.vlt` sources into `OUT_DIR`.
 //!
 //! Doc 02 §6.6 option (a), which plan 09 implements: Voltaic generates `.rs`
 //! into Cargo's `OUT_DIR`, and `src/main.rs` brings it in with `include!`.
@@ -27,12 +27,12 @@ fn main() {
   match voltaic_driver::compile_dir_with("src".as_ref(), out.as_ref(), &Report) {
     Ok(compiled) => {
       // Without these, Cargo reruns this script only when the crate's own
-      // files change — so editing a `.sdx` would not rebuild, and you would
+      // files change — so editing a `.vlt` would not rebuild, and you would
       // silently run stale code.
       for directive in compiled.rerun_directives() {
         println!("{directive}");
       }
-      // Rerun if a `.sdx` is *added* or removed, which the per-file
+      // Rerun if a `.vlt` is *added* or removed, which the per-file
       // directives above cannot express.
       println!("cargo::rerun-if-changed=src");
     }

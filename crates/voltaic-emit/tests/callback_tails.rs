@@ -1,4 +1,4 @@
-//! Doc 03 §7.6's `RDX0044` — plan 30.
+//! Doc 03 §7.6's `VLT0044` — plan 30.
 //!
 //! The tail of a draw arrow becomes a closure, so a `return` there leaves the
 //! closure and not the enclosing function. §7.6 calls it a *"disclosed trap,
@@ -13,7 +13,7 @@ use voltaic_diag::Code;
 use voltaic_emit::emit;
 use voltaic_parser::{ParseFailure, parse_source};
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -21,8 +21,8 @@ fn xrs(src: &str) -> String {
 /// tail.
 fn tail(src: &str) -> String {
   // The second `()` is plan 55 §1.6's unit tail, which `main` now needs — and
-  // `RDX0113` is deliberately exempt where `src` ends in a `return`, so the
-  // rejection cases below still report exactly `RDX0044`.
+  // `VLT0113` is deliberately exempt where `src` ends in a `return`, so the
+  // rejection cases below still report exactly `VLT0044`.
   format!("main : ()\nmain =\n  with conn = pool.with_connection\n  ()\n{src}  ()\n")
 }
 
@@ -148,7 +148,7 @@ fn a_nested_arrows_tail_is_checked_too() {
 /// the wrong time could have perturbed it.
 #[test]
 fn the_flattening_is_unchanged() {
-  let out = xrs("main : ()\nmain =\n  with conn = pool.with_connection\n  use_it conn\n  ()\n");
+  let out = vrs("main : ()\nmain =\n  with conn = pool.with_connection\n  use_it conn\n  ()\n");
   assert!(out.contains("pool.with_connection(|conn| {"), "{out}");
   assert!(out.contains("use_it(conn);"), "{out}");
 }

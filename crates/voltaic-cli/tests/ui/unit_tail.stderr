@@ -1,5 +1,5 @@
-error[RDX0113]: `tally` returns `()`, so its body must end with `()`
-  --> unit_tail.sdx:24:3
+error[VLT0113]: `tally` returns `()`, so its body must end with `()`
+  --> unit_tail.vlt:24:3
    |
 24 |   reported = total
    |   ^^^^^^^^^^^^^^^^

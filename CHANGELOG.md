@@ -29,7 +29,7 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `llms.txt`, `llms-full.txt`, `sitemap.xml`, JSON-LD and per-page canonical
   links make it legible to crawlers and language models.
 - **Editor themes for all five integrations** — VS Code, Zed, Helix, Neovim and
-  Vim — generated from the same palette by `design/themes.sh`, plus a `.sdx`
+  Vim — generated from the same palette by `design/themes.sh`, plus a `.vlt`
   file icon for VS Code.
 - Seventeen gates covering the above, each falsified before being trusted:
   generated assets match their sources, every ICO frame is the size it claims,
@@ -87,7 +87,7 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `.github/actions/setup-voltaic` — the pinned toolchain, wasmtime, tree-sitter,
   moon and the seed bootstrap, in one place instead of once per job.
 - `include` keys on the eight published crates, which is what makes them
-  publishable at all: `src/` is generated from `sdx/` and is `.gitignore`d, and
+  publishable at all: `src/` is generated from `vlt/` and is `.gitignore`d, and
   `cargo package` enumerates files from git, so without `include` a published
   crate contains no Rust and uploads cleanly anyway.
 - `description`, `repository` and `homepage` metadata; crates.io rejects a
@@ -106,9 +106,9 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   matters for the same reason.
 - **The project was renamed from Redox to Voltaic**, including all thirteen
   crates and the `voltaic` binary. Not everything carries the new name yet: the
-  `RDX####` diagnostic codes and the `__rdx_` generated-identifier prefix still
+  `VLT####` diagnostic codes and the `__vlt_` generated-identifier prefix still
   use the old one, because each needs its own build → regenerate → reseed cycle.
-  A diagnostic still reads `RDX0101`. The `.sdx` and `.xrs` extensions never
+  A diagnostic still reads `VLT0101`. The `.vlt` and `.vrs` extensions never
   encoded the old name and are unchanged by design.
 
 ### Fixed

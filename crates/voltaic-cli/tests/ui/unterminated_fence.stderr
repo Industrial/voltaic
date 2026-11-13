@@ -1,5 +1,5 @@
-error[RDX0006]: unterminated `{- -}` comment
-  --> unterminated_fence.sdx:5:1
+error[VLT0006]: unterminated `{- -}` comment
+  --> unterminated_fence.vlt:5:1
   |
 5 | {- never closed
   | ^^^^^^^^^^^^^^^^

@@ -22,7 +22,7 @@ AMD Ryzen 9 7950X 16-Core Processor, debug build
 - *Transpile* means parse and emit — not `voltaic build`, which also writes a file and consults a cache, so timing it would time the filesystem.
 - The figure per file is the **mean**; the total is the sum of the means.
 - Timed with `std::time::Instant`. §1.1 measured that neither `hyperfine` nor `criterion` is available or pinned, and §6 declines to add one: a number reported to three significant figures does not need a statistics library.
-- `examples/lexical.sdx` is excluded, and only here — it does not parse, so transpiling it measures the error path. Every other sweep in the repository includes it deliberately.
+- `examples/lexical.vlt` is excluded, and only here — it does not parse, so transpiling it measures the error path. Every other sweep in the repository includes it deliberately.
 
 ## Throughput
 
@@ -30,33 +30,33 @@ AMD Ryzen 9 7950X 16-Core Processor, debug build
 
 | File | Bytes | Mean |
 |---|---:|---:|
-| `fallible.sdx` | 5511 | 972.9 µs |
-| `destructuring.sdx` | 3865 | 893.0 µs |
-| `draw_condition.sdx` | 3921 | 702.2 µs |
-| `control.sdx` | 3151 | 567.1 µs |
-| `strings.sdx` | 3900 | 564.8 µs |
-| `async.sdx` | 3323 | 506.8 µs |
-| `class.sdx` | 1893 | 393.8 µs |
-| `module.sdx` | 2261 | 388.3 µs |
-| `arrays.sdx` | 2042 | 386.7 µs |
-| `comprehension.sdx` | 1785 | 329.2 µs |
-| `section.sdx` | 1782 | 314.6 µs |
-| `errors.sdx` | 1221 | 307.5 µs |
-| `generic.sdx` | 1882 | 290.9 µs |
-| `guards.sdx` | 817 | 251.5 µs |
-| `attributes.sdx` | 1902 | 226.4 µs |
-| `testing.sdx` | 999 | 215.6 µs |
-| `data.sdx` | 1651 | 211.2 µs |
-| `visibility.sdx` | 1482 | 208.9 µs |
-| `case.sdx` | 886 | 207.1 µs |
-| `constants.sdx` | 1815 | 196.5 µs |
-| `expressions.sdx` | 740 | 187.5 µs |
-| `coalesce.sdx` | 1265 | 168.6 µs |
-| `record.sdx` | 733 | 161.6 µs |
-| `ascription.sdx` | 1256 | 159.6 µs |
-| `phase1.sdx` | 229 | 52.8 µs |
-| `comments.sdx` | 239 | 34.4 µs |
-| `hello.sdx` | 65 | 19.7 µs |
+| `fallible.vlt` | 5511 | 972.9 µs |
+| `destructuring.vlt` | 3865 | 893.0 µs |
+| `draw_condition.vlt` | 3921 | 702.2 µs |
+| `control.vlt` | 3151 | 567.1 µs |
+| `strings.vlt` | 3900 | 564.8 µs |
+| `async.vlt` | 3323 | 506.8 µs |
+| `class.vlt` | 1893 | 393.8 µs |
+| `module.vlt` | 2261 | 388.3 µs |
+| `arrays.vlt` | 2042 | 386.7 µs |
+| `comprehension.vlt` | 1785 | 329.2 µs |
+| `section.vlt` | 1782 | 314.6 µs |
+| `errors.vlt` | 1221 | 307.5 µs |
+| `generic.vlt` | 1882 | 290.9 µs |
+| `guards.vlt` | 817 | 251.5 µs |
+| `attributes.vlt` | 1902 | 226.4 µs |
+| `testing.vlt` | 999 | 215.6 µs |
+| `data.vlt` | 1651 | 211.2 µs |
+| `visibility.vlt` | 1482 | 208.9 µs |
+| `case.vlt` | 886 | 207.1 µs |
+| `constants.vlt` | 1815 | 196.5 µs |
+| `expressions.vlt` | 740 | 187.5 µs |
+| `coalesce.vlt` | 1265 | 168.6 µs |
+| `record.vlt` | 733 | 161.6 µs |
+| `ascription.vlt` | 1256 | 159.6 µs |
+| `phase1.vlt` | 229 | 52.8 µs |
+| `comments.vlt` | 239 | 34.4 µs |
+| `hello.vlt` | 65 | 19.7 µs |
 
 ## Watch latency
 

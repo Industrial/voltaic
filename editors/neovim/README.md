@@ -41,7 +41,7 @@ No plugin manager, and no `nvim-treesitter`.
 | `lsp` | `true` | set `false` to skip the server |
 | `format` | `true` | set `false` to leave `formatexpr` and the indent options alone |
 
-`.sdx` becomes filetype `voltaic`. **`.xrs` becomes filetype `rust`** — it is
+`.vlt` becomes filetype `voltaic`. **`.vrs` becomes filetype `rust`** — it is
 ordinary Rust, which is the compiler's whole premise, so it gets Rust's own
 support rather than a Voltaic mode that would highlight it wrongly.
 
@@ -62,6 +62,6 @@ no server, `:!voltaic fmt %` and then `:e` does the same job on the saved file.
 ## Verified by
 
 `crates/voltaic-cli/tests/editors.rs`, which runs `nvim --headless` against this
-directory: the parser loads, **every** `examples/*.sdx` parses with no `ERROR`
+directory: the parser loads, **every** `examples/*.vlt` parses with no `ERROR`
 node, all three queries compile, and the highlight query matches. The editor
 runs it — the strongest rung on plan 49 §1.4's ladder.

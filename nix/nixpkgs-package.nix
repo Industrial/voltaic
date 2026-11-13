@@ -76,11 +76,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
   ];
 
   # **A source checkout has no Rust to compile.** Every crate under crates/ is
-  # written in Voltaic: the .sdx under each crate's sdx/ is the source, and the
+  # written in Voltaic: the .vlt under each crate's vlt/ is the source, and the
   # .rs under its src/ is generated and untracked. So the GitHub tarball
   # contains zero files under any crate's src/, and the derivation has to do
   # what a developer does before their first build: run the seed compiler over
-  # every .sdx. `seed/voltaic1.wasm` is tracked for exactly this, and
+  # every .vlt. `seed/voltaic1.wasm` is tracked for exactly this, and
   # `seed/SEED.md` is its provenance.
   #
   # HOME is /homeless-shelter in the sandbox and wasmtime wants a writable cache
@@ -107,8 +107,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   meta = {
     description = "Source-to-source compiler for the Voltaic language, emitting ordinary Rust";
     longDescription = ''
-      Voltaic compiles .sdx source to .xrs files containing ordinary Rust.
-      Diagnostics are reported against the .sdx you wrote. It infers the types,
+      Voltaic compiles .vlt source to .vrs files containing ordinary Rust.
+      Diagnostics are reported against the .vlt you wrote. It infers the types,
       effects and borrow modes you did not write and emits them explicitly; it
       has no borrow checker or exhaustiveness checker of its own, by design,
       because rustc is the authority on both.

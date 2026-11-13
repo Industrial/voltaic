@@ -1,5 +1,5 @@
-error[RDX0102]: expected an expression
-  --> missing_expression.sdx:6:3
+error[VLT0102]: expected an expression
+  --> missing_expression.vlt:6:3
   |
 6 |   + 1
   |   ^

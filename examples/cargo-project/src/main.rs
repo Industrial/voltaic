@@ -1,14 +1,14 @@
 //! An ordinary Rust entry point over Voltaic-generated code.
 //!
 //! The `include!` is the whole mechanism. `build.rs` wrote
-//! `$OUT_DIR/greeting.rs` from `src/greeting.sdx`, and this pulls it in — so
+//! `$OUT_DIR/greeting.rs` from `src/greeting.vlt`, and this pulls it in — so
 //! `greet` is an ordinary Rust function and the rest of the crate cannot tell
 //! the difference.
 //!
 //! `include!` is what makes doc 02 §6.6 option (a) work rather than merely
 //! compile: it keeps the path to the generated file, so rustc's spans point
 //! into `$OUT_DIR/greeting.rs` and plan 06's map can carry them back to
-//! `src/greeting.sdx`.
+//! `src/greeting.vlt`.
 //!
 //! **The module shape, which plan 09 could not have.** Plan 09 recorded that
 //! this `include!` had to sit at the crate root: Voltaic emitted `fn greet(…)`

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuild one crate's `sdx/` from scratch, deterministically.
+# Rebuild one crate's `vlt/` from scratch, deterministically.
 #
 # Generic over the crate, where `p73build.sh` and `p74build.sh` were copies —
 # eight crates remain and three of the lessons below were each learned twice
@@ -9,7 +9,7 @@
 #
 # **The input is a pinned commit's Rust, not the working tree's.** `src/` holds
 # the hand-written Rust until the port is recorded and generated Rust
-# afterwards, so a script that rebuilds `sdx/` from `src/` reads its own
+# afterwards, so a script that rebuilds `vlt/` from `src/` reads its own
 # previous output on every run but the first. `PIN` must name the last commit
 # that has the hand-written tree — the port's own commit untracks it.
 #
@@ -41,25 +41,25 @@ cd /home/tom/Code/rust/voltaic
 
 CRATE="${CRATE:?set CRATE}"
 PIN="${PIN:-HEAD}"
-SDX="crates/$CRATE/sdx"
+VLT="crates/$CRATE/vlt"
 SRC="crates/$CRATE/src"
 
 git restore --source="$PIN" --worktree -- "$SRC"
 
-rm -rf "$SDX"
+rm -rf "$VLT"
 for f in $(cd "$SRC" && find . -maxdepth 4 -name '*.rs' | sed 's|^\./||' | sort); do
     python3 tools/port/translate.py "crate=$CRATE" --partial "$f" >/dev/null
 done
 # **The counts are compared, not just printed.** A file the translator cannot
 # read is *skipped*, not reported — plan 79 found `run/command/state.rs` missing
-# because a wrapped attribute raised `Fail`, and the only evidence was 23 `.sdx`
+# because a wrapped attribute raised `Fail`, and the only evidence was 23 `.vlt`
 # for 24 `.rs` in two numbers nothing compared. `port.rs` would catch it at
 # update time; this catches it here, where the cause is still on screen.
-made=$(find "$SDX" -maxdepth 4 -name '*.sdx' | wc -l)
+made=$(find "$VLT" -maxdepth 4 -name '*.vlt' | wc -l)
 want=$(find "$SRC" -maxdepth 4 -name '*.rs' | wc -l)
 echo "translator: $made files"
 if [ "$made" -ne "$want" ]; then
-    echo "error: $want .rs but $made .sdx — the translator skipped a file." >&2
+    echo "error: $want .rs but $made .vlt — the translator skipped a file." >&2
     exit 1
 fi
 
@@ -70,18 +70,18 @@ done
 
 # `|| true`: `grep -rl` exits 1 when nothing matches, which under `pipefail`
 # would abort at exactly the moment the port is finished.
-todo=$( (grep -rl 'TODO plan 68' "$SDX" --include='*.sdx' || true) | wc -l)
+todo=$( (grep -rl 'TODO plan 68' "$VLT" --include='*.vlt' || true) | wc -l)
 echo "remaining TODO: $todo files"
 
 if [ "$todo" -eq 0 ]; then
-    ./sdx-fmt.sh >/dev/null
+    ./vlt-fmt.sh >/dev/null
     echo "formatted"
 fi
 
 bad=0
-for f in $(cd "$SDX" && find . -maxdepth 4 -name '*.sdx' | sed 's|^\./||;s|\.sdx$||' | sort); do
-    out=$(cargo run -q -p voltaic-cli -- build "$SDX/$f.sdx" 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -v '^$' || true)
-    if echo "$out" | grep -q 'RDX0[0-9]'; then
+for f in $(cd "$VLT" && find . -maxdepth 4 -name '*.vlt' | sed 's|^\./||;s|\.vlt$||' | sort); do
+    out=$(cargo run -q -p voltaic-cli -- build "$VLT/$f.vlt" 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -v '^$' || true)
+    if echo "$out" | grep -q 'VLT0[0-9]'; then
         bad=$((bad + 1))
         [ "$bad" -le 3 ] && { echo "### $f"; echo "$out" | head -8; }
     fi

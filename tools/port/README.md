@@ -8,8 +8,8 @@ promises has to exist in the repository.
 
 | | |
 |---|---|
-| `translate.py` | Rust to a partial `.sdx`: declarations, doc comments, imports, module heads. A body it cannot express gets a `-- TODO plan 68` marker. |
-| `write.py` | Writes a hand-written body into a `.sdx`, merging the imports and keeping the translated head. |
+| `translate.py` | Rust to a partial `.vlt`: declarations, doc comments, imports, module heads. A body it cannot express gets a `-- TODO plan 68` marker. |
+| `write.py` | Writes a hand-written body into a `.vlt`, merging the imports and keeping the translated head. |
 | `port.sh` | Drives one crate: restore the pinned Rust, translate, apply the batches, format, and report any file that does not parse. |
 | `batches/` | The hand-written bodies, per crate, in the order `port.sh` applies them. |
 
@@ -31,5 +31,5 @@ untracks. So a batch set reproduces its crate only from the pinned commit named
 in `port.sh`, and once a crate is ported its batches are history rather than a
 build step. What *is* reproducible from a clean clone is the thing that
 matters: `./bootstrap.sh` regenerates every ported crate's `src/` from its
-committed `.sdx` using `seed/voltaic1.wasm`, and `crates/voltaic-cli/tests/port.rs`
-checks that the `.sdx` and the generated Rust still agree.
+committed `.vlt` using `seed/voltaic1.wasm`, and `crates/voltaic-cli/tests/port.rs`
+checks that the `.vlt` and the generated Rust still agree.

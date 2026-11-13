@@ -19,12 +19,12 @@ Nothing to build and nothing to install — which is the point of this client.
 
 | | |
 |---|---|
-| `.sdx` → filetype `sdx`, `.xrs` → filetype `rust` | `ftdetect/sdx.vim` |
-| Keyword, string, comment, number, type and operator highlighting | `syntax/sdx.vim` |
-| 2-space indent, `--` comments, `autoindent` without `smartindent` | `ftplugin/sdx.vim` |
-| `:VoltaicFmt` | `ftplugin/sdx.vim` |
+| `.vlt` → filetype `vlt`, `.vrs` → filetype `rust` | `ftdetect/vlt.vim` |
+| Keyword, string, comment, number, type and operator highlighting | `syntax/vlt.vim` |
+| 2-space indent, `--` comments, `autoindent` without `smartindent` | `ftplugin/vlt.vim` |
+| `:VoltaicFmt` | `ftplugin/vlt.vim` |
 
-`.xrs` gets Vim's own Rust support, because it *is* ordinary Rust — the
+`.vrs` gets Vim's own Rust support, because it *is* ordinary Rust — the
 compiler's whole premise.
 
 `nosmartindent` is deliberate: Voltaic is off-side-rule, so keeping the previous

@@ -4,7 +4,7 @@ All four are Rust's, spelled for the off-side rule. Voltaic adds no type
 system of its own and infers nothing Rust would not.
 
 ```voltaic
-{{#include ../../../examples/generic.sdx}}
+{{#include ../../../examples/generic.vlt}}
 ```
 
 ## Type expressions
@@ -13,7 +13,7 @@ Rust's type grammar: paths, references, generics, tuples, slices, `impl Trait`,
 `dyn Trait`. Written in signatures after `:` and between `->`s.
 
 ```voltaic
-{{#include ../../../examples/ascription.sdx}}
+{{#include ../../../examples/ascription.vlt}}
 ```
 
 Ascription pins a type at an expression. The parenthesis in
@@ -30,14 +30,14 @@ appear in the same place.
 ## Classes and instances
 
 ```voltaic
-{{#include ../../../examples/class.sdx}}
+{{#include ../../../examples/class.vlt}}
 ```
 
 `class` is `trait` and `instance` is `impl`. The one rule that is not Rust's:
 **an `instance` must be in the same file as its `class`.** The parser records a
 class's member signatures when it parses the declaration and reads them back
 when it parses an instance member, and each file gets a fresh parser. An
-instance elsewhere fails with `RDX0101` on every name in the line, which looks
+instance elsewhere fails with `VLT0101` on every name in the line, which looks
 nothing like the real cause.
 
 It is a constraint rather than a defect: the parser needs a member's *shape*,
@@ -46,7 +46,7 @@ not its types, so it does not cross the no-type-checker line.
 ## Async
 
 ```voltaic
-{{#include ../../../examples/async.sdx}}
+{{#include ../../../examples/async.vlt}}
 ```
 
 `async` and `await` as Rust's, with no executor supplied. Pick one from

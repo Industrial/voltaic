@@ -13,7 +13,7 @@ description = "Incremental compilation driver for the Voltaic compiler."
 # only tracked hand-written Rust left under `crates/`: it resolves a real rustc
 # by running `--version` and checking the banner, then bakes the path in as
 # `VOLTAIC_RUSTC`. Omit it and the published crate cannot build.
-include = ["src/**/*.rs", "sdx/**/*.sdx", "build.rs", "Cargo.toml"]
+include = ["src/**/*.rs", "vlt/**/*.vlt", "build.rs", "Cargo.toml"]
 
 [dependencies]
 # Plan 10 §1.2: a persisted cache key needs a strong, stable hash.
@@ -26,7 +26,7 @@ blake3 = "1"
 voltaic-ast.workspace = true
 voltaic-diag.workspace = true
 voltaic-emit.workspace = true
-# Plan 38: `RDX1001` is a lexical lint — a `.` then the name — so the driver
+# Plan 38: `VLT1001` is a lexical lint — a `.` then the name — so the driver
 # scans tokens rather than walking an AST that could silently miss a variant.
 voltaic-lexer.workspace = true
 voltaic-parser.workspace = true

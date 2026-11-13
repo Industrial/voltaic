@@ -1,4 +1,4 @@
-//! Plan 02's concrete proof: `examples/lexical.sdx` exercises the whole
+//! Plan 02's concrete proof: `examples/lexical.vlt` exercises the whole
 //! lexical surface and its tokens are asserted directly.
 //!
 //! `docs/07 - 02 - Lexical Surface.md` §3. The tokens are asserted rather than
@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use voltaic_lexer::{Keyword, StrPart, TokenKind, TriviaKind, lex};
 
 fn fixture() -> String {
-  let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/lexical.sdx");
+  let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/lexical.vlt");
   std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("should read {}: {e}", path.display()))
 }
 

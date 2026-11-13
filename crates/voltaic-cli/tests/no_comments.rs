@@ -45,21 +45,21 @@ fn workspace_root() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-fn sdx_files(dir: &Path, out: &mut Vec<PathBuf>) {
+fn vlt_files(dir: &Path, out: &mut Vec<PathBuf>) {
   let Ok(entries) = std::fs::read_dir(dir) else {
     return;
   };
   for entry in entries.flatten() {
     let path = entry.path();
     if path.is_dir() {
-      sdx_files(&path, out);
-    } else if path.extension().is_some_and(|e| e == "sdx") {
+      vlt_files(&path, out);
+    } else if path.extension().is_some_and(|e| e == "vlt") {
       out.push(path);
     }
   }
 }
 
-/// Every comment line in one crate's `.sdx`, as `path:line`.
+/// Every comment line in one crate's `.vlt`, as `path:line`.
 ///
 /// A comment is decided per line and by its first non-space characters, which
 /// is exactly how the lexer decides: `--` opens one, `-- |` opens a doc
@@ -68,9 +68,9 @@ fn sdx_files(dir: &Path, out: &mut Vec<PathBuf>) {
 /// commentary, and a trailing marker inside a string literal would be a false
 /// positive this check must not have.
 fn comment_lines(crate_name: &str) -> Vec<String> {
-  let sdx = workspace_root().join("crates").join(crate_name).join("sdx");
+  let vlt = workspace_root().join("crates").join(crate_name).join("vlt");
   let mut files = Vec::new();
-  sdx_files(&sdx, &mut files);
+  vlt_files(&vlt, &mut files);
   files.sort();
   let mut found = Vec::new();
   for path in files {

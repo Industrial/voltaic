@@ -1,5 +1,5 @@
-error[RDX0004]: unterminated raw string; expected closing `"`
-  --> unterminated_raw_string.sdx:5:7
+error[VLT0004]: unterminated raw string; expected closing `"`
+  --> unterminated_raw_string.vlt:5:7
   |
 5 |   s = r"hello
   |       ^^^^^^^^^^^^^

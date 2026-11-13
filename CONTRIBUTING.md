@@ -6,8 +6,8 @@ change is held to are in [AGENTS.md](AGENTS.md), and the design documents are nu
 
 ## The one rule that surprises everyone
 
-**Edit the `.sdx`, never the `.rs`.** Every crate under `crates/` is written in Voltaic. Its
-`src/*.rs` is *generated* from its `sdx/*.sdx`, is `.gitignore`d, and is not in the index — so a
+**Edit the `.vlt`, never the `.rs`.** Every crate under `crates/` is written in Voltaic. Its
+`src/*.rs` is *generated* from its `vlt/*.vlt`, is `.gitignore`d, and is not in the index — so a
 clean clone has no Rust in it at all until you bootstrap:
 
 ```bash
@@ -17,7 +17,7 @@ cd voltaic
 cargo build         # works from here
 ```
 
-After changing a `.sdx`, regenerate with:
+After changing a `.vlt`, regenerate with:
 
 ```bash
 VOLTAIC_UPDATE=1 cargo test -p voltaic-cli --test port

@@ -10,7 +10,7 @@
 //! Each case is a pair under `tests/ui/`:
 //!
 //! ```text
-//! tests/ui/empty_body.sdx       the program
+//! tests/ui/empty_body.vlt       the program
 //! tests/ui/empty_body.stderr    what `voltaic build --plain` prints
 //! ```
 //!
@@ -28,14 +28,14 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Every `.sdx` under `tests/ui/`, sorted so failures are reported in a
+/// Every `.vlt` under `tests/ui/`, sorted so failures are reported in a
 /// predictable order.
 fn cases() -> Vec<PathBuf> {
   let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/ui");
   let mut found: Vec<PathBuf> = std::fs::read_dir(&dir)
     .unwrap_or_else(|e| panic!("should read {}: {e}", dir.display()))
     .map(|e| e.expect("should read an entry").path())
-    .filter(|p| p.extension().is_some_and(|x| x == "sdx"))
+    .filter(|p| p.extension().is_some_and(|x| x == "vlt"))
     .collect();
   found.sort();
   found
@@ -48,7 +48,7 @@ fn stderr_of(source: &Path) -> String {
     .arg(source)
     .arg("--plain")
     .arg("-o")
-    .arg(std::env::temp_dir().join("voltaic-ui-discard.xrs"))
+    .arg(std::env::temp_dir().join("voltaic-ui-discard.vrs"))
     .output()
     .expect("should run the voltaic binary");
   assert!(
@@ -105,7 +105,7 @@ fn every_ui_case_matches_its_expectation() {
   );
 }
 
-/// A `.stderr` with no `.sdx` beside it is a case someone deleted and a
+/// A `.stderr` with no `.vlt` beside it is a case someone deleted and a
 /// stale expectation left behind — which would otherwise never be noticed,
 /// because nothing reads it.
 #[test]
@@ -115,8 +115,8 @@ fn no_expectation_is_orphaned() {
     let path = entry.expect("should read an entry").path();
     if path.extension().is_some_and(|x| x == "stderr") {
       assert!(
-        path.with_extension("sdx").exists(),
-        "{} has no .sdx beside it",
+        path.with_extension("vlt").exists(),
+        "{} has no .vlt beside it",
         path.display()
       );
     }
@@ -135,7 +135,7 @@ fn every_diagnostic_names_a_code() {
         .and_then(|rest| rest.split(']').next())
         .unwrap_or_else(|| panic!("{} printed an uncoded error: {line}", source.display()));
       assert!(
-        code.starts_with("RDX") && code.len() == 7,
+        code.starts_with("VLT") && code.len() == 7,
         "{} printed a malformed code `{code}`",
         source.display()
       );

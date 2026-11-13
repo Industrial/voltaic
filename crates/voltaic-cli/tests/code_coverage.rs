@@ -1,7 +1,7 @@
 //! Every diagnostic code must be reachable, and the UI corpus must reach it.
 //!
 //! Plan 05 (`docs/10 - 05 - Diagnostics.md`) leaf 6, and the test that gives
-//! the code catalogue its teeth. A catalogue is a promise: `RDX0007` means
+//! the code catalogue its teeth. A catalogue is a promise: `VLT0007` means
 //! "unterminated attribute" and will go on meaning that. Two ways a promise
 //! like this rots, both caught here:
 //!
@@ -41,7 +41,7 @@ fn codes_in_corpus() -> BTreeSet<String> {
       }
       let text = std::fs::read_to_string(&path).expect("should read an expectation");
       for line in text.lines() {
-        // **Both severities.** A lint renders `warning[RDX1001]`, and a
+        // **Both severities.** A lint renders `warning[VLT1001]`, and a
         // catalogue that counted only errors would call its own first lint
         // unreachable.
         let rest = line
@@ -73,7 +73,7 @@ fn every_code_is_reached_by_the_corpus() {
   assert!(
     missing.is_empty(),
     "these codes are declared but no UI case reaches them: {}\n\
-     Add a `crates/voltaic-cli/tests/ui/<name>.sdx` that triggers each, or list \
+     Add a `crates/voltaic-cli/tests/ui/<name>.vlt` that triggers each, or list \
      it in NOT_YET_REACHABLE with the plan that will.",
     missing.join(", ")
   );

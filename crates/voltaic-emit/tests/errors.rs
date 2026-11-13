@@ -8,7 +8,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -17,14 +17,14 @@ fn xrs(src: &str) -> String {
 /// written `export errors`.
 #[test]
 fn the_enum_derives_debug_and_takes_its_marker() {
-  let private = xrs("errors E\n  Missing String \"missing: #{0}\"\n");
+  let private = vrs("errors E\n  Missing String \"missing: #{0}\"\n");
   assert!(
     private.starts_with("#[derive(Debug)]\nenum E {\n"),
     "{private}"
   );
   assert!(private.contains("    Missing(String),"), "{private}");
 
-  let public = xrs("export errors E\n  Missing String \"missing: #{0}\"\n");
+  let public = vrs("export errors E\n  Missing String \"missing: #{0}\"\n");
   assert!(
     public.starts_with("#[derive(Debug)]\npub enum E {\n"),
     "{public}"
@@ -36,13 +36,13 @@ fn the_enum_derives_debug_and_takes_its_marker() {
 /// `String u32` as one field until the juxtaposed lists asked for an atom.
 #[test]
 fn a_juxtaposed_payload_is_several_fields() {
-  let out = xrs("errors E\n  Invalid String u32 \"bad #{0} at #{1}\"\n");
+  let out = vrs("errors E\n  Invalid String u32 \"bad #{0} at #{1}\"\n");
   assert!(out.contains("    Invalid(String, u32),"), "{out}");
 }
 
 #[test]
 fn a_variant_with_no_payload_has_no_parentheses() {
-  let out = xrs("errors E\n  Closed \"closed\"\n");
+  let out = vrs("errors E\n  Closed \"closed\"\n");
   assert!(out.contains("    Closed,\n"), "{out}");
 }
 
@@ -50,7 +50,7 @@ fn a_variant_with_no_payload_has_no_parentheses() {
 /// rather than Rust's `{0}`, because the arguments are supplied in hole order.
 #[test]
 fn the_message_holes_become_format_arguments() {
-  let out = xrs("errors E\n  Invalid String u32 \"bad #{0} at line #{1}\"\n");
+  let out = vrs("errors E\n  Invalid String u32 \"bad #{0} at line #{1}\"\n");
   assert!(
     out.contains("E::Invalid(_0, _1) => write!(f, \"bad {} at line {}\", _0, _1),"),
     "{out}"
@@ -59,7 +59,7 @@ fn the_message_holes_become_format_arguments() {
 
 #[test]
 fn a_message_with_no_holes_takes_no_arguments() {
-  let out = xrs("errors E\n  Closed \"closed\"\n");
+  let out = vrs("errors E\n  Closed \"closed\"\n");
   assert!(out.contains("E::Closed => write!(f, \"closed\"),"), "{out}");
 }
 
@@ -67,7 +67,7 @@ fn a_message_with_no_holes_takes_no_arguments() {
 /// would depend on what the author happened to import.
 #[test]
 fn the_display_impl_uses_full_paths() {
-  let out = xrs("errors E\n  Closed \"closed\"\n");
+  let out = vrs("errors E\n  Closed \"closed\"\n");
   assert!(out.contains("impl std::fmt::Display for E {"), "{out}");
   assert!(
     out.contains("fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {"),
@@ -77,7 +77,7 @@ fn the_display_impl_uses_full_paths() {
 
 #[test]
 fn the_error_impl_is_empty() {
-  let out = xrs("errors E\n  Closed \"closed\"\n");
+  let out = vrs("errors E\n  Closed \"closed\"\n");
   assert!(out.contains("impl std::error::Error for E {}"), "{out}");
 }
 
@@ -85,7 +85,7 @@ fn the_error_impl_is_empty() {
 /// reason the row exists: it is what makes `?` work across the boundary.
 #[test]
 fn a_from_row_generates_a_from_impl() {
-  let out = xrs("errors E\n  from std::io::Error as Io \"io: #{0}\"\n");
+  let out = vrs("errors E\n  from std::io::Error as Io \"io: #{0}\"\n");
   assert!(out.contains("    Io(std::io::Error),"), "{out}");
   assert!(out.contains("impl From<std::io::Error> for E {"), "{out}");
   assert!(
@@ -99,7 +99,7 @@ fn a_from_row_generates_a_from_impl() {
 /// mean something.
 #[test]
 fn a_plain_row_generates_no_from_impl() {
-  let out = xrs("errors E\n  Missing String \"missing: #{0}\"\n");
+  let out = vrs("errors E\n  Missing String \"missing: #{0}\"\n");
   assert!(!out.contains("impl From<"), "{out}");
 }
 
@@ -108,7 +108,7 @@ fn a_plain_row_generates_no_from_impl() {
 #[test]
 fn the_try_operator_passes_through() {
   let out =
-    xrs("parse_it : &str -> Result<u32, E>\nparse_it s = Ok n\n  where\n    n = (.parse s)?\n");
+    vrs("parse_it : &str -> Result<u32, E>\nparse_it s = Ok n\n  where\n    n = (.parse s)?\n");
   assert!(out.contains("let n = s.parse()?;"), "{out}");
 }
 
@@ -129,7 +129,7 @@ fn the_try_operator_passes_through() {
 /// made.
 #[test]
 fn the_variants_come_into_scope_under_their_own_names() {
-  let out = xrs("errors E\n  Gone  \"gone\"\n");
+  let out = vrs("errors E\n  Gone  \"gone\"\n");
   assert!(out.contains("use E::*;\n"), "{out}");
   let glob = out.find("use E::*;").expect("the glob is emitted");
   let display = out
@@ -149,6 +149,6 @@ fn the_variants_come_into_scope_under_their_own_names() {
 /// the glob had somehow replaced the long form rather than added to it.
 #[test]
 fn the_display_arms_stay_qualified() {
-  let out = xrs("errors E\n  Gone  \"gone\"\n");
+  let out = vrs("errors E\n  Gone  \"gone\"\n");
   assert!(out.contains("E::Gone =>"), "{out}");
 }

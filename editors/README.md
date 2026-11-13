@@ -24,10 +24,10 @@ were the strongest. `crates/voltaic-cli/tests/editors.rs` therefore runs a
 
 | Client | What the gate actually does | Strength |
 |---|---|---|
-| **Neovim** | runs `nvim --headless`: loads the parser, parses every `examples/*.sdx` with no `ERROR` node, compiles all three queries, matches the highlight query | the editor runs it |
+| **Neovim** | runs `nvim --headless`: loads the parser, parses every `examples/*.vlt` with no `ERROR` node, compiles all three queries, matches the highlight query | the editor runs it |
 | **Cursor** | builds a VSIX, installs it with `--install-extension` into a throwaway `--extensions-dir`, reads it back from `--list-extensions`, **and has `node` load the installed entry module** | the editor installs it, and the module loads |
 | **VSCode** | nothing — **inherited** from Cursor, which is a VSCode fork consuming the same contribution points | a claim, not a measurement |
-| **Vim** | `nvim` sources `syntax/sdx.vim` as legacy vimscript and reports the highlight group at a keyword | a compatible editor runs it — not vim |
+| **Vim** | `nvim` sources `syntax/vlt.vim` as legacy vimscript and reports the highlight group at a keyword | a compatible editor runs it — not vim |
 | **Helix** | `languages.toml` parses and every key is one Helix documents | the file is well-formed |
 | **Zed** | `extension.toml` parses and names files that exist | the file is well-formed |
 

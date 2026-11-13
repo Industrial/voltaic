@@ -278,23 +278,23 @@ fn render(root: &Path) -> String {
   let _ = writeln!(out, "| **total** | **{src}** | **{tests}** |");
 
   out.push_str("\n---\n\n## Corpora\n\n| Corpus | Files | What it asserts |\n|---|---:|---|\n");
-  let examples = count(&root.join("examples"), ".sdx");
-  let golden = count(&root.join("tests/golden"), ".xrs");
-  let ui = count(&root.join("crates/voltaic-cli/tests/ui"), ".sdx");
-  let unreachable = count(&root.join("tests/unreachable"), ".sdx");
-  let pairs = count(&root.join("benchmarks/pairs"), ".sdx");
+  let examples = count(&root.join("examples"), ".vlt");
+  let golden = count(&root.join("tests/golden"), ".vrs");
+  let ui = count(&root.join("crates/voltaic-cli/tests/ui"), ".vlt");
+  let unreachable = count(&root.join("tests/unreachable"), ".vlt");
+  let pairs = count(&root.join("benchmarks/pairs"), ".vlt");
   let _ = writeln!(
     out,
-    "| `examples/*.sdx` | {examples} | the CI-checked source of truth for what works |\n\
-     | `tests/golden/*.xrs` | {golden} | the generated Rust, as exact text |\n\
-     | `crates/voltaic-cli/tests/ui/*.sdx` | {ui} | the diagnostic a bad program gets |\n\
-     | `tests/unreachable/*.sdx` | {unreachable} | the gaps below, asserted to **still fail** |\n\
-     | `benchmarks/pairs/*.sdx` | {pairs} | generated and hand-written Rust, as identical IR |"
+    "| `examples/*.vlt` | {examples} | the CI-checked source of truth for what works |\n\
+     | `tests/golden/*.vrs` | {golden} | the generated Rust, as exact text |\n\
+     | `crates/voltaic-cli/tests/ui/*.vlt` | {ui} | the diagnostic a bad program gets |\n\
+     | `tests/unreachable/*.vlt` | {unreachable} | the gaps below, asserted to **still fail** |\n\
+     | `benchmarks/pairs/*.vlt` | {pairs} | generated and hand-written Rust, as identical IR |"
   );
   let _ = writeln!(
     out,
     "\n**{examples} examples and {golden} goldens is not an error.** \
-     `examples/lexical.sdx` deliberately does not parse — it is the error-path example, and \
+     `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and \
      `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. \
      Reporting \"{examples} examples, all green\" would be rounding up by exactly one file."
   );

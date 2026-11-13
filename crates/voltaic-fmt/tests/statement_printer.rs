@@ -37,7 +37,7 @@ fn fixtures() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fmt")
 }
 
-const NOT_PARSEABLE: [&str; 1] = ["lexical.sdx"];
+const NOT_PARSEABLE: [&str; 1] = ["lexical.vlt"];
 
 fn sources() -> Vec<PathBuf> {
   let mut found = Vec::new();
@@ -52,7 +52,7 @@ fn sources() -> Vec<PathBuf> {
     for entry in entries {
       let path = entry.expect("should read an entry").path();
       let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-      if path.extension().is_some_and(|x| x == "sdx") && !NOT_PARSEABLE.contains(&name) {
+      if path.extension().is_some_and(|x| x == "vlt") && !NOT_PARSEABLE.contains(&name) {
         found.push(path);
       }
     }
@@ -203,7 +203,7 @@ fn matching_brace(text: &str, open: usize) -> Option<usize> {
 /// `then`, but only in expression position. At the start of an indented
 /// statement the parser commits to the statement form and the `then` is a
 /// syntax error. So `if n > 9 then "big" else "small"` — real, from
-/// `examples/control.sdx` — re-parses as a tail and not as a statement.
+/// `examples/control.vlt` — re-parses as a tail and not as a statement.
 ///
 /// **This is a constraint on leaf 2**, recorded in §10: an equation whose body
 /// is a single expression must stay on the equation line. Moving it to an
@@ -211,7 +211,7 @@ fn matching_brace(text: &str, open: usize) -> Option<usize> {
 /// never see, because the file would stop parsing as Voltaic first.
 fn reparse(text: &str, context: &str) -> Option<(Stmt, String)> {
   // Plan 90: an operator's scope is the **file**, so `a <+> b` re-parsed in a
-  // bare probe is `RDX0123`. The declarations travel with it — only the
+  // bare probe is `VLT0123`. The declarations travel with it — only the
   // declarations, since parsing never resolves the alias target.
   // `expression_printer.rs`'s own `reparse` carries the same prelude for the
   // same reason.
@@ -226,9 +226,9 @@ fn reparse(text: &str, context: &str) -> Option<(Stmt, String)> {
   // The trailing `()` is plan 55 §1.6's unit tail: the probe's return type is
   // `()`, so an indented body needs one and the statement under test stays
   // first either way. The tail form needs none — §1.6's rule is about a block.
-  let indented = format!("{prelude}__rdx_probe : ()\n__rdx_probe =\n{text}\n  ()\n");
+  let indented = format!("{prelude}__vlt_probe : ()\n__vlt_probe =\n{text}\n  ()\n");
   let tail = format!(
-    "{prelude}__rdx_probe : ()\n__rdx_probe = {}\n",
+    "{prelude}__vlt_probe : ()\n__vlt_probe = {}\n",
     text.trim_start()
   );
   for whole in [indented, tail] {
@@ -250,8 +250,8 @@ fn reparse(text: &str, context: &str) -> Option<(Stmt, String)> {
 /// Every statement kind's canonical form, as a fixture pair.
 #[test]
 fn every_statement_reaches_its_canonical_form() {
-  let input = fixtures().join("statements.sdx");
-  let expected_path = fixtures().join("statements.canonical.sdx");
+  let input = fixtures().join("statements.vlt");
+  let expected_path = fixtures().join("statements.canonical.vlt");
   let source = std::fs::read_to_string(&input).expect("the fixture should exist");
   let program = voltaic_parser::parse_source(&source).expect("the fixture should parse");
 
@@ -294,7 +294,7 @@ fn every_statement_reaches_its_canonical_form() {
 fn printing_preserves_the_statement() {
   let mut checked = 0;
   let mut paths = sources();
-  paths.push(fixtures().join("statements.sdx"));
+  paths.push(fixtures().join("statements.vlt"));
   for path in paths {
     let source = std::fs::read_to_string(&path).expect("should read");
     let Ok(program) = voltaic_parser::parse_source(&source) else {

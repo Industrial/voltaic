@@ -46,13 +46,13 @@ M.queries = { 'highlights', 'injections', 'locals' }
 function M.setup(opts)
   opts = opts or {}
 
-  -- `.sdx` is Voltaic. `.xrs` is **ordinary Rust** — that is the whole premise of
+  -- `.vlt` is Voltaic. `.vrs` is **ordinary Rust** — that is the whole premise of
   -- the compiler, so the generated file gets Rust's own support rather than a
   -- second Voltaic mode that would highlight it wrongly.
   vim.filetype.add({
     extension = {
-      sdx = 'voltaic',
-      xrs = 'rust',
+      vlt = 'voltaic',
+      vrs = 'rust',
     },
   })
 

@@ -3,7 +3,7 @@
 Voltaic has one spelling for each thing, and `voltaic fmt` produces it.
 
 ```voltaic
-{{#include ../../../examples/draw_condition.sdx}}
+{{#include ../../../examples/draw_condition.vlt}}
 ```
 
 ## What canonical means here
@@ -20,18 +20,18 @@ a reviewer to argue about.
 ## The formatter is in the gate
 
 `voltaic fmt` existed for a long time in no gate at all — `treefmt` has no
-`.sdx` formatter and the only `fmt --check` among the build tasks was Rust's.
+`.vlt` formatter and the only `fmt --check` among the build tasks was Rust's.
 The result was 50 of 53 files in one crate non-canonical, and a formatter bug
 that **deleted a member's visibility** surviving unnoticed.
 
-It is now `moon run :sdx-format-check`, and it is the *check* rather than the
+It is now `moon run :vlt-format-check`, and it is the *check* rather than the
 write, placed beside the lint. A gate that rewrites the source it is grading
 cannot fail.
 
 ## A larger worked example
 
 ```voltaic
-{{#include ../../../examples/phase1.sdx}}
+{{#include ../../../examples/phase1.vlt}}
 ```
 
 That file is the repository's phase-one example and has a recorded `.stdout`

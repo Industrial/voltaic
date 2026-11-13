@@ -8,7 +8,7 @@ use voltaic_diag::Code;
 use voltaic_emit::emit;
 use voltaic_parser::{ParseFailure, parse_source};
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -17,7 +17,7 @@ fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)
@@ -30,7 +30,7 @@ fn body(src: &str) -> String {
 
 /// The first `case` arm's text, for the forms that only make sense in one.
 fn arm(pattern: &str) -> String {
-  let out = xrs(&format!(
+  let out = vrs(&format!(
     "f : T -> i32\nf v = case v of\n  {pattern} -> 1\n  _ -> 0\n"
   ));
   out
@@ -166,7 +166,7 @@ fn an_as_pattern_works_over_a_record() {
 /// `case` arm.
 #[test]
 fn the_forms_work_in_an_equations_row() {
-  let out = xrs("first : (i32, i32) -> i32\nfirst (a, _) = a\n");
+  let out = vrs("first : (i32, i32) -> i32\nfirst (a, _) = a\n");
   assert!(out.contains("(a, _) =>"), "{out}");
 }
 
@@ -194,7 +194,7 @@ fn a_plain_binding_is_unchanged() {
 fn a_record_literal_is_not_read_as_a_binding() {
   let out = body("  r = p { x = 1 }\n");
   assert!(out.starts_with("let r = {"), "{out}");
-  assert!(out.contains("__rdx_r.x = 1;"), "{out}");
+  assert!(out.contains("__vlt_r.x = 1;"), "{out}");
 }
 
 // --- a tuple expression ---------------------------------------------------

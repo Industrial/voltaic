@@ -1,5 +1,5 @@
-error[RDX0101]: inline Rust needs a `"""` block or an indented one: a single-quoted string cannot hold Rust's own quotes
-  --> inline_rust_needs_a_block.sdx:13:6
+error[VLT0101]: inline Rust needs a `"""` block or an indented one: a single-quoted string cannot hold Rust's own quotes
+  --> inline_rust_needs_a_block.vlt:13:6
    |
 13 | rust "let x = 1;"
    |      ^^^^^^^^^^^^

@@ -76,7 +76,7 @@ fn nested_delimiters_each_close_their_own_context() {
 ///
 /// A continuation aligned under its opener sits at a column matching no
 /// enclosing level — seven, under `f (` — which with one shared stack is
-/// `RDX0002`. The context mark is what makes it one consistent deeper level
+/// `VLT0002`. The context mark is what makes it one consistent deeper level
 /// instead.
 #[test]
 fn a_continuation_aligned_under_its_opener_is_not_an_inconsistent_dedent() {
@@ -99,7 +99,7 @@ fn a_continuation_aligned_under_its_opener_is_not_an_inconsistent_dedent() {
 /// A *continuation* is suppressed before `sync_indent` ever runs, so the
 /// alignment above was only ever half the case. Once a bracket can hold a
 /// real statement — which is this row — its interior pushes genuine levels,
-/// and a closer placed to the left of them matched none of them: `RDX0002` on
+/// and a closer placed to the left of them matched none of them: `VLT0002` on
 /// a `)`, decided by nothing but which column the author put it in.
 ///
 /// A line that *opens* with a closer is therefore not content at that
@@ -330,7 +330,7 @@ fn a_trailing_double_angle_bracket_does_not_continue_the_line() {
 /// Plan 69's fourth finding, and the only one of that row's surface findings it
 /// graded a **defect**: `next_line_continues` asked whether the line ahead
 /// opened with `|>`, a comment line opens with `--`, so the chain was closed
-/// and the `|>` below earned `RDX0102`. `AGENTS.md` calls comment preservation
+/// and the `|>` below earned `VLT0102`. `AGENTS.md` calls comment preservation
 /// load-bearing, and a trivium that stops its neighbour parsing is the
 /// strongest form of discarding one.
 ///

@@ -3,8 +3,8 @@
 //! Three assertions, in increasing order of what they would catch.
 //!
 //! 1. **The canonical form of each §3 row**, as a fixture pair — an accepted
-//!    spelling in `fmt/expressions.sdx` and the expected output in
-//!    `fmt/expressions.canonical.sdx`. The expectation is a *file* for
+//!    spelling in `fmt/expressions.vlt` and the expected output in
+//!    `fmt/expressions.canonical.vlt`. The expectation is a *file* for
 //!    AGENTS.md's reason: Emerald's one syntax cutover missed 113 fixtures that
 //!    lived as string literals inside test modules, and that cost is paid once
 //!    per syntax change, forever. `VOLTAIC_UPDATE=1` rewrites it and then fails,
@@ -15,7 +15,7 @@
 //!    where a failure names the expression rather than the file.
 //!
 //! 3. **Meaning preservation, over every expression in the corpus** — every
-//!    binding value in every `.sdx` in the repository re-parses to the same
+//!    binding value in every `.vlt` in the repository re-parses to the same
 //!    expression it was printed from. This is the one that would catch a
 //!    wrongly dropped parenthesis, and §3 row 3 is the only normalisation in
 //!    plan 34 that can change what a program means.
@@ -43,9 +43,9 @@ fn fixtures() -> PathBuf {
 
 /// Plan 02's lexer fixture, which deliberately does not parse — the same
 /// declared exemption `examples.rs` and leaf 5's properties carry.
-const NOT_PARSEABLE: [&str; 1] = ["lexical.sdx"];
+const NOT_PARSEABLE: [&str; 1] = ["lexical.vlt"];
 
-/// Every `.sdx` in the repository that is meant to parse.
+/// Every `.vlt` in the repository that is meant to parse.
 fn sources() -> Vec<PathBuf> {
   let mut found = Vec::new();
   for dir in [
@@ -59,7 +59,7 @@ fn sources() -> Vec<PathBuf> {
     for entry in entries {
       let path = entry.expect("should read an entry").path();
       let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-      if path.extension().is_some_and(|x| x == "sdx") && !NOT_PARSEABLE.contains(&name) {
+      if path.extension().is_some_and(|x| x == "vlt") && !NOT_PARSEABLE.contains(&name) {
         found.push(path);
       }
     }
@@ -217,8 +217,8 @@ fn matching_brace(text: &str, open: usize) -> Option<usize> {
 /// Plan 34 §3's rows, as a fixture pair.
 #[test]
 fn each_normalisation_reaches_its_canonical_form() {
-  let input = fixtures().join("expressions.sdx");
-  let expected_path = fixtures().join("expressions.canonical.sdx");
+  let input = fixtures().join("expressions.vlt");
+  let expected_path = fixtures().join("expressions.canonical.vlt");
   let source = std::fs::read_to_string(&input).expect("the fixture should exist");
   let program = voltaic_parser::parse_source(&source).expect("the fixture should parse");
 
@@ -324,9 +324,9 @@ fn printing_preserves_meaning() {
 /// defect, which is the third time in this plan (§10.5, §10.20).
 fn reparse(text: &str, context: &str) -> Option<(Expr, String)> {
   // Plan 90: the probe is a **different file**, and an operator's scope is the
-  // file it was declared in — so `a <+> b` re-parsed alone is `RDX0123` and
+  // file it was declared in — so `a <+> b` re-parsed alone is `VLT0123` and
   // this helper returned `None` for every expression in
-  // `examples/operator.sdx`. Carrying the declarations across is what makes the
+  // `examples/operator.vlt`. Carrying the declarations across is what makes the
   // probe the same file in the one respect that matters.
   //
   // Only the declarations, not the functions they alias: parsing never resolves
@@ -342,7 +342,7 @@ fn reparse(text: &str, context: &str) -> Option<(Expr, String)> {
     .collect();
   // The trailing `()` is plan 55 §1.6's unit tail, which the probe's `()`
   // return type now requires of an indented body.
-  let whole = format!("{prelude}__rdx_probe : ()\n__rdx_probe =\n  __rdx_it = {text}\n  ()\n");
+  let whole = format!("{prelude}__vlt_probe : ()\n__vlt_probe =\n  __vlt_it = {text}\n  ()\n");
   let program = voltaic_parser::parse_source(&whole).ok()?;
   let found = binding_values(&program).first().map(|e| (*e).clone())?;
   Some((found, whole))

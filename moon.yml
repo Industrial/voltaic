@@ -44,32 +44,32 @@ tasks:
       cache: false
       outputStyle: buffer-only-failure
   # Plan 73. **`voltaic fmt` was in no gate.** `:format` above is treefmt, which
-  # has no `.sdx` formatter, and the only `fmt --check` in the per-crate tasks
+  # has no `.vlt` formatter, and the only `fmt --check` in the per-crate tasks
   # is `cargo fmt --check` for Rust — so the project's own formatter had never
-  # been run over the project's own 245 `.sdx` files except by hand. That is how
-  # `crates/voltaic-ast/sdx` came to have 50 of 53 files non-canonical, and how a
+  # been run over the project's own 245 `.vlt` files except by hand. That is how
+  # `crates/voltaic-ast/vlt` came to have 50 of 53 files non-canonical, and how a
   # formatter bug that **deleted a member's visibility** survived unnoticed.
   #
-  # Both tasks call `./sdx-fmt.sh`, which owns the one list of what is and is
+  # Both tasks call `./vlt-fmt.sh`, which owns the one list of what is and is
   # not canonical and why. Two task bodies would be two exclusion lists free to
   # drift.
-  sdx-format:
-    description: 'Format the canonical .sdx corpora with voltaic fmt'
-    command: './sdx-fmt.sh'
+  vlt-format:
+    description: 'Format the canonical .vlt corpora with voltaic fmt'
+    command: './vlt-fmt.sh'
     inputs:
-      - 'sdx-fmt.sh'
-      - '**/*.sdx'
+      - 'vlt-fmt.sh'
+      - '**/*.vlt'
       - 'crates/voltaic-fmt/src/**/*'
     options:
       cache: false
       outputStyle: buffer-only-failure
-  sdx-format-check:
-    description: 'Fail if any canonical .sdx is not formatted'
-    command: './sdx-fmt.sh'
+  vlt-format-check:
+    description: 'Fail if any canonical .vlt is not formatted'
+    command: './vlt-fmt.sh'
     args: ['--check']
     inputs:
-      - 'sdx-fmt.sh'
-      - '**/*.sdx'
+      - 'vlt-fmt.sh'
+      - '**/*.vlt'
       - 'crates/voltaic-fmt/src/**/*'
     options:
       cache: false
@@ -139,7 +139,7 @@ tasks:
   # Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 3. Rebuild the
   # checked-in bootstrap seed. `seed/SEED.md` records when this should be run
   # and when it is churn: whenever the seed can no longer parse this
-  # repository's own `.sdx`, and not on a cadence — a new blob is ~900 KB of
+  # repository's own `.vlt`, and not on a cadence — a new blob is ~900 KB of
   # history that does not delta-compress.
   #
   # `cache: false` because the output is a tracked file, not a build artifact

@@ -8,7 +8,7 @@ homepage.workspace = true
 description = "The canonical formatter for Voltaic source."
 
 # Why `include` is not optional here — see `crates/voltaic-diag/Cargo.toml`.
-include = ["src/**/*.rs", "sdx/**/*.sdx", "Cargo.toml"]
+include = ["src/**/*.rs", "vlt/**/*.vlt", "Cargo.toml"]
 
 [dependencies]
 # Plan 34 leaf 1: the formatter prints from the AST and slices unprinted

@@ -8,7 +8,7 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
@@ -18,7 +18,7 @@ fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
   // writes one and the `();` it emits is dropped again — these assertions are
   // about `src`.
-  let out = xrs(&format!("main : ()\nmain =\n{src}  ()\n"));
+  let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
   let mut lines: Vec<&str> = out
     .lines()
     .skip(1)
@@ -165,17 +165,17 @@ fn guard_emits_let_else() {
 /// any other and rustc is what insists it diverges.
 #[test]
 fn a_guards_else_takes_any_diverging_form() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("return 0", "return 0;"),
     ("break", "break;"),
     ("continue", "continue;"),
     ("panic! \\-> \"no\"", "panic!(\"no\");"),
   ] {
-    let out = body(&format!("  guard o is Some v else\n    {sdx}\n"));
+    let out = body(&format!("  guard o is Some v else\n    {vlt}\n"));
     assert_eq!(
       out,
       format!("let Some(v) = o else {{\n    {want}\n}};"),
-      "{sdx}"
+      "{vlt}"
     );
   }
 }
@@ -196,14 +196,14 @@ fn a_guard_without_an_else_is_an_error() {
 /// that promises an unstable lowering cannot ship.
 #[test]
 fn an_arm_guard_may_be_a_pattern_test() {
-  let out = xrs("f : Option<i32> -> i32\nf o = case o of\n  y | y is Some v -> v\n  _ -> 0\n");
+  let out = vrs("f : Option<i32> -> i32\nf o = case o of\n  y | y is Some v -> v\n  _ -> 0\n");
   assert!(out.contains("y if let Some(v) = y => v,"), "{out}");
 }
 
 /// An ordinary expression guard is untouched.
 #[test]
 fn an_expression_arm_guard_still_works() {
-  let out = xrs("f : i32 -> i32\nf n = case n of\n  m | m > 0 -> m\n  _ -> 0\n");
+  let out = vrs("f : i32 -> i32\nf n = case n of\n  m | m > 0 -> m\n  _ -> 0\n");
   assert!(out.contains("m if m > 0 => m,"), "{out}");
 }
 
@@ -231,7 +231,7 @@ fn the_if_expression_takes_a_pattern_test() {
 /// a chain of two operands would leave `|| c` unread.
 #[test]
 fn a_pattern_free_condition_is_unchanged() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("if n > 0", "if n > 0 {"),
     ("if a && b", "if a && b {"),
     ("if a && b || c", "if a && b || c {"),
@@ -241,8 +241,8 @@ fn a_pattern_free_condition_is_unchanged() {
     // A literal rather than an interpolation: this is a `format!` string, and
     // `#{1}` inside one is Rust's positional argument. What the body prints
     // is incidental — the assertion is about the condition above it.
-    let out = body(&format!("  {sdx}\n    println! \\-> \"one\"\n"));
-    assert!(out.starts_with(want), "{sdx} gave {out}");
+    let out = body(&format!("  {vlt}\n    println! \\-> \"one\"\n"));
+    assert!(out.starts_with(want), "{vlt} gave {out}");
   }
 }
 
@@ -262,7 +262,7 @@ fn a_comprehension_in_a_condition_is_not_a_pattern_test() {
 /// records why it landed here.
 #[test]
 fn a_constructor_pattern_applies_by_juxtaposition() {
-  for (sdx, want) in [
+  for (vlt, want) in [
     ("Some v", "Some(v)"),
     ("Ok raw", "Ok(raw)"),
     ("Some 0", "Some(0)"),
@@ -270,7 +270,7 @@ fn a_constructor_pattern_applies_by_juxtaposition() {
     ("Some (Some v)", "Some(Some(v))"),
     ("Event::Close d", "Event::Close(d)"),
   ] {
-    let out = body(&format!("  if x is {sdx}\n    println! \\-> \"one\"\n"));
+    let out = body(&format!("  if x is {vlt}\n    println! \\-> \"one\"\n"));
     assert!(out.starts_with(&format!("if let {want} = x {{")), "{out}");
   }
 }
@@ -290,7 +290,7 @@ fn a_nullary_constructor_emits_no_parentheses() {
 /// Haskell.
 #[test]
 fn a_row_takes_a_parenthesised_constructor_pattern() {
-  let out = xrs("depth : Option<i32> -> i32\ndepth (Some n) = n\ndepth _ = 0\n");
+  let out = vrs("depth : Option<i32> -> i32\ndepth (Some n) = n\ndepth _ = 0\n");
   assert!(out.contains("Some(n) => n,"), "{out}");
 }
 
@@ -298,6 +298,6 @@ fn a_row_takes_a_parenthesised_constructor_pattern() {
 /// patterns and not four.
 #[test]
 fn alternation_composes_with_application() {
-  let out = xrs("f : Option<i32> -> i32\nf o = case o of\n  Some 0 or None -> 0\n  _ -> 1\n");
+  let out = vrs("f : Option<i32> -> i32\nf o = case o of\n  Some 0 or None -> 0\n  _ -> 1\n");
   assert!(out.contains("Some(0) | None => 0,"), "{out}");
 }

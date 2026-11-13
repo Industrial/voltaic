@@ -74,7 +74,7 @@ fn the_example_project_builds_and_runs() {
 /// Criterion 1: the build script wrote `.rs` into `OUT_DIR`, with a map
 /// beside it.
 ///
-/// `.rs` because that is what rustc accepts; the `.xrs` remains the
+/// `.rs` because that is what rustc accepts; the `.vrs` remains the
 /// human-facing artifact `voltaic build` writes (doc 02 §6.6).
 #[test]
 fn the_build_script_writes_rust_and_a_map_into_out_dir() {
@@ -127,20 +127,20 @@ fn the_build_script_writes_rust_and_a_map_into_out_dir() {
       voltaic_diag::parse_map(&std::fs::read_to_string(&map).expect("should read the map"))
         .expect("the map should parse");
     assert!(
-      parsed.source_path.ends_with("greeting.sdx"),
-      "the map should name the .sdx it came from, got {}",
+      parsed.source_path.ends_with("greeting.vlt"),
+      "the map should name the .vlt it came from, got {}",
       parsed.source_path
     );
   }
 }
 
-/// Criterion 5: editing a `.sdx` rebuilds.
+/// Criterion 5: editing a `.vlt` rebuilds.
 ///
 /// Asserted through the directives rather than by editing a file and timing a
 /// rebuild: the latter is what Cargo guarantees given correct directives, and
 /// a timing test would be slow and flaky while proving less.
 #[test]
-fn the_build_script_asks_cargo_to_watch_the_sdx() {
+fn the_build_script_asks_cargo_to_watch_the_vlt() {
   let compiled = voltaic_driver::compile_dir(
     &project().join("src"),
     &std::env::temp_dir().join(format!("voltaic-rerun-{}", std::process::id())),
@@ -149,8 +149,8 @@ fn the_build_script_asks_cargo_to_watch_the_sdx() {
 
   let directives = compiled.rerun_directives();
   assert!(
-    directives.iter().any(|d| d.ends_with("greeting.sdx")),
-    "Cargo must be told to watch greeting.sdx, or editing it would not \
+    directives.iter().any(|d| d.ends_with("greeting.vlt")),
+    "Cargo must be told to watch greeting.vlt, or editing it would not \
      rebuild and the user would run stale code: {directives:?}"
   );
   assert!(
@@ -162,7 +162,7 @@ fn the_build_script_asks_cargo_to_watch_the_sdx() {
 }
 
 /// Criterion 6, as corrected by §2.2: `voltaic check` reports a type error in
-/// the project's `.sdx` against the `.sdx`.
+/// the project's `.vlt` against the `.vlt`.
 ///
 /// Plain `cargo build` does **not** — it reports against `OUT_DIR`, because
 /// Cargo invokes rustc directly and nothing consults the map. That is the
@@ -170,22 +170,22 @@ fn the_build_script_asks_cargo_to_watch_the_sdx() {
 /// disclosed rather than designed around. The map is written beside the
 /// generated `.rs` so the information exists; `voltaic check` is what uses it.
 #[test]
-fn voltaic_check_reports_a_project_error_against_the_sdx() {
-  if support::skip_without_rustc("voltaic_check_reports_a_project_error_against_the_sdx") {
+fn voltaic_check_reports_a_project_error_against_the_vlt() {
+  if support::skip_without_rustc("voltaic_check_reports_a_project_error_against_the_vlt") {
     return;
   }
   let dir = std::env::temp_dir().join(format!("voltaic-proj-check-{}", std::process::id()));
   std::fs::create_dir_all(&dir).expect("should create");
-  let sdx = dir.join("greeting.sdx");
+  let vlt = dir.join("greeting.vlt");
   std::fs::write(
-    &sdx,
+    &vlt,
     "-- A deliberate type error.\ntwice : i32 -> i32\ntwice n =\n  n * \"two\"\n",
   )
   .expect("should write");
 
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .args(["check"])
-    .arg(&sdx)
+    .arg(&vlt)
     .arg("--plain")
     .output()
     .expect("should run voltaic check");
@@ -195,8 +195,8 @@ fn voltaic_check_reports_a_project_error_against_the_sdx() {
   assert!(
     // Line 4: the comment, the signature line, the equation head, the body.
     // Doc 18 §2.2's two-line form moved this down by one from doc 03's.
-    stderr.contains("greeting.sdx:4:"),
-    "should point into the .sdx, not OUT_DIR:\n{stderr}"
+    stderr.contains("greeting.vlt:4:"),
+    "should point into the .vlt, not OUT_DIR:\n{stderr}"
   );
   assert!(
     !stderr.contains(".rs:"),
@@ -215,13 +215,13 @@ fn a_broken_source_returns_renderable_diagnostics() {
   // section**, which parses. `(1 + * 2)` is not broken either — `*` opens a
   // deref. An unterminated group has no reading in any grammar.
   let broken = "main : ()\nmain =\n  println! \\-> \"#{(1 +}\"\n";
-  std::fs::write(dir.join("bad.sdx"), broken).expect("should write");
+  std::fs::write(dir.join("bad.vlt"), broken).expect("should write");
 
   let errors = voltaic_driver::compile_dir(&dir, &dir.join("out"))
     .expect_err("a parse error should be reported");
   assert!(!errors.is_empty());
   let rendered = voltaic_diag::render(&errors, true);
-  assert!(rendered.contains("error[RDX"), "{rendered}");
-  assert!(rendered.contains("bad.sdx"), "{rendered}");
+  assert!(rendered.contains("error[VLT"), "{rendered}");
+  assert!(rendered.contains("bad.vlt"), "{rendered}");
   std::fs::remove_dir_all(&dir).ok();
 }

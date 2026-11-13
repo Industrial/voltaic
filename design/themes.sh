@@ -86,8 +86,8 @@ vscode() {
 mkdir -p "$OUT/vscode/themes" "$OUT/vscode/icons"
 vscode light "$OUT/vscode/themes/voltaic-light.json"
 vscode dark "$OUT/vscode/themes/voltaic-dark.json"
-cp design/masters/pile-small-light.svg "$OUT/vscode/icons/sdx-light.svg"
-cp design/masters/pile-small-dark.svg "$OUT/vscode/icons/sdx-dark.svg"
+cp design/masters/pile-small-light.svg "$OUT/vscode/icons/vlt-light.svg"
+cp design/masters/pile-small-dark.svg "$OUT/vscode/icons/vlt-dark.svg"
 
 # ── Zed ───────────────────────────────────────────────────────────────────
 # One family file carrying both appearances, which is Zed's shape.

@@ -5,7 +5,7 @@ name: Pages
 # (`.cursor/plans/voltaic-identity-and-site.plan.md`) wave 9.
 #
 # **This job bootstraps, and it did not used to.** The first version of this
-# workflow had no compiler in its graph at all: the book includes `.sdx` as
+# workflow had no compiler in its graph at all: the book includes `.vlt` as
 # *text* and the icons come from two SVG masters, so nothing needed building.
 # That was a property worth having and it is now gone, deliberately.
 #
@@ -14,7 +14,7 @@ name: Pages
 # hand-written highlight.js grammar, because a third grammar after the parser
 # and the tree-sitter one would drift silently; nothing compiles a highlighter.
 # The cost of that choice is exactly this: the preprocessor links the lexer,
-# the lexer's `src/` is generated from its `.sdx` and `.gitignore`d, so the
+# the lexer's `src/` is generated from its `.vlt` and `.gitignore`d, so the
 # seed bootstrap and a Rust toolchain are now build inputs for the docs site.
 #
 # The trade is deliberate and worth restating: a slower, compiler-coupled docs

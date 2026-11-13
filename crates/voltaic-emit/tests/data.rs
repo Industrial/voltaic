@@ -8,14 +8,14 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
 /// A record whose constructor matches the type.
 #[test]
 fn a_matching_record_constructor_is_a_struct() {
-  let out = xrs("data Point = Point { x : f64, y : f64 }\n");
+  let out = vrs("data Point = Point { x : f64, y : f64 }\n");
   assert!(out.contains("struct Point {"), "{out}");
   assert!(out.contains("    x: f64,"), "{out}");
   assert!(!out.contains("enum"), "{out}");
@@ -25,13 +25,13 @@ fn a_matching_record_constructor_is_a_struct() {
 /// does to it — unlike a *variant* body, which stays inline while it fits.
 #[test]
 fn a_struct_body_is_one_field_per_line() {
-  let out = xrs("data P = P { x : f64 }\n");
+  let out = vrs("data P = P { x : f64 }\n");
   assert!(out.contains("struct P {\n    x: f64,\n}\n"), "{out}");
 }
 
 #[test]
 fn a_narrow_record_variant_stays_on_one_line() {
-  let out = xrs("data E\n  = Click { x : i32, y : i32 }\n  | Close\n");
+  let out = vrs("data E\n  = Click { x : i32, y : i32 }\n  | Close\n");
   assert!(out.contains("    Click { x: i32, y: i32 },"), "{out}");
 }
 
@@ -39,14 +39,14 @@ fn a_narrow_record_variant_stays_on_one_line() {
 #[test]
 fn a_wide_record_variant_expands() {
   let out =
-    xrs("data E\n  = Wide { first : SomeLongTypeName, second : AnotherLongOne }\n  | Close\n");
+    vrs("data E\n  = Wide { first : SomeLongTypeName, second : AnotherLongOne }\n  | Close\n");
   assert!(out.contains("    Wide {\n"), "{out}");
   assert!(out.contains("        first: SomeLongTypeName,"), "{out}");
 }
 
 #[test]
 fn several_constructors_make_an_enum() {
-  let out = xrs("data Event\n  = Key char\n  | Close\n");
+  let out = vrs("data Event\n  = Key char\n  | Close\n");
   assert!(out.contains("enum Event {"), "{out}");
   assert!(out.contains("    Key(char),"), "{out}");
   assert!(out.contains("    Close,"), "{out}");
@@ -57,14 +57,14 @@ fn several_constructors_make_an_enum() {
 /// a *match* rather than an irrefutable binding.
 #[test]
 fn an_enum_brings_its_constructors_into_scope() {
-  let out = xrs("data Event\n  = Key char\n  | Close\n");
+  let out = vrs("data Event\n  = Key char\n  | Close\n");
   assert!(out.contains("use Event::*;"), "{out}");
 }
 
 /// A struct does not, because its constructor is already its name.
 #[test]
 fn a_struct_brings_nothing_into_scope() {
-  let out = xrs("data Point = Point { x : f64 }\n");
+  let out = vrs("data Point = Point { x : f64 }\n");
   assert!(!out.contains("use "), "{out}");
 }
 
@@ -73,14 +73,14 @@ fn a_struct_brings_nothing_into_scope() {
 /// introduces `Circle`, and a struct named `Shape` would not.
 #[test]
 fn a_differing_constructor_is_an_enum_of_one() {
-  let out = xrs("data Shape = Circle f64\n");
+  let out = vrs("data Shape = Circle f64\n");
   assert!(out.contains("enum Shape {"), "{out}");
   assert!(out.contains("    Circle(f64),"), "{out}");
 }
 
 #[test]
 fn a_unit_constructor_is_a_unit_struct() {
-  let out = xrs("data Marker = Marker\n");
+  let out = vrs("data Marker = Marker\n");
   assert_eq!(out, "struct Marker;\n", "{out}");
 }
 
@@ -88,8 +88,8 @@ fn a_unit_constructor_is_a_unit_struct() {
 /// Rust has one such form and not two.
 #[test]
 fn newtype_and_data_differ_only_by_repr_transparent() {
-  let from_newtype = xrs("newtype Meters = Meters f64\n");
-  let from_data = xrs("data Meters = Meters f64\n");
+  let from_newtype = vrs("newtype Meters = Meters f64\n");
+  let from_data = vrs("data Meters = Meters f64\n");
   assert_eq!(from_newtype, "#[repr(transparent)]\nstruct Meters(f64);\n");
   assert_eq!(from_data, "struct Meters(f64);\n");
   assert_ne!(
@@ -100,7 +100,7 @@ fn newtype_and_data_differ_only_by_repr_transparent() {
 
 #[test]
 fn deriving_becomes_a_derive_attribute() {
-  let out = xrs("data P = P { x : f64 }\n  deriving (Debug, Clone, PartialEq)\n");
+  let out = vrs("data P = P { x : f64 }\n  deriving (Debug, Clone, PartialEq)\n");
   assert!(
     out.starts_with("#[derive(Debug, Clone, PartialEq)]\n"),
     "{out}"
@@ -112,8 +112,8 @@ fn deriving_becomes_a_derive_attribute() {
 /// reason: a reader chooses the layout, not a different construct.
 #[test]
 fn deriving_reads_the_same_in_either_layout() {
-  let indented = xrs("data P = P { x : f64 }\n  deriving (Debug)\n");
-  let inline = xrs("data P = P { x : f64 } deriving (Debug)\n");
+  let indented = vrs("data P = P { x : f64 }\n  deriving (Debug)\n");
+  let inline = vrs("data P = P { x : f64 } deriving (Debug)\n");
   assert_eq!(indented, inline);
 }
 
@@ -122,7 +122,7 @@ fn deriving_reads_the_same_in_either_layout() {
 /// after a `)` does not end a type.
 #[test]
 fn a_type_alias_is_already_rust() {
-  let out = xrs("type Handler = Box<dyn Fn(Req) -> Res + Send>\n");
+  let out = vrs("type Handler = Box<dyn Fn(Req) -> Res + Send>\n");
   assert_eq!(
     out, "type Handler = Box<dyn Fn(Req) -> Res + Send>;\n",
     "{out}"
@@ -133,7 +133,7 @@ fn a_type_alias_is_already_rust() {
 /// break if `data` consumed the line break the next item needs.
 #[test]
 fn a_declaration_does_not_swallow_the_next_item() {
-  let out = xrs("newtype Meters = Meters f64\n\nmain : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
+  let out = vrs("newtype Meters = Meters f64\n\nmain : ()\nmain =\n  println! \\-> \"x\"\n  ()\n");
   assert!(out.contains("struct Meters(f64);"), "{out}");
   assert!(out.contains("fn main() {"), "{out}");
 }
@@ -142,7 +142,7 @@ fn a_declaration_does_not_swallow_the_next_item() {
 /// no use.
 #[test]
 fn a_tuple_index_reads_a_field() {
-  let out = xrs("depth : Meters -> f64\ndepth m = m.0\n");
+  let out = vrs("depth : Meters -> f64\ndepth m = m.0\n");
   assert!(out.contains("m.0"), "{out}");
 }
 
@@ -157,7 +157,7 @@ fn a_tuple_index_reads_a_field() {
 /// their source.
 #[test]
 fn a_lifetime_in_a_field_generalises_the_declaration() {
-  let out = xrs("data Holder = Holder { s : &'a str }\n");
+  let out = vrs("data Holder = Holder { s : &'a str }\n");
   assert!(out.contains("struct Holder<'a> {"), "{out}");
   assert!(out.contains("s: &'a str,"), "{out}");
 }
@@ -166,7 +166,7 @@ fn a_lifetime_in_a_field_generalises_the_declaration() {
 /// `t` becomes `T` in the list and in the field.
 #[test]
 fn a_type_variable_in_a_field_is_declared_and_rewritten() {
-  let out = xrs("data Boxed = Boxed { item : t }\n");
+  let out = vrs("data Boxed = Boxed { item : t }\n");
   assert!(out.contains("struct Boxed<T> {"), "{out}");
   assert!(out.contains("item: T,"), "{out}");
 }
@@ -174,14 +174,14 @@ fn a_type_variable_in_a_field_is_declared_and_rewritten() {
 /// An `enum` takes the list in the same slot.
 #[test]
 fn an_enum_carries_the_list_too() {
-  let out = xrs("data Holder\n  = Full &'a str\n  | Empty\n");
+  let out = vrs("data Holder\n  = Full &'a str\n  | Empty\n");
   assert!(out.contains("enum Holder<'a> {"), "{out}");
 }
 
 /// A tuple constructor's types are read as well as a record's.
 #[test]
 fn a_tuple_constructor_contributes_its_types() {
-  let out = xrs("newtype Wrap = Wrap &'a str\n");
+  let out = vrs("newtype Wrap = Wrap &'a str\n");
   assert!(out.contains("struct Wrap<'a>(&'a str);"), "{out}");
 }
 
@@ -189,7 +189,7 @@ fn a_tuple_constructor_contributes_its_types() {
 /// every existing golden byte-identical.
 #[test]
 fn a_concrete_declaration_gains_no_list() {
-  let out = xrs("data Point = Point { x : f64 }\n");
+  let out = vrs("data Point = Point { x : f64 }\n");
   assert!(out.contains("struct Point {"), "{out}");
   assert!(!out.contains("Point<"), "{out}");
 }
@@ -198,7 +198,7 @@ fn a_concrete_declaration_gains_no_list() {
 /// one needs no declaration, and declaring the other is `E0637`.
 #[test]
 fn static_and_anonymous_lifetimes_are_not_declared() {
-  let out = xrs("data Held = Held { s : &'static str }\n");
+  let out = vrs("data Held = Held { s : &'static str }\n");
   assert!(out.contains("struct Held {"), "{out}");
   assert!(!out.contains("Held<"), "{out}");
 }
@@ -211,7 +211,7 @@ fn static_and_anonymous_lifetimes_are_not_declared() {
 /// by their qualified names.
 #[test]
 fn a_derive_may_be_a_path() {
-  let out = xrs("data R = R { n : u8 }\n  deriving (Debug, serde::Deserialize)\n");
+  let out = vrs("data R = R { n : u8 }\n  deriving (Debug, serde::Deserialize)\n");
   assert!(
     out.contains("#[derive(Debug, serde::Deserialize)]"),
     "{out}"
@@ -222,6 +222,6 @@ fn a_derive_may_be_a_path() {
 /// in the corpus depends on.
 #[test]
 fn a_bare_derive_is_unchanged_by_the_path_rule() {
-  let out = xrs("data P = P { x : f64 }\n  deriving (Debug, Clone)\n");
+  let out = vrs("data P = P { x : f64 }\n  deriving (Debug, Clone)\n");
   assert!(out.contains("#[derive(Debug, Clone)]"), "{out}");
 }

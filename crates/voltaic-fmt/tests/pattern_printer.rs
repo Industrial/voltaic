@@ -23,7 +23,7 @@ fn fixtures() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fmt")
 }
 
-const NOT_PARSEABLE: [&str; 1] = ["lexical.sdx"];
+const NOT_PARSEABLE: [&str; 1] = ["lexical.vlt"];
 
 fn sources() -> Vec<PathBuf> {
   let mut found = Vec::new();
@@ -38,7 +38,7 @@ fn sources() -> Vec<PathBuf> {
     for entry in entries {
       let path = entry.expect("should read an entry").path();
       let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-      if path.extension().is_some_and(|x| x == "sdx") && !NOT_PARSEABLE.contains(&name) {
+      if path.extension().is_some_and(|x| x == "vlt") && !NOT_PARSEABLE.contains(&name) {
         found.push(path);
       }
     }
@@ -140,7 +140,7 @@ fn reparse(text: &str) -> Option<Pattern> {
   // The signature takes a parameter because the clause does. A signature of
   // `()` beside a one-parameter clause does not parse, which cost a confusing
   // `n did not re-parse` on the simplest pattern in the corpus.
-  let whole = format!("__rdx_probe : T -> i32\n__rdx_probe t = case t of\n  {text} -> 0\n");
+  let whole = format!("__vlt_probe : T -> i32\n__vlt_probe t = case t of\n  {text} -> 0\n");
   let program = voltaic_parser::parse_source(&whole).ok()?;
   patterns(&program).first().map(|p| (*p).clone())
 }
@@ -148,8 +148,8 @@ fn reparse(text: &str) -> Option<Pattern> {
 /// Each form's canonical spelling, as a fixture pair.
 #[test]
 fn each_pattern_reaches_its_canonical_form() {
-  let input = fixtures().join("patterns.sdx");
-  let expected_path = fixtures().join("patterns.canonical.sdx");
+  let input = fixtures().join("patterns.vlt");
+  let expected_path = fixtures().join("patterns.canonical.vlt");
   let source = std::fs::read_to_string(&input).expect("the fixture should exist");
   let program = voltaic_parser::parse_source(&source).expect("the fixture should parse");
 
@@ -184,7 +184,7 @@ fn each_pattern_reaches_its_canonical_form() {
 fn printing_preserves_the_pattern() {
   let mut checked = 0;
   let mut paths = sources();
-  paths.push(fixtures().join("patterns.sdx"));
+  paths.push(fixtures().join("patterns.vlt"));
   for path in paths {
     let source = std::fs::read_to_string(&path).expect("should read");
     let Ok(program) = voltaic_parser::parse_source(&source) else {

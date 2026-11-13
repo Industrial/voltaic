@@ -49,7 +49,7 @@ Milestone 2, so multi-error recovery is near-term work, not speculative. It is ~
 recursive descent and was a whole plan in Emerald.
 
 Axis 2 matters more for Voltaic than for most languages, because comments must reach the
-generated `.xrs` (doc 02 §10.1) and the formatter must round-trip them (plan 34). Emerald's
+generated `.vrs` (doc 02 §10.1) and the formatter must round-trip them (plan 34). Emerald's
 formatter loses every non-doc comment precisely because that information was discarded
 early; a design where trivia threading is invasive is a design that invites the same defect.
 
@@ -103,7 +103,7 @@ delimiters needs no whitespace sensitivity. Voltaic needs four things a regex-di
 does not provide:
 
 1. the off-side rule, with an indent stack;
-2. trivia capture, so comments reach the generated `.xrs` (doc 02 §10.1);
+2. trivia capture, so comments reach the generated `.vrs` (doc 02 §10.1);
 3. whitespace-adjacency on every token, which doc 03 §5.1's call grammar and §5.4's
    `(-1)`-versus-`(- 1)` rule both require;
 4. continuation suppression inside delimiters (plan 02), which is lexer state, not a
@@ -115,7 +115,7 @@ does not provide:
 
 ---
 
-## 3. Measured: rustc accepts a `.xrs` input file directly
+## 3. Measured: rustc accepts a `.vrs` input file directly
 
 Doc 01 §1.1 left this open:
 
@@ -126,8 +126,8 @@ Doc 01 §1.1 left this open:
 **Measured** (2026-11-08, rustc 1.97.1, this repository's devenv shell):
 
 ```text
-$ printf '// probe\nfn main() {\n    println!("hello");\n}\n' > hello.xrs
-$ rustc --edition 2024 -o out hello.xrs
+$ printf '// probe\nfn main() {\n    println!("hello");\n}\n' > hello.vrs
+$ rustc --edition 2024 -o out hello.vrs
 exit 0, stderr: 0 bytes
 $ ./out
 hello
@@ -135,11 +135,11 @@ hello
 
 **The "if necessary" clause does not fire.** No `.rs` staging file and no stdin plumbing is
 needed for the direct-rustc path, so `crates/voltaic-cli/tests/hello.rs` invokes rustc on the
-`.xrs` as-is.
+`.vrs` as-is.
 
 **Scope limit, so plan 09 is not surprised:** this is about `rustc` invoked directly.
 **Cargo is different** — it discovers crate roots by name (`src/main.rs`, `src/lib.rs`) and
-will not pick up a `.xrs`. That is why doc 02 §6.6 recommends the `build.rs` + `OUT_DIR` +
+will not pick up a `.vrs`. That is why doc 02 §6.6 recommends the `build.rs` + `OUT_DIR` +
 `include!` route, and this finding neither supports nor weakens that recommendation.
 
 ---
@@ -148,7 +148,7 @@ will not pick up a `.xrs`. That is why doc 02 §6.6 recommends the `build.rs` + 
 
 A documentation inconsistency, recorded rather than silently resolved. Doc 01 §3.1 says
 "Use four spaces per indentation level", while every example in docs 01, 02, 03 and 05 — the
-`hello.sdx` of plan 01 §3 included — uses two.
+`hello.vlt` of plan 01 §3 included — uses two.
 
 **How plan 01 resolved it:** `voltaic-lexer` fixes no width at all. Any increase opens a block
 and the matching decrease closes it, so two-space and four-space sources both lex and only
@@ -170,7 +170,7 @@ repository's own two-space Rust style (`rustfmt.toml`).
 because the temptation recurs:
 
 1. Output would depend on an external tool's version, so the same input could produce
-   different `.xrs` on two machines.
+   different `.vrs` on two machines.
 2. Determinism would break, and with it the exact-text golden tests (doc 01 §3.4,
    acceptance criterion 7).
 3. The span map plan 06 needs would be destroyed, since rustfmt rewrites positions.
@@ -252,7 +252,7 @@ wrote `fn pos(&self) -> u32`. Generation 2's author writes neither, so the emitt
 writes both — every signature, every `&` and `&mut`, every lifetime elision cannot
 supply, every `?`, every `.await`, every `#[derive(…)]`.
 
-A `.vrs` is therefore **more** explicit than generation 1's `.xrs`, not less. That is
+A `.vrs` is therefore **more** explicit than generation 1's `.vrs`, not less. That is
 what keeps rustc an independent check rather than a rubber stamp: it type-checks a
 program that states its own types, exactly as it checks hand-written Rust.
 

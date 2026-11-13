@@ -1,5 +1,5 @@
-error[RDX0112]: a `test` declaration belongs at module scope, and this one is inside a body
-  --> local_test.sdx:26:3
+error[VLT0112]: a `test` declaration belongs at module scope, and this one is inside a body
+  --> local_test.vlt:26:3
    |
 26 |   test "adds two numbers"
    |   ^^^^

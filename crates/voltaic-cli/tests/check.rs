@@ -1,4 +1,4 @@
-//! `voltaic check` puts **rustc's** errors on the user's `.sdx`.
+//! `voltaic check` puts **rustc's** errors on the user's `.vlt`.
 //!
 //! Plan 07 (`docs/12 - 07 - Rustc Remapping.md`) leaf 6. These tests run the
 //! rustc the toolchain ships, which is the standard of proof doc 02 §6.5 item
@@ -7,7 +7,7 @@
 //! place, and a mocked rustc would prove only that the mock matches the
 //! parser.
 //!
-//! The programs live in `tests/check/*.sdx`, not in literals here. Plan 07
+//! The programs live in `tests/check/*.vlt`, not in literals here. Plan 07
 //! wrote them inline and plan 08's `no_literal_expectations.rs` caught it —
 //! AGENTS.md's fixture rule exists because Emerald's one syntax change could
 //! not reach 113 fixtures hidden inside Rust test modules. Each fixture also
@@ -37,7 +37,7 @@ impl Drop for Checked {
 fn fixture(name: &str) -> PathBuf {
   Path::new(env!("CARGO_MANIFEST_DIR"))
     .join("tests/check")
-    .join(format!("{name}.sdx"))
+    .join(format!("{name}.vlt"))
 }
 
 /// Copy a fixture into a scratch directory and run `voltaic check --plain`.
@@ -48,12 +48,12 @@ fn fixture(name: &str) -> PathBuf {
 fn check(name: &str) -> Checked {
   let dir = std::env::temp_dir().join(format!("voltaic-check-{name}-{}", std::process::id()));
   std::fs::create_dir_all(&dir).expect("should create a scratch directory");
-  let sdx = dir.join(format!("{name}.sdx"));
-  std::fs::copy(fixture(name), &sdx).expect("should copy the fixture");
+  let vlt = dir.join(format!("{name}.vlt"));
+  std::fs::copy(fixture(name), &vlt).expect("should copy the fixture");
 
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .arg("check")
-    .arg(&sdx)
+    .arg(&vlt)
     .arg("--plain")
     .output()
     .expect("should run the voltaic binary");
@@ -65,14 +65,14 @@ fn check(name: &str) -> Checked {
   }
 }
 
-/// Criteria 1 and 2: rustc's message and code, against the `.sdx`, on the
+/// Criteria 1 and 2: rustc's message and code, against the `.vlt`, on the
 /// right line.
 ///
-/// `tests/check/verbatim.sdx` has the mistake on **line 6**, at the `+` in
+/// `tests/check/verbatim.vlt` has the mistake on **line 6**, at the `+` in
 /// column 5 of `  a + "x"`.
 #[test]
-fn a_type_error_is_reported_against_the_sdx() {
-  if support::skip_without_rustc("a_type_error_is_reported_against_the_sdx") {
+fn a_type_error_is_reported_against_the_vlt() {
+  if support::skip_without_rustc("a_type_error_is_reported_against_the_vlt") {
     return;
   }
   let checked = check("verbatim");
@@ -91,12 +91,12 @@ fn a_type_error_is_reported_against_the_sdx() {
   );
 
   assert!(
-    checked.stderr.contains("verbatim.sdx:6:5"),
-    "should point at verbatim.sdx line 6 column 5:\n{}",
+    checked.stderr.contains("verbatim.vlt:6:5"),
+    "should point at verbatim.vlt line 6 column 5:\n{}",
     checked.stderr
   );
   assert!(
-    !checked.stderr.contains(".xrs"),
+    !checked.stderr.contains(".vrs"),
     "the user should never be shown the generated file here:\n{}",
     checked.stderr
   );
@@ -114,7 +114,7 @@ fn the_column_is_exact_on_a_verbatim_line() {
   }
   let checked = check("verbatim");
   assert!(
-    checked.stderr.contains("verbatim.sdx:6:5"),
+    checked.stderr.contains("verbatim.vlt:6:5"),
     "{}",
     checked.stderr
   );
@@ -129,7 +129,7 @@ fn the_column_is_exact_on_a_verbatim_line() {
 /// Criterion 4: on a restructured line the statement is underlined, not a
 /// clamped column.
 ///
-/// `tests/check/restructured.sdx` line 11 is `  print add("x", 2)` — 19
+/// `tests/check/restructured.vlt` line 11 is `  print add("x", 2)` — 19
 /// characters, 17 of them the statement. It becomes
 /// `    println!("{}", add("x", 2));`, and rustc reports column 24. Shifting
 /// that gives column 22, past the end of the source line, so the whole
@@ -148,7 +148,7 @@ fn a_restructured_line_underlines_the_statement() {
     checked.stderr
   );
   assert!(
-    checked.stderr.contains("restructured.sdx:16:3"),
+    checked.stderr.contains("restructured.vlt:16:3"),
     "should point at the start of the statement on line 16:\n{}",
     checked.stderr
   );
@@ -160,7 +160,7 @@ fn a_restructured_line_underlines_the_statement() {
 }
 
 /// Plan 54 criterion 3: `:=` against a binding that is not `mut` is rustc's
-/// error, reported against the `.sdx`.
+/// error, reported against the `.vlt`.
 ///
 /// This is the row's load-bearing negative. `is_mut` is set only by the
 /// literal `mut` keyword (`parser.rs`) and the emitter writes `mut` only when
@@ -189,18 +189,18 @@ fn assigning_to_an_immutable_binding_is_rustcs_error() {
     checked.stderr
   );
   assert!(
-    checked.stderr.contains("immutable_assignment.sdx:19:3"),
-    "reported against the `:=` on line 19 of the .sdx:\n{}",
+    checked.stderr.contains("immutable_assignment.vlt:19:3"),
+    "reported against the `:=` on line 19 of the .vlt:\n{}",
     checked.stderr
   );
   assert!(
-    !checked.stderr.contains(".xrs"),
+    !checked.stderr.contains(".vrs"),
     "never against the generated Rust:\n{}",
     checked.stderr
   );
 }
 
-/// Plan 55 criterion 7: a discarded `Result` is reported against the `.sdx`,
+/// Plan 55 criterion 7: a discarded `Result` is reported against the `.vlt`,
 /// and the program still builds.
 ///
 /// # Why this is the criterion's witness and not a `tests/lint/` case
@@ -208,14 +208,14 @@ fn assigning_to_an_immutable_binding_is_rustcs_error() {
 /// Criterion 7 asks for *"a Voltaic lint, not only a rustc warning"*, and leaf 4
 /// worded the value as **position** — the discard lint *"at the Voltaic line
 /// rather than rustc's"*. The position is already here, by plan 07's
-/// remapping, so there is no `RDX1004`: the fixture's own header argues it at
+/// remapping, so there is no `VLT1004`: the fixture's own header argues it at
 /// length, and the two statements are the argument.
 ///
 /// `save 1` calls a function **this file declares** as returning
 /// `Result<i32, String>`, which is the only discard a lexical lint could
 /// recognise — the return type is in the source, so no types are needed.
 /// `u8::try_from 300` is the shape that actually bites, and nothing in the
-/// `.sdx` says it returns anything; recognising it needs the standard
+/// `.vlt` says it returns anything; recognising it needs the standard
 /// library's signatures, which is the type checker AGENTS.md forbids Voltaic
 /// growing. A lint restricted to the first would fire only where rustc
 /// already fires and stay silent on the second, so its coverage would be a
@@ -225,11 +225,11 @@ fn assigning_to_an_immutable_binding_is_rustcs_error() {
 /// build`, which never invokes rustc, so the warning does not exist there.
 /// `tests/check/` is the corpus that runs real rustc and remaps its spans.
 ///
-/// `tests/check/discarded_result.sdx` discards on **lines 34 and 35**, both at
+/// `tests/check/discarded_result.vlt` discards on **lines 34 and 35**, both at
 /// column 3.
 #[test]
-fn a_discarded_result_is_reported_against_the_sdx() {
-  if support::skip_without_rustc("a_discarded_result_is_reported_against_the_sdx") {
+fn a_discarded_result_is_reported_against_the_vlt() {
+  if support::skip_without_rustc("a_discarded_result_is_reported_against_the_vlt") {
     return;
   }
   let checked = check("discarded_result");
@@ -250,24 +250,24 @@ fn a_discarded_result_is_reported_against_the_sdx() {
     checked.stderr
   );
   assert!(
-    checked.stderr.contains("discarded_result.sdx:34:3"),
+    checked.stderr.contains("discarded_result.vlt:34:3"),
     "the locally-declared `Result`, on line 34:\n{}",
     checked.stderr
   );
   assert!(
-    checked.stderr.contains("discarded_result.sdx:35:3"),
+    checked.stderr.contains("discarded_result.vlt:35:3"),
     "the `std` one a lexical lint could not see, on line 35:\n{}",
     checked.stderr
   );
   assert!(
-    !checked.stderr.contains(".xrs"),
+    !checked.stderr.contains(".vrs"),
     "never against the generated Rust:\n{}",
     checked.stderr
   );
 }
 
 /// Plan 56 criterion 3: a borrowed capture produces a **rustc** error, at the
-/// generated closure, reported against the `.sdx`.
+/// generated closure, reported against the `.vlt`.
 ///
 /// This is the row's §1.3 claim being measured rather than argued: an
 /// under-applied call allocates a closure over the arguments it was given, and
@@ -286,7 +286,7 @@ fn a_discarded_result_is_reported_against_the_sdx() {
 /// than on the program. Two plans have now named `tests/ui/` for a rustc
 /// error; the corpus that runs real rustc and remaps its spans is this one.
 ///
-/// `tests/check/borrowed_capture.sdx` under-applies on **line 20**, at the
+/// `tests/check/borrowed_capture.vlt` under-applies on **line 20**, at the
 /// argument paren in column 26 of
 /// `make_prefixer = Box::new (prefix (s.as_str ()))`.
 #[test]
@@ -314,12 +314,12 @@ fn a_borrowed_capture_is_rustcs_error_at_the_generated_closure() {
     checked.stderr
   );
   assert!(
-    checked.stderr.contains("borrowed_capture.sdx:20:26"),
-    "reported against the under-applied call on line 20 of the .sdx:\n{}",
+    checked.stderr.contains("borrowed_capture.vlt:20:26"),
+    "reported against the under-applied call on line 20 of the .vlt:\n{}",
     checked.stderr
   );
   assert!(
-    !checked.stderr.contains(".xrs"),
+    !checked.stderr.contains(".vrs"),
     "never against the generated Rust:\n{}",
     checked.stderr
   );
@@ -330,13 +330,13 @@ fn a_borrowed_capture_is_rustcs_error_at_the_generated_closure() {
 ///
 /// `?.` was deleted on §1.4's argument that the chain *"is expressible in the
 /// ordinary combinator vocabulary"*. Probed, it is not — `(.tag)` lowers to
-/// `|__rdx_1| __rdx_1.tag` with no `&`, so `map (.tag)` over a shared
-/// reference is `E0507`, and the replacement in `examples/fallible.sdx`
+/// `|__vlt_1| __vlt_1.tag` with no `&`, so `map (.tag)` over a shared
+/// reference is `E0507`, and the replacement in `examples/fallible.vlt`
 /// therefore writes every `&` by hand. This is the test that says so, and the
 /// third plan in a row to need `tests/check/` rather than `tests/ui/` for a
 /// rustc error — `ui.rs` runs `voltaic build`, which never invokes rustc.
 ///
-/// `Tag` is deliberately not `Clone`, exactly as `examples/fallible.sdx`
+/// `Tag` is deliberately not `Clone`, exactly as `examples/fallible.vlt`
 /// makes it, so a lowering that cloned would compile here instead.
 #[test]
 fn a_field_selector_moves_and_rustc_says_so() {
@@ -356,17 +356,17 @@ fn a_field_selector_moves_and_rustc_says_so() {
   // The generated closure's parameter, which is what names the lowering in
   // rustc's own words — and the reason the `&` cannot be left to the emitter.
   assert!(
-    checked.stderr.contains("`__rdx_1.tag`"),
+    checked.stderr.contains("`__vlt_1.tag`"),
     "rustc should name the selector's own binding:\n{}",
     checked.stderr
   );
   assert!(
-    checked.stderr.contains("moved_selector.sdx:25:35"),
-    "reported against the section on line 25 of the .sdx:\n{}",
+    checked.stderr.contains("moved_selector.vlt:25:35"),
+    "reported against the section on line 25 of the .vlt:\n{}",
     checked.stderr
   );
   assert!(
-    !checked.stderr.contains(".xrs"),
+    !checked.stderr.contains(".vrs"),
     "never against the generated Rust:\n{}",
     checked.stderr
   );
@@ -420,14 +420,14 @@ fn a_clean_program_passes_silently() {
   assert_eq!(checked.stderr, "", "and should say nothing");
 }
 
-/// A syntax error is Voltaic's own and never reaches rustc: it keeps its `RDX`
+/// A syntax error is Voltaic's own and never reaches rustc: it keeps its `VLT`
 /// code rather than acquiring a rustc one.
 #[test]
 fn a_syntax_error_keeps_its_voltaic_code() {
   let checked = check("syntax");
   assert!(!checked.success);
   assert!(
-    checked.stderr.contains("error[RDX0102]"),
+    checked.stderr.contains("error[VLT0102]"),
     "a parse error belongs to Voltaic:\n{}",
     checked.stderr
   );
@@ -452,7 +452,7 @@ fn the_binary_resolves_rustc_itself() {
   assert!(checked.success);
 }
 
-/// `voltaic check` must not leave the `.xrs` it handed rustc lying around: the
+/// `voltaic check` must not leave the `.vrs` it handed rustc lying around: the
 /// user asked a question, not for a build artefact.
 #[test]
 fn check_leaves_no_artefacts_behind() {
@@ -461,12 +461,12 @@ fn check_leaves_no_artefacts_behind() {
   }
   let dir = std::env::temp_dir().join(format!("voltaic-check-tidy-{}", std::process::id()));
   std::fs::create_dir_all(&dir).expect("should create");
-  let sdx = dir.join("trivial.sdx");
-  std::fs::copy(fixture("trivial"), &sdx).expect("should copy the fixture");
+  let vlt = dir.join("trivial.vlt");
+  std::fs::copy(fixture("trivial"), &vlt).expect("should copy the fixture");
 
   let out = Command::new(env!("CARGO_BIN_EXE_voltaic"))
     .arg("check")
-    .arg(&sdx)
+    .arg(&vlt)
     .output()
     .expect("should run");
   assert!(out.status.success());
@@ -474,7 +474,7 @@ fn check_leaves_no_artefacts_behind() {
   let left: Vec<PathBuf> = std::fs::read_dir(&dir)
     .expect("should list")
     .map(|e| e.expect("entry").path())
-    .filter(|p| p != &sdx)
+    .filter(|p| p != &vlt)
     .collect();
   assert!(
     left.is_empty(),
@@ -497,7 +497,7 @@ fn every_check_fixture_is_used() {
     assert!(
       source.contains(&format!("check(\"{stem}\")"))
         || source.contains(&format!("fixture(\"{stem}\")")),
-      "{stem}.sdx is not used by any test in check.rs"
+      "{stem}.vlt is not used by any test in check.rs"
     );
   }
 }

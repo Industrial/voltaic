@@ -8,12 +8,12 @@
 //! network — into the ordinary gate.
 //!
 //! The rule it exists for is `include`. Every crate under `crates/` is written
-//! in Voltaic: the `.sdx` under its `sdx/` is the source and the `.rs` under its
+//! in Voltaic: the `.vlt` under its `vlt/` is the source and the `.rs` under its
 //! `src/` is generated and `.gitignore`d. `cargo package` enumerates files from
 //! git, so **without an `include` key a published crate contains no Rust at
 //! all** — and it packages and uploads perfectly cleanly. Measured before the
 //! keys existed: `cargo package -p voltaic-ast --list` emitted `Cargo.toml`,
-//! `moon.yml` and `sdx/*.sdx`, and nothing else.
+//! `moon.yml` and `vlt/*.vlt`, and nothing else.
 //!
 //! The shell script catches that by reading the built archive, which is the
 //! authoritative check and the one that cannot be fooled. This file catches it

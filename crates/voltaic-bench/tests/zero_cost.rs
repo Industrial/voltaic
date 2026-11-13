@@ -19,7 +19,7 @@
 //!
 //! A comparison that passes on every pair cannot distinguish *the lowering is
 //! free* from *the comparison is vacuous*. `unequal.rs` clones where its
-//! `.sdx` does not, and `the_comparison_can_fail` asserts the IR **differs**.
+//! `.vlt` does not, and `the_comparison_can_fail` asserts the IR **differs**.
 //!
 //! That is not a hypothetical worry. `unequal` was the pair that exposed it:
 //! its function was named after neither half's convention, so the comparison
@@ -40,16 +40,16 @@ fn scratch() -> PathBuf {
 /// The pair whose two sides are deliberately not equivalent.
 const NEGATIVE: &str = "unequal";
 
-/// Transpile a pair's `.sdx` to Rust.
+/// Transpile a pair's `.vlt` to Rust.
 ///
 /// Through the parser and emitter rather than the `voltaic` binary, so a failure
 /// is a diagnostic here instead of an exit code, and so the test does not
 /// depend on a build having happened.
 fn generated(pair: &Pair) -> String {
-  let source = std::fs::read_to_string(&pair.sdx)
-    .unwrap_or_else(|e| panic!("should read {}: {e}", pair.sdx.display()));
+  let source = std::fs::read_to_string(&pair.vlt)
+    .unwrap_or_else(|e| panic!("should read {}: {e}", pair.vlt.display()));
   let program = voltaic_parser::parse_source(&source)
-    .unwrap_or_else(|e| panic!("{} should parse: {e:?}", pair.sdx.display()));
+    .unwrap_or_else(|e| panic!("{} should parse: {e:?}", pair.vlt.display()));
   voltaic_emit::emit(&program)
 }
 
@@ -98,7 +98,7 @@ fn every_pair_has_both_halves() {
     found.len()
   );
   for pair in &found {
-    assert!(pair.sdx.is_file(), "{} is missing", pair.sdx.display());
+    assert!(pair.vlt.is_file(), "{} is missing", pair.vlt.display());
     assert!(pair.rust.is_file(), "{} is missing", pair.rust.display());
   }
   assert!(
@@ -115,7 +115,7 @@ fn every_pair_has_both_halves() {
 ///
 /// The name is discovered from the hand-written half rather than derived from
 /// the filename — `catch` and `guard` are keywords, so no function can be
-/// called either — and this is the check that the `.sdx` agrees.
+/// called either — and this is the check that the `.vlt` agrees.
 ///
 /// The marker is `:` as of plan 52. This assertion was the last thing in the
 /// repository still spelling it `::`, and it survived a repository-wide sweep
@@ -127,11 +127,11 @@ fn both_halves_define_the_same_function() {
   let found = pairs(&root());
   assert!(!found.is_empty(), "the corpus should not be empty");
   for pair in found {
-    let sdx = std::fs::read_to_string(&pair.sdx).expect("should read");
+    let vlt = std::fs::read_to_string(&pair.vlt).expect("should read");
     assert!(
-      sdx.contains(&format!("{} :", pair.function)),
+      vlt.contains(&format!("{} :", pair.function)),
       "{} should declare `{} :`, which is what {} defines",
-      pair.sdx.display(),
+      pair.vlt.display(),
       pair.function,
       pair.rust.display()
     );
@@ -159,7 +159,7 @@ fn the_lowerings_are_free() {
       .unwrap_or_else(|| {
         panic!(
           "the Rust generated from {} did not compile under -O",
-          pair.sdx.display()
+          pair.vlt.display()
         )
       });
     let hand_ir = function_ir(&hand_written(&pair), &pair.function, &scratch())

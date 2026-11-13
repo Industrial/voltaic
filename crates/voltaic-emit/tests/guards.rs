@@ -9,14 +9,14 @@
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
 
-fn xrs(src: &str) -> String {
+fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
 /// §2.3's own example, including that `otherwise` becomes a bare `else`.
 #[test]
 fn a_ladder_becomes_an_if_else_chain() {
-  let rust = xrs(
+  let rust = vrs(
     "tier : u64 -> &'static str\n\
      tier spend\n  \
        | spend > 10_000 = \"platinum\"\n  \
@@ -37,7 +37,7 @@ fn a_ladder_becomes_an_if_else_chain() {
 /// compiling — and rustc, not Voltaic, is what notices. Doc 18 §1.
 #[test]
 fn otherwise_does_not_become_a_condition() {
-  let rust = xrs(
+  let rust = vrs(
     "tier : u64 -> &'static str\n\
      tier spend\n  \
        | spend > 10 = \"high\"\n  \
@@ -57,7 +57,7 @@ fn otherwise_does_not_become_a_condition() {
 /// chain is the function's value, with no `return` the author did not write.
 #[test]
 fn a_ladder_needs_no_return() {
-  let rust = xrs(
+  let rust = vrs(
     "sign : i32 -> i32\n\
      sign n\n  \
        | n > 0 = 1\n  \
@@ -70,7 +70,7 @@ fn a_ladder_needs_no_return() {
 /// the ladder lands inside that clause's `match` arm.
 #[test]
 fn a_ladder_lives_inside_a_match_arm() {
-  let rust = xrs(
+  let rust = vrs(
     "step : u64 -> u64\n\
      step 0 = 0\n\
      step n\n  \
@@ -86,7 +86,7 @@ fn a_ladder_lives_inside_a_match_arm() {
 /// ladder is total, so the chain reaches rustc and rustc reports the type.
 #[test]
 fn a_ladder_without_otherwise_still_emits() {
-  let rust = xrs("noisy : ()\nnoisy\n  | 1 > 0 = println! \\-> \"hi\"\n");
+  let rust = vrs("noisy : ()\nnoisy\n  | 1 > 0 = println! \\-> \"hi\"\n");
   assert!(rust.contains("if 1 > 0 {"), "{rust}");
   assert!(!rust.contains("else"), "nothing is invented:\n{rust}");
 }

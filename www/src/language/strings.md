@@ -1,7 +1,7 @@
 # Strings
 
 ```voltaic
-{{#include ../../../examples/strings.sdx}}
+{{#include ../../../examples/strings.vlt}}
 ```
 
 ## Interpolation
@@ -11,7 +11,7 @@
 rather than a second one invented here.
 
 ```voltaic
-{{#include ../../../examples/template.sdx}}
+{{#include ../../../examples/template.vlt}}
 ```
 
 ## Literal kinds

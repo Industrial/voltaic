@@ -1,5 +1,5 @@
-error[RDX0126]: expected a function for this operator to stand for
-  --> operator_shape.sdx:7:10
+error[VLT0126]: expected a function for this operator to stand for
+  --> operator_shape.vlt:7:10
   |
 7 | infixl 6 <+> =
   |          ^^^

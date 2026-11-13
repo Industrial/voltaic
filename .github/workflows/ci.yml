@@ -3,7 +3,7 @@ name: CI
 # specific to this repository: **a clean clone has no generated Rust at all.**
 #
 # `crates/*/src/` is `.gitignore`d and not in the index — every crate under
-# `crates/` is written in Voltaic, and its `.rs` is generated from its `.sdx` by
+# `crates/` is written in Voltaic, and its `.rs` is generated from its `.vlt` by
 # `seed/voltaic1.wasm` (see `seed/SEED.md` and `AGENTS.md`). So `cargo` cannot
 # build anything here until `./bootstrap.sh` has run, which is why the bootstrap
 # step comes before every gate rather than after checkout as a formality. A CI
@@ -182,8 +182,8 @@ jobs:
         run: moon run :build
       - name: 'moon run :test'
         run: moon run :test
-      - name: 'moon run :sdx-format-check (needs the compiler the gates just built)'
-        run: moon run :sdx-format-check
+      - name: 'moon run :vlt-format-check (needs the compiler the gates just built)'
+        run: moon run :vlt-format-check
   # ──────────────────────────────────────────────────────────────────────────
   # treefmt, whose formatters come from nixpkgs rather than cargo
   # ──────────────────────────────────────────────────────────────────────────

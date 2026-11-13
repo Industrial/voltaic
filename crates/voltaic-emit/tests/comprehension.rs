@@ -34,7 +34,7 @@ fn the_empty_list_is_the_empty_array() {
 fn an_ascribed_list_becomes_a_from_call() {
   let out = body("xs = [1, 2] : Vec<i64>");
   assert!(
-    out.contains("let __rdx_t: Vec<i64> = Vec::from([1, 2]);"),
+    out.contains("let __vlt_t: Vec<i64> = Vec::from([1, 2]);"),
     "{out}"
   );
 }
