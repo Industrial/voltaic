@@ -4,9 +4,12 @@ Voltaic is a source-to-source compiler. You write `.sdx`; it emits `.xrs`
 containing **ordinary Rust**, which `rustc` then compiles with no runtime, no
 shim and no library of its own.
 
-That constraint is the whole design. Voltaic has no type checker, no borrow
-checker and no exhaustiveness checker, because Rust already has all three and
-having two of anything means having two that can disagree. What Voltaic changes
+That constraint is the whole design. Voltaic has no borrow checker and no
+exhaustiveness checker, because Rust already has both and having two of anything
+means having two that can disagree. What Voltaic does have is an inference
+engine: it works out the types, effects and borrow modes you did not write, and
+writes them into the generated Rust explicitly, so rustc still checks a program
+that states its own types. What Voltaic changes
 is the *surface*: the off-side rule instead of braces, parenless calls,
 receiver-last methods, pipelines, comprehensions, and a `where` that holds
 local definitions.

@@ -108,9 +108,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     description = "Source-to-source compiler for the Voltaic language, emitting ordinary Rust";
     longDescription = ''
       Voltaic compiles .sdx source to .xrs files containing ordinary Rust.
-      Diagnostics are reported against the .sdx you wrote. It has no type
-      checker, no borrow checker and no exhaustiveness checker of its own, by
-      design: rustc is the authority on all three.
+      Diagnostics are reported against the .sdx you wrote. It infers the types,
+      effects and borrow modes you did not write and emits them explicitly; it
+      has no borrow checker or exhaustiveness checker of its own, by design,
+      because rustc is the authority on both.
 
       This package provides the `voltaic` compiler together with the language
       server and the Model Context Protocol server.

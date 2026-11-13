@@ -42,8 +42,8 @@ safety property, through the only interface the formatter has.
 
 This client highlights by pattern rather than by parse, so it is the one here
 that can be wrong. `syn region` keeps keywords out of strings and comments; it
-does not make the file a parser. And Voltaic has no type checker, so a `syntax`
-file certainly cannot tell a type from a constructor — both are `UpperCamel`
+does not make the file a parser. And a `syntax` file carries no type information,
+so it certainly cannot tell a type from a constructor — both are `UpperCamel`
 and both are coloured `Type`, which is the honest answer rather than a
 heuristic that is sometimes wrong.
 

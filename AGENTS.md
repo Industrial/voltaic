@@ -281,8 +281,29 @@ see the first bullet under *Conventions that are load-bearing* and
   are *releases*. This one is a build artifact, so the answer is two commands — and that is
   only cheap while the seed is unreleased, which is also the window in which Voltaic's
   surface still moves. `seed/SEED.md` and plan 72 leaf 6 are the full statement.
-- **Every check rustc can make, rustc makes.** Voltaic has no type checker, no borrow checker
-  and no exhaustiveness checker, and must never grow one.
+- **Every check rustc can make, rustc makes.** Voltaic has no borrow checker and no
+  exhaustiveness checker, and must never grow one. It **does** have an inference engine —
+  `voltaic-lattice`, doc 86 §3 — whose job is to compute what the emitter writes down, not to
+  decide whether a program is well-typed. A program Lattice accepts and rustc rejects is a
+  **Lattice bug**, filed as one, not a user error. The emitted output states every type, borrow
+  and lifetime explicitly, which is what keeps rustc an independent check rather than a rubber
+  stamp.
+
+  **This bullet used to forbid a type checker outright, and the reversal is worth keeping.** It
+  was right for 91 plans: the constraint is what made every lowering auditable and kept rustc
+  the authority. What retired it is a measurement — Voltaic 1 saves **1.002× of the characters**
+  of the Rust it generates, over all thirteen crates with comments stripped from both sides, so
+  the no-checker charter was not a tax on the terseness claim but its **ceiling**. The line
+  saving is real (1.544×) and the character saving is noise, because what Voltaic 1 deletes is
+  punctuation and layout and what it cannot delete is types.
+  `docs/90 - 92 - The Charter Reversal.md` is the argument, `docs/86 - Voltaic 2.md` §1.1 the
+  number, `docs/89 - Voltaic 2 Plan of Plans.md` the register for the work.
+
+  Three things the reversal does **not** touch, because a reversal read too broadly is how the
+  rest of this list gets quietly relaxed: **implicit cloning stays non-negotiably declined**
+  (doc 01 §25.1 — when no mode assignment satisfies every use, the answer is a diagnostic, never
+  a clone); **no standard library** beyond doc 86 §7.4's three `io` primitives; **no implied
+  dependency** — a generated file names nothing outside `core`, `alloc` and `std`.
 - **No plan implements a library function.** Voltaic has crates.io. Emerald spent 112 of its
   203 plans building a standard library; that is the cost this rule avoids.
 - **No single `.rs` file over 1,500 lines**, enforced by

@@ -3,7 +3,8 @@
 **A Haskell-shaped surface over Rust's semantics.** Voltaic is a source-to-source compiler: `.sdx`
 in, `.xrs` containing ordinary Rust out. You get equations, guards, pattern rows, type classes,
 pipelines, sections and composition — and then rustc type-checks and borrow-checks the result,
-because Voltaic has no checker of its own and must never grow one.
+because rustc is the authority on types and borrows. Voltaic infers them and writes them down; it
+has no borrow checker of its own and must never grow one.
 
 [![The book](https://img.shields.io/badge/docs-the%20book-A85C32.svg)](https://industrial.github.io/voltaic/)
 [![CI](https://github.com/Industrial/voltaic/actions/workflows/ci.yml/badge.svg)](https://github.com/Industrial/voltaic/actions/workflows/ci.yml)
@@ -224,8 +225,8 @@ both fields are the same type. The lowering is an assignment through the place, 
 and nothing is cloned; the emitted Rust is what the `:=` form emits.
 
 Every one of these lowers to ordinary Rust that rustc then checks exactly as it would the
-written-out form — which is the only reason they are admissible. Voltaic has no type checker and
-must never grow one.
+written-out form — which is the only reason they are admissible. Voltaic has no borrow checker and
+no exhaustiveness checker, and must never grow one.
 
 ### String interpolation
 

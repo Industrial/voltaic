@@ -128,8 +128,9 @@ chapters=$(grep -oE '\]\([^)]+\.md\)' "$SRC/SUMMARY.md" | sed 's|^](||; s|)$||')
 {
     printf '# Voltaic\n\n'
     printf '> %s\n\n' "$DESC"
-    printf 'Voltaic has no type checker, no borrow checker and no exhaustiveness\n'
-    printf 'checker, because Rust has all three. It changes the surface, not the\n'
+    printf 'Voltaic has no borrow checker and no exhaustiveness checker, because\n'
+    printf 'Rust has both. It infers the types, effects and borrow modes you did\n'
+    printf 'not write and emits them explicitly. It changes the surface, not the\n'
     printf 'semantics. Every code sample in this documentation comes from the\n'
     printf 'corpus at `examples/`, which CI compiles and runs against a\n'
     printf 'recorded expectation.\n\n'

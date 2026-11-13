@@ -15,9 +15,9 @@ use support::Case;
 
 /// Criterion 2: a rustc error arrives as data, with a `.sdx` position.
 ///
-/// The code asserted is **rustc's**. Voltaic has no type checker — AGENTS.md:
-/// every check rustc can make, rustc makes — so this is the whole value of the
-/// tool, and a fixture carrying an `RDX` code would not exercise it. The
+/// The code asserted is **rustc's**. Voltaic infers types but never checks them
+/// — AGENTS.md: every check rustc can make, rustc makes — so this is the whole
+/// value of the tool, and a fixture carrying an `RDX` code would not exercise it. The
 /// fixture's own doc comment records that the first one did.
 #[test]
 fn check_reports_a_rustc_error_against_the_sdx() {

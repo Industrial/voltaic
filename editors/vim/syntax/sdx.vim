@@ -61,7 +61,7 @@ syn keyword sdxKeyword      do async try catch mut move or
 syn keyword sdxKeyword      rust unsafe extern union
 syn keyword sdxKeyword      export
 
-" A type is any `UpperCamel` name; Voltaic has no type checker, so a syntax file
+" A type is any `UpperCamel` name; a syntax file carries no type information, so it
 " certainly cannot tell a type from a constructor, and colouring both the same
 " is the honest answer rather than a heuristic that is sometimes wrong.
 syn match   sdxType         "\<\u[a-zA-Z0-9_]*\>"

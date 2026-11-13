@@ -700,6 +700,32 @@ only ones a transpiler can honestly own. Rows 85, 86, 87, 89 and 90 each carry a
 kind, and each argues for it locally. Whether the corollary should say so in general is a question
 for a row that owns the diagnostics surface, not for any of these.
 
+> **Corrected 2026-11-14 by plan 92, and the correction splits in two.** Rule 2 of this
+> document applies to its own prose: correct stale labels in place, with the evidence.
+>
+> **The mechanism was right.** Inference and effect tracking are exactly what the
+> remaining distance costs, and generation 2 buys that distance with exactly those two,
+> plus mode inference.
+>
+> **The price was wrong.** This section traded the constraint against *the tenth point*,
+> and that is a trade worth taking. Measured 2026-11-13 over all thirteen crates, every
+> source file against the Rust it generates, comments stripped from both sides, the stake
+> is larger: **1.544× in lines, 1.179× in tokens, 1.002× in characters.** The character
+> ratio is two parts in a thousand — so doc 02 §12.4 was not a tax on the terseness
+> claim, it was the **ceiling** of it. *"Doc 02 §12.4 stays"* is withdrawn.
+>
+> **The open question in the paragraph above is the one that was taken.** The re-cut it
+> describes — that what the constraint means to forbid is a *type* checker and a *borrow*
+> checker, where Voltaic already resolves names, arities, fixity and pattern expansion —
+> is precisely what ships: an engine that **infers and prints**, with rustc still the only
+> authority on borrows and exhaustiveness. The row that owns it is 92, and it is approved
+> jointly with row 101, which owns the diagnostics surface this paragraph said such a
+> question belongs to.
+>
+> `docs/90 - 92 - The Charter Reversal.md` is the argument, `docs/86 - Voltaic 2.md` §1.1
+> the measurement. This register keeps rows 01–91; `docs/89 - Voltaic 2 Plan of Plans.md`
+> starts at 92 and the two never renumber each other.
+
 ---
 
 ## Completion

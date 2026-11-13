@@ -63,7 +63,7 @@ instance ServerHandler Server
     config.capabilities := ServerCapabilities::builder ()
       |> .enable_tools
       |> .build
-    config.instructions := Some $ .to_string "Voltaic transpiles .sdx to .xrs containing ordinary Rust. Diagnostics are reported against the .sdx you wrote, with 1-based line and column in characters. rustc is the authority on types and borrows — Voltaic has no checker of its own."
+    config.instructions := Some $ .to_string "Voltaic transpiles .sdx to .xrs containing ordinary Rust. Diagnostics are reported against the .sdx you wrote, with 1-based line and column in characters. rustc is the authority on types and borrows — Voltaic infers them and writes them down, and has no borrow checker of its own."
     config
 
 export(crate) server_content : Serialize t => Result<t, String> -> Result<CallToolResult, ErrorData>

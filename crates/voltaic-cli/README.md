@@ -10,9 +10,9 @@ voltaic fmt hello.sdx         # canonical formatting
 ```
 
 Diagnostics are reported against the `.sdx` you wrote, with 1-based line and
-column in characters. rustc is the authority on types and borrows — Voltaic has
-no type checker, no borrow checker and no exhaustiveness checker of its own, by
-design.
+column in characters. rustc is the authority on types and borrows — Voltaic
+infers them and writes them down, and has no borrow checker or exhaustiveness
+checker of its own, by design.
 
 Voltaic is written in Voltaic: the `.sdx` under each crate's `sdx/` is the
 source, and the Rust under `src/` is generated from it. A clean clone has no

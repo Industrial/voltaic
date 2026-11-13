@@ -100,7 +100,7 @@
 			"match": "@[a-zA-Z_][a-zA-Z0-9_]*"
 		},
 		"type": {
-			"comment": "Voltaic has no type checker, so a grammar certainly cannot tell a type from a constructor. Both are UpperCamel and both are coloured as a type, which is honest rather than a heuristic that is sometimes wrong.",
+			"comment": "A syntax grammar carries no type information, so it certainly cannot tell a type from a constructor. Both are UpperCamel and both are coloured as a type, which is honest rather than a heuristic that is sometimes wrong.",
 			"name": "entity.name.type.voltaic",
 			"match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
 		},
