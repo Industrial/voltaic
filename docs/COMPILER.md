@@ -184,3 +184,79 @@ A `--rustfmt` flag may be added later as an opt-in, and must then mark the span 
 - Pipeline architecture and crate split: `docs/02 - Voltaic Update Blueprint.md` §5.
 - Lowering per construct: `docs/03 - Voltaic Surface Design.md` §§5–15.
 - Plan sequence and ordering commitments: `docs/04 - Voltaic Plan of Plans.md`.
+
+---
+
+## 6. Generation 2: the solver is a dependency, not an implementation
+
+Added for generation 2 (`docs/86 - Voltaic 2.md`). Sections 1–5 above are generation
+1's toolchain decisions and are unchanged by the charter reversal — the parser is still
+hand-written recursive descent, the lexer is still hand-written, the emitter still does
+not call rustfmt, and rustc still accepts the generated file directly.
+
+What generation 2 adds to this document is one decision and one requirement list.
+
+**Chosen: the refinement checker binds a pinned external SMT solver. Voltaic does not
+implement a decision procedure.**
+
+`AGENTS.md`'s rule is the reason: *"No plan implements a library function. Voltaic has
+crates.io. Emerald spent 112 of its 203 plans building a standard library; that is the
+cost this rule avoids."* A decision procedure is the largest possible instance of that
+temptation — it is interesting to write, it is a research field, and it is not this
+project's work.
+
+So `docs/95 - 97 - Refinements.md` writes the *interface*: predicate extraction, the
+fragment check, the encoding, the cache and the timeout policy. The procedure is
+somebody else's code.
+
+### Requirements on the pin
+
+| Requirement | Why |
+|---|---|
+| vendorable and offline | the dev shell pins every binary and CI has no network at build time; a solver fetched during a build is not admissible |
+| a stable QF_ALIA front end | doc 86 §7.3 is the admitted fragment; a solver that only speaks a richer logic invites scope creep into undecidable territory |
+| a hard timeout the caller controls | doc 95 §1.4 point 3: a timeout is a diagnostic, never a pass |
+| MIT-compatible license | the repository is MIT |
+| incremental solving, or cheap process startup | the predicate cache is the fallback if startup dominates, and which it is must be measured rather than assumed |
+
+### Revisit trigger
+
+Two, and either one reopens the pin rather than the design:
+
+- **the measured startup cost exceeds the cache's benefit** — a warm incremental edit
+  spending more time starting solvers than answering queries. Doc 88 §4.2 sets the
+  threshold at a cache hit rate below 80%.
+- **the solver's QF_ALIA front end changes incompatibly.** The fragment is a property
+  of Voltaic, stated in doc 86 §7.3, not of the solver; a solver that stops supporting
+  it is a solver to replace, not a fragment to widen.
+
+**Not** a revisit trigger: a predicate someone wants that the fragment excludes. That
+is doc 87 §22.1, and the venues named there are the route — a wider fragment needs a
+measured bounded-instantiation strategy, not a different solver.
+
+### The pin itself
+
+Recorded by `docs/95 - 97 - Refinements.md` leaf 2, together with the measured startup
+cost, because **a pin without a measurement is a guess**. This section states the
+requirements; it deliberately does not name a solver ahead of that measurement.
+
+---
+
+## 7. Generation 2: the emitter's job grows
+
+Not a decision so much as a consequence worth recording here, because it is
+counterintuitive and will otherwise be rediscovered.
+
+Generation 1's emitter *transcribed*: the author wrote `&self -> u32` and the emitter
+wrote `fn pos(&self) -> u32`. Generation 2's author writes neither, so the emitter
+writes both — every signature, every `&` and `&mut`, every lifetime elision cannot
+supply, every `?`, every `.await`, every `#[derive(…)]`.
+
+A `.vrs` is therefore **more** explicit than generation 1's `.xrs`, not less. That is
+what keeps rustc an independent check rather than a rubber stamp: it type-checks a
+program that states its own types, exactly as it checks hand-written Rust.
+
+Section 5's decision is unaffected and becomes more load-bearing: the emitter still
+produces canonical formatting directly, because the golden corpus and the source map
+both depend on it, and generation 2 adds two more corpora — `tests/solve/` and
+`tests/explain/` — with the same dependency.

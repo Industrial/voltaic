@@ -1,0 +1,188 @@
+# Voltaic 2 — Plan of Plans
+
+Status: active index
+Tracks which plans, taken together, implement `docs/86 - Voltaic 2.md` as detailed by
+`docs/87 - Voltaic 2 Surface Design.md` and `docs/88 - Voltaic 2 Blueprint.md`.
+
+**This document is an index only.** It does not author plan content — each row becomes
+its own plan document, `docs/<doc> - <plan> - <Name>.md`. Update the **Status** column
+here as each plan is authored, executed and shipped; do not let plan detail leak back
+into this file.
+
+The three habits from `docs/04 - Voltaic Plan of Plans.md` are kept, and the second
+and third are what this register exists to honour across a generation change:
+
+1. **Index only.** Scope is one cell, not a section.
+2. **Correct stale labels in place**, with a date and the evidence that corrected them.
+3. **Never delete a superseded row.** Mark it `superseded` and name what replaced it.
+
+`docs/04` is **not** superseded by this file. It remains the register for plans 01–91
+and is the authority on what generation 1 did. This register starts at 92 and the two
+never renumber each other.
+
+---
+
+## Status legend
+
+Unchanged from doc 04: `not-started`, `planned`, `in-progress`, `partial`, `done`,
+`superseded`.
+
+---
+
+## Milestone 13 — the reversal
+
+One row, and it is the only row in this register that changes a decision rather than
+building something.
+
+| # | Plan | Scope | Status | Depends on |
+|---|---|---|---|---|
+| 92 | The Charter Reversal | Reverse doc 03 §2 clause 1 and doc 02 §12.4. Add clause 5. Amend `AGENTS.md`. Record the acceptance of the three normative documents. **No code.** | `planned` | — |
+
+**Why it is a plan and not a paragraph.** The constraint being reversed is cited by
+`AGENTS.md`, doc 01 §25.1, doc 02 §6.2 and §12.4, doc 03 §2 and §22, `DECLINED.md`,
+and the *What this milestone does not claim* section of doc 04. A reversal that edits
+one of those and not the others leaves the repository contradicting itself, and the
+repository's own convention is that a correction is recorded with its evidence rather
+than applied silently. Plan 92 is that record.
+
+---
+
+## Milestone 14 — nomenclature
+
+| # | Plan | Scope | Status | Depends on |
+|---|---|---|---|---|
+| 93 | Extensions and Nomenclature | `.sdx`→`.vlt`, `.xrs`→`.vrs`, `.xrs.map`→`.vrs.map`, `crates/*/sdx/`→`crates/*/vlt/`, `__rdx_`→`__vlt_`, `RDX####`→`VLT####`. 2,644 occurrences, 1,158 outside `docs/`. | `planned` | 92 |
+
+Deliberately **before** any language work. The rename touches editor configs, CI
+workflows, `.gitignore`, `.gitattributes`, moon inputs, the seed scripts, the website
+and 61 UI fixtures; doing it while the surface is also moving would make every
+conflict ambiguous between the two causes. It is also the one row in this register
+that is purely mechanical, which makes it the right row to prove the migration
+tooling on.
+
+---
+
+## Milestone 15 — the solver
+
+Four rows. They are listed in dependency order and **not** in the order they are
+useful: modes are the terseness win, and they come last because they need the other
+three.
+
+| # | Plan | Scope | Status | Depends on |
+|---|---|---|---|---|
+| 94 | The Lattice Crate | `voltaic-lattice`: the constraint store, the fixed-point driver, provenance, and rank-1 HM with row-polymorphic records. The `tests/solve/` corpus. | `planned` | 93 |
+| 95 | Effect Rows | The seven-effect alphabet, the subset lattice, implicit propagation, `else` / `.must` / `~` discharge, effect variables. | `planned` | 94 |
+| 96 | Mode Inference | The three-element chain, use-site constraints, the least-fixed-point solve, lifetime emission, `@` ascription, `VLT0601`. | `planned` | 94, 95 |
+| 97 | Refinements | Predicate extraction, the QF_ALIA fragment, the solver interface and pin, the timeout-is-a-diagnostic policy, `tests/refine/`. | `planned` | 94 |
+
+**Milestone test:** `tests/solve/` green with an expectation file for every corpus
+program, and `voltaic-bench`'s three new axes inside the thresholds doc 88 §4.2
+states. A solver with no golden corpus is the one part of this generation that could
+regress invisibly.
+
+---
+
+## Milestone 16 — the surface
+
+Three rows. This is where the language the author types actually changes.
+
+| # | Plan | Scope | Status | Depends on |
+|---|---|---|---|---|
+| 98 | Structural Classes | `class` as a requirement list; equations attached by receiver pattern; the `instance` header deleted; the one-file trap deleted; `deriving template` deleted. | `planned` | 94 |
+| 99 | The Surface Contraction | 74 keywords to 11. Signature lines deleted. `\|>`/`>>>`/`<<<`/`$` deleted. Receiver-first dots. Juxtaposed fields. Computed derives. `errors`→`data`. Imports deleted. Or-patterns, `as`, `ref` reachable. | `planned` | 95, 96, 98 |
+| 100 | The Signature Sidecar | `.vlt.sig` generation, the published-API rule, `voltaic sig`, `--why`, `--semver`, `--require-signatures`. | `planned` | 94, 99 |
+
+**Row 99 is the largest row in either register.** It is deliberately one row rather
+than nine, because a surface is not a feature and splitting it would mean shipping a
+language that is half of each generation — doc 04 records plan 13 crossing nineteen
+rows for the same reason, and `partial` exists in the legend because of it. Its own
+plan document decomposes it into waves.
+
+---
+
+## Milestone 17 — the turn
+
+The rows that get from generation 1's tree to generation 2's. These are the ones that
+can lose work if they are got wrong.
+
+| # | Plan | Scope | Status | Depends on |
+|---|---|---|---|---|
+| 101 | Diagnostics Without Signatures | The four new code ranges, constraint-provenance rendering, definition-boundary reporting, `tests/explain/`, UI fixtures per range. | `planned` | 94–97 |
+| 102 | The Seed Across the Turn | Generation-tagged seeds. Build generation 2's front end **in generation 1**. `seed/GENERATION`, two-generation bootstrap, `fixpoint` on g2, retire g1. | `planned` | 99 |
+| 103 | The Generation Migrator | `voltaic migrate`: mechanical `.sdx`→`.vlt` rewriting, classified auto/review/manual, gated on **byte-identical generated Rust**. Then the simplification pass. | `planned` | 99, 102 |
+| 104 | The Reference Docs Rewrite | Regrade `GRAMMAR.md`; rewrite `DECLINED.md` against doc 87 §22 and re-point `declined.rs`; rewrite `CONFORMANCE.md`; regenerate `STATUS.md`; add `.vlt.sig` to `dependency_sources`. | `planned` | 103 |
+
+### Why 104 is last, and why that is a finding rather than scheduling
+
+`GRAMMAR.md`, `DECLINED.md`, `CONFORMANCE.md` and `STATUS.md` are **gated**. Every
+`GRAMMAR.md` row carries evidence that `crates/voltaic-cli/tests/grammar_inventory.rs`
+resolves; `declined.rs` asserts every doc 03 §22 construct appears in `DECLINED.md`;
+`status.rs` generates `STATUS.md` from the tree and fails on drift.
+
+So **a gated reference document cannot be written ahead of the code it grades.**
+Writing the new `GRAMMAR.md` at the start of this generation would produce a document
+whose every evidence path points at a file that does not exist yet, and whose
+`UNREACHABLE` fixtures cannot be asserted to fail because they cannot be asserted at
+all. The reference docs are an *output* of the turn.
+
+This is also why doc 86 §10's table of closing gaps is labelled a prediction. Plan 46
+measured that of sixteen apparent gaps in a careless first pass, **eleven were the
+probe's own bug**. A predicted grade is worth what a prediction is worth.
+
+---
+
+## Dependency graph
+
+```
+92 ── 93 ── 94 ──┬── 95 ──┬── 96 ──┐
+                 │        │        │
+                 ├── 97 ──┤        ├── 99 ──┬── 100
+                 │        │        │        │
+                 └── 98 ──┴────────┘        └── 102 ── 103 ── 104
+
+94, 95, 96, 97 ─────────────────────────────── 101
+```
+
+Three rows can run in parallel after 94: 95, 97 and 98 touch disjoint modules and
+disjoint surface. 96 needs 95, because a discharge creates mode constraints. 101 needs
+all four engines, because it renders their provenance.
+
+---
+
+## Milestones and what each one claims
+
+| Milestone | Claim | Test |
+|---|---|---|
+| 13 — the reversal | the decision is recorded, with its evidence, everywhere it was cited | no document in the tree asserts both the old constraint and the new one |
+| 14 — nomenclature | no fossil of the pre-rename identity remains in anything a user reads | a tree-wide search for `sdx`, `xrs`, `__rdx_` and `RDX` followed by a digit is empty outside `docs/01`–`docs/85` |
+| 15 — the solver | the four engines terminate, agree, and can explain themselves | `tests/solve/` green; bench axes inside doc 88 §4.2's thresholds |
+| 16 — the surface | the language of doc 87 is the language the compiler accepts | `examples/*.vlt` green; 11 keywords in the lexer; `construct_coverage` green with an empty `ALLOW` list |
+| 17 — the turn | the tree is generation 2, and a clean clone builds | `fixpoint` green on g2; `bootstrap.rs` green; `migrate` reports zero `manual` files outstanding |
+
+---
+
+## Completion
+
+- **Generation 2 feature-complete** — rows 92–100 `done`.
+- **Generation 2 self-hosting** — row 102 `done` and `fixpoint` green against
+  `seed/voltaic-g2.wasm`. The test is a build, not a row count: the whole workspace
+  checking against Voltaic-2-generated Rust with every test passing.
+- **Generation 1 retired** — row 104 `done`, `seed/voltaic-g1.wasm` deleted, and
+  `docs/01`–`docs/85` carrying a one-line header pointing at their successors.
+  Retiring g1 is the **last** act of the generation and not an early convenience:
+  until `fixpoint` is green on g2 twice, g1 is the only thing that can rebuild the
+  tree.
+
+---
+
+## What this register does not claim
+
+- **No dates.** Doc 04's posture, kept: when a row lands is not a measurement.
+- **No row count as progress.** Row 99 is larger than 92, 93, 94 and 98 together.
+- **No claim that generation 2 is better on every axis.** Doc 86 §5.6 records two
+  regressions — general monadic comprehension over user types, and nested optionals —
+  and doc 87 §22.2 marks the first a debt rather than a decision. A register that only
+  counted gains would hide them.
+- **No claim that the risks in doc 88 §6 are solved.** Three of them cannot be
+  measured until there is an implementation, and the thresholds in doc 88 §4.2 exist
+  so that the design can be found wrong rather than defended.

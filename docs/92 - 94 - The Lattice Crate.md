@@ -1,0 +1,235 @@
+# Plan 94 — The Lattice Crate
+
+Plan ID: `lattice`
+Depends on: 93
+Milestone: 15 — *the solver*
+Status: `planned`
+
+---
+
+## 1. What this plan is
+
+`voltaic-lattice`, the fourteenth crate: a constraint store, a fixed-point driver,
+provenance tracking, and the type engine. Rows 95, 96 and 97 add the three other
+engines onto the machinery this row builds.
+
+It also builds `tests/solve/`, the corpus that makes inference reviewable. That
+corpus is the deliverable this plan would be worthless without — see §1.3.
+
+### 1.1 One crate, four engines, one solve loop
+
+Doc 88 §1.2 has the argument: the four engines solve *together*, because a mode
+constraint can be created by an effect discharge, an effect can be created by a mode
+(`mut ρ`), and a refinement's predicate mentions `.len`, which is a type question.
+Four crates would be a dependency cycle.
+
+The layout, which satisfies doc 06's module-tree rules:
+
+```
+crates/voltaic-lattice/vlt/
+  lib.vlt            # declarations and the public entry point only
+  constraint.vlt     # the store and the fixed-point driver
+  type/              # unification, generalisation, instantiation
+  row/               # row 95
+  mode/              # row 96
+  refine/            # row 97
+  explain.vlt        # provenance rendering for `--why`
+```
+
+`constraint.vlt` is budgeted at **900 source lines** and splits into `constraint/` if
+it exceeds it, because the 1,500-line cap is on the *generated* Rust and the ratio is
+about 1.6 (doc 88 §8.2).
+
+`row/` and `mode/` both want a `Join` variant, and two enums sharing a variant name
+cannot share a file — every `data` emits `use <Enum>::*`, so the shared name is
+`E0659`. They are in separate directories for that reason rather than by taste.
+
+### 1.2 The type system is rank-1 on purpose
+
+Rank-1 Hindley–Milner with row polymorphism over records. No higher-rank types, no
+impredicativity, no higher-kinded abstraction.
+
+This is a ceiling chosen rather than a limitation accepted. Rank-1 HM has **complete
+and decidable** inference; rank-N does not, and the moment inference is incomplete the
+language needs mandatory annotations in positions a user cannot predict — which is
+precisely the failure doc 86 §2 clause 1 forbids, since a lowering the author cannot
+anticipate is a lowering that cannot be printed back to them.
+
+Doc 87 §22.2 declines higher-kinded abstraction on exactly this ground, and names what
+it costs: `Monad m` is not expressible, which is why row 95's effect alphabet is
+closed and why generation 1's `do .and_then` over user types is a regression (doc 86
+§5.6).
+
+### 1.3 Provenance is a correctness requirement, not a debug feature
+
+Every constraint in the store carries:
+
+- the **span** that created it,
+- the **reason** — a structured value, not a string: `ParameterUse`, `FieldAccess`,
+  `CallArgument(n)`, `Discharge`, `Ascription`, `ClassRequirement`, …,
+- the **constraint it was derived from**, if any.
+
+Doc 86 §2 clause 1 admits a solver-determined lowering *only if the choice can be
+printed*. A store that loses provenance cannot satisfy that clause, so a constraint
+without a reason is a bug in this crate — asserted, not merely discouraged.
+
+This is also what makes row 101 possible at all. A conflict is reported by walking the
+provenance chain of both sides, which is the difference between *"cannot unify `&str`
+with `String`"* and *"`peek` is `shared` because line 17 reads it, and `owned` because
+line 23 returns it past the frame"*.
+
+### 1.4 What this plan does not do
+
+- No effect rows (95), modes (96) or refinements (97).
+- No surface change. The parser still accepts generation 1's surface; this crate runs
+  after it and its output is, for this row, **only** checked against `tests/solve/`
+  expectations. Nothing in the emitter consumes it yet.
+- No incremental solve. §6.
+
+That ordering is deliberate: a solver whose output nothing depends on can be measured
+against a corpus before it is trusted with an emitter.
+
+---
+
+## 2. Preconditions
+
+- Row 93 is `done`, so the crate is written in `.vlt` from the first commit rather
+  than being renamed later.
+- `voltaic-ast` nodes gain a judgement slot. Every node still carries a byte span —
+  doc 02's rule, and the one Emerald broke twenty-one plans after its diagnostics plan
+  shipped, by which point the fix was judged too large.
+- The crate is written in Voltaic 1 (the surface the seed can parse), because row 102
+  has not run. Doc 88 §7's invariant: at no point is the only compiler for a language
+  written in that language.
+
+---
+
+## 3. Concrete proof this plan targets
+
+```
+voltaic sig crates/voltaic-lexer/vlt/cursor.vlt
+```
+
+printing, for the generation-1 source of `cursor.vlt`, the judgement generation 1's
+author wrote by hand — `peek : &self -> Option<char>` and the other eleven members —
+**derived rather than read**. The file's own signature lines are the answer key, which
+is what makes `cursor.vlt` the right first target: 12 members, hand-annotated, already
+in the tree.
+
+A second target, the one that proves generalisation: `examples/currying.sdx`, whose
+whole point is partially applied functions.
+
+---
+
+## 4. Leaves
+
+### Leaf 1 — the constraint store
+
+The store, provenance, and the union-find for type variables. No solving yet; the
+deliverable is that a traversal of `examples/hello.vlt` produces a store whose every
+constraint names its span and reason.
+
+### Leaf 2 — the fixed-point driver
+
+Worklist, iteration bound, and the ascending-chain argument per engine. The driver
+takes an engine's transfer function and iterates to a fixed point, asserting the
+bound. Rows 95–97 supply transfer functions; this leaf supplies the loop and the
+assertion that it terminates.
+
+### Leaf 3 — unification, generalisation, instantiation
+
+Rank-1 HM. Let-generalisation at definition boundaries, instantiation at use sites,
+the occurs check, and row polymorphism over records so that field access on a partially
+known record works.
+
+### Leaf 4 — `voltaic sig`
+
+Prints the inferred judgement of every definition in a file. Flags: `--json` for the
+LSP, `--why <name>` stubbed to the provenance walk this row can already do for types.
+
+### Leaf 5 — `tests/solve/`
+
+The corpus. One `.vlt` and one `.sig` expectation per program; blessable with
+`VOLTAIC_UPDATE=1`, and blessing rewrites and then **fails**, per the standing
+convention.
+
+The initial set is every `examples/*.vlt` plus `crates/voltaic-lexer/vlt/cursor.vlt`,
+and the expectation is checked against the **hand-written signature lines already in
+those files** for as long as generation 1's surface still has them. That is a free
+oracle and it disappears at row 99, which is why this corpus is built now.
+
+### Leaf 6 — the fuzz target
+
+`voltaic-fuzz` gains a target that asserts the driver's iteration bound is never
+exceeded. An input that makes the solver exceed its bound is a clause-5 violation and
+blocks the generation (doc 88 §4.2).
+
+---
+
+## 5. Acceptance criteria
+
+1. `tests/solve/` green over every `examples/*.vlt`.
+2. For every definition in generation 1's corpus that carries a hand-written
+   signature, **the inferred judgement equals the written one**, or the difference is
+   recorded in this document's §10 with the reason. This is the plan's central
+   criterion: the answer key exists and it is used.
+3. Every constraint in the store carries a span and a structured reason; asserted.
+4. The driver's iteration bound holds on the fuzz target.
+5. `voltaic sig --why` walks provenance for a type conflict and names both sides.
+6. The crate satisfies doc 06: module tree, path-aware naming, no comments, 1,500-line
+   cap on the generated Rust.
+7. Nothing in the emitter consumes the judgement yet, so the full gate is green with
+   **no output diff**. A `.vrs` that changed in this row is this row having done
+   something it was not asked to.
+
+---
+
+## 6. Out of scope
+
+- **Incremental solve.** Doc 88 §3's three levels are real work and they belong with
+  the row that makes the driver depend on the solve, which is 99. Until then every
+  solve is whole-crate and slow, and that is acceptable because nothing is waiting on
+  it.
+- **Cross-crate inference.** There is none, ever — doc 86 §8.3. The sidecar is row
+  100.
+- **Lifetime inference.** Lattice does not infer lifetimes (doc 86 §6.3); the emitter
+  elides and rustc resolves. Row 96 owns what happens when elision fails.
+
+---
+
+## 7. Gate
+
+Standing push gate, plus `tests/solve/`, plus the new fuzz target, plus the
+no-output-diff assertion in §5.7.
+
+---
+
+## 8. Emerald reuse
+
+None available — Emerald had no inference. The relevant Emerald lesson is negative and
+is already a repository rule: **no plan implements a library function.** The union-find
+and the worklist are small enough to write and `AGENTS.md`'s rule is about *library*
+functions rather than algorithms, but the solver interface in row 97 is where that
+rule bites, and it is answered there.
+
+---
+
+## 9. Decision log
+
+| Decision | Why |
+|---|---|
+| One crate, four modules | the engines solve together; four crates is a cycle (doc 88 §1.2) |
+| Rank-1 HM | complete and decidable inference; rank-N forfeits both and clause 1 with them |
+| Provenance asserted, not optional | clause 1 admits a solver-determined lowering only if it is printable |
+| Structured reasons, not strings | row 101 renders them; a string cannot be rendered two ways |
+| Build the corpus in this row | generation 1's hand-written signatures are a free oracle that disappears at row 99 |
+| Nothing consumes the judgement yet | a solver measured against a corpus before an emitter trusts it |
+| `row/` and `mode/` in separate directories | both want `Join`; two enums sharing a variant name cannot share a file |
+
+---
+
+## 10. Result
+
+*To be filled after execution. In particular: every definition where the inferred
+judgement differs from generation 1's hand-written one, with the reason. That list is
+the most informative thing this plan can produce.*
