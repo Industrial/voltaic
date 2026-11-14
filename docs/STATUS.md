@@ -35,7 +35,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---:|
 | `voltaic-ast` | 1651 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1406 | 12602 |
+| `voltaic-cli` | 1406 | 12814 |
 | `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 3006 | 160 |
 | `voltaic-emit` | 3854 | 4634 |
@@ -47,7 +47,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-mcp` | 464 | 776 |
 | `voltaic-parser` | 5936 | 787 |
 | `voltaic-seed` | 146 | 1118 |
-| **total** | **28460** | **25281** |
+| **total** | **28460** | **25493** |
 
 ---
 
@@ -58,6 +58,10 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `examples/*.vlt` | 50 | the CI-checked source of truth for what works |
 | `tests/golden/*.vrs` | 49 | the generated Rust, as exact text |
 | `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
+| `crates/voltaic-cli/tests/lint/*.vlt` | 7 | the warning a questionable program gets |
+| `crates/voltaic-cli/tests/run/*.stdout` | 2 | what a program prints |
+| `crates/voltaic-cli/tests/explain/*.why` | 6 | the constraint chain behind an inference |
+| `crates/voltaic-cli/tests/sidecar/*.sig` | 2 | the published signature, as exact text |
 | `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
@@ -90,3 +94,4 @@ Full grading, with the nearest working alternative for each: `docs/GRAMMAR.md`. 
 - **No test count as a quality measure.** The corpora above are counted because they are corpora; a total would invite reading it as a score.
 - **No roadmap and no dates.** What is left is the register's outstanding rows. When they land is not a measurement.
 - **No benchmark numbers.** `benchmarks/REPORT.md` has them, and plan 44 §1.2 deliberately keeps them out of the gate because they are timings. Copying one here would make this comparison flake.
+- **No terseness ratio.** Doc 86 §1.1 and doc 97 §1.2 measure it, in documents that say what was measured and what was equalised. A bare `2.24×` in a status table would be quoted without the caveat that 1.76× is the grammar-only figure, and that the character saving over the whole compiler is **1.002×** — which doc 90 §1 is about. The project's own §1.2 calls claiming the library's share *rounding up*.

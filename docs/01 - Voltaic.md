@@ -1,3 +1,5 @@
+> **Generation 1.** Superseded by `docs/86 - Voltaic 2.md` for what replaced it, and `docs/87 - Voltaic 2 Surface Design.md` for the surface. This document is generation 1's record and is not edited — doc 04 rule 3, and row 104 leaf 7.
+
 Voltaic
 Language Specification & Implementation Blueprint
 

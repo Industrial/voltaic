@@ -58,6 +58,13 @@ fn count(dir: &Path, suffix: &str) -> usize {
 }
 
 /// Every crate under `crates/`, with its source and test line counts.
+///
+/// Read from the directory, **not** from `seed/GENERATION`. Row 104 leaf 4 says
+/// to amend this "for the fourteenth crate"; nothing needed amending, because a
+/// directory walk has no count in it to go stale. And `GENERATION` would have
+/// been the wrong source anyway: it lists the crates whose `src/` is generated,
+/// which is a different set from the crates that exist — a crate not yet ported
+/// would vanish from the table rather than appear with its line counts.
 fn crates(root: &Path) -> Vec<(String, usize, usize)> {
   let mut out: Vec<(String, usize, usize)> = std::fs::read_dir(root.join("crates"))
     .expect("should read crates/")
@@ -283,11 +290,19 @@ fn render(root: &Path) -> String {
   let ui = count(&root.join("crates/voltaic-cli/tests/ui"), ".vlt");
   let unreachable = count(&root.join("tests/unreachable"), ".vlt");
   let pairs = count(&root.join("benchmarks/pairs"), ".vlt");
+  let explain = count(&root.join("crates/voltaic-cli/tests/explain"), ".why");
+  let sidecar = count(&root.join("crates/voltaic-cli/tests/sidecar"), ".sig");
+  let lint = count(&root.join("crates/voltaic-cli/tests/lint"), ".vlt");
+  let run = count(&root.join("crates/voltaic-cli/tests/run"), ".stdout");
   let _ = writeln!(
     out,
     "| `examples/*.vlt` | {examples} | the CI-checked source of truth for what works |\n\
      | `tests/golden/*.vrs` | {golden} | the generated Rust, as exact text |\n\
      | `crates/voltaic-cli/tests/ui/*.vlt` | {ui} | the diagnostic a bad program gets |\n\
+     | `crates/voltaic-cli/tests/lint/*.vlt` | {lint} | the warning a questionable program gets |\n\
+     | `crates/voltaic-cli/tests/run/*.stdout` | {run} | what a program prints |\n\
+     | `crates/voltaic-cli/tests/explain/*.why` | {explain} | the constraint chain behind an inference |\n\
+     | `crates/voltaic-cli/tests/sidecar/*.sig` | {sidecar} | the published signature, as exact text |\n\
      | `tests/unreachable/*.vlt` | {unreachable} | the gaps below, asserted to **still fail** |\n\
      | `benchmarks/pairs/*.vlt` | {pairs} | generated and hand-written Rust, as identical IR |"
   );
@@ -329,7 +344,12 @@ fn render(root: &Path) -> String {
      land is not a measurement.\n\
      - **No benchmark numbers.** `benchmarks/REPORT.md` has them, and plan 44 §1.2 \
      deliberately keeps them out of the gate because they are timings. Copying one here would \
-     make this comparison flake.\n",
+     make this comparison flake.\n\
+     - **No terseness ratio.** Doc 86 §1.1 and doc 97 §1.2 measure it, in documents that say \
+     what was measured and what was equalised. A bare `2.24×` in a status table would be \
+     quoted without the caveat that 1.76× is the grammar-only figure, and that the \
+     character saving over the whole compiler is **1.002×** — which doc 90 §1 is about. \
+     The project's own §1.2 calls claiming the library's share *rounding up*.\n",
   );
   out
 }

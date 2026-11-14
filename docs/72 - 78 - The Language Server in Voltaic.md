@@ -1,3 +1,5 @@
+> **Generation 1.** Superseded by `docs/89 - Voltaic 2 Plan of Plans.md`. This document is generation 1's record and is not edited — doc 04 rule 3, and row 104 leaf 7.
+
 # Plan 78 — The Language Server in Voltaic
 
 `voltaic-lsp`'s 22 files, 934 lines. Row 72's sixth successor, and the one that

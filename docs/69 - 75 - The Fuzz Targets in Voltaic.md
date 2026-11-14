@@ -1,3 +1,5 @@
+> **Generation 1.** Superseded by `docs/89 - Voltaic 2 Plan of Plans.md`. This document is generation 1's record and is not edited — doc 04 rule 3, and row 104 leaf 7.
+
 # Plan 75 — The Fuzz Targets in Voltaic
 
 `voltaic-fuzz`'s 6 files, 124 lines. The smallest crate in the workspace, and

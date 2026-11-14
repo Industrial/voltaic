@@ -1,3 +1,5 @@
+> **Generation 1.** Superseded by `docs/89 - Voltaic 2 Plan of Plans.md`. This document is generation 1's record and is not edited — doc 04 rule 3, and row 104 leaf 7.
+
 # Plan 71 — Cursor Support
 
 Status: `done` — leaf 5 shipped 2026-11-11, §10.7; the one rung left is a person running the switch (§10.6)

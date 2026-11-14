@@ -312,7 +312,100 @@ exemption excuses nothing, and it is deleted. A disclosed inconsistency is still
 an inconsistency; removing the exemption is what closes it rather than admitting
 it.
 
-### 10.6 What remains
+### 10.6 Leaf 7: eighty-five documents that read as current
+
+Every one of generation 1's numbered documents now opens with one line naming its
+successor. `crates/voltaic-cli/tests/generation_headers.rs` holds five assertions
+over them.
+
+**The cost this closes is specific.** Doc 04 rule 3 forbids deleting a superseded
+document, which is right — it is the record of what was done and why. What it
+leaves behind is 85 documents that are *indistinguishable from current
+documentation when read alone*. A reader who opens
+`docs/03 - Voltaic Surface Design.md` because its title matches their question
+gets generation 1's surface stated with no hedging: `.f x` with the receiver
+**last**, signatures required, `if` and `case` present. All three are reversed by
+generation 2, and nothing in the document said so.
+
+**Seventy-eight of the eighty-five point at doc 89, and that is the honest
+answer rather than the lazy one.** A generation-1 plan has no generation-2
+counterpart: the work was reorganised into nineteen rows, not renumbered.
+Inventing a per-plan mapping would assert a correspondence this project never
+made. Doc 89 is where the planning went.
+
+**Six point at something else, and the gate asserted seven.** Generation 1 has
+seven non-plan documents, and `docs/04 - Voltaic Plan of Plans.md`'s specific
+successor *is* doc 89 — a register's successor is a register. The count was
+written from the structure (*seven foundational documents*) rather than measured
+from the headers, which is §2.1's shape for the third time in this generation.
+The gate now asserts six and says why it is not seven.
+
+The fifth assertion is the one worth keeping: **every path a header names must
+exist.** A header pointing at a renamed document is worse than no header, because
+it reads as maintained.
+
+### 10.7 Leaf 4: the corpora table, and two of the three predicted corpora never existed
+
+`STATUS.md`'s corpora table now has nine rows where it had five. The three added
+are generation 2's: `lint/`, `run/`, `explain/` and `sidecar/` — four, not three,
+and none of them where the leaf said.
+
+The leaf named **`tests/solve/`, `tests/refine/` and `tests/explain/`**. Measured:
+`tests/solve/` and `tests/refine/` **do not exist**, and `explain/` is under
+`crates/voltaic-cli/tests/`. What happened to the other two is not a gap — the
+solve corpus became `inferred.rs`'s answer key, which is a *count* rather than a
+directory of fixtures, and the refinement corpus became `voltaic-lattice`'s own
+inline tests. Both are the right homes; the leaf's list was written before either
+existed.
+
+§1.2 says this row is where doc 86 §10's prediction is tested. It turns out to be
+where *this row's own* predictions are tested too, and the same discipline applies:
+regrade, do not copy.
+
+**Nothing needed amending "for the fourteenth crate".** `status.rs` reads the crate
+list from the `crates/` directory, so there is no count in it to go stale — and
+`seed/GENERATION` would have been the *wrong* source, because it lists the crates
+whose `src/` is generated, which is a different set from the crates that exist. A
+crate not yet ported would have vanished from the table rather than appearing with
+its line counts. The leaf's instruction to use `GENERATION` is declined, with that
+reason.
+
+The fifth *does not say* clause is added, and it carries one number the leaf's
+version did not: the character saving over the whole compiler is **1.002×**, which
+is doc 90 §1's subject. A status table quoting `2.24×` without that is the exact
+rounding-up the project's own §1.2 names.
+
+### 10.8 What remains, and which row blocks each
+
+| Leaf | State |
+|---|---|
+| 1 — `GRAMMAR.md` regraded | blocked on row 99 waves 4–9 |
+| 2 — `DECLINED.md` | **done** (§10.1–§10.5) |
+| 3 — `CONFORMANCE.md` | blocked on row 99 waves 4–9 |
+| 4 — `STATUS.md` | **done** (§10.7) |
+| 5 — `.vlt.sig` in `dependency_sources` | blocked on row 100 leaf 1's other half |
+| 6 — doc 86 §10's correction | blocked on leaf 1 |
+| 7 — headers on docs 01–85 | **done** (§10.6) |
+
+§1.1 is why the blocked four cannot be hurried: *a gated reference document cannot
+be written ahead of its code.* A `GRAMMAR.md` regraded against waves 2 and 3 with
+waves 4–9 outstanding would carry rows whose evidence resolves today and stops
+resolving next week, which is worse than a document that says it has not been
+regraded yet.
+
+Leaf 5 is blocked differently and more simply: `dependency_sources` already covers
+`src/**/*`, so a sidecar under `src/` would be picked up — but a `.vlt.sig` lives
+beside its `.vlt` under `vlt/`, and there are **two** `.vlt.sig` files in the
+repository, both fixtures in `tests/sidecar/`. Adding the glob now would add a
+pattern matching nothing and an assertion passing vacuously, which is the one thing
+this project's gates are written to avoid.
+
+*Still to fill when the regrade lands: its disagreements with doc 86 §10, and the
+final `UNREACHABLE` count. Declaration reflection **did** join the list — doc 87
+§22.4's row, in `DECLINED.md`'s "fabricate names or API" section, with the `macro`
+construct named as its venue.*
+
+### 10.9 Superseded — what remained before leaves 4 and 7 landed
 
 - **`GRAMMAR.md`'s regrade** and **`CONFORMANCE.md`'s rewrite** need generation
   2's surface to grade against, which is row 99 waves 2–9.
