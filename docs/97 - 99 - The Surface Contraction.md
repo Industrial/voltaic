@@ -791,6 +791,80 @@ This is what waves 2–9 were waiting on. `if`, `else` and `case` can now be
 deleted — 85 of the compiler's 105 files use one of them — because the gates that
 would have broken have a defined behaviour for the window in which they must.
 
+### 10.23 Wave 2's deletion list contradicts doc 87, and doc 87 is the surface
+
+§4's wave 2 reads:
+
+> `if`/`else if`/`match`/`case`/`cond`/`switch`/`when`/`iff`/`unless`/`guard`/`then`
+> collapse into the guard ladder and pattern rows.
+
+Doc 87 is the **normative surface** for generation 2 — this document is a plan for
+reaching it — and doc 87 says the opposite twice.
+
+**§2.2, "Pattern rows and guards, unchanged":**
+
+> Several equations become a `match`; a `|` ladder becomes an `if`/`else if`
+> chain; a ladder inside an equation lands inside that clause's arm. All exactly
+> as generation 1 lowered them — **this part was already right and is carried
+> over without change.** […] `otherwise` is deleted. The catch-all is `_`.
+
+**§20, "What this surface does not change":**
+
+> - pattern rows, guard ladders, `where` groups
+
+So the only control-flow deletion doc 87 specifies is **`otherwise`**, and that is
+done. It never deletes `if`, `else` or `case`, and it never shows an `if` in a
+Voltaic code block at all — zero in the whole document.
+
+### 10.24 The deletion `if` would need has no specified replacement
+
+This was found by starting to build it rather than by reading, which is the part
+worth recording.
+
+A guard ladder is a **clause** form: it can be a whole function body and nothing
+smaller. An `if` nested inside a loop has no ladder equivalent, so deleting `if`
+requires the ladder to reach **expression** position — a construct that does not
+exist. An `Expr::Ladder` variant was started here and then reverted, because
+adding it would have been a surface-design decision taken in a parser, which is
+the thing doc 87 exists to prevent.
+
+Doc 87 §5 has no subsection on conditionals. §21 says:
+
+> **Open items.** None.
+
+That is not true while `if`'s fate is undecided. Either:
+
+- **`if` stays**, and §4's wave 2 line is simply wrong — the reading §20 supports,
+  and the one under which **wave 2 is complete**; or
+- **`if` goes**, and doc 87 is missing the expression-position conditional that
+  replaces it, which is a §21 open item and a surface decision for doc 87 to make
+  rather than for this row to invent.
+
+Taking the first reading until doc 87 says otherwise, because §20 is explicit and
+a plan does not overrule a specification.
+
+### 10.25 What that makes wave 2
+
+| Item | Status |
+|---|---|
+| `otherwise` → `_` | **done** — doc 87 §2.2's one named deletion |
+| `when` | **done** — a reserved word with no construct (§10.18) |
+| `until` | **done** — argued for its own removal (§10.17) |
+| pattern rows | **done** additively, and §20 says the ladder was already right |
+| `match`, `cond`, `switch`, `iff`, `unless`, `then` | **never keywords** (§10.14) |
+| `if`, `else`, `case` | **not deleted by doc 87** (§10.23) |
+| `for`/`while` → comprehensions and iterator methods | doc 87 §5.4 and §5.6 **add** those; neither section deletes `for` or `while` |
+
+Eleven named constructs: six were never keywords, three are done, and two are not
+doc 87's to delete. **Wave 2 is complete on doc 87's terms.**
+
+The general lesson is worth more than the wave. §4's nine wave descriptions were
+written from the *languages being drawn from* and from an earlier reading of the
+surface; doc 87 was written later and more carefully. **Every remaining wave
+should be measured against doc 87 §20 and §5 before it is sized**, because two of
+the three things wave 2 looked like turned out not to be there: six constructs did
+not exist, and two were never scheduled for deletion.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines
