@@ -382,7 +382,7 @@ assert! (c.eat "...")
 
 ```
 loop
-  ch = self.peek else break
+  Some ch = self.peek else break
   self.bump
 ```
 
@@ -393,6 +393,20 @@ with early exit is this. `break` carries a value where Rust's does.
 `else break` is worth noticing: `break` is an expression of type `!` with the
 `diverge` effect, so it is a legal `else` arm and the two constructs compose without
 a rule saying they may.
+
+**The pattern is refutable, and that is the whole point of the tail.** This
+subsection first read `ch = self.peek else break`, with a plain name — which
+parses, emits `let ch = self.peek() else { break; };`, and draws rustc's
+*"unreachable `else` clause"*, because a name matches everything and the tail can
+never run. Corrected after building it; doc 97 §10.31 has the account.
+
+A binding's pattern was irrefutable until now, because `guard … is p else …` was
+the refutable form. Deleting that keyword means the tail carries the refutability
+instead, so **a binding whose pattern is a constructor is admitted exactly where
+an `else` tail follows it** — and nowhere else, so `Some v` with no tail is still
+not a binding. Which patterns are refutable is rustc's question and not Voltaic's:
+an irrefutable one with a tail is a warning from rustc against the `.vlt`, which
+is §19 working rather than a check Voltaic grew.
 
 ### 5.7 Conditionals
 

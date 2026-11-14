@@ -1,0 +1,89 @@
+================================================================
+a binding's else tail, inline, diverging with break
+================================================================
+
+drained : Vec<u64> -> u64
+drained xs =
+  mut rest = xs
+  mut total = 0
+  loop
+    Some v = .pop (&mut rest) else break
+    total := total + v
+  total
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    name: (identifier)
+    type: (signature_type
+      (type_identifier)
+      (identifier)
+      (identifier)))
+  (equation
+    name: (identifier)
+    parameters: (identifier)
+    body: (binding
+      pattern: (pattern_run
+        (identifier))
+      value: (identifier))
+    body: (binding
+      pattern: (pattern_run
+        (identifier))
+      value: (number))
+    body: (loop_statement
+      (statement_block
+        (binding
+          pattern: (pattern_run
+            (type_identifier)
+            (identifier))
+          value: (operator)
+          value: (identifier)
+          value: (parenthesized
+            (operator)
+            (identifier)
+            (identifier))
+          value: (else_tail
+            (break_statement)))
+        (assignment
+          target: (identifier)
+          operator: (assignment_operator)
+          value: (identifier)
+          value: (operator)
+          value: (identifier))))
+    body: (expression_statement
+      (identifier))))
+
+================================================================
+a binding's else tail, indented, which is the shape guard always had
+================================================================
+
+opened : Option<u64> -> u64
+opened held =
+  Some n = held else
+    return 0
+  n
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    name: (identifier)
+    type: (signature_type
+      (type_identifier)
+      (identifier)
+      (identifier)))
+  (equation
+    name: (identifier)
+    parameters: (identifier)
+    body: (binding
+      pattern: (pattern_run
+        (type_identifier)
+        (identifier))
+      value: (identifier)
+      value: (else_tail
+        (statement_block
+          (return_statement
+            (number)))))
+    body: (expression_statement
+      (identifier))))

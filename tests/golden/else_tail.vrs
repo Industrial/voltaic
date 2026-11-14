@@ -1,0 +1,90 @@
+// Doc 87 §5.6 and §5.7: a binding carries an `else` tail, which is what replaces
+// `guard … is p else …` once §1.4 deletes the keyword. The lowering is Rust's
+// let-else, stated explicitly like everything else Voltaic emits.
+
+// §5.6's own example, with the pattern spelled. `loop` is the only imperative
+// iteration construct left: `for`, `while` and `until` are deleted, bounded
+// iteration is a comprehension or an iterator method, and this is unbounded
+// iteration with early exit.
+//
+// `break` is an expression of type `!`, so it is a legal `else` arm and the two
+// constructs compose with no rule saying they may.
+fn summed(xs: Vec<u64>) -> u64 {
+    let mut rest = xs;
+    let mut total = 0;
+    loop {
+        let Some(v) = (&mut rest).pop() else {
+            break;
+        };
+        total = total + v;
+    }
+    total
+}
+
+// The tail takes any diverging statement, not only `break`. `return` is the one
+// that makes this the replacement for an early-exit `guard`: the whole point of
+// that keyword was to bind or leave.
+fn head_if_even(xs: &[u64]) -> Option<u64> {
+    let Some(head) = xs.first() else {
+        return None;
+    };
+    if *head % 2 == 0 {
+        return Some(*head);
+    }
+    None
+}
+
+// An indented block, which is the shape `guard … else` always had. Both forms
+// parse, so the new spelling covers every use of the old one — and the formatter
+// keeps the block only when it holds more than one statement, since a
+// one-statement tail is canonically inline.
+fn labelled(held: Option<u64>) -> &'static str {
+    let Some(n) = held else {
+        println!("nothing to label");
+        return "none";
+    };
+    if n > 10 {
+        return "big";
+    }
+    "small"
+}
+
+// The tail on an ordinary `Result`, so nothing about this is `Option`-specific —
+// refutability is a property of the pattern and rustc's to judge, not a list of
+// blessed types.
+//
+// The ascription is parenthesised because `capture_type` is greedy and would
+// otherwise take the `else` into the type. That is the ordinary precedence answer
+// and not specific to this construct.
+fn parsed(text: &str) -> u64 {
+    let Ok(n) = ({
+        let __vlt_t: Result<u64, _> = text.parse();
+        __vlt_t
+    }) else {
+        return 0;
+    };
+    n
+}
+
+fn main() {
+    println!(
+        "{}",
+        summed({
+            let __vlt_t: Vec<u64> = Vec::from([1, 2, 3]);
+            __vlt_t
+        })
+    );
+    println!(
+        "{} {}",
+        head_if_even(&[1, 4, 5]).unwrap_or(0),
+        head_if_even(&[]).unwrap_or(0)
+    );
+    println!(
+        "{} {} {}",
+        labelled(Some(20)),
+        labelled(Some(2)),
+        labelled(None)
+    );
+    println!("{} {}", parsed("41"), parsed("nope"));
+    ();
+}

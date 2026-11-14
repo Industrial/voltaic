@@ -1066,6 +1066,58 @@ reworking `clause`'s indent bookkeeping and giving the emitter a place to put
 `wheres` on a `Guarded` body, with its own gate surface, and §5.7's nesting needs
 none of it. It is recorded for whoever wants it rather than folded into this row.
 
+### 10.31 §5.6's `else` tail, and the second specification defect found the same way
+
+§5.7 names the replacement for `guard … else` as *"a binding with an `else`
+tail"*, pointing at §5.6. That construct did not exist either, so the deletion
+§5.7 unblocked was still blocked one keyword further on. It exists now:
+`Binding` carries `r#otherwise : Option<Block>`, `else_tail` parses it,
+`control.vlt` lowers it to Rust's `let … else`, `else_tail` is in `grammar.js`
+with two corpus cases, and `examples/else_tail.vlt` witnesses four shapes.
+
+Three things it needed beyond the obvious, each found by running a program:
+
+- **The inline tail cannot go through `parse_expr`.** §5.6 says *"`break` is an
+  expression of type `!` … so it is a legal `else` arm and the two constructs
+  compose without a rule saying they may"* — true of the language, and silent
+  about this parser, where `break` and `continue` come from `control_flow` and
+  `return` from `stmt`'s own branch. `else break` — §5.6's own example — does not
+  parse until the tail asks all three. That is the subsection being right about
+  the language and incomplete about the implementation, which is the ordinary
+  case and a defect in neither.
+- **A binding's pattern had to become refutable.** It never was, because
+  `guard … is p else …` was the refutable form; with the keyword gone the tail has
+  to carry refutability or the replacement cannot express what it replaces.
+  Admitted exactly where an `else` tail follows — `reaches_an_else_tail` — so
+  `Some v` with no tail is still not a binding and nothing that parsed before
+  parses differently.
+- **A multi-statement tail cannot be inlined.** `inline_body` joins with `\n`
+  after stripping the pad, so inlining two statements puts the second at the wrong
+  indentation. The formatter inlines a one-statement tail (§5.6's spelling, and
+  the call `two_armed` already makes for a two-armed ladder) and keeps the block
+  otherwise.
+
+**§5.6's example was wrong, and in the same way §5.7's nesting rule was.** It read
+`ch = self.peek else break`, with a plain name — which parses, emits
+`let ch = self.peek() else { break; };`, and draws rustc's *"unreachable `else`
+clause"*, because a name matches everything and the tail can never run. The
+pattern has to be a constructor for the construct to do anything, so the example
+is now `Some ch = self.peek else break`.
+
+That is **two specification defects in two subsections, both found by writing the
+program and neither findable by reading**. §5.7's was a nesting the parser rejects;
+§5.6's parses and compiles and is merely pointless. The second is the worse kind: a
+gate that only checks programs compile would have passed it, and `voltaic check`
+reported it as a *warning*, which is exactly what §19's charter promises and
+exactly what a green build swallows.
+
+The general rule, which §10.30 stated for grammars and which is wider than that:
+**a specification is a claim about a language, and the cheapest way to check a
+claim is to run it.** Both subsections were written in the same sitting, by the
+same reading, and both were wrong about the construct they introduced. What
+separated them was not care — it was `examples/ladder.vlt` and
+`examples/else_tail.vlt`.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

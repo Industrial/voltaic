@@ -1,6 +1,7 @@
 import crate::ParseError
 import crate::block::check_callback_tails
 import crate::block::condition
+import crate::block::control_flow
 import crate::block::ladder_condition
 import crate::block::stmt
 import crate::datatype::data_decl
@@ -427,7 +428,31 @@ instance (Parser 'a)
       None
     (.expect (&TokenKind::Eq) "expected `=` in a binding" self)?
     value = (.value_or_ladder self)?
-    Ok $ Some $ Binding { pattern = bound, ty, value, is_mut, span = (start, (.prev_span self).1) }
+    fallback = (.else_tail self)?
+    Ok $ Some $ Binding { pattern = bound, ty, value, is_mut, r#otherwise = fallback, span = (start, (.prev_span self).1) }
+  export(crate) else_tail : &mut self -> Result<Option<Block>, ParseError>
+  else_tail self =
+    if !.check (&TokenKind::Kw Keyword::Else) self
+      return Ok None
+    .advance self
+    if .check (&TokenKind::Newline) self
+      return .map Some (.statement_block "expected an indented `else` body after the binding" self)
+    start = (.peek_span self).0
+    if .check (&TokenKind::Kw Keyword::Return) self
+      .advance self
+      value = if .at_statement_end self
+        None
+      else
+        Some $ Box::new (parse_expr self 0)?
+      return Ok (Some (.one_statement (Expr::Return { value, span = (start, (.prev_span self).1) }) start self))
+    if (control_flow self)? is Some diverging
+      return Ok (Some (.one_statement diverging start self))
+    .map Some (.inline_body self)
+  one_statement : Expr -> usize -> &self -> Block
+  one_statement expr start self =
+    end = (.prev_span self).1
+    only = Stmt { expr, span = (start, end), leading = Vec::new (), trailing = None }
+    Block { stmts = vec! \-> only, span = (start, end) }
   export(crate) value_or_ladder : &mut self -> Result<Expr, ParseError>
   value_or_ladder self =
     if !.opens_a_guard_list self
@@ -447,9 +472,30 @@ instance (Parser 'a)
           _ -> false
       else
         false
-      opener && .reaches_a_binding_eq self
+      (opener || .reaches_an_else_tail self) && .reaches_a_binding_eq self
     TokenKind::LParen or TokenKind::LBracket -> .reaches_a_binding_eq self
     _ -> false
+  export(crate) reaches_an_else_tail : &self -> bool
+  reaches_an_else_tail self =
+    mut depth : i32 = 0
+    mut i = 0
+    mut past_eq = false
+    while .peek_at i self is Some tok
+      case &tok.kind of
+        TokenKind::Eq | depth == 0 ->
+          past_eq := true
+        TokenKind::Kw (Keyword::Else) | depth == 0 && past_eq ->
+          return true
+        TokenKind::LParen or TokenKind::LBracket or TokenKind::LBrace -> depth += 1
+        TokenKind::RParen or TokenKind::RBracket or TokenKind::RBrace ->
+          depth -= 1
+          if depth < 0
+            return false
+        TokenKind::Newline or TokenKind::Indent or TokenKind::Dedent or TokenKind::Eof ->
+          return false
+        _ -> ()
+      i += 1
+    false
   export(crate) reaches_a_binding_eq : &self -> bool
   reaches_a_binding_eq self =
     mut depth : i32 = 0

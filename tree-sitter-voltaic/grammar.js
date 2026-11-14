@@ -810,6 +810,7 @@ module.exports = grammar({
 				field(
 					"value",
 					choice(
+						seq($._expression, $.else_tail),
 						seq($._expression, $._newline),
 						$._block_expression,
 						// The one position a bare block stands in — plan 55 leaf 7, and
@@ -822,6 +823,22 @@ module.exports = grammar({
 						// so the grammar accepts the set the parser accepts.
 						$.ladder_expression,
 					),
+				),
+			),
+
+		// Doc 87 §5.6: the binding's `else` tail, which replaces `guard … is p
+		// else …` once §1.4 deletes the keyword. Inline or indented — `guard`'s was
+		// always indented and §5.6's example is inline, so both are admitted and
+		// the new spelling covers every use of the old one.
+		else_tail: ($) =>
+			seq(
+				"else",
+				choice(
+					$.break_statement,
+					$.continue_statement,
+					$.return_statement,
+					$.statement_block,
+					seq($._expression, $._newline),
 				),
 			),
 

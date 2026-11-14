@@ -27,7 +27,7 @@ instance Stmt
       _ -> None
     _ -> None
 
-export data Binding = Binding { export pattern : Pattern, export ty : Option<TypeExpr>, export value : Expr, export is_mut : bool, export span : Span }
+export data Binding = Binding { export pattern : Pattern, export ty : Option<TypeExpr>, export value : Expr, export is_mut : bool, export r#otherwise : Option<Block>, export span : Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data Condition = Condition { export operands : Vec<crate::ConditionOperand> }

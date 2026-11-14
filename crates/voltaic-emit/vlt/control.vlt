@@ -468,6 +468,12 @@ emit_stmt out stmt indent tail =
         .push_str (&ty) out
       .push_str " = " out
       .push_str (&emit_expr annotated.1 indent) out
+      if &b.r#otherwise is Some fallback
+        .push_str " else {\n" out
+        emit_stmts out (&fallback.stmts) (indent + RUST_INDENT) false
+        .unmark out
+        pad out indent
+        .push_str "}" out
       .push ';' out
     Expr::Draw { .. } ->
       unreachable! \-> "a draw arrow must be emitted by `emit_stmts`, which has the following statements its callback body needs"
