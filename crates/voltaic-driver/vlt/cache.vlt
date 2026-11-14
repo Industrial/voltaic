@@ -86,7 +86,6 @@ test "a reporter sees both outcomes"
 export data Silent = Silent
 
 instance CacheReporter Silent
-  report : &self -> &str -> bool -> ()
   report self _label _hit = ()
 
 test "accepts everything and says nothing"

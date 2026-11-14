@@ -57,13 +57,10 @@ markers =
   at_start (&mut found) "guard" "a `guard`" Class::Auto
   found
 
-add : &mut Vec<Marker> -> &str -> &str -> Class -> ()
 add into needle construct kind = at into needle construct kind Position::Anywhere
 
-at_end : &mut Vec<Marker> -> &str -> &str -> Class -> ()
 at_end into needle construct kind = at into needle construct kind Position::AtEnd
 
-at_start : &mut Vec<Marker> -> &str -> &str -> Class -> ()
 at_start into needle construct kind = at into needle construct kind Position::AtStart
 
 at : &mut Vec<Marker> -> &str -> &str -> Class -> Position -> ()

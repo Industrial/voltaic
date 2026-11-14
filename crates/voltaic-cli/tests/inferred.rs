@@ -198,14 +198,25 @@ fn the_compared_set_has_not_shrunk() {
     .iter()
     .map(|p| verify(p))
     .fold((0, 0), |(n, z), (c, _)| (n + c, z));
+  // **Raised 2026-11-14, and the staleness is the point.** The floors were 231
+  // and 934; the actual sets had reached 270 and 1,024 as later rows added
+  // definitions. A floor 86 below the real count is a ratchet that has stopped
+  // ratcheting: 86 of the compiler's signatures could have vanished and this
+  // test would still have passed, which is exactly the failure mode its own
+  // message names.
+  //
+  // A floor only holds if it is maintained, so it is now set to the measured
+  // value — 1,020 after row 99 wave 1's deletion half removed the **four**
+  // signatures inference can actually supply (`signature_pass.rs`). The next
+  // removal has to come here and say so.
   assert!(
-    examples >= 231,
-    "the examples compared 231 signatures when this floor was set; now {examples}. A \
+    examples >= 270,
+    "the examples compared 270 signatures when this floor was set; now {examples}. A \
      *smaller* set passing is the failure mode, not a success"
   );
   assert!(
-    compiler >= 934,
-    "the compiler compared 934 signatures when this floor was set; now {compiler}"
+    compiler >= 1020,
+    "the compiler compared 1,020 signatures when this floor was set; now {compiler}"
   );
 }
 
