@@ -1,0 +1,105 @@
+import crate::constraint::Constraint
+import crate::constraint::Obligation
+import crate::provenance::Provenance
+import crate::reason::Reason
+import crate::ty::Ty
+import crate::variable::Variable
+import voltaic_ast::Span
+
+export data Store = Store { constraints : Vec<Constraint>, next : u32 }
+  deriving (Debug, Clone, Default)
+
+instance Store
+  export new : Self
+  new = Store { constraints = Vec::new (), next = 0 }
+
+  export fresh : &mut self -> Variable
+  fresh self =
+    v = Variable::new self.next
+    self.next += 1
+    v
+
+  export fresh_hole : &mut self -> Ty
+  fresh_hole self = Ty::hole (.fresh self)
+
+  export push : Obligation -> Provenance -> &mut self -> usize
+  push obligation provenance self =
+    at = .len self.constraints
+    self.constraints |> .push (Constraint::new obligation provenance)
+    at
+
+  export require : Obligation -> Span -> Reason -> &mut self -> usize
+  require obligation span reason self = .push obligation (Provenance::at span reason) self
+
+  export require_from : usize -> Obligation -> Span -> Reason -> &mut self -> usize
+  require_from parent obligation span reason self = .push obligation (Provenance::from parent span reason) self
+
+  export len : &self -> usize
+  len self = .len self.constraints
+
+  export is_empty : &self -> bool
+  is_empty self = .is_empty self.constraints
+
+  export variables : &self -> u32
+  variables self = self.next
+
+  export at : usize -> &self -> Option<&Constraint>
+  at index self = .get index self.constraints
+
+  export all : &self -> &[Constraint]
+  all self = .as_slice self.constraints
+
+  export chain : usize -> &self -> Vec<Provenance>
+  chain index self =
+    mut walked = Vec::new ()
+    mut cursor = Some index
+    while cursor is Some i
+      if .get i self.constraints is Some c
+        walked |> .push c.provenance
+        cursor := c.provenance.derived_from
+      else
+        cursor := None
+    walked
+
+test "a fresh store is empty and hands out variables from zero"
+  mut s = Store::new ()
+  assert! \-> .is_empty s
+  assert_eq! \-> .fresh s \-> Variable::new 0
+  assert_eq! \-> .fresh s \-> Variable::new 1
+  assert_eq! \-> .variables s \-> 2
+
+test "pushing returns the index the constraint landed at"
+  mut s = Store::new ()
+  first = .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
+  second = .require (Obligation::Unify { left = Ty::named "bool", right = Ty::named "bool" }) (4, 8) Reason::GuardCondition s
+  assert_eq! \-> first \-> 0
+  assert_eq! \-> second \-> 1
+  assert_eq! \-> .len s \-> 2
+
+test "every constraint in the store carries a span and a reason"
+  mut s = Store::new ()
+  .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
+  .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (7, 10) Reason::FieldAccess s
+  for c in .all s
+    assert! \-> c.provenance.span.1 >= c.provenance.span.0 \-> "#{c:?} has no span"
+    assert! \-> !.is_empty (.label c.provenance.reason) \-> "#{c:?} has no reason"
+
+test "a derived constraint's chain walks back to the root"
+  mut s = Store::new ()
+  root = .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
+  middle = .require_from root (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (4, 7) Reason::EquationBody s
+  leaf = .require_from middle (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (8, 11) Reason::ReturnPosition s
+  walked = .chain leaf s
+  assert_eq! \-> .len walked \-> 3
+  assert_eq! \-> walked[0].reason \-> Reason::ReturnPosition
+  assert_eq! \-> walked[2].reason \-> Reason::LiteralKind
+
+test "a root constraint's chain is one long"
+  mut s = Store::new ()
+  root = .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
+  assert_eq! \-> .len (.chain root s) \-> 1
+
+test "a fresh hole uses the next variable"
+  mut s = Store::new ()
+  assert_eq! \-> .fresh_hole s \-> Ty::hole (Variable::new 0)
+  assert_eq! \-> .variables s \-> 1

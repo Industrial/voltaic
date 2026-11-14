@@ -1,0 +1,28 @@
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export data Variable = Variable u32
+  deriving (Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)
+
+instance Variable
+  export new : u32 -> Self
+  new index = Variable index
+
+  export index : self -> u32
+  index self = self.0
+
+instance Display Variable
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f = write! \-> f \-> "?#{self.0}"
+
+test "a variable prints as a question mark and its index"
+  assert_eq! \-> .to_string (Variable::new 3) \-> "?3"
+
+test "a variable reports the index it was made with"
+  assert_eq! \-> .index (Variable::new 7) \-> 7
+
+test "variables order by index"
+  mut vs = vec! \-> Variable::new 2 \-> Variable::new 0 \-> Variable::new 1
+  .sort vs
+  assert_eq! \-> vs \-> vec! \-> Variable::new 0 \-> Variable::new 1 \-> Variable::new 2

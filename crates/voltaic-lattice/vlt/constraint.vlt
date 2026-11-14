@@ -1,0 +1,57 @@
+import crate::provenance::Provenance
+import crate::ty::Ty
+import crate::variable::Variable
+
+export data Obligation
+  = Unify { left : Ty, right : Ty }
+  | Member { recv : Ty, name : String, result : Ty }
+  | Callable { callee : Ty, args : Vec<Ty>, result : Ty }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export data Constraint = Constraint { export obligation : Obligation, export provenance : Provenance }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+instance Constraint
+  export new : Obligation -> Provenance -> Self
+  new obligation provenance = Constraint { obligation, provenance }
+
+  export holes : &self -> Vec<Variable>
+  holes self =
+    mut found = Vec::new ()
+    for t in .types self
+      for v in .holes t
+        if !.contains (&v) found
+          found |> .push v
+    found
+
+  export types : &self -> Vec<&Ty>
+  types self = case &self.obligation of
+    Obligation::Unify { left, right, .. } -> vec! \-> left \-> right
+    Obligation::Member { recv, result, .. } -> vec! \-> recv \-> result
+    Obligation::Callable { callee, args, result, .. } ->
+      mut all = vec! \-> callee
+      for a in .iter args
+        all |> .push a
+      all |> .push result
+      all
+
+test "a constraint always carries its provenance"
+  c = Constraint::new (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (Provenance::at (0, 3) crate::reason::Reason::LiteralKind)
+  assert_eq! \-> c.provenance.span \-> (0, 3)
+  assert_eq! \-> c.provenance.reason \-> crate::reason::Reason::LiteralKind
+
+test "a unify constraint reports the holes on both sides"
+  c = Constraint::new (Obligation::Unify { left = Ty::hole (Variable::new 0), right = Ty::hole (Variable::new 1) }) (Provenance::at (0, 1) crate::reason::Reason::EquationBody)
+  assert_eq! \-> .holes c \-> vec! \-> Variable::new 0 \-> Variable::new 1
+
+test "a callable constraint reports holes from the callee, the arguments and the result"
+  c = Constraint::new (Obligation::Callable { callee = Ty::hole (Variable::new 0), args = vec! \-> Ty::hole (Variable::new 1), result = Ty::hole (Variable::new 2) }) (Provenance::at (0, 1) crate::reason::Reason::CallCallee)
+  assert_eq! \-> .holes c \-> vec! \-> Variable::new 0 \-> Variable::new 1 \-> Variable::new 2
+
+test "a member constraint reports the receiver's and the result's holes"
+  c = Constraint::new (Obligation::Member { recv = Ty::hole (Variable::new 4), name = .to_string "pos", result = Ty::hole (Variable::new 5) }) (Provenance::at (2, 6) crate::reason::Reason::FieldAccess)
+  assert_eq! \-> .holes c \-> vec! \-> Variable::new 4 \-> Variable::new 5
+
+test "a resolved constraint reports no holes"
+  c = Constraint::new (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (Provenance::at (0, 3) crate::reason::Reason::LiteralKind)
+  assert! \-> .is_empty (.holes c)

@@ -1,0 +1,94 @@
+import crate::variable::Variable
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export const ARROW : &str = "->"
+
+export data Ty
+  = Hole Variable
+  | Con { name : String, args : Vec<Ty> }
+  | Nil
+  deriving (Debug, Clone, PartialEq, Eq)
+
+instance Ty
+  export hole : Variable -> Self
+  hole v = Ty::Hole v
+
+  export named : &str -> Self
+  named name = Ty::Con { name = .to_string name, args = Vec::new () }
+
+  export applied : &str -> Vec<Ty> -> Self
+  applied name args = Ty::Con { name = .to_string name, args }
+
+  export arrow : Ty -> Ty -> Self
+  arrow from to = Ty::Con { name = .to_string ARROW, args = vec! \-> from \-> to }
+
+  export unit : Self
+  unit = Ty::Nil
+
+  export is_arrow : &self -> bool
+  is_arrow self = case self of
+    Ty::Con { name, args, .. } -> name == ARROW && .len args == 2
+    _ -> false
+
+  export is_resolved : &self -> bool
+  is_resolved self = case self of
+    Ty::Hole _ -> false
+    Ty::Con { args, .. } -> .all (\a -> .is_resolved a) (.iter args)
+    Ty::Nil -> true
+
+  export holes : &self -> Vec<Variable>
+  holes self =
+    mut found = Vec::new ()
+    .collect_holes (&mut found) self
+    found
+
+  collect_holes : &mut Vec<Variable> -> &self -> ()
+  collect_holes out self =
+    case self of
+      Ty::Hole v ->
+        if !.contains v out
+          out |> .push (*v)
+      Ty::Con { args, .. } ->
+        for a in .iter args
+          .collect_holes out a
+      Ty::Nil -> ()
+    ()
+
+instance Display Ty
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f = case self of
+    Ty::Hole v -> write! \-> f \-> "#{v}"
+    Ty::Nil -> write! \-> f \-> "()"
+    Ty::Con { name, args, .. } ->
+      if name == ARROW && .len args == 2
+        return write! \-> f \-> "#{args[0]} -> #{args[1]}"
+      if .is_empty args
+        return write! \-> f \-> "#{name}"
+      shown = args |> .iter |> .map (\a -> .to_string a) |> .collect : Vec<String>
+      write! \-> f \-> "#{name}<#{(.join ", " (.as_slice shown))}>"
+
+test "a nullary constructor prints as its name"
+  assert_eq! \-> .to_string (Ty::named "u64") \-> "u64"
+
+test "an applied constructor prints its arguments"
+  shown = .to_string (Ty::applied "Option" (vec! \-> Ty::named "char"))
+  assert_eq! \-> shown \-> "Option<char>"
+
+test "a function type is a constructor and prints with an arrow"
+  t = Ty::arrow (Ty::named "u64") (Ty::named "bool")
+  assert! \-> .is_arrow t
+  assert_eq! \-> .to_string t \-> "u64 -> bool"
+
+test "a constructor named something else is not an arrow"
+  assert! \-> !.is_arrow (Ty::applied "Vec" (vec! \-> Ty::named "u8"))
+
+test "a type with no holes is resolved"
+  assert! \-> .is_resolved (Ty::named "u64")
+  assert! \-> .is_resolved (Ty::unit ())
+  assert! \-> !.is_resolved (Ty::hole (Variable::new 0))
+
+test "holes are collected once each, in order"
+  t = Ty::arrow (Ty::hole (Variable::new 1)) (Ty::applied "Vec" (vec! \-> Ty::hole (Variable::new 1) \-> Ty::hole (Variable::new 0)))
+  assert_eq! \-> .holes t \-> vec! \-> Variable::new 1 \-> Variable::new 0

@@ -26,6 +26,9 @@ use support::ported;
 
 /// The crates plan 91 has rewritten. Each wave appends one.
 const REWRITTEN: &[&str] = &[
+  // Plan 94's crate was written comment-free from its first commit rather than
+  // rewritten into that shape, so it joins the list by construction.
+  "voltaic-lattice",
   "voltaic-diag",
   "voltaic-lexer",
   "voltaic-ast",

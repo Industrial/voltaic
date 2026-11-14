@@ -103,7 +103,7 @@ three.
 
 | # | Plan | Scope | Status | Depends on |
 |---|---|---|---|---|
-| 94 | The Lattice Crate | `voltaic-lattice`: the constraint store, the fixed-point driver, provenance, and rank-1 HM with row-polymorphic records. The `tests/solve/` corpus. | `planned` | 93 |
+| 94 | The Lattice Crate | `voltaic-lattice`: the constraint store, the fixed-point driver, provenance, and rank-1 HM with row-polymorphic records. The `tests/solve/` corpus. | `in-progress` — leaf 1 `done` 2026-11-14 | 93 |
 | 95 | Effect Rows | The seven-effect alphabet, the subset lattice, implicit propagation, `else` / `.must` / `~` discharge, effect variables. | `planned` | 94 |
 | 96 | Mode Inference | The three-element chain, use-site constraints, the least-fixed-point solve, lifetime emission, `@` ascription, `VLT0601`. | `planned` | 94, 95 |
 | 97 | Refinements | Predicate extraction, the QF_ALIA fragment, the solver interface and pin, the timeout-is-a-diagnostic policy, `tests/refine/`. | `planned` | 94 |

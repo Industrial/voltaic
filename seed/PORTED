@@ -12,6 +12,7 @@
 voltaic-diag 73
 voltaic-lexer 74
 voltaic-ast 68
+voltaic-lattice 94
 voltaic-parser 82
 voltaic-fmt 69
 voltaic-fuzz 75

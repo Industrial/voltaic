@@ -1,0 +1,25 @@
+import crate::reason::Reason
+import voltaic_ast::Span
+
+export data Provenance = Provenance { export span : Span, export reason : Reason, export derived_from : Option<usize> }
+  deriving (Debug, Clone, Copy, PartialEq, Eq)
+
+instance Provenance
+  export at : Span -> Reason -> Self
+  at span reason = Provenance { span, reason, derived_from = None }
+
+  export from : usize -> Span -> Reason -> Self
+  from parent span reason = Provenance { span, reason, derived_from = Some parent }
+
+  export is_root : &self -> bool
+  is_root self = .is_none self.derived_from
+
+test "a root provenance has no parent"
+  p = Provenance::at (0, 4) Reason::LiteralKind
+  assert! \-> .is_root p
+  assert_eq! \-> p.span \-> (0, 4)
+
+test "a derived provenance names the constraint it came from"
+  p = Provenance::from 7 (10, 14) Reason::FieldAccess
+  assert! \-> !.is_root p
+  assert_eq! \-> p.derived_from \-> Some 7

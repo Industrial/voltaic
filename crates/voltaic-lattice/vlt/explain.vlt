@@ -1,0 +1,44 @@
+import crate::constraint::Obligation
+import crate::store::Store
+
+export explain : usize -> &Store -> String
+explain index store =
+  walked = .chain index store
+  if .is_empty walked
+    return .to_string "no constraint at that index"
+  mut out = String::new ()
+  for pair in .enumerate (.iter walked)
+    out |> .push_str (&format! \-> "#{pair.0}: #{(.label pair.1.reason)} at #{pair.1.span.0}..#{pair.1.span.1}\n")
+  out
+
+export summarise : &Obligation -> String
+summarise obligation = case obligation of
+  Obligation::Unify { left, right, .. } -> format! \-> "#{left} must equal #{right}"
+  Obligation::Member { recv, name, result, .. } -> format! \-> "#{recv} must have `#{name}` of type #{result}"
+  Obligation::Callable { callee, args, result, .. } -> format! \-> "#{callee} must be callable with #{(.len args)} argument(s), returning #{result}"
+
+test "explaining an unknown index says so rather than panicking"
+  s = Store::new ()
+  assert! \-> .contains "no constraint" (explain 0 (&s))
+
+test "an explanation names one line per step, newest first"
+  mut s = Store::new ()
+  root = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
+  leaf = .require_from root (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (9, 12) crate::reason::Reason::ReturnPosition s
+  shown = explain leaf (&s)
+  lines = shown |> .lines |> .collect : Vec<&str>
+  assert_eq! \-> .len lines \-> 2
+  assert! \-> .contains "returned from here" lines[0] \-> "#{shown}"
+  assert! \-> .contains "literal" lines[1] \-> "#{shown}"
+
+test "a unify obligation summarises as an equality"
+  o = Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "bool" }
+  assert_eq! \-> summarise (&o) \-> "u64 must equal bool"
+
+test "a member obligation names the member"
+  o = Obligation::Member { recv = crate::ty::Ty::named "Cursor", name = .to_string "pos", result = crate::ty::Ty::named "usize" }
+  assert! \-> .contains "`pos`" (summarise (&o)) \-> "#{(summarise (&o))}"
+
+test "a callable obligation counts its arguments"
+  o = Obligation::Callable { callee = crate::ty::Ty::named "fib", args = vec! \-> crate::ty::Ty::named "u64", result = crate::ty::Ty::named "u64" }
+  assert! \-> .contains "1 argument" (summarise (&o)) \-> "#{(summarise (&o))}"

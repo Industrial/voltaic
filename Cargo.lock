@@ -1475,6 +1475,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "voltaic-lattice"
+version = "0.1.1"
+dependencies = [
+ "voltaic-ast",
+ "voltaic-diag",
+]
+
+[[package]]
 name = "voltaic-lexer"
 version = "0.1.1"
 dependencies = [

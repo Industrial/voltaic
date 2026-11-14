@@ -650,9 +650,27 @@ Generation 1 grades 8 Rust constructs `UNREACHABLE` in `docs/GRAMMAR.md`, each w
 fixture asserted to keep failing. Generation 2's effect on that list, predicted here
 and gated by plan 104:
 
+> **Corrected 2026-11-14, during plan 94 leaf 1, and the correction removes a row
+> from this table.** The first row below claimed or-patterns become *reachable* in
+> generation 2. **They are already reachable in generation 1, spelled `or`**:
+> `crates/voltaic-ast/vlt/expr.vlt` line 85 is a single `case` arm whose body serves
+> forty-odd patterns joined by `or`, and it lowers to Rust's `|` or-pattern with one
+> body. What generation 1 cannot do is spell it `|`, because `|` is the guard token in
+> that position.
+>
+> So the gap is **cosmetic, not expressive**, and `tests/unreachable/or_pattern.vlt`'s
+> own comment — *"What has no spelling is Rust's binding case, where one arm body
+> serves several patterns"* — is false. The fixture still fails, correctly, because it
+> tests the `|` spelling; only the prose around it was wrong.
+>
+> This is precisely the failure plan 46 measured — **eleven of sixteen apparent gaps
+> were the probe's own bug** — and precisely what `docs/102 - 104 - The Reference Docs
+> Rewrite.md` §1.2 says to expect of this table. Two of the three closures below
+> survive, not three. Row 104 regrades against fixtures rather than against this.
+
 | Construct | Generation 2 |
 |---|---|
-| `\|` or-patterns | **reachable** — patterns gain `\|`, which generation 1 could not add because `\|` was the guard token in the same position |
+| `\|` or-patterns | **already reachable in generation 1** as `or` — see the correction above. Generation 2 adds the `\|` *spelling*, which is a convenience and not a closure |
 | `as` casts | **reachable** — `x : u8` is an ascription and the solver knows whether it is a coercion or a cast |
 | `ref` / `ref mut` patterns | **reachable** — a pattern binding's mode is inferred like any other |
 | Macro definitions | still unreachable; venue: a `macro` construct is declined for this generation |
@@ -660,9 +678,10 @@ and gated by plan 104:
 | `extern "C" fn` export | still unreachable; the `rust` block is the answer |
 | `unsafe impl` / `unsafe trait` | still unreachable; the `rust` block is the answer |
 
-Three of eight close as a *consequence* of the solver rather than as features, which
-is clause 4 being satisfied by the reversal itself. The remaining five are unchanged
-and four of them have the same answer they always had: `rust`.
+**Two** of eight close as a *consequence* of the solver rather than as features —
+`as` casts and `ref` patterns — which is clause 4 being satisfied by the reversal
+itself. The third row was a miscount and the correction above has it. The remaining
+five are unchanged and four of them have the same answer they always had: `rust`.
 
 **This table is a prediction until plan 104 regrades `docs/GRAMMAR.md` against real
 fixtures.** Generation 1's plan 46 measured that of sixteen apparent gaps in a

@@ -1,0 +1,22 @@
+[package]
+name = "voltaic-lattice"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Lattice: the inference engine for the Voltaic compiler — types, effect rows, ownership modes and refinements."
+
+# `src/` is generated from `vlt/` and is `.gitignore`d, so cargo's git file
+# listing packages no Rust at all and the published crate is an empty shell.
+# An `include` switches cargo to a filesystem walk, which does pick the
+# generated tree up. See `docs/RELEASING.md`.
+include = ["src/**/*.rs", "vlt/**/*.vlt", "Cargo.toml"]
+
+[dependencies]
+voltaic-ast = { path = "../voltaic-ast", version = "0.1.1" }
+voltaic-diag = { path = "../voltaic-diag", version = "0.1.1" }
+
+# The five surface-fact allows — see the root manifest.
+[lints]
+workspace = true

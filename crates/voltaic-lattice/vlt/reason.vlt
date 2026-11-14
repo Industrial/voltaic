@@ -1,0 +1,44 @@
+export data Reason
+  = ParameterUse
+  | FieldAccess
+  | CallCallee
+  | CallArgument u32
+  | LiteralKind
+  | EquationBody
+  | GuardCondition
+  | ReturnPosition
+  | Ascribed
+  | ClassRequirement
+  | Discharged
+  | ElementOf
+  deriving (Debug, Clone, Copy, PartialEq, Eq, Hash)
+
+instance Reason
+  export label : self -> &'static str
+  label self = case self of
+    ParameterUse -> "a parameter is used here"
+    FieldAccess -> "a field is read here"
+    CallCallee -> "this is called"
+    CallArgument _ -> "passed as an argument here"
+    LiteralKind -> "this literal fixes the type"
+    EquationBody -> "an equation's body returns this"
+    GuardCondition -> "a guard must be a bool"
+    ReturnPosition -> "returned from here"
+    Ascribed -> "pinned by an ascription"
+    ClassRequirement -> "required by a class"
+    Discharged -> "an effect is discharged here"
+    ElementOf -> "an element of this collection"
+
+  export argument_index : self -> Option<u32>
+  argument_index self = case self of
+    CallArgument n -> Some n
+    _ -> None
+
+test "every reason has a label"
+  reasons = [ParameterUse, FieldAccess, CallCallee, CallArgument 0, LiteralKind, EquationBody, GuardCondition, ReturnPosition, Ascribed, ClassRequirement, Discharged, ElementOf]
+  for r in reasons
+    assert! \-> !.is_empty (.label r) \-> "#{r:?} has no label"
+
+test "only a call argument carries an index"
+  assert_eq! \-> .argument_index (CallArgument 2) \-> Some 2
+  assert_eq! \-> .argument_index ParameterUse \-> None

@@ -1,0 +1,25 @@
+# GENERATED from this crate's Cargo.toml — see .tmp/gen_moon.py in the commit
+# that introduced it, and crates/voltaic-cli/tests/moon_project_graph.rs which
+# fails if it drifts. Tasks are inherited from .moon/tasks/tag-crate.yml via the
+# `crate` tag.
+#
+# No `dependsOn`: moon's rust toolchain reads the dependency edges out of
+# Cargo.toml itself, so repeating them here would be a second copy of the graph
+# free to drift from the first.
+id: 'voltaic-lattice'
+language: 'rust'
+layer: 'library'
+tags:
+  - 'crate'
+fileGroups:
+  # The *transitive* dependency set, which is what actually makes moon's
+  # per-crate caching correct — `deps` only sets the order tasks run in. See
+  # AGENTS.md, and moon_project_graph.rs which fails if this drifts from
+  # Cargo.toml.
+  dependency_sources:
+    - '/crates/voltaic-ast/src/**/*'
+    - '/crates/voltaic-ast/vlt/**/*'
+    - '/crates/voltaic-diag/src/**/*'
+    - '/crates/voltaic-diag/vlt/**/*'
+    - '/crates/voltaic-lexer/src/**/*'
+    - '/crates/voltaic-lexer/vlt/**/*'

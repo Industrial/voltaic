@@ -120,6 +120,7 @@ crates/voltaic-emit/src/
 crates/voltaic-driver/src/
 crates/voltaic-cli/src/
 crates/voltaic-seed/src/
+crates/voltaic-lattice/src/
 
 # Plan 49, amended by plan 71. `editors/vscode/` is a VSCode extension, so an
 # `npm install` for `vscode-languageclient` lands here. Plan 49 ignored the

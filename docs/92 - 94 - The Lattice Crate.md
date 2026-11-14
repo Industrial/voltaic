@@ -230,6 +230,85 @@ rule bites, and it is answered there.
 
 ## 10. Result
 
-*To be filled after execution. In particular: every definition where the inferred
-judgement differs from generation 1's hand-written one, with the reason. That list is
-the most informative thing this plan can produce.*
+In progress. Leaf 1 shipped 2026-11-14: the crate, the constraint store, provenance,
+variables, a type representation and `explain`. 38 tests — 29 inline, 9 integration.
+Gate green at 28 moon tasks and 949 workspace tests, with **no output diff**, per §5.7.
+
+### 10.1 §1.1's layout is impossible as written, and the reason is a keyword
+
+The layout names `type/` for the type engine. **`type` is a Voltaic keyword, and
+`module <keyword>` cannot parse** — `AGENTS.md` records it: *"`class`, `data`, `test`,
+`type` and `errors` are all keywords, so a module may not be named after one."* The
+engine's directory is therefore `unify/`, which is a domain concept rather than a
+bucket and so also satisfies doc 06.
+
+The same trap caught a *member* name. `Variable::of` would not parse — `of` is the
+keyword in `case x of` — and the diagnostic was exactly right: **`VLT0103`: expected a
+name after `::`**. It is `Variable::new`.
+
+Two keyword collisions in one leaf, both in names that read as obviously fine. Worth
+checking the 74-keyword list before naming anything in generation 1's surface, which
+is the surface rows 94–101 are written in.
+
+### 10.2 Leaf 1's real deliverable is a type, not an assertion
+
+§1.3 asks for provenance on every constraint and §5.3 states it as an assertion. The
+stronger form shipped instead: **`Constraint::new` takes a `Provenance`**, so there is
+no way to put a constraint in the store without a span and a reason. The integration
+test that names this —
+`a_constraint_cannot_exist_without_provenance` — would not *compile* if the field were
+optional, which is a better guarantee than a test that could be deleted.
+
+### 10.3 `Fun` as a separate variant was wrong
+
+The first `Ty` had `Hole | Con | Fun | Nil`, with `Fun { from : Box<Ty>, to : Box<Ty> }`.
+Every pattern match on it then had to destructure through a `Box`, which is friction in
+every arm for no gain. Replaced by a uniform `Con { name = "->", args = [from, to] }`,
+which is the standard HM representation, removes `Box` from the whole file, and makes
+`is_arrow` a one-line predicate. `Ty::arrow` is unchanged at the call site.
+
+### 10.4 Three surface frictions, each costing a round trip
+
+Recorded because rows 95–101 are written in the same surface and will hit them again:
+
+- **`.index *self` is a multiplication section.** It lowered to
+  `|__vlt_1| __vlt_1.index() * self` — `*` was read as binary multiply, not deref.
+  `AGENTS.md` documents the shape (*"`(* 2)` is a dereference and unary always wins"*)
+  and this is the other direction of it. Use the field, or parenthesise.
+- **A receiver is passed unborrowed.** `.is_empty (&s)` generates `(&s).is_empty()`,
+  which is `clippy::needless_borrow` under `-D warnings`. The corpus convention is
+  `.is_empty s` and letting autoref do it; a borrow is written only where the
+  *parameter* is a reference.
+- **An import used only in a `test` block is an unused import in the lib build**,
+  because the tests land in a separate module. Qualify at the use site instead.
+
+### 10.5 Or-patterns are not a generation-2 feature, and two documents said they were
+
+Reading `crates/voltaic-ast/vlt/expr.vlt` for the AST's shape turned up line 85: one
+`case` arm whose body serves forty-odd patterns joined by **`or`**, lowering to Rust's
+`|` or-pattern. So generation 1 has or-patterns; what it lacks is the `|` *spelling*.
+
+`docs/86 - Voltaic 2.md` §10 claimed three of eight unreachable constructs close in
+generation 2. It is **two** — `as` casts and `ref` patterns. Both documents are
+corrected in place, and `tests/unreachable/or_pattern.vlt`'s own comment is wrong on
+the same point (row 104 owns it, since the fixture still correctly fails on `|`).
+
+This is plan 46's finding recurring — *eleven of sixteen apparent gaps were the probe's
+own bug* — and it is what `docs/102 - 104` §1.2 predicted of that table. It was found by
+reading the corpus for an unrelated reason, which is the argument for regrading against
+fixtures rather than against prose.
+
+### 10.6 Leaves outstanding
+
+| Leaf | Status |
+|---|---|
+| 1 — the constraint store | `done` |
+| 2 — the fixed-point driver | outstanding |
+| 3 — unification, generalisation, instantiation | outstanding |
+| 4 — `voltaic sig` | outstanding |
+| 5 — `tests/solve/` | outstanding |
+| 6 — the fuzz target | outstanding |
+
+Committed per leaf rather than per plan: each leaf has its own gate, and a single
+commit containing an inference engine is not reviewable. The register row stays
+`in-progress` across them, as row 99 §1.1 plans for its nine waves.

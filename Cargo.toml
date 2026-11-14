@@ -39,6 +39,11 @@ members = [
   # Context Protocol, stdio only. In the workspace, unlike `fuzz/`, because it
   # builds on stable and its tests belong in the ordinary gate.
   "crates/voltaic-mcp",
+  # Plan 94 (`docs/92 - 94 - The Lattice Crate.md`) — Lattice, the inference
+  # engine. One crate and not four, because the type, row, mode and refinement
+  # engines solve *together* and splitting them would make the dependency graph
+  # a cycle (doc 88 §1.2).
+  "crates/voltaic-lattice",
 ]
 # `.tmp/` is the gitignored scratch area. Excluded so a throwaway crate there
 # — plan 01 leaf 4's LALRPOP bake-off arm, for instance — cannot be picked up

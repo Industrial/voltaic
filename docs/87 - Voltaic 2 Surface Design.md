@@ -126,13 +126,32 @@ is_space _ = false
 ```
 
 Generation 1 grades `|` or-patterns `UNREACHABLE` and holds
-`tests/unreachable/or_pattern.sdx` asserted to keep failing. The reason is positional:
+`tests/unreachable/or_pattern.vlt` asserted to keep failing. The reason is positional:
 `|` was the guard token in the same syntactic slot, and without types the parser
 could not tell a second pattern from a guard expression. With the solver present a
 pattern position is known to be a pattern position, so `|` inside a pattern and `|`
 starting a guard are unambiguous.
 
-Clause 4 (reachability-positive) is satisfied by a consequence rather than a feature.
+> **Corrected 2026-11-14, during plan 94 leaf 1.** This section read as though
+> or-patterns were a generation-2 *addition*. They are not. **Generation 1 already has
+> them, spelled `or`** — `crates/voltaic-ast/vlt/expr.vlt` line 85 is a single `case`
+> arm whose body serves forty-odd patterns joined by `or`, and it lowers to Rust's `|`
+> or-pattern with one body. `or` is in generation 1's keyword list for exactly this.
+>
+> So what this row delivers is the **`|` spelling** — the same construct, written the
+> way a Rust reader expects. That is still worth having, because plan 93 §10.2 measured
+> what its absence costs: `Some "vlt" | Some "sdx" ->` silently became
+> `Some("vlt") if Some("sdx")`, and only a type error caught it. A spelling that looks
+> available and means something else is worse than one that is plainly absent.
+>
+> `docs/86 - Voltaic 2.md` §10 carries the same correction and drops its closure count
+> from three to two. `tests/unreachable/or_pattern.vlt`'s own comment is wrong on the
+> same point — it claims *"what has no spelling is Rust's binding case, where one arm
+> body serves several patterns"* — and row 104 owns it.
+
+Clause 4 (reachability-positive) is therefore **not** what admits this row; clause 1
+is. The construct is reachable either way, and what the solver buys is that the obvious
+spelling stops meaning something else.
 
 ### 2.4 Local bindings and `where`
 
