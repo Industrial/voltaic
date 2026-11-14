@@ -438,92 +438,42 @@ fn build(source: &Path, tag: &str) -> Case {
   Case { rust, vrs, dir }
 }
 
-/// Whether the accepted surface has moved ahead of the tree's own source.
+/// The accepted surface and the tree's source are the same generation.
 ///
-/// # The problem this exists for
+/// # What was here, and why it is gone
 ///
-/// Doc 97 §2.2 says the surface the compiler is *written in* and the surface it
-/// *accepts* diverge for row 99's duration, and that the divergence is
-/// deliberate. Row 99 wave 1 found the consequence §2.2 does not name: **every
-/// gate that parses the compiler's own source with the freshly built compiler
-/// breaks the moment the accepted surface changes** — `inferred.rs`,
-/// `no_comments.rs`, `port.rs`, `directory_structure.rs`, `line_cap.rs`,
-/// `construct_coverage.rs`, `grammar_inventory.rs`, `classify_corpus.rs`.
+/// `mid_turn()` and a `the_surface_has_not_moved_yet` assertion that `ACCEPTS`
+/// was `"g1"`. Doc 97 §2.2 predicted that a mixed-generation corpus would break
+/// the five gates that parse the compiler's own source, so the mechanism let
+/// them **defer** while the surface ran ahead, and row 103 was to re-arm them
+/// crate by crate.
 ///
-/// The tree keeps *building*, because `bootstrap.sh` generates `src/` with
-/// `seed/voltaic-g1.wasm`, which is generation 1 and stays generation 1. The
-/// gates are what break, because they use the tree's compiler to read
-/// generation-1 source.
+/// **The cost never came due.** Row 103 leaf 6 measured it at the first crate:
+/// with one generation-2 crate and thirteen generation-1 ones, all five gates
+/// passed, because the generation-2 spelling is **additive** — `x.f ()` and
+/// `x |> .f` are both live, `name Type` and `name : Type` are both live. So the
+/// whole migration ran with the full gate armed and `ACCEPTS` untouched.
 ///
-/// # Why deferring, and not a second parser
-///
-/// `AGENTS.md` records the project's answer to this class of problem: rustc pays
-/// for it with `cfg(bootstrap)` double implementations and Go with a version
-/// chain, and *"both are expensive because their seeds are releases"*. This
-/// seed is a build artifact, so the recorded choice is two commands rather than
-/// a dual implementation. A generation-switched parser would be exactly the
-/// dual implementation that decision refused.
-///
-/// So the gates **defer** while the surface is ahead, and row 103 re-arms them
-/// as each crate crosses. That is a real loss of coverage for the duration, and
-/// it is the loss §2.2 already accepted.
-///
-/// # It was never needed, and row 103 leaf 6 measured that
-///
-/// §2.2 predicted that a mixed-generation corpus would break the gates below.
-/// **It does not.** Leaf 6 migrated `voltaic-diag` to generation 2, leaving
-/// `ACCEPTS` at `"g1"`, and ran the whole suite against a corpus of one
-/// generation-2 crate and thirteen generation-1 ones: all five gates passed,
-/// and so did the other 1,369 tests.
-///
-/// The reason is that the generation-2 spelling is **additive**. The lexer and
-/// parser accept both — `x.f ()` and `x |> .f` are both live, `name Type` and
-/// `name : Type` are both live — so a gate that parses the compiler's own source
-/// has nothing to object to. §2.2's accepted cost is a cost that did not come
-/// due, and the whole migration runs with the full gate armed.
-///
-/// This is kept rather than deleted because it costs one branch and it is the
-/// escape hatch if some later surface change is *not* additive. The skips are
-/// inert, and a flip of `ACCEPTS` is still a reviewed act.
-///
-/// # Why this is safe today
-///
-/// It returns `false` until someone changes `ACCEPTS` in
-/// `crates/voltaic-lexer/vlt/generation.vlt`, and
-/// [`the_surface_has_not_moved_yet`] asserts that it is `"g1"` — so flipping it
-/// turns a test red and demands the review, rather than silently switching five
-/// gates off. Every skip below it is inert until that one constant changes.
-pub fn mid_turn() -> bool {
-  voltaic_lexer::ACCEPTS != "g1" && generations().iter().any(|(_, _, g)| g == "g1")
-}
-
-/// The one constant that decides it, asserted so a flip is deliberate.
-///
-/// This is not a prediction that the surface will not move. It is the thing that
-/// makes moving it a *reviewed* act: the diff that changes `ACCEPTS` also turns
-/// this red, and whoever is looking at it has to decide that deferring five
-/// gates is what they meant.
-///
-/// **Five, not eight.** This comment and the message below both said eight, and
-/// there are five `mid_turn()` guards in the tree:
-/// `classify_corpus::{the_whole_corpus_classifies, every_file_is_counted_exactly_once,
-/// no_file_holding_control_flow_classifies_auto}` and
-/// `inferred::{every_written_signature_in_the_compiler_is_the_inferred_one,
-/// the_compared_set_has_not_shrunk}`. Counted while row 103 leaf 6 was deciding
-/// whether flipping `ACCEPTS` was worth it — and the answer turned out to be
-/// that it is not needed at all, per [`mid_turn`].
+/// It is removed rather than kept as an escape hatch, which was the earlier
+/// plan, because after row 102 §3.1 it **cannot fire**: `mid_turn()` required a
+/// `g1` line in `seed/GENERATION`, and [`generations`] now rejects one outright —
+/// `g1`'s blob is gone, so a line naming it would send `bootstrap.sh` at a file
+/// that is not there. A guard whose condition is unreachable is worse than no
+/// guard: it reads as protection.
 #[test]
-fn the_surface_has_not_moved_yet() {
+fn the_accepted_surface_matches_the_trees_source() {
   assert_eq!(
     voltaic_lexer::ACCEPTS,
-    "g1",
-    "`ACCEPTS` changed, so `mid_turn()` is now true and five gates that parse the \
-     compiler's own source have begun deferring. Row 103 leaf 6 measured that a \
-     mixed corpus does **not** need this — the generation-2 spelling is additive \
-     and all five pass without it — so flipping this is probably not what you \
-     want. See `support::mid_turn`."
+    "g2",
+    "`ACCEPTS` names the generation the lexer's surface accepts, and every \
+     `seed/GENERATION` line reads `g2` — so these must agree or one of them is \
+     stale"
   );
-  assert!(!mid_turn(), "the turn has started; see the message above");
+  let generations: Vec<String> = generations().into_iter().map(|(_, _, g)| g).collect();
+  assert!(
+    generations.iter().all(|g| g == voltaic_lexer::ACCEPTS),
+    "every crate should be written in the accepted generation; got {generations:?}"
+  );
 }
 
 /// The marker has to name a real generation, or `bootstrap.sh` would dispatch to

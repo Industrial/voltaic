@@ -1,4 +1,4 @@
-export const ACCEPTS : &str = "g1"
+export const ACCEPTS : &str = "g2"
 
 export const GENERATIONS : &[&str] = &["g1", "g2"]
 
@@ -15,3 +15,9 @@ test "nothing else is a generation"
 
 test "there are exactly two generations, because a third is a decision"
   assert_eq! \-> .len GENERATIONS \-> 2
+
+test "the accepted generation is the one the tree is written in"
+  assert_eq! \-> ACCEPTS \-> "g2"
+
+test "g1 is still a generation, because a retired blob is not a forgotten name"
+  assert! \-> is_generation "g1"
