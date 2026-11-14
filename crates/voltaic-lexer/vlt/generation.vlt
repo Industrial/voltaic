@@ -1,0 +1,17 @@
+export const ACCEPTS : &str = "g1"
+
+export const GENERATIONS : &[&str] = &["g1", "g2"]
+
+export is_generation : &str -> bool
+is_generation named = .contains (&named) GENERATIONS
+
+test "the accepted generation is one of the two"
+  assert! \-> is_generation ACCEPTS
+
+test "nothing else is a generation"
+  assert! \-> !is_generation "g0"
+  assert! \-> !is_generation ""
+  assert! \-> !is_generation "G1"
+
+test "there are exactly two generations, because a third is a decision"
+  assert_eq! \-> .len GENERATIONS \-> 2

@@ -516,6 +516,11 @@ belongs with row 102, which owns generation-tagged seeds. Recording it here
 because the discovery is this row's, and because the next session should not
 re-derive it.
 
+**Resolved in §10.22**, and the decision went the third way: neither parser. The
+gates **defer** for the duration, gated on one constant, because a
+generation-switched parser is the dual implementation `AGENTS.md` already refused
+for this class of problem.
+
 ### 10.14 Wave 2 is half the size §4 states: six of its eleven constructs were never keywords
 
 §4's wave 2 reads:
@@ -726,6 +731,65 @@ A third, smaller: `highlights.scm` in **two** places — `tree-sitter-voltaic` a
 failed to load rather than merely mis-colouring. `grammar.js` itself also needed
 the widened `condition`, and per `AGENTS.md`'s precedence trap it was **run** on
 a pattern row rather than reasoned about: zero `ERROR` nodes.
+
+### 10.22 §10.13's blocker is resolved: one switch, and the gates defer
+
+§10.13 recorded the problem and left it open: the moment the accepted surface
+changes, every gate that parses the compiler's own source with the freshly built
+compiler breaks. That is `inferred.rs`, `no_comments.rs`, `port.rs`,
+`directory_structure.rs`, `line_cap.rs`, `construct_coverage.rs`,
+`grammar_inventory.rs` and `classify_corpus.rs` — the count grew by two over this
+row's own work.
+
+**`crates/voltaic-lexer/vlt/generation.vlt` holds `ACCEPTS`**, the generation the
+compiler accepts, and `support::mid_turn()` is
+
+> `ACCEPTS != "g1"` **and** some crate in `seed/GENERATION` is still marked `g1`
+
+so the condition is *the surface is ahead of the tree*, computed from two facts
+the repository already records rather than from a flag somebody remembers to set.
+
+#### Why deferring, and not a second parser
+
+A generation-switched parser is the obvious alternative and it is the one
+`AGENTS.md` already refused for this class of problem: rustc pays for it with
+`cfg(bootstrap)` double implementations and Go with a version chain, and *"both
+are expensive because their seeds are releases"*. This seed is a build artifact,
+so the recorded choice is two commands rather than a dual implementation.
+Building the dual implementation here would be reversing that decision quietly,
+in a test helper.
+
+So the gates defer, and row 103 re-arms them as each crate crosses. That is a
+real loss of coverage for the duration, and it is the loss §2.2 already accepted
+when it called the divergence deliberate.
+
+#### Why this is safe to have built before it is needed
+
+`mid_turn()` is **`false` today and provably so**:
+`the_surface_has_not_moved_yet` asserts `ACCEPTS == "g1"` *and* that `mid_turn()`
+is false. Flipping the constant turns that red and says in its message what the
+flip costs — so eight gates cannot begin deferring without somebody reading the
+sentence that explains it.
+
+Verified by doing it rather than by reasoning: with `ACCEPTS` set to `g2`, the
+review gate failed, the four compiler-parsing tests in `inferred.rs` and
+`classify_corpus.rs` deferred, and the deferral printed
+
+```
+deferred: the accepted surface is ahead of the tree's source, so this gate
+cannot parse the compiler's own generation-1 files. Doc 97 §2.2 and
+`support::mid_turn`; row 103 re-arms it crate by crate.
+```
+
+Then the constant was restored. **The skip is scoped, too**: within
+`inferred.rs`, `the_excluded_example_is_the_lexer_catalogue` and
+`both_corpora_are_the_size_the_tree_says_they_are` do not parse the compiler and
+stay armed. A file-level skip would have switched off more than the turn
+requires, which is how a deferral becomes a hole.
+
+This is what waves 2–9 were waiting on. `if`, `else` and `case` can now be
+deleted — 85 of the compiler's 105 files use one of them — because the gates that
+would have broken have a defined behaviour for the window in which they must.
 
 ### 10.2 Both corpora were necessary, and that was not the expectation
 

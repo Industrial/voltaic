@@ -1,4 +1,5 @@
 module cursor
+module generation
 module keyword
 module layout
 module lex
@@ -6,6 +7,9 @@ module scan
 module token
 module trivia
 
+export import generation::ACCEPTS
+export import generation::GENERATIONS
+export import generation::is_generation
 export import keyword::Keyword
 export import lex::LexError
 export import lex::lex

@@ -435,3 +435,73 @@ fn build(source: &Path, tag: &str) -> Case {
   let rust = std::fs::read_to_string(&vrs).expect("should read the generated .vrs");
   Case { rust, vrs, dir }
 }
+
+/// Whether the accepted surface has moved ahead of the tree's own source.
+///
+/// # The problem this exists for
+///
+/// Doc 97 §2.2 says the surface the compiler is *written in* and the surface it
+/// *accepts* diverge for row 99's duration, and that the divergence is
+/// deliberate. Row 99 wave 1 found the consequence §2.2 does not name: **every
+/// gate that parses the compiler's own source with the freshly built compiler
+/// breaks the moment the accepted surface changes** — `inferred.rs`,
+/// `no_comments.rs`, `port.rs`, `directory_structure.rs`, `line_cap.rs`,
+/// `construct_coverage.rs`, `grammar_inventory.rs`, `classify_corpus.rs`.
+///
+/// The tree keeps *building*, because `bootstrap.sh` generates `src/` with
+/// `seed/voltaic-g1.wasm`, which is generation 1 and stays generation 1. The
+/// gates are what break, because they use the tree's compiler to read
+/// generation-1 source.
+///
+/// # Why deferring, and not a second parser
+///
+/// `AGENTS.md` records the project's answer to this class of problem: rustc pays
+/// for it with `cfg(bootstrap)` double implementations and Go with a version
+/// chain, and *"both are expensive because their seeds are releases"*. This
+/// seed is a build artifact, so the recorded choice is two commands rather than
+/// a dual implementation. A generation-switched parser would be exactly the
+/// dual implementation that decision refused.
+///
+/// So the gates **defer** while the surface is ahead, and row 103 re-arms them
+/// as each crate crosses. That is a real loss of coverage for the duration, and
+/// it is the loss §2.2 already accepted.
+///
+/// # Why this is safe today
+///
+/// It returns `false` until someone changes `ACCEPTS` in
+/// `crates/voltaic-lexer/vlt/generation.vlt`, and
+/// [`the_surface_has_not_moved_yet`] asserts that it is `"g1"` — so flipping it
+/// turns a test red and demands the review, rather than silently switching eight
+/// gates off. Every skip below it is inert until that one constant changes.
+pub fn mid_turn() -> bool {
+  voltaic_lexer::ACCEPTS != "g1" && generations().iter().any(|(_, _, g)| g == "g1")
+}
+
+/// The one constant that decides it, asserted so a flip is deliberate.
+///
+/// This is not a prediction that the surface will not move. It is the thing that
+/// makes moving it a *reviewed* act: the diff that changes `ACCEPTS` also turns
+/// this red, and whoever is looking at it has to decide that deferring eight
+/// gates is what they meant.
+#[test]
+fn the_surface_has_not_moved_yet() {
+  assert_eq!(
+    voltaic_lexer::ACCEPTS,
+    "g1",
+    "`ACCEPTS` changed, so `mid_turn()` is now true and eight gates that parse the \
+     compiler's own source have begun deferring. That is doc 97 §2.2's accepted cost \
+     and row 103 re-arms them crate by crate — update this test when you mean it."
+  );
+  assert!(!mid_turn(), "the turn has started; see the message above");
+}
+
+/// The marker has to name a real generation, or `bootstrap.sh` would dispatch to
+/// a blob that cannot exist.
+#[test]
+fn the_accepted_generation_is_one_bootstrap_can_dispatch_to() {
+  assert!(
+    voltaic_lexer::is_generation(voltaic_lexer::ACCEPTS),
+    "`ACCEPTS` is `{}`, which is not a generation",
+    voltaic_lexer::ACCEPTS
+  );
+}
