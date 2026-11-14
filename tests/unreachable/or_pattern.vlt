@@ -1,14 +1,36 @@
--- Rust's `|` or-pattern. UNREACHABLE: plan 46 §1.2.
+-- Rust's `|` or-pattern **spelling**. UNREACHABLE: plan 46 §1.2, rescoped
+-- 2026-11-14.
 --
--- Doc 03 §18 lists `|` alternatives under "Closed by this document". They are
--- not: doc 18 made Haskell's surface the language, where `|` in a `case` arm
--- introduces a **guard**. So this parses, and means `1` guarded by `2` — it
--- fails at rustc with "mismatched types: expected `bool`, found integer",
--- which is a type error about the wrong thing.
+-- This file still fails, and for the reason it always did: doc 18 made
+-- Haskell's surface the language, where `|` in a `case` arm introduces a
+-- **guard**. So the program below parses and means `1` guarded by `2`, and
+-- fails at rustc with "mismatched types: expected `bool`, found integer" — a
+-- type error about the wrong thing.
 --
--- The nearest working thing is separate arms, which match the same values.
--- What has no spelling is Rust's *binding* case, where one arm body serves
--- several patterns.
+-- What this file used to claim is false, and the correction is the point.
+-- It said:
+--
+--     The nearest working thing is separate arms, which match the same values.
+--     What has no spelling is Rust's *binding* case, where one arm body serves
+--     several patterns.
+--
+-- One arm body serving several patterns **is** spelled, as `or`:
+--
+--     13 or 14 or 15 -> "young"
+--
+-- which is `examples/case.vlt:12`, witnessed and green, and which emits
+-- `13 | 14 | 15 => "young"`. `voltaic-ast`'s pattern node joins alternatives
+-- with `or` and lowers them to Rust's `|`.
+--
+-- So the capability was never missing; only the punctuation was. That is a
+-- smaller gap than the one recorded here, and recording the larger one for
+-- four plans is the shape `AGENTS.md` warns about twice — a doc comment is not
+-- an oracle for its own code, and "I could not find it" is not "it does not
+-- exist". The fixture failed the whole time, so nothing went red.
+--
+-- Closing the punctuation needs row 99 **wave 2**, which replaces the guard
+-- ladder and frees `|` in a pattern position. It cannot be closed before then,
+-- because `1 | 2` is currently unambiguous and means something else.
 
 small : i32 -> bool
 small n = case n of

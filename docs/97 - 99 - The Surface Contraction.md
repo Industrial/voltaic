@@ -452,6 +452,70 @@ is congruent with **its own final segment** and nothing else; `a::T` and `b::T`
 stay distinct. Nothing is rewritten, so no diagnostic or sidecar line ever shows
 a name the author did not write.
 
+### 10.11 Wave 9's three gaps all depend on earlier waves, which §4 had right
+
+Wave 9 reads as additive — three constructs *become reachable* — so it looked
+like the one wave that could be taken out of order. It cannot, and each reason is
+a different earlier wave:
+
+| Gap | Blocked on | Why |
+|---|---|---|
+| or-pattern `\|` | **wave 2** | `1 \| 2` currently means `1` guarded by `2`, unambiguously. The guard ladder has to replace guards before `\|` is free in a pattern. |
+| `as` cast | **wave 6** | `as` is reserved for `import … as`, and wave 6 deletes imports. |
+| `ref` / `ref mut` | **wave 4** | `ref` is not a reserved word, and reserving it is what the keyword cull decides. The fixture argues against reserving it at all. |
+
+§4 calls the waves "nine waves in dependency order" and this is the check that it
+meant it.
+
+### 10.12 One of the three gaps was already closed, and had been for four plans
+
+`tests/unreachable/or_pattern.vlt` said:
+
+> The nearest working thing is separate arms, which match the same values. What
+> has no spelling is Rust's *binding* case, where one arm body serves several
+> patterns.
+
+One arm body serving several patterns **is** spelled, as `or`:
+
+```
+13 or 14 or 15 -> "young"
+```
+
+That is `examples/case.vlt:12`, witnessed and green, emitting
+`13 | 14 | 15 => "young"`. The capability was never missing; the *punctuation*
+was, and the punctuation is a strictly smaller gap.
+
+The fixture has been rescoped to say so and to cite its witness. Nothing went red
+for four plans because the fixture fails either way — `1 | 2` still parses as a
+guard and still fails at rustc — so the corpus was asserting the right outcome
+for the wrong reason. That is the two traps `AGENTS.md` records, together: *a doc
+comment is not an oracle for its own code*, and *"I could not find it" is not "it
+does not exist"*.
+
+### 10.13 Waves 2–8 share one coordination problem, and it is sharper than §2.2 says
+
+§2.2 says the surface the compiler is *written in* and the surface it *accepts*
+diverge for this row's duration, and that the divergence is deliberate. Measured
+against the tree as it now stands, the divergence has a specific consequence §2.2
+does not name:
+
+**every gate that parses the compiler's own source with the current compiler
+breaks the moment the accepted surface changes.** That is not one test. It is
+`inferred.rs` (which parses all 123 files), `no_comments.rs`, `port.rs`,
+`directory_structure.rs`, `line_cap.rs`, `construct_coverage.rs` and
+`grammar_inventory.rs` — and the count grew by one this session, because
+`inferred.rs` is new.
+
+The tree itself keeps building, because `bootstrap.sh` generates `src/` with
+`seed/voltaic1.wasm`, which is generation 1 and stays generation 1. What breaks is
+the *gates*, which use the freshly built compiler to read generation-1 source.
+
+So wave 2 cannot be a parser change plus a corpus re-bless. It needs a decision
+about which parser each gate uses — the seed's or the tree's — and that decision
+belongs with row 102, which owns generation-tagged seeds. Recording it here
+because the discovery is this row's, and because the next session should not
+re-derive it.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines
