@@ -53,20 +53,14 @@ emit_clauses out f base =
     joinable = .is_empty f.clauses[0].wheres
     emit_body out (&f.clauses[0].body) (base + RUST_INDENT) tail joinable
     return ()
-  names : Vec<&str> = f.sig.params
-    |> .iter
-    |> .map (\p -> .as_str p.name.text)
-    |> .collect
+  names : Vec<&str> = (f.sig.params.iter ().map (\p -> .as_str p.name.text)).collect ()
   scrutinee = case .as_slice names of
     [one] -> .to_string (*one)
     many -> format! \-> "(#{.join ", " many})"
   pad out (base + RUST_INDENT)
   .push_str (&format! \-> "match #{scrutinee} {\n") out
   for clause in &f.clauses
-    row : Vec<String> = clause.patterns
-      |> .iter
-      |> .map pattern_text
-      |> .collect
+    row : Vec<String> = (clause.patterns.iter ().map pattern_text).collect ()
     arm = case .as_slice row of
       [one] -> .clone one
       many -> format! \-> "(#{.join ", " many})"
@@ -144,21 +138,14 @@ generics target constraints =
   vars = .vars target
   if .is_empty vars
     return String::new ()
-  params : Vec<String> = vars
-    |> .iter
-    |> .map (\v ->
-    bounds : Vec<&str> = constraints
-      |> .iter
-      |> .filter (\c -> c.var.text == *v)
-      |> .map (\c -> .as_str c.trait_name.text)
-      |> .collect
+  params : Vec<String> = (vars.iter ().map (\v ->
+    bounds : Vec<&str> = ((constraints.iter ().filter (\c -> c.var.text == *v)).map (\c -> .as_str c.trait_name.text)).collect ()
     name = TypeApp::rust_name v
     if .is_empty bounds
       name
     else
       joined = .join " + " bounds
-      format! \-> "#{name}: #{joined}")
-    |> .collect
+      format! \-> "#{name}: #{joined}")).collect ()
   joined = .join ", " params
   format! \-> "<#{joined}>"
 
@@ -271,13 +258,10 @@ instance Emit ExternBlock
 
 export(crate) emit_items : &mut Sink<'_> -> &[Item] -> usize -> ()
 emit_items out items indent =
-  tests : Vec<&TestDecl> = items
-    |> .iter
-    |> .filter_map (\item ->
+  tests : Vec<&TestDecl> = (items.iter ().filter_map (\item ->
     case item of
       Item::Test t -> Some t
-      _ -> None)
-    |> .collect
+      _ -> None)).collect ()
   mut written : usize = 0
   for item in items
     is_test = case item of
@@ -339,9 +323,7 @@ signature sig indent =
   if .position (\p -> .is_none p.ty) (.iter ordered) is Some at
     marked = .remove at ordered
     .insert 0 marked ordered
-  params : Vec<String> = ordered
-    |> .iter
-    |> .map (\p ->
+  params : Vec<String> = (ordered.iter ().map (\p ->
     mut text = String::new ()
     if p.is_mut
       .push_str "mut " text
@@ -349,8 +331,7 @@ signature sig indent =
     if &p.ty is Some ty
       .push_str ": " text
       .push_str (&ty.text) text
-    text)
-    |> .collect
+    text)).collect ()
   joined = .join ", " params
   mut out = format! \-> "#{generic_list}(#{joined})"
   if &sig.ret is Some ret && !.returns_unit sig
@@ -375,7 +356,7 @@ test_slug description =
       .extend (.to_lowercase ch) out
     else if !.ends_with '_' out
       .push '_' out
-  trimmed = out |> .trim_matches '_' |> .to_string
+  trimmed = (out.trim_matches '_').to_string ()
   if .is_empty trimmed
     return .to_string "_"
   if .is_some_and (\c -> .is_ascii_digit c) (.next (.chars trimmed))

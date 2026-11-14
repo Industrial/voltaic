@@ -60,7 +60,7 @@ export(crate) emit_dot : &Expr -> &Ident -> &[Expr] -> usize -> String
 emit_dot recv name args indent =
   at = holes args
   if !.is_empty at
-    params : Vec<String> = 0 .. .len at |> .map closure_param |> .collect
+    params : Vec<String> = ((0 .. .len at).map closure_param).collect ()
     body = emit_dot recv name (&fill_holes args (&params)) indent
     return closure (&params) (&body)
   head = receiver recv indent
@@ -71,7 +71,7 @@ export(crate) emit_application : &Expr -> &[Expr] -> usize -> String
 emit_application callee args indent =
   at = holes args
   if !.is_empty at
-    params : Vec<String> = 0 .. .len at |> .map closure_param |> .collect
+    params : Vec<String> = ((0 .. .len at).map closure_param).collect ()
     body = emit_application callee (&fill_holes args (&params)) indent
     return closure (&params) (&body)
   if unparen callee is Expr::Call { callee = inner, args = inner_args, .. }
@@ -94,7 +94,7 @@ emit_application callee args indent =
       return format! \-> "#{head}(())"
     listed = expr_list args indent
     return format! \-> "#{head}(#{listed})"
-  params : Vec<String> = 0 .. missing |> .map closure_param |> .collect
+  params : Vec<String> = ((0 .. missing).map closure_param).collect ()
   listed = expr_list args indent
   joined = .join ", " params
   body = format! \-> "#{head}(#{listed}, #{joined})"
@@ -111,7 +111,7 @@ rust """
   }
 """
 
-export(crate) data ArityScope = ArityScope { previous : ArityTable }
+export(crate) data ArityScope { previous ArityTable }
 
 instance ArityScope
   export(crate) enter : ArityTable -> Self
@@ -129,7 +129,7 @@ instance Drop ArityScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export(crate) data ArityTable = ArityTable { arities : BTreeMap<String, usize> }
+export(crate) data ArityTable { arities BTreeMap<String, usize> }
   deriving (Debug, Clone, Default)
 
 instance ArityTable
@@ -158,7 +158,7 @@ instance ArityTable
     ()
 
   export(crate) arity_of : &str -> &self -> Option<usize>
-  arity_of name self = self.arities |> .get name |> .copied
+  arity_of name self = (self.arities.get name).copied ()
 
 export(crate) chain : &str -> &[String] -> usize -> String
 chain receiver segments base =
@@ -224,13 +224,10 @@ compose_chain op lhs rhs out =
 export(crate) emit_expr : &Expr -> usize -> String
 emit_expr e indent = case e of
   Expr::Lambda { params, body, is_move, .. } ->
-    binders : Vec<String> = params
-      |> .iter
-      |> .map (\param ->
+    binders : Vec<String> = (params.iter ().map (\param ->
       case &param.ty of
         Some ty -> format! \-> "#{param.name.text}: #{ty.text}"
-        None -> .clone param.name.text)
-      |> .collect
+        None -> .clone param.name.text)).collect ()
     marker = if *is_move
       "move "
     else
@@ -365,10 +362,7 @@ expr_list args indent =
     _ -> false
   if lone_unit
     return String::new ()
-  parts : Vec<String> = args
-    |> .iter
-    |> .map (\e -> emit_expr (unparen e) indent)
-    |> .collect
+  parts : Vec<String> = (args.iter ().map (\e -> emit_expr (unparen e) indent)).collect ()
   .join ", " parts
 
 export(crate) field_value : &FieldInit -> usize -> String
@@ -384,10 +378,7 @@ macro_call name args indent =
     rewritten = assert_call (&args[0]) indent
     if !.starts_with "assert!" rewritten
       return rewritten
-  supplied : Vec<String> = args
-    |> .iter
-    |> .flat_map (\a -> macro_argument a indent)
-    |> .collect
+  supplied : Vec<String> = (args.iter ().flat_map (\a -> macro_argument a indent)).collect ()
   arguments = .join ", " supplied
   one_line = format! \-> "#{name}!(#{arguments})"
   if !.contains '\n' arguments && .len arguments <= FN_CALL_WIDTH
@@ -397,10 +388,7 @@ macro_call name args indent =
   inner_pad = .repeat (indent + RUST_INDENT) " "
   close_pad = .repeat indent " "
   separator = format! \-> ",\n#{inner_pad}"
-  parts : Vec<String> = args
-    |> .iter
-    |> .flat_map (\a -> macro_argument a (indent + RUST_INDENT))
-    |> .collect
+  parts : Vec<String> = (args.iter ().flat_map (\a -> macro_argument a (indent + RUST_INDENT))).collect ()
   spread = .join (&separator) parts
   format! \-> "#{name}!(\n#{inner_pad}#{spread}\n#{close_pad})"
 
@@ -455,10 +443,7 @@ pipeline lhs rhs indent = case unparen rhs of
       listed = expr_list args indent
       format! \-> "#{recv}.#{name.text}(#{listed})"
     other ->
-      mut supplied : Vec<String> = args
-        |> .iter
-        |> .map (\a -> emit_expr a indent)
-        |> .collect
+      mut supplied : Vec<String> = (args.iter ().map (\a -> emit_expr a indent)).collect ()
       .push (emit_expr lhs indent) supplied
       joined = .join ", " supplied
       format! \-> "#{callable other indent}(#{joined})"
@@ -499,24 +484,21 @@ emit_section section indent =
     return closure (&[typed]) (&moved)
   body = case section of
     Section::Field path ->
-      joined : Vec<&str> = path
-        |> .iter
-        |> .map (\n -> .as_str n.text)
-        |> .collect
+      joined : Vec<&str> = (path.iter ().map (\n -> .as_str n.text)).collect ()
       format! \-> "#{param}.#{(.join "." joined)}"
     Section::Right { op, operand } ->
       value = emit_expr (unparen operand) indent
       case .compare_method op of
         Some method -> format! \-> "#{param}.#{method}(&#{value})"
         None ->
-          spelling = op |> .rust_text |> .unwrap_or "/* unsupported */"
+          spelling = op.rust_text ().unwrap_or "/* unsupported */"
           format! \-> "#{param} #{spelling} #{value}"
     Section::Left { op, operand } ->
       value = emit_expr (unparen operand) indent
       case .and_then voltaic_ast::BinaryOp::compare_method (.flipped op) of
         Some method -> format! \-> "#{param}.#{method}(&#{value})"
         None ->
-          spelling = op |> .rust_text |> .unwrap_or "/* unsupported */"
+          spelling = op.rust_text ().unwrap_or "/* unsupported */"
           format! \-> "#{value} #{spelling} #{param}"
   closure (&[param]) (&body)
 

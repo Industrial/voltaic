@@ -32,17 +32,11 @@ emit_class out c indent =
   vis = .rust_text c.visibility
   .push_str (&format! \-> "#{vis}trait #{c.name.text}") out
   if !.is_empty c.params
-    params : Vec<String> = c.params
-      |> .iter
-      |> .map (\p -> TypeApp::rust_name (&p.text))
-      |> .collect
+    params : Vec<String> = (c.params.iter ().map (\p -> TypeApp::rust_name (&p.text))).collect ()
     joined = .join ", " params
     .push_str (&format! \-> "<#{joined}>") out
   if !.is_empty c.supers
-    names : Vec<&str> = c.supers
-      |> .iter
-      |> .map (\s -> .as_str s.text)
-      |> .collect
+    names : Vec<&str> = (c.supers.iter ().map (\s -> .as_str s.text)).collect ()
     joined = .join " + " names
     .push_str (&format! \-> ": #{joined}") out
   .push_str " {\n" out
@@ -71,18 +65,16 @@ field_types d =
       ConstructorFields::Unit -> ()
       ConstructorFields::Tuple types ->
         for t in types
-          found |> .push (.clone t.text)
+          found.push (.clone t.text)
         ()
       ConstructorFields::Record fields ->
         for f in fields
-          found |> .push (.clone f.ty.text)
+          found.push (.clone f.ty.text)
         ()
   found
 
 export(crate) writes_its_own_derives : &DataDecl -> bool
-writes_its_own_derives d = d.leading
-  |> .iter
-  |> .any (\t -> .starts_with "derive(" (.trim (.as_str t.text)))
+writes_its_own_derives d = d.leading.iter ().any (\t -> .starts_with "derive(" (.trim (.as_str t.text)))
 
 export(crate) computed_derives : &DataDecl -> Vec<&'static str>
 computed_derives d =
@@ -112,7 +104,7 @@ as_variant c =
 
 export(crate) as_errors : &DataDecl -> ErrorsDecl
 as_errors d =
-  variants : Vec<voltaic_ast::ErrorVariant> = d.constructors |> .iter |> .map as_variant |> .collect
+  variants : Vec<voltaic_ast::ErrorVariant> = (d.constructors.iter ().map as_variant).collect ()
   ErrorsDecl { name = .clone d.name, variants, visibility = .clone d.visibility, span = d.span, leading = .clone d.leading }
 
 export(crate) emit_data : &mut Sink<'_> -> &DataDecl -> usize -> ()
@@ -122,20 +114,12 @@ emit_data out d indent =
     return ()
   .mark d.span out
   emit_trivia out (&d.leading) indent
-  templated : Vec<Ident> = d.derives
-    |> .iter
-    |> .filter (\i -> .is_some (TemplateScope::lookup (.as_str i.text)))
-    |> .cloned
-    |> .collect
+  templated : Vec<Ident> = (d.derives.iter ().filter (\i -> .is_some (TemplateScope::lookup (.as_str i.text)))).cloned ().collect ()
   computed = computed_derives d
   builtin : Vec<&str> = if .is_empty d.derives
     .to_vec (.as_slice computed)
   else
-    d.derives
-      |> .iter
-      |> .filter (\i -> .is_none (TemplateScope::lookup (.as_str i.text)))
-      |> .map (\i -> .as_str i.text)
-      |> .collect
+    ((d.derives.iter ().filter (\i -> .is_none (TemplateScope::lookup (.as_str i.text)))).map (\i -> .as_str i.text)).collect ()
   if !.is_empty builtin
     joined = .join ", " builtin
     pad out indent
@@ -188,7 +172,7 @@ error_message raw =
   text = .trim_matches '"' raw
   mut template = String::with_capacity (.len text)
   mut args = Vec::new ()
-  chars : Vec<char> = text |> .chars |> .collect
+  chars : Vec<char> = text.chars ().collect ()
   mut i = 0
   while i < .len chars
     if chars[i] == '#' && .get (i + 1) chars == Some (&'{')
@@ -224,10 +208,7 @@ emit_errors out d indent =
     pad out (indent + RUST_INDENT)
     .push_str (&v.name.text) out
     if !.is_empty v.fields
-      texts : Vec<&str> = v.fields
-        |> .iter
-        |> .map (\t -> .as_str t.text)
-        |> .collect
+      texts : Vec<&str> = (v.fields.iter ().map (\t -> .as_str t.text)).collect ()
       joined = .join ", " texts
       .push_str (&format! \-> "(#{joined})") out
     .push_str ",\n" out
@@ -246,9 +227,7 @@ emit_errors out d indent =
     .mark v.span out
     built = error_message (&v.message)
     count = .len v.fields
-    binders : Vec<String> = 0 .. count
-      |> .map (\i -> format! \-> "_#{i}")
-      |> .collect
+    binders : Vec<String> = ((0 .. count).map (\i -> format! \-> "_#{i}")).collect ()
     pad out (indent + RUST_INDENT * 3)
     .push_str (&format! \-> "#{name}::#{v.name.text}") out
     if !.is_empty binders
@@ -296,10 +275,7 @@ emit_fields out fields indent top =
         ",\n"
       .push_str closer out
     ConstructorFields::Tuple types ->
-      texts : Vec<&str> = types
-        |> .iter
-        |> .map (\t -> .as_str t.text)
-        |> .collect
+      texts : Vec<&str> = (types.iter ().map (\t -> .as_str t.text)).collect ()
       joined = .join ", " texts
       .push_str (&format! \-> "(#{joined})") out
       closer = if top
@@ -308,12 +284,9 @@ emit_fields out fields indent top =
         ",\n"
       .push_str closer out
     ConstructorFields::Record decls ->
-      texts : Vec<String> = decls
-        |> .iter
-        |> .map (\f ->
+      texts : Vec<String> = (decls.iter ().map (\f ->
         vis = .rust_text f.visibility
-        format! \-> "#{vis}#{f.name.text}: #{f.ty.text}")
-        |> .collect
+        format! \-> "#{vis}#{f.name.text}: #{f.ty.text}")).collect ()
       joined = .join ", " texts
       documented = .any (\f -> !.is_empty f.leading) (.iter decls)
       if !top && !documented && .len joined <= STRUCT_VARIANT_WIDTH
@@ -411,7 +384,7 @@ names_a_constructor head =
     Expr::Path { text, .. } -> .unwrap_or text (.next (.rsplit "::" text))
     _ ->
       return false
-  name |> .chars |> .next |> .is_some_and char::is_uppercase
+  name.chars ().next ().is_some_and char::is_uppercase
 
 export(crate) one_field : &FieldInit -> usize -> String
 one_field f indent = case &f.value of
@@ -433,10 +406,7 @@ emit_record head fields indent =
   head_text = emit_expr (unparen head) indent
   if .is_empty fields
     return head_text
-  texts : Vec<String> = fields
-    |> .iter
-    |> .map (\f -> one_field f indent)
-    |> .collect
+  texts : Vec<String> = (fields.iter ().map (\f -> one_field f indent)).collect ()
   joined = .join ", " texts
   if .len joined <= STRUCT_LIT_WIDTH && !.contains '\n' joined
     return format! \-> "#{head_text} { #{joined} }"

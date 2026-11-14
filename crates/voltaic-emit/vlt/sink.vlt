@@ -13,7 +13,7 @@ import voltaic_diag::Span
 import std::fmt::Write
 
 export(crate) double_braces : &str -> String
-double_braces literal = literal |> .replace '{' "{{" |> .replace '}' "}}"
+double_braces literal = (literal.replace '{' "{{").replace '}' "}}"
 
 test "doubles a brace so it prints as itself"
   assert_eq! \-> double_braces r#""see {this}""# \-> r#""see {{this}}""#
@@ -64,9 +64,7 @@ emit_inline_comment out trivia =
 
 export(crate) nest : &[(&str, &Expr)] -> &[String] -> &str -> usize -> bool -> (String, Vec<String>)
 nest draws guards item base nested =
-  head = draws
-    |> .split_first
-    |> .expect "the caller checked that there is at least one generator"
+  head = draws.split_first ().expect "the caller checked that there is at least one generator"
   first = head.0
   rest = head.1
   name = first.0
@@ -160,7 +158,7 @@ rust_hatch_text code indent =
 
 export(crate) const RUST_INDENT : usize = 4
 
-export(crate) data Sink = Sink { out : String, source : &'a str, current : Option<Span>, origins : Vec<Option<Origin>> }
+export(crate) data Sink { out String, source &'a str, current Option<Span>, origins Vec<Option<Origin>> }
 
 instance (Sink 'a)
   export(crate) new : &'a str -> Self

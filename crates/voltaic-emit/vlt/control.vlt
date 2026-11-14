@@ -66,11 +66,7 @@ export(crate) ascribed_list : &Expr -> &TypeExpr -> usize -> Option<String>
 ascribed_list inner ty indent =
   guard unparen inner is Expr::List { items, .. } else
     return None
-  head = ty.text
-    |> .split '<'
-    |> .next
-    |> .unwrap_or (&ty.text)
-    |> .trim
+  head = ((ty.text.split '<').next ().unwrap_or (&ty.text)).trim ()
   listed = expr_list items indent
   Some $ format! \-> "#{head}::from([#{listed}])"
 
@@ -104,7 +100,7 @@ emit_ladder rows indent =
       (None, 0) -> .push_str "if true {\n" out
       (None, _) -> .push_str (&format! \-> "#{close_pad}} else {\n") out
     .push_str (&arm_pad) out
-    arm_text = sole_expression row (indent + RUST_INDENT) |> .unwrap_or_else (\-> .to_string "()")
+    arm_text = (sole_expression row (indent + RUST_INDENT)).unwrap_or_else (\-> .to_string "()")
     .push_str (&arm_text) out
     .push '\n' out
   .push_str (&close_pad) out
@@ -126,7 +122,7 @@ emit_case scrutinee arms indent =
     .push_str " => " out
     body = case &arm.body of
       Expr::Block { label = None, body = block, .. } | .is_some_and (\stmt -> .is_empty stmt.leading && .is_none stmt.trailing) (.first block.stmts) ->
-        block |> .sole_expression |> .unwrap_or (&arm.body)
+        block.sole_expression ().unwrap_or (&arm.body)
       other -> other
     ascribed = .and_then (\ty -> ascribed_arm (&arm.pattern) (&ty.text)) (.as_ref arm.ty)
     case ascribed of
@@ -167,20 +163,14 @@ catch_fallback subject fallback indent =
 
 export(crate) emit_comprehension : &Expr -> &[Qualifier] -> usize -> String
 emit_comprehension element qualifiers indent =
-  draws : Vec<(&str, &Expr)> = qualifiers
-    |> .iter
-    |> .filter_map (\q ->
+  draws : Vec<(&str, &Expr)> = (qualifiers.iter ().filter_map (\q ->
     case q of
       Qualifier::Draw { name, source } -> Some (.as_str name.text, source)
-      Qualifier::Guard _ -> None)
-    |> .collect
-  guards : Vec<String> = qualifiers
-    |> .iter
-    |> .filter_map (\q ->
+      Qualifier::Guard _ -> None)).collect ()
+  guards : Vec<String> = (qualifiers.iter ().filter_map (\q ->
     case q of
       Qualifier::Guard e -> Some $ emit_expr (unparen e) indent
-      Qualifier::Draw { .. } -> None)
-    |> .collect
+      Qualifier::Draw { .. } -> None)).collect ()
   if .is_empty draws
     only = emit_expr (unparen element) indent
     return format! \-> "[#{only}]"
@@ -225,7 +215,7 @@ control_text expr indent =
   mut inner = Sink::new ""
   emit_control (&mut inner) expr indent true
   finished = .finish "" inner
-  finished.0 |> .trim_start |> .trim_end |> .to_string
+  finished.0.trim_start ().trim_end ().to_string ()
 
 export(crate) emit_block : &Option<String> -> &Block -> usize -> String
 emit_block label body indent =
@@ -241,16 +231,13 @@ emit_block label body indent =
 
 export(crate) emit_condition : &Condition -> usize -> String
 emit_condition condition indent =
-  parts : Vec<String> = condition.operands
-    |> .iter
-    |> .map (\operand ->
+  parts : Vec<String> = (condition.operands.iter ().map (\operand ->
     case operand of
       ConditionOperand::Expr e -> emit_expr (unparen e) indent
       ConditionOperand::Pattern { pattern, source } ->
         lowered = pattern_text pattern
         value = emit_expr (unparen source) indent
-        format! \-> "let #{lowered} = #{value}")
-    |> .collect
+        format! \-> "let #{lowered} = #{value}")).collect ()
   .join " && " parts
 
 export(crate) emit_control : &mut Sink<'_> -> &Expr -> usize -> bool -> ()

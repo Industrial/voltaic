@@ -65,7 +65,7 @@ rust """
   }
 """
 
-export(crate) data BindScope = BindScope { previous : BindMode }
+export(crate) data BindScope { previous BindMode }
 
 instance BindScope
   export(crate) enter : BindMode -> Self
@@ -92,7 +92,7 @@ rust """
   }
 """
 
-export(crate) data BindingScope = BindingScope { previous : BindingTable }
+export(crate) data BindingScope { previous BindingTable }
 
 instance BindingScope
   export(crate) enter : BindingTable -> Self
@@ -110,7 +110,7 @@ instance Drop BindingScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export(crate) data BindingTable = BindingTable { kinds : BTreeMap<String, BindingKind> }
+export(crate) data BindingTable { kinds BTreeMap<String, BindingKind> }
   deriving (Debug, Clone, Default)
 
 instance BindingTable
@@ -152,7 +152,7 @@ instance BindingTable
     ()
 
   export(crate) kind_of : &str -> &self -> Option<BindingKind>
-  kind_of name self = self.kinds |> .get name |> .copied
+  kind_of name self = (self.kinds.get name).copied ()
 
 export(crate) classify : &FnDecl -> Option<BindingKind>
 classify decl =
@@ -196,10 +196,7 @@ emit_where_locals out wheres indent =
   if .len wheres < 2
     emit_stmts out wheres indent false
     return ()
-  ordered : Vec<Stmt> = where_order wheres
-    |> .into_iter
-    |> .map (\i -> .clone wheres[i])
-    |> .collect
+  ordered : Vec<Stmt> = ((where_order wheres).into_iter ().map (\i -> .clone wheres[i])).collect ()
   emit_stmts out (&ordered) indent false
   ()
 
@@ -215,15 +212,10 @@ one_tail_expression clause tail =
 export(crate) where_order : &[Stmt] -> Vec<usize>
 where_order entries =
   n = .len entries
-  bindings : Vec<usize> = entries
-    |> .iter
-    |> .enumerate
-    |> .filter (\pair ->
+  bindings : Vec<usize> = ((entries.iter ().enumerate ().filter (\pair ->
     case pair.1.expr of
       Expr::Binding _ -> true
-      _ -> false)
-    |> .map (\pair -> pair.0)
-    |> .collect
+      _ -> false)).map (\pair -> pair.0)).collect ()
   if .len bindings < 2
     return .collect (0 .. n)
   graph = where_edges entries
@@ -235,12 +227,10 @@ where_order entries =
   for i in &bindings
     visit (*i) (&graph) (&mut done) (&mut visiting) (&mut sorted)
   mut queued = .into_iter sorted
-  0 .. n
-    |> .map (\i ->
+  ((0 .. n).map (\i ->
     case entries[i].expr of
-      Expr::Binding _ -> queued |> .next |> .unwrap_or i
-      _ -> i)
-    |> .collect
+      Expr::Binding _ -> queued.next ().unwrap_or i
+      _ -> i)).collect ()
 
 export(crate) visit : usize -> &[Vec<usize>] -> &mut [bool] -> &mut [bool] -> &mut Vec<usize> -> ()
 visit at graph done visiting sorted =

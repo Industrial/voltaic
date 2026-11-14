@@ -13,7 +13,7 @@ rust """
   }
 """
 
-export(crate) data TemplateScope = TemplateScope { previous : TemplateTable }
+export(crate) data TemplateScope { previous TemplateTable }
 
 instance TemplateScope
   export(crate) enter : TemplateTable -> Self
@@ -31,7 +31,7 @@ instance Drop TemplateScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export(crate) data TemplateTable = TemplateTable { by_name : std::collections::BTreeMap<String, DeriveTemplate> }
+export(crate) data TemplateTable { by_name std::collections::BTreeMap<String, DeriveTemplate> }
   deriving (Debug, Clone, Default)
 
 instance TemplateTable
@@ -44,4 +44,4 @@ instance TemplateTable
     TemplateTable { by_name }
 
   export(crate) get : &str -> &self -> Option<DeriveTemplate>
-  get name self = self.by_name |> .get name |> .cloned
+  get name self = (self.by_name.get name).cloned ()
