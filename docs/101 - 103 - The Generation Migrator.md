@@ -571,6 +571,53 @@ prove the result.
 had already staged part of this session. The 71 files came back from HEAD, which
 is what was wanted; from the index they would have come back migrated.
 
+### 10.12 The `std` boundary is not a `std` boundary, and that changes which row owns it
+
+Doc 97 §10.36 left the no-argument half of wave 3 waiting on *"`std` reaching the
+declaration environment"*. The obvious rule was tried and is **withdrawn**, and
+the reason relocates the dependency.
+
+The rule: *a receiver the solver resolved to a type not declared here has no
+fields the environment knows, so `x.name` is a method call.* Numeric names stay
+fields (`x.0` is a tuple index on any type), an unresolved receiver still claims
+nothing, and a declared type is still asked.
+
+It worked on the case it was written for — `v.len` on a `Vec` became `v.len()` —
+and the port then **refused `voltaic-lattice`**, naming one line:
+
+```
+-  from_text(written.text.trim())
++  from_text(written.text().trim())
+```
+
+`written : &TypeExpr`, and `TypeExpr` is a `data` with a `text` field. It is
+simply declared in **`voltaic-ast`**, not in the program being compiled.
+
+**`declarations::collect` runs over one `Program`, and a `Program` is one `.vlt`
+file.** So the environment knows the types declared in that file and nothing
+else — not `Vec`, and not any type from another crate in this project either.
+"Not declared here" is therefore not "foreign": the environment's ignorance is
+the *normal* case, and a rule keyed on it reclassifies every cross-crate field
+read as a method call.
+
+No table of `std` names fixes that, because `std` was never the boundary. What
+the no-argument half needs is **cross-crate declaration knowledge** — the
+`.vlt.sig` sidecars carrying each crate's declared types, which is row 100 leaf
+1's other half.
+
+That is the same dependency row 104 leaf 5 waits on (doc 102 §10.8), which makes
+it the one unblocking move with two consumers: wave 3's no-argument half, and
+therefore leaf 2's receiver-order transform, leaf 6's crate-by-crate run, row 102
+step 5, and `.vlt.sig` in `dependency_sources`.
+
+**The port is what caught it, and it caught it the way it is built to.** It staged
+`voltaic-lattice`, compiled the staged tree, refused it, and left
+`crates/voltaic-lattice/src/` untouched — so `cargo build` stayed green on the
+previous generation while the mistake was diagnosed from
+`target/voltaic-port-staging/`. A migrator that wrote first would have left the
+workspace unbuildable, which doc 97 §10.34 records as the state the port cannot
+rescue itself from.
+
 ### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
 
 Leaf 2's largest `auto` construct is doc 87 §1.2's inversion of `.`:
