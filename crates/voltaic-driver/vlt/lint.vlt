@@ -21,7 +21,7 @@ import std::path::Path
 export lint : &Path -> &str -> Option<&Program> -> Vec<Diagnostic>
 lint path source program =
   shown = path |> .display |> .to_string
-  warning = \code message span help -> Diagnostic { code, severity = Severity::Warning, message, span, help = Some help, path = .clone shown, source = .to_string source }
+  warning = \code message span help -> Diagnostic { code, severity = Severity::Warning, message, span, related = Vec::new (), help = Some help, path = .clone shown, source = .to_string source }
 
   unwraps = unwrap_call_sites source program
     |> .into_iter

@@ -2,5 +2,5 @@ error[VLT0007]: unterminated attribute; expected `]`
   --> unterminated_attribute.vlt:1:1
   |
 1 | #[derive(Debug)
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | ^^^^^^^^^^^^^^^
 

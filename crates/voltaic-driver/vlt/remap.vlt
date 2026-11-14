@@ -15,11 +15,11 @@ remap message map vlt_path vlt_source vrs_path vrs_source =
   case .origin message.line map of
     Some origin ->
       shifted = .map_col message.col origin
-      Diagnostic { code, severity, message = .clone message.message, span = narrow origin.span vlt_source origin.src_line shifted, help = None, path = .to_string vlt_path, source = .to_string vlt_source }
+      Diagnostic { code, severity, message = .clone message.message, span = narrow origin.span vlt_source origin.src_line shifted, related = Vec::new (), help = None, path = .to_string vlt_path, source = .to_string vlt_source }
     None ->
       offset = generated_offset vrs_source message.line message.col
       note = format! \-> "this is on a line Voltaic generated, so it has no place in your source; see #{vrs_path}:#{message.line}:#{message.col}"
-      Diagnostic { code, severity, message = .clone message.message, span = (offset, offset + 1), help = Some note, path = .to_string vrs_path, source = .to_string vrs_source }
+      Diagnostic { code, severity, message = .clone message.message, span = (offset, offset + 1), related = Vec::new (), help = Some note, path = .to_string vrs_path, source = .to_string vrs_source }
 
 #[cfg(test)]
 const VLT : &str = "add = (a: i32, b: i32): i32 ->\n  a + \"x\"\n"

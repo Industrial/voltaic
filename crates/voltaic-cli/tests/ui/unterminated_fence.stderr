@@ -2,6 +2,6 @@ error[VLT0006]: unterminated `{- -}` comment
   --> unterminated_fence.vlt:5:1
   |
 5 | {- never closed
-  | ^^^^^^^^^^^^^^^^
+  | ^^^^^^^^^^^^^^^
   = help: close it with `-}`
 

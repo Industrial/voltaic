@@ -411,6 +411,74 @@ appears on both sides of the assertion — which is exactly what
 `annotation.vlt`'s tests were doing. It is visible the moment a human reads a
 blessed file.
 
+### 10.10 Leaf 2 — definition-boundary reporting
+
+All three of §1.4's properties hold. The anchor fixture now renders:
+
+```
+warning[VLT1004]: `wrong` cannot be both bool and u64
+  --> lattice_conflict.vlt:18:1
+   |
+18 | wrong : u64
+   | ^^^^^^^^^^^
+  --> lattice_conflict.vlt:19:1
+   |
+19 | wrong = true
+   | ^^^^^ required u64 here
+  --> lattice_conflict.vlt:19:7
+   |
+19 | wrong = true
+   |       ^^^^^^ inferred bool here, an equation's body returns this
+  = help: pinned by an ascription. Run `voltaic sig --why wrong` for the constraint chain.
+```
+
+`enclosing` finds the **innermost** definition containing the constraint's span —
+innermost, not first, which is what makes §1.4's `where`-group rule fall out
+rather than need a special case: a nested definition's span is strictly inside
+its parent's, so the tightest containing span is already the right answer.
+
+**The second side is the opposing constraint, not the enclosing definition.**
+The first attempt pointed the second caret at the definition and produced a
+diagnostic with the *same* snippet twice, because the primary span is already the
+definition's. `opposing` scans the store for another constraint sharing a hole
+with the failing one at a different span — which is the constraint that bound the
+variable the other way, and therefore the place §1.4 means by *"inferred `&str`
+here"*. `neither_secondary_span_repeats_the_primary` pins it, because a repeated
+snippet reads as two findings.
+
+`Diagnostic` grew `related : Vec<(Span, String)>` and the plain renderer draws
+each one the way it draws the primary. A `Vec` rather than an `Option`: a
+`Member` or `Callable` obligation can have more than two participants, and a
+field that holds only the second would silently choose which to drop.
+
+### 10.11 The caret ran 42 characters past the end of its line, and had for a while
+
+Pointing a diagnostic at a *definition* span is the first thing in this tree that
+spans more than one line, and it exposed that `caret_width` never consulted the
+line it was drawing on. `clamped_width` stops the run at the line end.
+
+That is not a new defect. `tests/ui/unterminated_attribute.stderr` was blessed
+with **57 carets under a 15-character line**, because `#[derive(Debug)`'s span
+runs to end of file:
+
+```
+1 | #[derive(Debug)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   (was)
+  | ^^^^^^^^^^^^^^^                                            (now)
+```
+
+It is the only UI expectation that changed, and it changed in the right
+direction. Worth noting how it survived: a blessable corpus records what the
+compiler *does*, so an output that was wrong when first blessed stays wrong and
+looks reviewed. The corpus catches *changes*; it does not catch a bad baseline.
+
+A second defect fell out of the same code: `clamped_width` computed
+`line_length + 1 - column` and panicked with *"attempt to subtract with
+overflow"* on a span whose column is past the line end — which is every
+EOF-anchored span, including the one above. The guard is a comparison before the
+subtraction. An arithmetic panic inside the *diagnostic renderer* is the worst
+place for one, because the compiler then fails while trying to explain a failure.
+
 ### 10.6 Registration, again
 
 The driver taking `voltaic-lattice` propagated into the **transitive** closure of four

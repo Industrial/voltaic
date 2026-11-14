@@ -29,6 +29,19 @@ anchor_span source span =
       (i, i + .len_utf8 c)
     None -> span
 
+clamped_width : &str -> Span -> usize -> usize
+clamped_width source span column =
+  wanted = caret_width source span
+  at = line_col source span.0
+  if .nth (at.0 - 1) (.lines source) is Some text
+    width = .count (.chars text) + 1
+    if column >= width
+      return 1
+    remaining = width - column
+    if wanted > remaining
+      return remaining
+  wanted
+
 caret_width : &str -> Span -> usize
 caret_width source span = source
   |> .get (span.0 .. span.1)
@@ -76,8 +89,22 @@ plain_one d =
     _ = writeln! \-> out \-> "#{gutter} |"
     _ = writeln! \-> out \-> "#{shown} | #{(.replace '\t' " " text)}"
     pad = .repeat (caret - 1) " "
-    carets = .repeat (caret_width (&d.source) d.span) "^"
+    carets = .repeat (clamped_width (&d.source) d.span caret) "^"
     _ = writeln! \-> out \-> "#{gutter} | #{pad}#{carets}"
+  for other in .iter d.related
+    where_other = other.0
+    at_other = line_col (&d.source) where_other.0
+    _ = writeln! \-> out \-> "  --> #{d.path}:#{at_other.0}:#{at_other.1}"
+    if snippet_line (&d.source) at_other.0 at_other.1 is Some found
+      shown = found.0
+      text = found.1
+      caret = found.2
+      gutter = .repeat (.len (.to_string shown)) " "
+      _ = writeln! \-> out \-> "#{gutter} |"
+      _ = writeln! \-> out \-> "#{shown} | #{(.replace '\t' " " text)}"
+      pad = .repeat (caret - 1) " "
+      carets = .repeat (clamped_width (&d.source) where_other caret) "^"
+      _ = writeln! \-> out \-> "#{gutter} | #{pad}#{carets} #{other.1}"
   if &d.help is Some help
     _ = writeln! \-> out \-> "  = help: #{help}"
   out

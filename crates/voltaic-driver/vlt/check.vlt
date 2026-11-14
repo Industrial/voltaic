@@ -95,11 +95,11 @@ diagnose path source failure =
   shown = path |> .display |> .to_string
   case failure of
     ParseFailure::Lex e ->
-      vec! \-> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, help = .clone e.help, path = shown, source = .to_string source }
+      vec! \-> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, related = Vec::new (), help = .clone e.help, path = shown, source = .to_string source }
     ParseFailure::Parse problems ->
       problems
         |> .iter
-        |> .map (\e -> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, help = .clone e.help, path = .clone shown, source = .to_string source })
+        |> .map (\e -> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, related = Vec::new (), help = .clone e.help, path = .clone shown, source = .to_string source })
         |> .collect
 
 test "carries a lex errors code and help across"
@@ -121,7 +121,7 @@ test "reports every recovered parse error"
 
 export(crate) io_diagnostic : &str -> String -> Diagnostic
 io_diagnostic path message =
-  Diagnostic { code = DiagnosticCode::Foreign (.to_string "io"), severity = voltaic_diag::Severity::Error, message, span = (0, 0), help = None, path = .to_string path, source = String::new () }
+  Diagnostic { code = DiagnosticCode::Foreign (.to_string "io"), severity = voltaic_diag::Severity::Error, message, span = (0, 0), related = Vec::new (), help = None, path = .to_string path, source = String::new () }
 
 test "renders without a snippet"
   d = io_diagnostic "a.vlt" (.to_string "cannot read a.vlt: missing")

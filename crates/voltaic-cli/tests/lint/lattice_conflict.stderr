@@ -1,6 +1,14 @@
-warning[VLT1004]: bool cannot also be u64
+warning[VLT1004]: `wrong` cannot be both bool and u64
+  --> lattice_conflict.vlt:18:1
+   |
+18 | wrong : u64
+   | ^^^^^^^^^^^
   --> lattice_conflict.vlt:19:1
    |
 19 | wrong = true
-   | ^^^^^
-  = help: pinned by an ascription. Run `voltaic sig --why` for the constraint chain.
+   | ^^^^^ required u64 here
+  --> lattice_conflict.vlt:19:7
+   |
+19 | wrong = true
+   |       ^^^^^^ inferred bool here, an equation's body returns this
+  = help: pinned by an ascription. Run `voltaic sig --why wrong` for the constraint chain.

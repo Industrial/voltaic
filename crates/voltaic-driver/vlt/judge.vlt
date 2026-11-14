@@ -1,4 +1,6 @@
 import voltaic_ast::Program
+import voltaic_ast::Span
+import voltaic_lattice::Inferred
 import voltaic_lattice::Obligation
 import voltaic_diag::Code
 import voltaic_diag::Diagnostic
@@ -15,21 +17,81 @@ judge path source program =
   mut diagnostics = Vec::new ()
   for failure in .contradictions (&found.store) outcome
     if .at failure.at found.store is Some held
+      owner = enclosing (.as_slice found.definitions) held.provenance.span
       diagnostics |> .push (Diagnostic {
         code = DiagnosticCode::from Code::LatticeConflict,
         severity = Severity::Warning,
-        message = stated (&held.obligation) (&outcome),
-        span = held.provenance.span,
-        help = Some (format! \-> "#{(.label held.provenance.reason)}. Run `voltaic sig --why` for the constraint chain."),
+        message = stated owner (&held.obligation) (&outcome),
+        span = boundary owner held.provenance.span,
+        related = sides (&found.store) failure.at (&held.obligation) (&outcome) held.provenance.span,
+        help = Some (advice owner (&held.provenance)),
         path = .clone shown,
         source = .to_string source })
   diagnostics
 
-stated : &Obligation -> &voltaic_lattice::Outcome -> String
-stated obligation outcome = case obligation of
-  Obligation::Unify { left, right, .. } ->
-    format! \-> "#{(.resolved left outcome)} cannot also be #{(.resolved right outcome)}"
-  _ -> voltaic_lattice::summarise obligation
+enclosing : &[Inferred] -> Span -> Option<&Inferred>
+enclosing definitions at =
+  mut best : Option<&Inferred> = None
+  for definition in .iter definitions
+    if definition.span.0 <= at.0 && at.1 <= definition.span.1
+      if best is Some held
+        if definition.span.1 - definition.span.0 < held.span.1 - held.span.0
+          best := Some definition
+      else
+        best := Some definition
+  best
+
+boundary : Option<&Inferred> -> Span -> Span
+boundary owner at =
+  if owner is Some definition
+    return definition.span
+  at
+
+stated : Option<&Inferred> -> &Obligation -> &voltaic_lattice::Outcome -> String
+stated owner obligation outcome =
+  named = if owner is Some definition
+    format! \-> "`#{definition.name}` "
+  else
+    String::new ()
+  case obligation of
+    Obligation::Unify { left, right, .. } ->
+      format! \-> "#{named}cannot be both #{(.resolved left outcome)} and #{(.resolved right outcome)}"
+    _ -> format! \-> "#{named}#{(voltaic_lattice::summarise obligation)}"
+
+sides : &voltaic_lattice::Store -> usize -> &Obligation -> &voltaic_lattice::Outcome -> Span -> Vec<(Span, String)>
+sides store at_index obligation outcome at =
+  mut found = Vec::new ()
+  if obligation is Obligation::Unify { left, right, .. }
+    found |> .push (at, format! \-> "required #{(.resolved right outcome)} here")
+    if opposing store at_index is Some other
+      found |> .push (other.0, format! \-> "inferred #{(.resolved left outcome)} here, #{other.1}")
+  found
+
+opposing : &voltaic_lattice::Store -> usize -> Option<(Span, String)>
+opposing store at_index =
+  failing = (.at at_index store)?
+  wanted = .holes failing
+  for pair in .enumerate (.iter (.all store))
+    if pair.0 == at_index
+      continue
+    if pair.1.provenance.span != failing.provenance.span && shares (&wanted) pair.1
+      return Some (pair.1.provenance.span, .to_string (.phrasing pair.1.provenance.reason))
+  None
+
+shares : &[voltaic_lattice::Variable] -> &voltaic_lattice::Constraint -> bool
+shares wanted candidate =
+  for hole in .holes candidate
+    if .contains (&hole) wanted
+      return true
+  false
+
+advice : Option<&Inferred> -> &voltaic_lattice::Provenance -> String
+advice owner provenance =
+  reason = .phrasing provenance.reason
+  if owner is Some definition
+    format! \-> "#{reason}. Run `voltaic sig --why #{definition.name}` for the constraint chain."
+  else
+    format! \-> "#{reason}. Run `voltaic sig --why` for the constraint chain."
 
 export judgements : &Program -> Vec<(String, String)>
 judgements program =
@@ -37,7 +99,7 @@ judgements program =
   outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
   mut shown = Vec::new ()
   for definition in .iter found.definitions
-    resolved = .resolved (&definition.ty) outcome
+    resolved = .judged (&outcome) definition
     row = if .is_empty definition.row
       String::new ()
     else
@@ -57,12 +119,45 @@ test "a body contradicting its signature is reported as a warning, not an error"
   assert_eq! \-> .len found \-> 1
   assert_eq! \-> found[0].severity \-> Severity::Warning \-> "rustc is the authority; Lattice advises"
 
-test "a judgement diagnostic carries a span and names the constraint's reason"
+test "a judgement names the enclosing definition in its message"
   source = "wrong : u64\nwrong = true\n"
   program = .expect "should parse" (voltaic_parser::parse_source source)
   found = judge (Path::new "probe.vlt") source (&program)
-  assert! \-> found[0].span.1 >= found[0].span.0
-  assert! \-> .is_some found[0].help
+  assert! \-> .contains "`wrong`" found[0].message \-> "#{found[0].message}"
+
+test "a judgement is reported against the definition's span, not the constraint's"
+  source = "wrong : u64\nwrong = true\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  tree = voltaic_lattice::walk (&program)
+  definition = .expect "wrong" (.find "wrong" tree)
+  found = judge (Path::new "probe.vlt") source (&program)
+  assert_eq! \-> found[0].span \-> definition.span
+
+test "a judgement carries two spans, because a unification failure has two sides"
+  source = "wrong : u64\nwrong = true\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = judge (Path::new "probe.vlt") source (&program)
+  assert_eq! \-> .len found[0].related \-> 2 \-> "one span makes inference feel arbitrary"
+
+test "the two spans are different places in the program"
+  source = "wrong : u64\nwrong = true\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = judge (Path::new "probe.vlt") source (&program)
+  assert! \-> found[0].related[0].0 != found[0].related[1].0 \-> "#{found[0].related:?}"
+
+test "neither secondary span repeats the primary"
+  source = "wrong : u64\nwrong = true\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = judge (Path::new "probe.vlt") source (&program)
+  for other in .iter found[0].related
+    assert! \-> other.0 != found[0].span \-> "a repeated snippet reads as two findings"
+
+test "the help names the definition and the command that explains it"
+  source = "wrong : u64\nwrong = true\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = judge (Path::new "probe.vlt") source (&program)
+  help = .expect "a help line" (.clone found[0].help)
+  assert! \-> .contains "sig --why wrong" help \-> "#{help}"
 
 test "judgements are reported per definition"
   source = "twice : u64 -> u64\ntwice n = n + n\nthrice : u64 -> u64\nthrice n = n + n + n\n"
@@ -71,3 +166,15 @@ test "judgements are reported per definition"
   assert_eq! \-> .len named \-> 2
   assert_eq! \-> named[0].0 \-> "twice"
   assert_eq! \-> named[0].1 \-> "u64 -> u64"
+
+test "the innermost enclosing definition wins when two spans nest"
+  source = "data Box = Box { side : f64 }\nouter : &Box -> f64\nouter b = b.side\ninner : &Box -> f64\ninner b = b.side\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  tree = voltaic_lattice::walk (&program)
+  held = .expect "inner" (.find "inner" tree)
+  assert_eq! \-> .map (\d -> .clone d.name) (enclosing (.as_slice tree.definitions) held.span) \-> Some (.to_string "inner")
+
+test "a span inside no definition has no enclosing one"
+  program = .expect "should parse" (voltaic_parser::parse_source "a : u64\na = 1\n")
+  tree = voltaic_lattice::walk (&program)
+  assert! \-> .is_none (enclosing (.as_slice tree.definitions) (9000, 9001))
