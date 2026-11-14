@@ -379,7 +379,7 @@ rounding-up the project's own §1.2 names.
 
 | Leaf | State |
 |---|---|
-| 1 — `GRAMMAR.md` regraded | blocked, **per construct** — §10.9 |
+| 1 — `GRAMMAR.md` regraded | **partly done** — §10.10. Three rows blocked per construct (§10.9) |
 | 2 — `DECLINED.md` | **done** (§10.1–§10.5) |
 | 3 — `CONFORMANCE.md` | blocked on row 99 wave 6, and smaller than written — §10.9 |
 | 4 — `STATUS.md` | **done** (§10.7, extended by §10.9) |
@@ -511,3 +511,87 @@ table asks a different question — which generation each crate is *written in* 
 built from `voltaic_lexer::GENERATIONS` rather than from the lines that have a
 count, so `g1`'s retirement is recorded where a reader looks for the current state
 rather than disappearing from it.
+
+### 10.10 Leaf 1: one row regraded, and the example it never had
+
+Leaf 1 asks for a regrade *from scratch*. What row 103's migration actually
+changed is narrower than that, and the distinction is the useful part:
+
+**`GRAMMAR.md` grades the accepted surface — what a user *can* write — and row
+103 changed what the compiler *is* written in.** Those are different documents'
+subjects. `|>` is still accepted; receiver-last `.len xs` is still accepted;
+`name : Type` in a declaration is still accepted. So most of the inventory's
+~128 rows are unaffected, and the from-scratch re-derivation is what waves 4–9
+will necessitate, when the accepted surface actually contracts.
+
+One row did change, because row 99's parser work changed the **grammar** and not
+only the idiom: *Method calls, field access*. It is regraded, and the grade did
+not move — `SUGARED` was and is right. What it gained is three forms stated
+separately (`recv.name` a field read, `recv.name args` a receiver-first call,
+`recv.name ()` a zero-argument call), the chaining rule and its two type-free
+parser facts, and the bracket an argument-carrying link needs.
+
+#### The row cited the wrong examples, and a witness already existed
+
+It cited `examples/comprehension.vlt` and `examples/application.vlt`. **Neither
+contains a receiver-first dot** — the spelling row 103 wrote the entire compiler
+in, 8,479 call sites.
+
+**A first attempt at this section said the construct was witnessed by nothing and
+added an example for it. That was wrong**, and the way it was wrong is worth more
+than the row: `examples/receiver_first.vlt` has existed since row 99 wave 3's
+argument half and witnesses the form extensively. The row's *citation* was stale;
+the corpus was not short a witness. So the fix is one path in one cell, not a new
+file.
+
+What the existing example *did* need is a correction of its own. It said:
+
+> Every step here carries an argument, deliberately. A no-argument step is still
+> a field access, so `(s.trim).len` is `E0615` today rather than a chain.
+
+True when written and false now — row 99's zero-argument work made
+`recv.name ()` a call and `s.len ().count_ones ()` a chain. The example gains
+both forms, run rather than only compiled, because every case in it is about
+**grouping**: a chain that binds the wrong way still compiles and prints a
+different answer.
+
+#### I overwrote a tracked example, and the near-miss is the lesson
+
+The new file was written to `examples/receiver.vlt`, which **already existed** —
+plan 67's marked-receiver example, the sole witness for four graded rows
+(*Generic traits*, *Two impls of one trait for one type*, *The receiver, marked
+in a type*, *Associated functions*). It was destroyed and restored from `HEAD`
+within the same session, and nothing was committed in between.
+
+Three signals said so and all three were read past: the write tool reported the
+file *"has been updated"* rather than created; `git status` showed ` M` rather
+than `??`; and `construct_coverage` went red immediately, naming all four rows.
+
+**The gate is what caught it**, and it caught it because it checks a property —
+*every graded construct appears in some corpus file* — rather than a list of
+files. A test that enumerated expected witnesses would have been updated along
+with the overwrite and said nothing.
+
+The diagnosis also took three wrong turns worth recording, because each was a
+plausible theory that a cheaper check would have skipped: order-dependence
+(disproved by renaming the file to sort last), an aborting scanner (disproved by
+reading `Source::new`, which skips unlexable files via `filter_map`), and a
+corpus-size dependency (disproved by reading `Witness::unmet`, where every arm is
+`corpus.iter().any`). `any` is monotone in the corpus, so **adding** a file
+cannot remove a witness — which should have pointed at *removal* on the first
+step rather than the fourth.
+
+#### What is left of leaf 1
+
+The three rows in §10.9's table, each waiting on its wave, plus the from-scratch
+re-derivation once waves 4–9 have moved the accepted surface. §1.1's ordering
+argument holds and now has a measured shape: there is no point re-deriving 125
+rows that generation 2 has not yet touched.
+
+One thing this pass did **not** do and should be done with the re-derivation:
+check every row's citation the way this one's was checked. The gate resolves that
+a cited path *exists* and `construct_coverage` checks that a construct appears
+*somewhere*, but neither notices a row citing a file that witnesses the construct
+less well than another file does. That is how this row kept two stale citations
+through a whole generation, and it is a per-row judgement rather than something
+to gate.
