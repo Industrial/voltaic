@@ -7,6 +7,7 @@ module judge
 module lint
 module migrate
 module remap
+module visit
 
 export import cache::CacheReporter
 export import cache::Fingerprint
@@ -41,3 +42,8 @@ export import migrate::gate
 export import migrate::transpile
 export import remap::RustcMessage
 export import remap::remap
+export import visit::Pass
+export import visit::apply_pass
+export import visit::descend
+export import visit::rewrite_expr
+export import visit::rewrite_program

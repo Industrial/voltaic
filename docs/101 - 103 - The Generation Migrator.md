@@ -480,6 +480,62 @@ tracking progress, so a second run over a finished crate must be a no-op. Withou
 it the gate would report every completed crate as failing, which is a migration
 tool that cannot be run twice.
 
+### 10.9 Leaf 2: the visitor, and the first transform it carries
+
+`crates/voltaic-driver/vlt/visit.vlt` traverses a `Program` and applies a pass to
+every expression, bottom-up. It reaches all 51 `Expr` variants plus `Block`,
+`Stmt`, `Condition`, `ConditionOperand`, `CaseArm`, `FieldInit`, `Guard`,
+`Qualifier`, `Section`, `StrInterpPart`, `Binding` and nested `Item`s.
+
+**It does not reach patterns, and that is a property rather than an omission.** A
+pass rewriting expressions must not edit a pattern: `|>` cannot appear in one, and
+a pass that touched one would change what a program *matches* rather than what it
+computes. `a_numeral_in_a_pattern_is_left_alone` pins it, and the test that found
+it is the one that listed a pattern literal among the expression numerals and
+failed.
+
+**The pass is an enum, not a closure, because this surface cannot spell the
+closure.** `&dyn Fn(&mut Expr) -> ()` in a signature loses its second parameter —
+`capture_type` is greedy, so the `-> ()` reads as the *closure's* return and the
+arity check reports 1 where 2 was written. A type alias hid the arrow and
+defaulted to `+ 'static`, which no closure over a local satisfies; a generic alias
+(`type Step<'a> = …`) does not parse at all. Three attempts, and the enum is
+better anyway: no lifetime to thread, a closed list a reader can enumerate, and
+`Copy`, so every `rewrite_*` takes it by value.
+
+### 10.10 The first transform, and the identity gate paid for itself twice
+
+`Pass::Pipelines` turns `a |> .f b` into `a.f b`. Run over the compiler's own
+105 `.vlt` files — 8,479 `.`-calls, a corpus nobody wrote to be easy to migrate —
+with leaf 3's gate on every file. Nothing is written; the assertion is that the
+rewrite *would* be safe.
+
+**It rejected twelve files on the first run, and named the construct.** A
+no-argument stage — `self.args |> .iter` — collapses to `self.args.iter`, which
+**reparses as `Expr::Field`**: a field access. The solver cannot say otherwise,
+because doc 97 §10.36's `std` boundary means it knows no methods on `Vec` or
+`Path`. So the pass is restricted to stages that carry arguments, where the
+reparse gives a `Dot` and the lowering is a call.
+
+That is §1.2's whole argument demonstrated: *"byte-identical generated Rust means
+the migration changed the spelling of the program and nothing else"*. A
+tests-still-pass gate would have shipped twelve files emitting field reads that do
+not exist. The no-argument half unblocks when `std` reaches the declaration
+environment, which §10.8 records.
+
+**Then it rejected one more, and that one was the formatter.** Reprinting
+`voltaic-lattice/vlt/infer_mode.vlt` turned `&**callee` into `&(*(*callee))` — the
+same AST, which is why `formatting_preserves_meaning` was content, and different
+*text*, which the emitter passes through for a unary operand. The printer
+parenthesised **any** nested prefix unary; parentheses are needed only where the
+two operators would lex as one token, and `&` after `&` is the only such pair —
+`&&` is in the operator table and `**`, `--`, `!!` are not.
+
+So byte-identity is **stricter than "the same program"**, and this is where that
+pays: a semantically-null text difference in the migrated output is still a
+difference a reviewer would have to account for, and the gate found the one file
+in 105 where the formatter introduced one.
+
 ### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
 
 Leaf 2's largest `auto` construct is doc 87 §1.2's inversion of `.`:

@@ -1,0 +1,332 @@
+import voltaic_ast::BinaryOp
+import voltaic_ast::Block
+import voltaic_ast::CaseArm
+import voltaic_ast::ClassMember
+import voltaic_ast::ClauseBody
+import voltaic_ast::Condition
+import voltaic_ast::ConditionOperand
+import voltaic_ast::Expr
+import voltaic_ast::FieldInit
+import voltaic_ast::Guard
+import voltaic_ast::Item
+import voltaic_ast::Program
+import voltaic_ast::Qualifier
+import voltaic_ast::Section
+import voltaic_ast::Stmt
+import voltaic_ast::StrInterpPart
+
+export data Pass
+  = BlankNumbers
+  | Pipelines
+  deriving (Debug, Clone, Copy, PartialEq, Eq)
+
+export rewrite_program : &mut Program -> Pass -> ()
+rewrite_program program step =
+  for item in .iter_mut program.items
+    rewrite_item item step
+  ()
+
+export rewrite_item : &mut Item -> Pass -> ()
+rewrite_item item step = case item of
+  Item::Fn f ->
+    for clause in .iter_mut f.clauses
+      case &mut clause.body of
+        ClauseBody::Plain block -> rewrite_block block step
+        ClauseBody::Guarded rows ->
+          for row in .iter_mut rows
+            rewrite_guard row step
+          ()
+      for stmt in .iter_mut clause.wheres
+        rewrite_stmt stmt step
+    ()
+  Item::Instance block ->
+    for member in .iter_mut block.members
+      if member is ClassMember::Method f
+        for clause in .iter_mut f.clauses
+          case &mut clause.body of
+            ClauseBody::Plain b -> rewrite_block b step
+            ClauseBody::Guarded rows ->
+              for row in .iter_mut rows
+                rewrite_guard row step
+              ()
+          for stmt in .iter_mut clause.wheres
+            rewrite_stmt stmt step
+    ()
+  Item::Test t -> rewrite_block (&mut t.body) step
+  Item::Const c -> rewrite_expr (&mut c.value) step
+  _ -> ()
+
+export rewrite_block : &mut Block -> Pass -> ()
+rewrite_block block step =
+  for stmt in .iter_mut block.stmts
+    rewrite_stmt stmt step
+  ()
+
+export rewrite_stmt : &mut Stmt -> Pass -> ()
+rewrite_stmt stmt step =
+  rewrite_expr (&mut stmt.expr) step
+  ()
+
+export rewrite_guard : &mut Guard -> Pass -> ()
+rewrite_guard row step =
+  if &mut row.condition is Some cond
+    rewrite_condition cond step
+  rewrite_block (&mut row.body) step
+  ()
+
+export rewrite_condition : &mut Condition -> Pass -> ()
+rewrite_condition cond step =
+  for operand in .iter_mut cond.operands
+    case operand of
+      ConditionOperand::Expr e -> rewrite_expr e step
+      ConditionOperand::Pattern { source, .. } -> rewrite_expr source step
+  ()
+
+export rewrite_arm : &mut CaseArm -> Pass -> ()
+rewrite_arm arm step =
+  if &mut arm.r#guard is Some cond
+    rewrite_condition cond step
+  rewrite_expr (&mut arm.body) step
+  ()
+
+export rewrite_field : &mut FieldInit -> Pass -> ()
+rewrite_field field step =
+  if &mut field.value is Some e
+    rewrite_expr e step
+  ()
+
+export rewrite_part : &mut StrInterpPart -> Pass -> ()
+rewrite_part part step = case part of
+  StrInterpPart::Interp { expr, .. } -> rewrite_expr expr step
+  StrInterpPart::Text _ -> ()
+
+export rewrite_qualifier : &mut Qualifier -> Pass -> ()
+rewrite_qualifier q step = case q of
+  Qualifier::Draw { source, .. } -> rewrite_expr source step
+  Qualifier::Guard e -> rewrite_expr e step
+
+export rewrite_section : &mut Section -> Pass -> ()
+rewrite_section s step = case s of
+  Section::Right { operand, .. } -> rewrite_expr operand step
+  Section::Left { operand, .. } -> rewrite_expr operand step
+  Section::Field _ -> ()
+
+export rewrite_expr : &mut Expr -> Pass -> ()
+rewrite_expr e step =
+  descend e step
+  apply_pass e step
+  ()
+
+export descend : &mut Expr -> Pass -> ()
+descend e step = case e of
+  Expr::Call { callee, args, .. } ->
+    rewrite_expr callee step
+    for a in .iter_mut args
+      rewrite_expr a step
+    ()
+  Expr::Field { recv, .. } -> rewrite_expr recv step
+  Expr::Dot { recv, args, .. } ->
+    rewrite_expr recv step
+    for a in .iter_mut args
+      rewrite_expr a step
+    ()
+  Expr::Index { recv, index, .. } ->
+    rewrite_expr recv step
+    rewrite_expr index step
+  Expr::Binary { lhs, rhs, .. } ->
+    rewrite_expr lhs step
+    rewrite_expr rhs step
+  Expr::UserBinary { lhs, rhs, .. } ->
+    rewrite_expr lhs step
+    rewrite_expr rhs step
+  Expr::Over { function, place, .. } ->
+    rewrite_expr function step
+    rewrite_expr place step
+  Expr::Unary { operand, .. } -> rewrite_expr operand step
+  Expr::Paren { inner, .. } -> rewrite_expr inner step
+  Expr::Lambda { body, .. } -> rewrite_expr body step
+  Expr::AsyncBlock { body, .. } -> rewrite_block body step
+  Expr::UnsafeBlock { body, .. } -> rewrite_block body step
+  Expr::TryBlock { body, .. } -> rewrite_block body step
+  Expr::BindBlock { body, .. } -> rewrite_block body step
+  Expr::Ascribe { inner, .. } -> rewrite_expr inner step
+  Expr::StrInterp { parts, .. } ->
+    for p in .iter_mut parts
+      rewrite_part p step
+    ()
+  Expr::Tuple { items, .. } ->
+    for i in .iter_mut items
+      rewrite_expr i step
+    ()
+  Expr::ArrayRepeat { value, count, .. } ->
+    rewrite_expr value step
+    rewrite_expr count step
+  Expr::Record { head, fields, .. } ->
+    rewrite_expr head step
+    for f in .iter_mut fields
+      rewrite_field f step
+    ()
+  Expr::List { items, .. } ->
+    for i in .iter_mut items
+      rewrite_expr i step
+    ()
+  Expr::Comprehension { element, qualifiers, .. } ->
+    rewrite_expr element step
+    for q in .iter_mut qualifiers
+      rewrite_qualifier q step
+    ()
+  Expr::If { condition, then_block, r#otherwise, .. } ->
+    rewrite_condition condition step
+    rewrite_block then_block step
+    if r#otherwise is Some block
+      rewrite_block block step
+    ()
+  Expr::Block { body, .. } -> rewrite_block body step
+  Expr::Try { inner, .. } -> rewrite_expr inner step
+  Expr::Section { section, .. } -> rewrite_section section step
+  Expr::Case { scrutinee, arms, .. } ->
+    rewrite_expr scrutinee step
+    for a in .iter_mut arms
+      rewrite_arm a step
+    ()
+  Expr::Ladder { rows, .. } ->
+    for row in .iter_mut rows
+      rewrite_guard row step
+    ()
+  Expr::Binding b ->
+    rewrite_expr (&mut b.value) step
+    if &mut b.r#otherwise is Some block
+      rewrite_block block step
+    ()
+  Expr::Item { item, .. } -> rewrite_item item step
+  Expr::Return { value, .. } ->
+    if value is Some v
+      rewrite_expr v step
+    ()
+  Expr::Draw { value, .. } -> rewrite_expr value step
+  Expr::Await { value, .. } -> rewrite_expr value step
+  Expr::Assign { target, value, .. } ->
+    rewrite_expr target step
+    rewrite_expr value step
+  Expr::Guard { source, r#otherwise, .. } ->
+    rewrite_expr source step
+    rewrite_block r#otherwise step
+  Expr::While { condition, body, .. } ->
+    rewrite_condition condition step
+    rewrite_block body step
+  Expr::For { source, body, .. } ->
+    rewrite_expr source step
+    rewrite_block body step
+  Expr::Loop { body, .. } -> rewrite_block body step
+  Expr::Break { value, .. } ->
+    if value is Some v
+      rewrite_expr v step
+    ()
+  Expr::MacroCall { args, .. } ->
+    for a in .iter_mut args
+      rewrite_expr a step
+    ()
+  Expr::Path { .. } or Expr::MethodRef { .. } or Expr::StrLit { .. } or Expr::RawLit { .. } or Expr::Unit { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::SelfField { .. } or Expr::SelfType { .. } or Expr::Ident _ or Expr::Continue { .. } or Expr::RustHatch { .. } -> ()
+
+export apply_pass : &mut Expr -> Pass -> ()
+apply_pass e pass = case pass of
+  Pass::BlankNumbers -> blank_number e
+  Pass::Pipelines -> collapse_pipeline e
+
+export(crate) blank_number : &mut Expr -> ()
+blank_number e =
+  if e is Expr::Num { text, .. }
+    *text := .to_string "9"
+  ()
+
+export(crate) collapse_pipeline : &mut Expr -> ()
+collapse_pipeline e =
+  guard e is Expr::Binary { op, lhs, rhs, span } else
+    return ()
+  if *op != BinaryOp::Pipeline
+    return ()
+  mut named = None
+  mut found : Vec<Expr> = Vec::new ()
+  if .as_ref rhs is Expr::MethodRef { name, .. }
+    named := Some (.clone name)
+  if .as_ref rhs is Expr::Call { callee, args, .. } && .as_ref callee is Expr::MethodRef { name, .. }
+    named := Some (.clone name)
+    found := .to_vec (.as_slice args)
+  guard named is Some name else
+    return ()
+  if .is_empty found
+    return ()
+  *e := Expr::Dot { recv = .clone lhs, name, args = found, span = *span }
+  ()
+
+test "a leaf has no children, so descending it is a no-op"
+  mut e = Expr::Bool { value = true, span = (0, 1) }
+  before = .clone e
+  rewrite_expr (&mut e) Pass::BlankNumbers
+  assert_eq! \-> e \-> before
+
+test "the traversal reaches a numeral in every expression position"
+  source = "f : u64 -> u64\nf n =\n  m = n + 1\n  xs = [2, 3] : Vec<u64>\n  case m of\n    4 -> 5\n    _ -> m * 6\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  rewrite_program (&mut program) Pass::BlankNumbers
+  shown = format! \-> "#{program:?}"
+  for digit in &["\"1\"", "\"2\"", "\"3\"", "\"5\"", "\"6\""]
+    assert! \-> !.contains (*digit) (.as_str shown)
+
+test "a numeral in a pattern is left alone, because a pass must not change what matches"
+  source = "f : u64 -> u64\nf n = case n of\n  4 -> 5\n  _ -> 6\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  rewrite_program (&mut program) Pass::BlankNumbers
+  shown = format! \-> "#{program:?}"
+  assert! \-> .contains "\"4\"" (.as_str shown)
+  assert! \-> !.contains "\"5\"" (.as_str shown)
+  assert! \-> !.contains "\"6\"" (.as_str shown)
+
+test "a numeral the traversal cannot reach would survive, which is what this pins"
+  source = "f : u64 -> u64\nf n = n + 7\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  before = format! \-> "#{program:?}"
+  assert! \-> .contains "\"7\"" (.as_str before)
+  rewrite_program (&mut program) Pass::BlankNumbers
+  after = format! \-> "#{program:?}"
+  assert! \-> !.contains "\"7\"" (.as_str after)
+
+test "a pipeline with no arguments is declined, because `x.f` reparses as a field"
+  source = "f : &str -> usize\nf s = s |> .len\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  rewrite_program (&mut program) Pass::Pipelines
+  shown = format! \-> "#{program:?}"
+  assert! \-> .contains "Pipeline" (.as_str shown)
+  assert! \-> !.contains "Dot" (.as_str shown)
+
+test "a pipeline with arguments keeps them, receiver first"
+  source = "f : u64 -> u64\nf n = n |> .max 3\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  rewrite_program (&mut program) Pass::Pipelines
+  shown = format! \-> "#{program:?}"
+  assert! \-> .contains "Dot" (.as_str shown)
+  assert! \-> .contains "\"max\"" (.as_str shown)
+  assert! \-> .contains "\"3\"" (.as_str shown)
+
+test "a chain collapses every stage that carries arguments, and only those"
+  source = "f : u64 -> u64\nf n = n |> .max 3 |> .min 8\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  rewrite_program (&mut program) Pass::Pipelines
+  shown = format! \-> "#{program:?}"
+  assert! \-> !.contains "Pipeline" (.as_str shown)
+
+test "a mixed chain collapses the argument-carrying stage and leaves the other"
+  source = "f : &str -> usize\nf s = s |> .replacen \"a\" \"b\" 1 |> .len\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  rewrite_program (&mut program) Pass::Pipelines
+  shown = format! \-> "#{program:?}"
+  assert! \-> .contains "Dot" (.as_str shown)
+  assert! \-> .contains "Pipeline" (.as_str shown)
+
+test "a binary that is not a pipeline is left alone"
+  source = "f : u64 -> u64\nf n = n + 1\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  before = format! \-> "#{program:?}"
+  rewrite_program (&mut program) Pass::Pipelines
+  after = format! \-> "#{program:?}"
+  assert_eq! \-> after \-> before

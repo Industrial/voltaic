@@ -60,9 +60,13 @@ expr_text expr required indent source = case expr of
     naked = case .as_ref inner of
       Expr::Paren { inner = within, .. } -> within
       _ -> inner
-    printed = case .as_ref naked of
-      Expr::Unary { .. } -> format! \-> "(#{(expr_text inner 0 indent source)})"
-      _ -> operand inner u8::MAX indent source
+    merges = .rust_text (*op) == "&" && .starts_with "&" (deref_text (.as_ref naked))
+    printed = if merges
+      format! \-> "(#{(expr_text inner 0 indent source)})"
+    else
+      case .as_ref naked of
+        Expr::Unary { .. } -> expr_text naked 0 indent source
+        _ -> operand inner u8::MAX indent source
     format! \-> "#{(.rust_text op)}#{printed}"
   Expr::Paren { inner, .. } ->
     if can_drop_paren inner required
@@ -283,6 +287,11 @@ power_of expr = case expr of
   Expr::Dot { .. } -> Some u8::MAX
   Expr::Binding _ or Expr::Item { .. } or Expr::Return { .. } or Expr::Draw { .. } or Expr::Await { .. } or Expr::Assign { .. } or Expr::Over { .. } -> None
   Expr::Guard { .. } or Expr::While { .. } or Expr::For { .. } or Expr::Loop { .. } or Expr::Break { .. } or Expr::Continue { .. } -> None
+
+export(crate) deref_text : &Expr -> &'static str
+deref_text e = case e of
+  Expr::Unary { op, .. } -> .rust_text (*op)
+  _ -> ""
 
 export(crate) receiver : &Expr -> usize -> &str -> String
 receiver expr indent source =
