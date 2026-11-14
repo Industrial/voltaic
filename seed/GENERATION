@@ -10,12 +10,28 @@
 # Order is dependency order, which is also the order to rebuild in: a crate's
 # `.vlt` may name types from a crate above it.
 #
-# The third column is row 102's addition, and it is what makes row 103 a
-# migration rather than one commit: `bootstrap.sh` runs `voltaic-g1.wasm` for a
-# crate marked `g1` and `voltaic-g2.wasm` for one marked `g2`, so crates move
-# across the turn **one at a time** with a reviewable state after each. A
-# migration that had to land fourteen crates atomically would have no reviewable
-# intermediate state at all.
+# The third column is row 102's addition: it records **which generation of the
+# surface a crate's `.vlt` is written in**, which is what makes row 103 a
+# migration rather than one commit. Crates move across the turn one at a time,
+# with a reviewable state after each; a migration that had to land fourteen
+# crates atomically would have no reviewable intermediate state at all.
+#
+# **It is validated, not dispatched on, and this comment used to say otherwise.**
+# It read *"`bootstrap.sh` runs `voltaic-g1.wasm` for a crate marked `g1` and
+# `voltaic-g2.wasm` for one marked `g2`"*, and that is not what happens:
+# `bootstrap.sh` rejects any value that is not `g1` or `g2`, and then uses the
+# **newest blob present** for every crate. g1 is immutable — refreshing it would
+# make its `built by` and `compiles` both `g1`, which `blob.rs` refuses — so the
+# first change to the emitter after plan 72 froze it makes g1's output differ
+# from the tree's, permanently. g2 reads generation 1 too, byte-for-byte, which
+# `across_the_turn.rs` proves.
+#
+# So the column's three live jobs are: telling a reader which surface a given
+# `.vlt` may use, keeping the blob set honest through
+# `every_generation_named_in_the_list_has_its_blob`, and carrying `blob.rs`'s
+# invariant that a blob's `built by` may not name its own `compiles`. The
+# per-crate *reviewability* comes from the migration commits, not from which
+# blob ran — and it survives the simplification intact.
 #
 # Every crate is `g1` today. The first `g2` line is row 103's first commit, and
 # the last `g1` line leaving is row 102 §3.1's retirement step.

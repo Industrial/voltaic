@@ -232,7 +232,7 @@ fn seed_md_records_a_provenance_the_invariant_allows() {
   }
 }
 
-/// The generation column is the thing `bootstrap.sh` dispatches on, so a blob
+/// The generation column is the thing `bootstrap.sh` validates against, so a blob
 /// some crate is marked for has to exist.
 #[test]
 fn every_generation_named_in_the_list_has_its_blob() {
@@ -249,7 +249,7 @@ fn every_generation_named_in_the_list_has_its_blob() {
   wanted.dedup();
   assert!(
     !wanted.is_empty(),
-    "seed/GENERATION names no generations, so bootstrap.sh has nothing to dispatch on"
+    "seed/GENERATION names no generations, so bootstrap.sh has nothing to validate"
   );
   for generation in wanted {
     let blob = root.join(format!("seed/voltaic-{generation}.wasm"));

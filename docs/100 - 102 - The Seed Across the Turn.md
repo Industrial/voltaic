@@ -441,13 +441,64 @@ which is correct while every crate is `g1`"*. That was right when it was written
 and stopped being right the moment the dispatch changed, which is the ordinary
 way a correct sentence goes stale: the fact it rested on was somewhere else.
 
+### 10.8 Step 6's second half: green on two genuinely clean clones
+
+**Acceptance criterion 5 is met.** `fixpoint.rs` is green against g2 on a clean
+*clone*, twice, where "twice" is read as **two independent clones** rather than
+two runs in one — two runs in one clone would be a cached pass and would not
+notice a non-deterministic blob.
+
+Each clone was made with `git clone --branch … --single-branch` from the local
+repository into `.tmp/`, which is the right instrument for exactly the reason
+`AGENTS.md` warns about `.tmp/` in general: the warning is that the *parent*
+ignores `.tmp/` wholly, so git answers a different question about paths inside
+it. A clone has **its own `.git` and its own committed `.gitignore`**, and git
+commands inside it resolve against those, so the question being answered is the
+clone's. Confirmed rather than assumed — `git status --porcelain` inside each
+clone after `./bootstrap.sh` reports **0 lines**, with the generated `src/`
+present and ignored by the clone's own rules.
+
+The sequence, per clone: clone (no `src/` anywhere — `ls crates/voltaic-lexer/`
+is `Cargo.toml moon.yml tests vlt`), `./bootstrap.sh`, then the suite. All
+twelve `voltaic-seed` tests pass, and the four that matter here are
+`stage1_equals_stage2`, `the_g2_blob_and_the_tree_agree_on_every_ported_crate`,
+`a_clone_without_the_generated_rust_bootstraps_from_the_seed`, and
+`the_generated_trees_are_ignored`.
+
+#### The dispatch the third column was supposed to do, it does not do
+
+Found while confirming that retirement was still blocked: **`bootstrap.sh`
+regenerated every one of the fourteen crates with `voltaic-g2.wasm`**, although
+all fourteen `GENERATION` lines read `g1`. That is correct behaviour and
+deliberately documented in the script — g1 is immutable, so once the emitter
+moved past plan 72 its output differs from the tree's permanently, and g2 reads
+generation 1 byte-for-byte. The script validates the column against `g1 | g2`
+and then takes the newest blob present.
+
+What was wrong is `seed/GENERATION`'s own header, which claimed *"`bootstrap.sh`
+runs `voltaic-g1.wasm` for a crate marked `g1` and `voltaic-g2.wasm` for one
+marked `g2`"* — and `blob.rs`'s doc comment, which said the column is *"the thing
+`bootstrap.sh` dispatches on"*. Both are corrected in place. The column is
+**validated, not dispatched on**, and its three live jobs are: telling a reader
+which surface a given `.vlt` may use, keeping the blob set honest via
+`every_generation_named_in_the_list_has_its_blob`, and carrying `blob.rs`'s
+invariant that a blob's `built by` may not name its own `compiles`.
+
+**The reviewability the column exists for survives intact**, which is why this is
+a comment fix and not a design problem: moving one crate's `.vlt` to the new
+surface and flipping its line is still one reviewable commit. That property came
+from the commit granularity, never from which blob ran.
+
 ### 10.7 What remains
 
 - **Step 5**, which is row 103's: migrating the tree's source to generation 2,
-  crate by crate, flipping each `GENERATION` line to `g2`.
-- **Step 6's second half**: running `fixpoint` on a genuinely clean *clone* rather
-  than a clean tree. The difference is the one `AGENTS.md` records about `.tmp/` —
-  a check whose answer depends on git status answers a different question inside a
-  working tree than it does on a fresh checkout.
+  crate by crate, flipping each `GENERATION` line to `g2`. Blocked, and not on
+  this row: doc 97 §1.3's deletions 3 and 4 cannot be written as specified, which
+  doc 101 §10.14 measures and doc 97 §1.3 now records.
+- **Step 6 is done**, both halves — §10.6 for the clean tree, §10.8 above for the
+  two clean clones.
 - **Then** `voltaic-g1.wasm` is deleted and `GENERATION` reduced to one
-  generation, which is §3.1's retirement step and still last.
+  generation, which is §3.1's retirement step and still last. It is **not**
+  unblocked by step 6: all fourteen lines still read `g1`, so
+  `every_generation_named_in_the_list_has_its_blob` would fail the moment the
+  blob were deleted. Retirement needs step 5 first, exactly as §3 orders it.
