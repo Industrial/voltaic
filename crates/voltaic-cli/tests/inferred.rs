@@ -13,6 +13,17 @@
 //! wave 1 is allowed to proceed, and it has to stay green for as long as the
 //! written signatures exist, which is until row 103 migrates the compiler.
 //!
+//! # The numbers, and why the set is bigger than it first looked
+//!
+//! 229 written signatures in the examples and 910 in the compiler, all of them
+//! equal to the inferred judgement. That set was 215 and 594 until
+//! `signature_type` stopped returning `None` for every method with a `self`
+//! receiver: `self` has no written param type, so a fully annotated
+//! `skip_layout : &mut self -> ()` read as unannotated and was skipped. The
+//! gate was true about a set 330 definitions smaller than it appeared to
+//! describe, which is the quieter failure mode of a gate keyed on "has a
+//! written type" -- it narrows without going red.
+//!
 //! # Both corpora, because they fail differently
 //!
 //! `examples/` is the surface the language documents, and `crates/*/vlt/` is
@@ -108,12 +119,12 @@ fn verify(path: &Path) -> (usize, Vec<Disagreement>) {
   let mut checked = 0;
   let mut differed = Vec::new();
   for definition in &found.definitions {
-    let Some(written) = definition.written.as_ref() else {
+    let Some(written) = definition.declared() else {
       continue;
     };
     checked += 1;
-    let inferred = outcome.resolved(&definition.ty);
-    let expanded = found.known.expand(written);
+    let inferred = definition.judged(&outcome);
+    let expanded = found.known.expand(&written);
     if inferred != expanded {
       differed.push(Disagreement {
         where_: format!("{shown}: {}", definition.name),
@@ -169,6 +180,33 @@ fn every_written_signature_in_the_examples_is_the_inferred_one() {
 #[test]
 fn every_written_signature_in_the_compiler_is_the_inferred_one() {
   report("crates/*/vlt/", &compiler_sources());
+}
+
+/// Floors on the set, because a shrinking set is how this gate fails quietly.
+///
+/// `report` already refuses a corpus with *no* written signatures. That was not
+/// enough: the receiver defect left it comparing 809 of 1,139 and the gate was
+/// green throughout, because 809 is not zero. A floor is cruder than an exact
+/// count and survives ordinary additions, which an exact count would not.
+#[test]
+fn the_compared_set_has_not_shrunk() {
+  let (examples, _) = example_programs()
+    .iter()
+    .map(|p| verify(p))
+    .fold((0, 0), |(n, z), (c, _)| (n + c, z));
+  let (compiler, _) = compiler_sources()
+    .iter()
+    .map(|p| verify(p))
+    .fold((0, 0), |(n, z), (c, _)| (n + c, z));
+  assert!(
+    examples >= 229,
+    "the examples compared 229 signatures when this floor was set; now {examples}. A \
+     *smaller* set passing is the failure mode, not a success"
+  );
+  assert!(
+    compiler >= 910,
+    "the compiler compared 910 signatures when this floor was set; now {compiler}"
+  );
 }
 
 /// The exclusion is justified by the file, not by this list.

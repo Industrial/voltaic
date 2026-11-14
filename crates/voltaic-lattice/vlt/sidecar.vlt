@@ -52,7 +52,7 @@ instance Display Change
 
 export judgement_of : &crate::generate::Inferred -> &crate::driver::Outcome -> String
 judgement_of definition outcome =
-  mut shown = .to_string (.resolved (&definition.ty) outcome)
+  mut shown = .to_string (.judged outcome definition)
   if !.is_empty definition.row
     shown |> .push_str (&format! \-> " ! #{definition.row}")
   if !.is_empty definition.modes
@@ -102,8 +102,45 @@ compare before after =
       found |> .push (Change::Added (.clone row.name))
   found
 
+export data Unwritten = Unwritten { export name : String, export inferred : String, export span : voltaic_ast::Span }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export unwritten : &Report -> &crate::driver::Outcome -> Vec<Unwritten>
+unwritten found outcome =
+  mut missing = Vec::new ()
+  for definition in .iter found.definitions
+    if definition.published && .is_none definition.written
+      missing |> .push (Unwritten { name = .clone definition.name, inferred = judgement_of definition outcome, span = definition.span })
+  missing
+
 export breaking : &[Change] -> usize
 breaking every = every |> .iter |> .filter (\c -> .is_breaking c) |> .count
+
+test "a published definition with a written signature satisfies the demand"
+  program = .expect "should parse" (voltaic_parser::parse_source "export loose : u64\nloose = 1\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  assert! \-> .is_empty (unwritten (&found) (&outcome))
+
+test "generation 1 cannot express an unsigned definition at all, so the demand is vacuous here"
+  refused = voltaic_parser::parse_source "data Point = Point { x : f64 }\nexport across p = p.x\n"
+  assert! \-> .is_err refused \-> "if this parses, row 99 wave 1 has landed and `unwritten` needs a real case"
+
+test "a private definition is not asked for a signature even when it has one"
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nacross : &Point -> f64\nacross p = p.x\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  assert! \-> .is_empty (unwritten (&found) (&outcome)) \-> "the demand is on the published surface only"
+
+test "visibility reaches the inferred definition, which is what the demand reads"
+  program = .expect "should parse" (voltaic_parser::parse_source "export shown : u64\nshown = 1\nhidden : u64\nhidden = 2\n")
+  found = crate::generate::walk (&program)
+  assert! \-> (.expect "shown" (.find "shown" found)).published
+  assert! \-> !(.expect "hidden" (.find "hidden" found)).published
+
+test "the report would name the inferred judgement, so the fix can be pasted"
+  shown = Unwritten { name = .to_string "across", inferred = .to_string "&Point -> f64 @ p shared", span = (0, 6) }
+  assert_eq! \-> shown.inferred \-> "&Point -> f64 @ p shared"
 
 test "a rendered sidecar starts with the header and nothing else when empty"
   shown = render_sidecar (&Sidecar::new ())

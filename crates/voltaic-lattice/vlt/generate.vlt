@@ -11,9 +11,26 @@ import voltaic_ast::ClauseBody
 import voltaic_ast::Expr
 import voltaic_ast::Item
 import voltaic_ast::Program
+import voltaic_ast::Visibility
 
-export data Inferred = Inferred { export name : String, export ty : Ty, export row : crate::row::Row, export modes : Vec<(String, crate::mode::Mode)>, export written : Option<Ty>, export written_modes : Vec<(String, crate::mode::Mode)>, export span : voltaic_ast::Span }
+export data Inferred = Inferred { export name : String, export ty : Ty, export row : crate::row::Row, export modes : Vec<(String, crate::mode::Mode)>, export written : Option<Ty>, export written_modes : Vec<(String, crate::mode::Mode)>, export published : bool, export owner : Option<String>, export span : voltaic_ast::Span }
+
   deriving (Debug, Clone)
+
+instance Inferred
+  export judged : &crate::driver::Outcome -> &self -> Ty
+  judged outcome self = self_free (&.resolved (&self.ty) outcome) self
+
+  export declared : &self -> Option<Ty>
+  declared self =
+    written = (.as_ref self.written)?
+    Some (self_free written self)
+
+self_free : &Ty -> &Inferred -> Ty
+self_free t definition =
+  if .as_deref definition.owner is Some target
+    return annotation::with_owner t target
+  .clone t
 
 export data Report = Report { export store : Store, export definitions : Vec<Inferred>, export known : crate::declarations::Declarations }
   deriving (Debug, Clone)
@@ -151,8 +168,13 @@ one f owner store =
   if .as_ref f.sig.ret is Some written
     .require (Obligation::Unify { left = .clone body, right = annotation::read written }) f.sig.span Reason::Ascribed store
   whole = arrow_of (.as_slice params) (&body)
-  written = signature_type (&f.sig)
-  Inferred { name = .clone f.name.text, ty = whole, row = row_of (&f.sig) (.as_slice f.clauses), modes = modes_of (&f.sig) (.as_slice f.clauses), written, written_modes = written_modes_of (&f.sig), span = f.span }
+  written = signature_type (&f.sig) owner
+  Inferred { name = .clone f.name.text, ty = whole, row = row_of (&f.sig) (.as_slice f.clauses), modes = modes_of (&f.sig) (.as_slice f.clauses), written, written_modes = written_modes_of (&f.sig), published = is_published (&f.visibility), owner = .map (\o -> .to_string o) owner, span = f.span }
+
+is_published : &Visibility -> bool
+is_published visibility = case visibility of
+  Visibility::Private -> false
+  _ -> true
 
 modes_of : &voltaic_ast::Signature -> &[voltaic_ast::Clause] -> Vec<(String, crate::mode::Mode)>
 modes_of sig clauses =
@@ -182,15 +204,23 @@ row_of sig clauses =
     found := .join (&crate::row::Row::single raised) found
   found
 
-signature_type : &voltaic_ast::Signature -> Option<Ty>
-signature_type sig =
+signature_type : &voltaic_ast::Signature -> Option<&str> -> Option<Ty>
+signature_type sig owner =
   declared = (.as_ref sig.ret)?
   mut params = Vec::new ()
   for p in .iter sig.params
-    written = (.as_ref p.ty)?
-    params |> .push (annotation::read written)
+    if .as_ref p.ty is Some written
+      params |> .push (annotation::read written)
+    else
+      if crate::infer_mode::binder_of (&p.name.text) == "self" && owner is Some target
+        params |> .push (Ty::named target)
+      else
+        return None
   ret = annotation::read declared
-  Some (arrow_of (.as_slice params) (&ret))
+  whole = arrow_of (.as_slice params) (&ret)
+  if owner is Some target
+    return Some (annotation::with_owner (&whole) target)
+  Some whole
 
 clause_type : &[voltaic_ast::Clause] -> &mut Store -> &[(String, Ty)] -> Ty
 clause_type clauses store env =

@@ -295,9 +295,18 @@ In progress. Wave 1's **answer key is established and gated**, which is the thin
 
 | Corpus | Written signatures | Inferred equals written |
 |---|---:|---:|
-| `examples/` (43 programs) | 215 | **215** |
-| `crates/*/vlt/` (122 files) | 594 | **594** |
-| | **809** | **809** |
+| `examples/` (43 programs) | 229 | **229** |
+| `crates/*/vlt/` (122 files) | 910 | **910** |
+| | **1,139** | **1,139** |
+
+**These were 215 and 594 when this section was first written**, and the
+difference is not growth — it is 330 definitions the gate had been skipping.
+`signature_type` returned `None` for every method with a `self` receiver, because
+it required a written type on each parameter and `self` has none. So a fully
+annotated `skip_layout : &mut self -> ()` read as unannotated and was never
+compared. 809/809 was a true statement about a set a third smaller than it
+appeared to describe. Found by row 100 leaf 5, whose account is doc 98 §10.7;
+`the_compared_set_has_not_shrunk` now puts a floor under both counts.
 
 `voltaic sig --verify` is the comparison and
 `crates/voltaic-cli/tests/inferred.rs` is the gate that keeps it true. The gate

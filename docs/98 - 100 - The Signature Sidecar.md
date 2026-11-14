@@ -322,6 +322,66 @@ So the mechanism and its gate ship now, and the tree-wide emission ships with
 the committed-sidecar decision is sound only with the regenerating gate beside
 it, and committing the files first is the order that breaks.
 
+### 10.6 Leaf 5 — `--require-signatures`, and what it found
+
+`voltaic sig --require-signatures` refuses a published definition whose type is
+only inferred, printing the inferred judgement so the fix can be pasted in.
+`unwritten` is the check and it reads `Inferred.published`, which is
+`FnDecl.visibility` — already in the AST and simply dropped on the way through
+`one`.
+
+§1.4 says the compiler's own crates turn it on. They pass: **every published
+definition in all 122 files carries a written signature.** They did not when the
+flag was first wired, and the three things in between are the result worth
+keeping.
+
+**It is vacuous in generation 1, and that is recorded as a test rather than a
+note.** Generation 1's parser *requires* a signature — `export across p = p.x`
+is a parse error, not an unsigned definition — so the demand cannot fail here.
+`generation_1_cannot_express_an_unsigned_definition` asserts that the unsigned
+form still fails to parse, so when row 99 wave 1 makes signatures optional the
+test goes red and demands a real case. The flag is built now because the
+*measurement* it enables is what wave 1 needs, not because it bites today.
+
+### 10.7 The receiver defect: a gate that was true about a third less than it looked
+
+The flag's first run reported **204 published definitions with no written
+signature**, and every one of them was signed. `skip_layout : &mut self -> ()`
+is fully annotated; `signature_type` returned `None` for it because it required a
+written type on *every* parameter and `self` has none. So every method with a
+receiver — 204 of them — read as unannotated.
+
+The consequence for leaf 5 was a false positive. The consequence for **row 99
+wave 1** was worse and quieter: that gate compares only definitions it believes
+carry a written type, so it was comparing **809 of 1,139** and reporting
+809/809. A true statement about a set a third smaller than it appeared to
+describe, green the whole time, because 809 is not zero.
+
+Fixed, the answer key is **229/229 on the examples and 910/910 on the compiler**.
+`the_compared_set_has_not_shrunk` now puts a floor under both counts — a floor
+rather than an exact count, so ordinary additions do not trip it while a
+*narrowing* does.
+
+Two smaller defects fell out of the same measurement:
+
+- **`binder_of` did not strip a bare `mut `.** `mut self` is a by-value mutable
+  receiver and four of the compiler's methods use it, so their binder read as
+  `mut self`, the receiver was never recognised, and the mode column said
+  `mut self shared`. It stripped `&` and `&mut ` and not `mut`.
+- **`Self` had no owner to resolve against.** `offset_by : usize -> mut self -> Self`
+  read as returning a type literally named `Self`. `Self` reaches a definition's
+  type from two directions — the written return *and* the body's own constructor
+  call — and which one a given definition uses is the author's choice, so
+  expanding one side traded one disagreement for seventy-five. `Inferred` now
+  carries its `owner` and `judged` / `declared` expand both sides. A class
+  declaration's member has no owner and keeps `Self`, which is correct: there,
+  `Self` means the implementing type and no concrete type exists yet.
+
+The shape is the same one §10.5 and row 101 §10.9 record: **a gate keyed on a
+predicate narrows silently when the predicate gets it wrong.** `report` already
+refused a corpus with *no* written signatures, and that was not enough, because
+the failure was never zero.
+
 ### 10.5 Measured: `main` calling an `io` function has an empty row
 
 The `effects.vlt` corpus case records this:

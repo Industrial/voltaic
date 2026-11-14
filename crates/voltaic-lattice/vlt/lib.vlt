@@ -23,6 +23,7 @@ module variable
 
 export import annotation::from_text
 export import annotation::read
+export import annotation::with_owner
 export import constraint::Constraint
 export import constraint::Obligation
 export import declarations::Declarations
@@ -73,7 +74,9 @@ export import scheme::instantiate
 export import sidecar::Change
 export import sidecar::Published
 export import sidecar::Sidecar
+export import sidecar::Unwritten
 export import sidecar::breaking
+export import sidecar::unwritten
 export import sidecar::compare
 export import sidecar::of_report
 export import sidecar::read_sidecar

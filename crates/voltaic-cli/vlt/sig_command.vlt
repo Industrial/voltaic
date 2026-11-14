@@ -4,7 +4,7 @@ import voltaic_parser::parse_source
 import std::path::Path
 import std::path::PathBuf
 
-export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String>, export(crate) verify : bool, export(crate) emit : bool, export(crate) against : Option<PathBuf> }
+export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String>, export(crate) verify : bool, export(crate) emit : bool, export(crate) require : bool, export(crate) against : Option<PathBuf> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export(crate) data Agreement = Agreement { export(crate) checked : usize, export(crate) agreed : usize, export(crate) differed : Vec<(String, String, String)> }
@@ -28,11 +28,15 @@ parse_sig_args args =
   mut why = None
   mut verify = false
   mut emit = false
+  mut require = false
   mut against = None
   mut index = 0
   while index < .len args
     arg = &args[index]
-    if arg == "--emit"
+    if arg == "--require-signatures"
+      require := true
+      index += 1
+    else if arg == "--emit"
       emit := true
       index += 1
     else if arg == "--semver"
@@ -57,7 +61,7 @@ parse_sig_args args =
   if .is_empty inputs
     help = usage ()
     return Err (format! \-> "error: sig needs at least one .vlt\n\n#{help}")
-  Ok (SigArgs { inputs, why, verify, emit, against })
+  Ok (SigArgs { inputs, why, verify, emit, require, against })
 
 export(crate) sig_command : &[String] -> Result<(), String>
 sig_command args =
@@ -66,6 +70,14 @@ sig_command args =
     if .len parsed.inputs != 1
       return Err (.to_string "error: `--semver` compares one .vlt against one sidecar")
     return semver (&parsed.inputs[0]) (&older)
+  if parsed.require
+    mut missing = 0
+    for input in .iter parsed.inputs
+      missing += (require_one input)?
+    if missing == 0
+      println! \-> "every published definition carries a written signature"
+      return Ok ()
+    return Err (format! \-> "error: #{missing} published definition(s) have no written signature")
   if parsed.emit
     for input in .iter parsed.inputs
       (emit_one input)?
@@ -107,6 +119,20 @@ emit_one input =
   println! \-> "#{(.display target)}: #{(.len sidecar)} published"
   Ok ()
 
+require_one : &PathBuf -> Result<usize, String>
+require_one input =
+  shown = input |> .display |> .to_string
+  source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
+  program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
+  found = walk (&program)
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+  missing = voltaic_lattice::unwritten (&found) (&outcome)
+  for one in .iter missing
+    at = voltaic_diag::line_col (&source) one.span.0
+    eprintln! \-> "#{shown}:#{at.0}:#{at.1}: `#{one.name}` is published with no written signature"
+    eprintln! \-> "  write  #{one.name} : #{one.inferred}"
+  Ok (.len missing)
+
 semver : &PathBuf -> &PathBuf -> Result<(), String>
 semver input older =
   recorded = (.map_err (\e -> format! \-> "error: cannot read #{(.display older)}: #{e}") (std::fs::read_to_string older))?
@@ -125,6 +151,12 @@ semver input older =
   else
     Err (format! \-> "error: #{count} breaking change(s) of #{(.len changes)}")
 
+self_free : &voltaic_lattice::Ty -> &voltaic_lattice::Inferred -> voltaic_lattice::Ty
+self_free written definition =
+  if .as_deref definition.owner is Some target
+    return voltaic_lattice::with_owner written target
+  .clone written
+
 verify_one : &PathBuf -> Result<Agreement, String>
 verify_one input =
   shown = input |> .display |> .to_string
@@ -136,8 +168,8 @@ verify_one input =
   for definition in .iter found.definitions
     if .as_ref definition.written is Some written
       tally.checked += 1
-      inferred = .resolved (&definition.ty) outcome
-      expanded = .expand written found.known
+      inferred = .judged (&outcome) definition
+      expanded = .expand (&self_free written definition) found.known
       if inferred == expanded
         tally.agreed += 1
       else
@@ -154,7 +186,7 @@ report input why =
   outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
 
   for definition in .iter found.definitions
-    resolved = .resolved (&definition.ty) outcome
+    resolved = .judged (&outcome) definition
     shown_row = if .is_empty definition.row
       String::new ()
     else
@@ -169,7 +201,7 @@ report input why =
   if why is Some name
     if .find name found is Some definition
       println! \-> "---"
-      println! \-> "why #{definition.name} : #{(.resolved (&definition.ty) outcome)}"
+      println! \-> "why #{definition.name} : #{(.judged (&outcome) definition)}"
       for at in touching definition (&found.store)
         print! \-> "#{(voltaic_lattice::rendered at (&found.store) (&source))}"
     else

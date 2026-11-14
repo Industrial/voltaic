@@ -22,6 +22,8 @@ binder_of name =
     return .trim trimmed[5 .. .len trimmed]
   if .starts_with '&' trimmed
     return .trim trimmed[1 .. .len trimmed]
+  if .starts_with "mut " trimmed
+    return .trim trimmed[4 .. .len trimmed]
   trimmed
 
 export calls_on : &[voltaic_ast::Clause] -> Vec<(String, String)>

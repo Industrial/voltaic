@@ -1,6 +1,16 @@
 import crate::ty::Ty
 import voltaic_ast::TypeExpr
 
+export with_owner : &Ty -> &str -> Ty
+with_owner t owner = case t of
+  Ty::Con { name, args, .. } ->
+    resolved = if name == "Self"
+      owner
+    else
+      name
+    Ty::applied resolved (.collect (.map (\a -> with_owner a owner) (.iter args)))
+  _ -> .clone t
+
 export read : &TypeExpr -> Ty
 read written = from_text (.trim written.text)
 
@@ -70,6 +80,18 @@ split_arguments body =
   if start < .len bytes
     parts |> .push (from_text (.trim body[start .. .len bytes]))
   parts
+
+test "Self resolves to the owner, at the top level and nested"
+  assert_eq! \-> with_owner (&Ty::named "Self") "Mode" \-> Ty::named "Mode"
+  nested = Ty::applied "Result" (vec! \-> Ty::named "Self" \-> Ty::named "String")
+  assert_eq! \-> .to_string (with_owner (&nested) "Lexer") \-> "Result<Lexer, String>"
+
+test "a name that merely contains Self is left alone"
+  assert_eq! \-> with_owner (&Ty::named "SelfRef") "Mode" \-> Ty::named "SelfRef"
+
+test "with_owner leaves a hole untouched"
+  held = Ty::hole (crate::variable::Variable::new 3)
+  assert_eq! \-> with_owner (&held) "Mode" \-> held
 
 test "a bare name reads as a nullary constructor"
   assert_eq! \-> from_text "u64" \-> Ty::named "u64"
