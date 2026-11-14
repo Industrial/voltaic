@@ -1745,3 +1745,44 @@ syntactic. It is **ungated** — there is no corpus for "Voltaic emits it, rustc
 rejects it", `tests/unreachable/` is read against `GRAMMAR.md`'s rows and this
 is not a grammar gap, and inventing a corpus for one bug was declined. So it is
 recorded and not pinned, which is the weaker outcome and is stated as such.
+
+### 10.45 The third lever is declined on arithmetic, and the second was disproved
+
+§10.44 is one of three levers proposed for *"almost no signatures"*. All three
+were measured, and only one survived, which is worth recording because the two
+that failed did so for unrelated reasons.
+
+**Lever: teach `expr_type` the `Expr::Dot` form.** `generate.vlt`'s `expr_type`
+covers 15 expression shapes and falls through to `.fresh_hole store`, so a
+method call contributes nothing to inference — which looked like the obvious
+reason signatures cannot be dropped. Adding the arm made it **strictly worse**:
+removable fell 4 → 0, and the sidecars changed only by hole renumbering
+(`?42` → `?50`), meaning the new constraints carried no information and merely
+perturbed the numbering the gate compares. Reverted. A hole that resolves to
+nothing is not better than no hole.
+
+**Lever: move the method-shaped free functions into instances.** 159 of the
+compiler's free functions take a receiver-shaped first or last parameter and
+could be `instance` members, which §10.44 would then let go unsigned. Declined,
+on two independent grounds:
+
+- it **cannot** be identity-preserving. `fn f(x: T, …)` becoming
+  `impl T { fn f(&self, …) }` changes the generated Rust by construction, and
+  changes every call site with it. So it is a refactor needing its own review,
+  not a respelling a gate can bless — the identity gate that carried row 103's
+  migration does not apply;
+- its entire payoff is unavailable. The signature can only be *dropped* once
+  the seed accepts an unsigned inherent member, and §10.44 measured that it does
+  not. An instance member with a written signature costs exactly what a free
+  function with a written signature costs: one line.
+
+So at generation 2 the lever is 159 mechanical refactors, a large diff, zero
+signatures removed, and a second review at g3 when the deletions become
+possible. It is deferred to g3, where it is done **with** the deletion in one
+reviewable step instead of twice.
+
+The honest summary of the three: one shipped a capability and no deletions, one
+was disproved by measurement, one is arithmetic. What binds *"almost no
+signatures"* is not the parser's willingness to accept them missing — that is
+now settled for inherent instances — but mode and type-spelling fidelity, and
+the seed. Neither is a surface question.
