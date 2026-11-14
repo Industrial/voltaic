@@ -8,7 +8,7 @@ module watch_command
 
 main : ExitCode
 main =
-  args : Vec<String> = std::env::args () |> .skip 1 |> .collect
+  args : Vec<String> = ((std::env::args ()).skip 1).collect ()
   case run::run (&args) of
     Ok () -> ExitCode::SUCCESS
     Err message ->

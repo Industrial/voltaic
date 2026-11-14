@@ -4,10 +4,10 @@ import voltaic_parser::parse_source
 import std::path::Path
 import std::path::PathBuf
 
-export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String>, export(crate) verify : bool, export(crate) emit : bool, export(crate) require : bool, export(crate) against : Option<PathBuf> }
+export(crate) data SigArgs { export(crate) inputs Vec<PathBuf>, export(crate) why Option<String>, export(crate) verify bool, export(crate) emit bool, export(crate) require bool, export(crate) against Option<PathBuf> }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export(crate) data Agreement = Agreement { export(crate) checked : usize, export(crate) agreed : usize, export(crate) differed : Vec<(String, String, String)> }
+export(crate) data Agreement { export(crate) checked usize, export(crate) agreed usize, export(crate) differed Vec<(String, String, String)> }
   deriving (Debug, Clone, Default)
 
 instance Agreement
@@ -19,7 +19,7 @@ instance Agreement
     self.checked += other.checked
     self.agreed += other.agreed
     for row in .iter other.differed
-      self.differed |> .push (.clone row)
+      self.differed.push (.clone row)
     ()
 
 export(crate) parse_sig_args : &[String] -> Result<SigArgs, String>
@@ -56,7 +56,7 @@ parse_sig_args args =
       if .starts_with '-' arg
         help = usage ()
         return Err (format! \-> "error: unknown flag `#{arg}`\n\n#{help}")
-      inputs |> .push (PathBuf::from arg)
+      inputs.push (PathBuf::from arg)
       index += 1
   if .is_empty inputs
     help = usage ()
@@ -97,13 +97,13 @@ sig_command args =
 
 export(crate) sidecar_path : &Path -> PathBuf
 sidecar_path input =
-  mut shown = input |> .as_os_str |> .to_os_string
-  shown |> .push ".sig"
+  mut shown = input.as_os_str ().to_os_string ()
+  shown.push ".sig"
   PathBuf::from shown
 
 export(crate) built : &PathBuf -> Result<voltaic_lattice::Sidecar, String>
 built input =
-  shown = input |> .display |> .to_string
+  shown = input.display ().to_string ()
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
   program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
   found = walk (&program)
@@ -128,7 +128,7 @@ emit_one input =
 
 require_one : &PathBuf -> Result<usize, String>
 require_one input =
-  shown = input |> .display |> .to_string
+  shown = input.display ().to_string ()
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
   program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
   found = walk (&program)
@@ -166,7 +166,7 @@ self_free written definition =
 
 verify_one : &PathBuf -> Result<Agreement, String>
 verify_one input =
-  shown = input |> .display |> .to_string
+  shown = input.display ().to_string ()
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
   program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
   found = walk (&program)
@@ -180,13 +180,12 @@ verify_one input =
       if voltaic_lattice::congruent (&inferred) (&expanded)
         tally.agreed += 1
       else
-        tally.differed |> .push (format! \-> "#{shown}: #{definition.name}", .to_string expanded, .to_string inferred)
+        tally.differed.push (format! \-> "#{shown}: #{definition.name}", .to_string expanded, .to_string inferred)
   Ok tally
-
 
 report : &PathBuf -> Option<&str> -> Result<(), String>
 report input why =
-  shown = input |> .display |> .to_string
+  shown = input.display ().to_string ()
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
   program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
   found = walk (&program)
@@ -201,7 +200,7 @@ report input why =
     shown_modes = if .is_empty definition.modes
       String::new ()
     else
-      every = definition.modes |> .iter |> .map (\m -> format! \-> "#{m.0} #{m.1}") |> .collect : Vec<String>
+      every = (definition.modes.iter ().map (\m -> format! \-> "#{m.0} #{m.1}")).collect () : Vec<String>
       format! \-> " @ #{(.join ", " (.as_slice every))}"
     println! \-> "#{definition.name} : #{resolved}#{shown_row}#{shown_modes}"
 
@@ -235,7 +234,7 @@ touching definition store =
   for constraint in .enumerate (.iter (.all store))
     for hole in .holes constraint.1
       if .contains (&hole) wanted && !.contains (&constraint.0) hits
-        hits |> .push constraint.0
+        hits.push constraint.0
   hits
 
 test "sig refuses an empty argument list"

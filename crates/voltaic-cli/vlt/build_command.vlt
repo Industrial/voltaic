@@ -7,7 +7,7 @@ import std::path::PathBuf
 export(crate) build_command : &[String] -> Result<(), String>
 build_command args =
   parsed = (parse_build_args args)?
-  shown = parsed.input |> .display |> .to_string
+  shown = parsed.input.display ().to_string ()
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string (&parsed.input)))?
 
   mut program = (.map_err (\failure -> voltaic_diag::render (&diagnose (&parsed.input) (&source) (&failure)) parsed.plain) (voltaic_parser::parse_source (&source)))?
@@ -23,15 +23,15 @@ build_command args =
   emitted = voltaic_emit::emit_with_map (&program) (&source) (&shown)
   drop scope
 
-  out_shown = parsed.output |> .display |> .to_string
+  out_shown = parsed.output.display ().to_string ()
   (.map_err (\e -> format! \-> "error: cannot write #{out_shown}: #{e}") (std::fs::write (&parsed.output) (&emitted.0)))?
 
   sidecar = map_path (&parsed.output)
-  sidecar_shown = sidecar |> .display |> .to_string
+  sidecar_shown = sidecar.display ().to_string ()
   (.map_err (\e -> format! \-> "error: cannot write #{sidecar_shown}: #{e}") (std::fs::write (&sidecar) (voltaic_diag::render_map (&emitted.1))))?
   Ok ()
 
-export(crate) data BuildArgs = BuildArgs { export(crate) input : PathBuf, export(crate) output : PathBuf, export(crate) plain : bool }
+export(crate) data BuildArgs { export(crate) input PathBuf, export(crate) output PathBuf, export(crate) plain bool }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export(crate) default_output : &Path -> PathBuf
@@ -39,7 +39,7 @@ default_output input =
   if .is_some_and (\e -> e == "vlt" || e == "sdx") (.extension input)
     return .with_extension "vrs" input
   mut name = .to_os_string (.as_os_str input)
-  name |> .push ".vrs"
+  name.push ".vrs"
   PathBuf::from name
 
 test "maps vlt to vrs"
@@ -52,7 +52,7 @@ test "appends to an unexpected extension rather than replacing it"
 export(crate) map_path : &Path -> PathBuf
 map_path output =
   mut name = .map_or_else OsString::new OsString::from (.file_name output)
-  name |> .push ".map"
+  name.push ".map"
   .with_file_name name output
 
 test "appends rather than replacing"

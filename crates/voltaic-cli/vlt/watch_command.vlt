@@ -20,8 +20,8 @@ watch_command args =
   rx = channel.1
   mut watcher = (.map_err (\e -> format! \-> "error: cannot start the file watcher: #{e}") (notify::recommended_watcher (move \event -> drop (.send event tx))))?
 
-  dir_shown = target.dir |> .display |> .to_string
-  watched = watcher |> .watch (&target.dir) RecursiveMode::Recursive
+  dir_shown = target.dir.display ().to_string ()
+  watched = watcher.watch (&target.dir) RecursiveMode::Recursive
   (.map_err (\e -> format! \-> "error: cannot watch #{dir_shown}: #{e}") watched)?
 
   eprintln! \-> "watching #{dir_shown} — press ctrl-c to stop"
@@ -110,7 +110,7 @@ export(crate) report : &Target -> bool -> ()
 report target plain =
   case &target.file of
     Some file ->
-      shown = file |> .display |> .to_string
+      shown = file.display ().to_string ()
       run_build (&shown) plain
     None ->
       for source in sources (&target.dir)
@@ -121,7 +121,7 @@ export(crate) run_build : &str -> bool -> ()
 run_build input plain =
   mut args = vec! \-> .to_string input
   if plain
-    args |> .push (.to_string "--plain")
+    args.push (.to_string "--plain")
 
   case build_command (&args) of
     Ok _ -> eprintln! \-> "built #{input}"
@@ -132,12 +132,7 @@ export(crate) sources : &Path -> Vec<String>
 sources dir =
   guard std::fs::read_dir dir is Ok entries else
     return Vec::new ()
-  mut found : Vec<String> = entries
-    |> .filter_map Result::ok
-    |> .map (\e -> .path e)
-    |> .filter (\p -> .is_file p && .is_some_and (\x -> x == "vlt" || x == "sdx") (.extension p))
-    |> .map (\p -> .to_string (.display p))
-    |> .collect
+  mut found : Vec<String> = ((((entries.filter_map Result::ok).map (\e -> .path e)).filter (\p -> .is_file p && .is_some_and (\x -> x == "vlt" || x == "sdx") (.extension p))).map (\p -> .to_string (.display p))).collect ()
   .sort found
   found
 
@@ -158,7 +153,7 @@ test "an unreadable directory yields nothing"
   found = sources $ std::path::Path::new "/nonexistent/voltaic"
   assert! \-> .is_empty found
 
-export(crate) data Target = Target { export(crate) dir : PathBuf, export(crate) file : Option<PathBuf> }
+export(crate) data Target { export(crate) dir PathBuf, export(crate) file Option<PathBuf> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Target
@@ -168,11 +163,11 @@ instance Target
       return Ok (Target { dir = .to_path_buf arg, file = None })
 
     if !.exists arg
-      shown = arg |> .display |> .to_string
+      shown = arg.display ().to_string ()
       return Err (format! \-> "error: #{shown} does not exist\n\n`voltaic watch` takes a .vlt file or a directory of them.")
 
     parent = .filter (\p -> !.is_empty (.as_os_str p)) (.parent arg)
-    dir = parent |> .unwrap_or (Path::new ".") |> .to_path_buf
+    dir = (parent.unwrap_or (Path::new ".")).to_path_buf ()
     Ok (Target { dir, file = Some (.to_path_buf arg) })
 
 #[cfg(test)]
