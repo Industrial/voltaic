@@ -236,4 +236,104 @@ None. Emerald wrote its signatures.
 
 ## 10. Result
 
-*To be filled after execution.*
+Partial. Leaf 1's **format, generation and gate** and leaf 4's **`--semver`** are
+done. Leaves 2, 3 (beyond `--why`, which row 101 shipped), 5, 6 and 7 are open,
+and §10.4 is the honest account of what leaf 1 still owes.
+
+### 10.1 The format has no column alignment, and §1.3 is wrong about that
+
+§1.3 draws the format with padded columns, then states as the second of three
+load-bearing properties that ordering is stable *"so a diff is local to the
+definition that changed"*. **Those two cannot both hold.** Padding is computed
+from the longest name in the file, so adding one long name reflows every line
+and the diff is the whole file — which is precisely the thing the property
+forbids.
+
+The property wins over the drawing. The format is single-space separated:
+
+```
+# voltaic 2 signature sidecar — generated, do not edit
+new : &str -> Self @ src shared
+pos : Cursor -> usize @ self shared
+peek : Cursor -> Option<char> ! none @ self shared
+bump : Cursor -> Option<char> ! none + mut self @ self unique
+eat : &str -> Cursor -> bool @ s shared, self unique
+eat_while : impl Fn(char) -> bool -> Cursor -> Span @ pred shared, self unique
+```
+
+That is `crates/voltaic-lexer/vlt/cursor.vlt` in full, generated, 14 published
+definitions. `adding_a_long_name_does_not_reflow_the_other_lines` is the
+assertion that keeps the format this way, and it exists because the padded
+version is the one a future reader will find in this plan and reasonably try to
+restore.
+
+### 10.2 `--semver` catches a change Rust cannot see
+
+§4 calls this a capability Rust does not have at all. The reason is exact: a
+*written* signature cannot be diffed against the signature it replaced, because
+the edit overwrote it. An inferred one can, because the previous one is a file.
+
+Measured against the real `cursor.vlt`, with its recorded sidecar hand-altered:
+
+```
+$ voltaic sig crates/voltaic-lexer/vlt/cursor.vlt --semver old.sig
+altered  eat
+  was &str -> Cursor -> bool @ s shared, self shared
+  now &str -> Cursor -> bool @ s shared, self unique
+removed  removed_one
+added    mark
+error: 2 breaking change(s) of 3
+```
+
+The first row is the one that matters: **the type is byte-identical and the API
+changed.** `eat` went from taking `&self` to `&mut self`, which breaks every
+caller holding a shared borrow, and no type signature anywhere records it. This
+is what putting `μ` in the sidecar buys, and §1.3's third property — *"the full
+judgement, not just the type"* — is the one §1.3 got right.
+
+Additions do not break; removals and alterations do; the exit status is the
+classification, so this is usable from CI without parsing the output.
+
+### 10.3 `--semver` takes one source, and refuses two
+
+Two sources against one sidecar would silently compare only one of them.
+`semver_refuses_more_than_one_source` pins the refusal, because the failure mode
+is a passing check that compared the wrong file.
+
+### 10.4 What leaf 1 still owes, and why it is a separate commit
+
+§1.2 argues the sidecars should be **committed**, and they are not yet. Three
+things have to land together for that to be safe rather than plan 68's mistake
+again:
+
+1. **`voltaic fmt` writes them.** Today `voltaic sig --emit` does. Until the
+   format task regenerates them, 122 committed sidecars would go stale on the
+   first `.vlt` edit with nothing to notice — a committed generated file with no
+   gate is worse than no file.
+2. **`VLT0901`** — a sidecar disagreeing with its source. The corpus gate
+   asserts this for its own two cases; the tree-wide version is the diagnostic.
+3. **The gate interactions.** `.gitignore` must *not* ignore them (it does not,
+   checked), the manifests' `include` keys must carry them, and
+   `dependency_sources` must list them — which §4 leaf 2 explicitly assigns to
+   **row 104**, not here.
+
+So the mechanism and its gate ship now, and the tree-wide emission ships with
+`fmt` and `VLT0901`. Enumerating that rather than doing it halfway is the point:
+the committed-sidecar decision is sound only with the regenerating gate beside
+it, and committing the files first is the order that breaks.
+
+### 10.5 Measured: `main` calling an `io` function has an empty row
+
+The `effects.vlt` corpus case records this:
+
+```
+announce : () ! io
+main : ()
+```
+
+`main` calls `announce`, and row 95's implicit propagation says the caller's row
+is the join of its callees'. It is not propagating through calls — `clause_row`
+reads the body's own effects and stops. That is row 95 leaf 3's work and this is
+the first place it shows as a concrete, blessed, wrong line rather than an
+unimplemented leaf. The sidecar corpus will diff when it is fixed, which is what
+the corpus is for.

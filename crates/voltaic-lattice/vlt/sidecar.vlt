@@ -1,0 +1,196 @@
+import crate::generate::Report
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export const HEADER : &str = "# voltaic 2 signature sidecar — generated, do not edit"
+
+export data Published = Published { export name : String, export judgement : String }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export data Sidecar = Sidecar { export published : Vec<Published> }
+  deriving (Debug, Clone, Default, PartialEq, Eq)
+
+instance Sidecar
+  export new : Self
+  new = Sidecar { published = Vec::new () }
+
+  export len : &self -> usize
+  len self = .len self.published
+
+  export is_empty : &self -> bool
+  is_empty self = .is_empty self.published
+
+  export find : &str -> &self -> Option<&Published>
+  find name self = self.published |> .iter |> .find (\row -> row.name == name)
+
+export data Change
+  = Added String
+  | Removed String
+  | Altered { name : String, before : String, after : String }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+instance Change
+  export is_breaking : &self -> bool
+  is_breaking self = case self of
+    Change::Added _ -> false
+    Change::Removed _ -> true
+    Change::Altered { .. } -> true
+
+  export name : &self -> &str
+  name self = case self of
+    Change::Added n -> n
+    Change::Removed n -> n
+    Change::Altered { name, .. } -> name
+
+instance Display Change
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f = case self of
+    Change::Added n -> write! \-> f \-> "added    #{n}"
+    Change::Removed n -> write! \-> f \-> "removed  #{n}"
+    Change::Altered { name, before, after, .. } -> write! \-> f \-> "altered  #{name}\n  was #{before}\n  now #{after}"
+
+export judgement_of : &crate::generate::Inferred -> &crate::driver::Outcome -> String
+judgement_of definition outcome =
+  mut shown = .to_string (.resolved (&definition.ty) outcome)
+  if !.is_empty definition.row
+    shown |> .push_str (&format! \-> " ! #{definition.row}")
+  if !.is_empty definition.modes
+    every = definition.modes |> .iter |> .map (\m -> format! \-> "#{m.0} #{m.1}") |> .collect : Vec<String>
+    shown |> .push_str (&format! \-> " @ #{(.join ", " (.as_slice every))}")
+  shown
+
+export of_report : &Report -> &crate::driver::Outcome -> Sidecar
+of_report found outcome =
+  mut rows = Vec::new ()
+  for definition in .iter found.definitions
+    rows |> .push (Published { name = .clone definition.name, judgement = judgement_of definition outcome })
+  Sidecar { published = rows }
+
+export render_sidecar : &Sidecar -> String
+render_sidecar sidecar =
+  mut out = String::new ()
+  out |> .push_str HEADER
+  out |> .push('\n')
+  for row in .iter sidecar.published
+    out |> .push_str (&format! \-> "#{row.name} : #{row.judgement}\n")
+  out
+
+export read_sidecar : &str -> Sidecar
+read_sidecar text =
+  mut rows = Vec::new ()
+  for line in .lines text
+    trimmed = .trim line
+    if .is_empty trimmed || .starts_with '#' trimmed
+      continue
+    if .split_once " : " trimmed is Some halves
+      rows |> .push (Published { name = .to_string (.trim halves.0), judgement = .to_string (.trim halves.1) })
+  Sidecar { published = rows }
+
+export compare : &Sidecar -> &Sidecar -> Vec<Change>
+compare before after =
+  mut found = Vec::new ()
+  for row in .iter before.published
+    case .find (&row.name) after of
+      None -> found |> .push (Change::Removed (.clone row.name))
+      Some now ->
+        if now.judgement != row.judgement
+          found |> .push (Change::Altered { name = .clone row.name, before = .clone row.judgement, after = .clone now.judgement })
+        ()
+  for row in .iter after.published
+    if .is_none (.find (&row.name) before)
+      found |> .push (Change::Added (.clone row.name))
+  found
+
+export breaking : &[Change] -> usize
+breaking every = every |> .iter |> .filter (\c -> .is_breaking c) |> .count
+
+test "a rendered sidecar starts with the header and nothing else when empty"
+  shown = render_sidecar (&Sidecar::new ())
+  assert_eq! \-> shown \-> format! \-> "#{HEADER}\n"
+
+test "a sidecar round-trips through render and read"
+  mut original = Sidecar::new ()
+  original.published |> .push (Published { name = .to_string "peek", judgement = .to_string "Option<char> @ self shared" })
+  original.published |> .push (Published { name = .to_string "bump", judgement = .to_string "Option<char> ! mut self @ self unique" })
+  assert_eq! \-> read_sidecar (&render_sidecar (&original)) \-> original
+
+test "reading ignores the header and blank lines"
+  text = "#{HEADER}\n\nwidth : f64\n\n"
+  found = read_sidecar (&text)
+  assert_eq! \-> .len found \-> 1
+  assert_eq! \-> found.published[0].name \-> "width"
+
+test "reading a line with no separator skips it rather than guessing"
+  found = read_sidecar "# header\nnot a signature line\n"
+  assert! \-> .is_empty found
+
+test "a name appearing only in the newer sidecar is an addition, and additions are not breaking"
+  before = Sidecar::new ()
+  after = read_sidecar "width : f64\n"
+  changes = compare (&before) (&after)
+  assert_eq! \-> .len changes \-> 1
+  assert_eq! \-> changes[0] \-> Change::Added (.to_string "width")
+  assert_eq! \-> breaking (.as_slice changes) \-> 0
+
+test "a name appearing only in the older sidecar is a removal, and removals break"
+  before = read_sidecar "width : f64\n"
+  after = Sidecar::new ()
+  changes = compare (&before) (&after)
+  assert_eq! \-> changes[0] \-> Change::Removed (.to_string "width")
+  assert_eq! \-> breaking (.as_slice changes) \-> 1
+
+test "a changed judgement is an alteration carrying both sides"
+  before = read_sidecar "width : f64\n"
+  after = read_sidecar "width : f32\n"
+  changes = compare (&before) (&after)
+  assert_eq! \-> .len changes \-> 1
+  assert_eq! \-> changes[0] \-> Change::Altered { name = .to_string "width", before = .to_string "f64", after = .to_string "f32" }
+  assert_eq! \-> breaking (.as_slice changes) \-> 1
+
+test "a mode change alone is an API change, because `shared` to `owned` is one"
+  before = read_sidecar "take : u64 @ n shared\n"
+  after = read_sidecar "take : u64 @ n owned\n"
+  changes = compare (&before) (&after)
+  assert_eq! \-> .len changes \-> 1 \-> "the type is identical and the API is not"
+  assert_eq! \-> breaking (.as_slice changes) \-> 1
+
+test "an effect row change alone is an API change"
+  before = read_sidecar "run : ()\n"
+  after = read_sidecar "run : () ! io\n"
+  assert_eq! \-> breaking (.as_slice (compare (&before) (&after))) \-> 1
+
+test "an unchanged sidecar compares as no changes at all"
+  text = "width : f64\nheight : f64\n"
+  assert! \-> .is_empty (compare (&read_sidecar text) (&read_sidecar text))
+
+test "comparison reports removals before additions, so a rename reads as both"
+  before = read_sidecar "old : u64\n"
+  after = read_sidecar "new : u64\n"
+  changes = compare (&before) (&after)
+  assert_eq! \-> .len changes \-> 2
+  assert_eq! \-> .name changes[0] \-> "old"
+  assert_eq! \-> .name changes[1] \-> "new"
+
+test "a sidecar is built from a report in source order"
+  program = .expect "should parse" (voltaic_parser::parse_source "first : u64\nfirst = 1\nsecond : u64\nsecond = 2\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  built = of_report (&found) (&outcome)
+  assert_eq! \-> .len built \-> 2
+  assert_eq! \-> built.published[0].name \-> "first" \-> "source order, not hash order"
+  assert_eq! \-> built.published[1].name \-> "second"
+  assert_eq! \-> built.published[0].judgement \-> "u64"
+
+test "a judgement carries the modes, not only the type"
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nacross : &Point -> f64\nacross p = p.x\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  built = of_report (&found) (&outcome)
+  assert_eq! \-> built.published[0].judgement \-> "&Point -> f64 @ p shared" \-> "a mode change is an API change, so the mode is in the sidecar"
+
+test "rendering is byte-identical across two runs of the same report"
+  program = .expect "should parse" (voltaic_parser::parse_source "a : u64\na = 1\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  assert_eq! \-> render_sidecar (&of_report (&found) (&outcome)) \-> render_sidecar (&of_report (&found) (&outcome)) \-> "no timestamps, no hashes, no paths"

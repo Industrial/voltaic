@@ -14,6 +14,7 @@ module provenance
 module reason
 module row
 module scheme
+module sidecar
 module store
 module substitution
 module ty
@@ -65,6 +66,14 @@ export import row::Row
 export import scheme::Scheme
 export import scheme::generalise
 export import scheme::instantiate
+export import sidecar::Change
+export import sidecar::Published
+export import sidecar::Sidecar
+export import sidecar::breaking
+export import sidecar::compare
+export import sidecar::of_report
+export import sidecar::read_sidecar
+export import sidecar::render_sidecar
 export import store::Store
 export import substitution::Substitution
 export import ty::Ty

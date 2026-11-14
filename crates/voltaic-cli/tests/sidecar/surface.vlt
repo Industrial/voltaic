@@ -1,0 +1,12 @@
+data Point = Point { x : f64, y : f64 }
+
+type Depth = f64
+
+across : &Point -> f64
+across p = p.x
+
+depth : &Point -> Depth
+depth p = p.y
+
+scaled : u64 -> u64 -> u64
+scaled factor n = factor * n

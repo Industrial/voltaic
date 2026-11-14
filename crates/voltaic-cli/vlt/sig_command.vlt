@@ -3,7 +3,7 @@ import voltaic_lattice::walk
 import voltaic_parser::parse_source
 import std::path::PathBuf
 
-export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String>, export(crate) verify : bool }
+export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String>, export(crate) verify : bool, export(crate) emit : bool, export(crate) against : Option<PathBuf> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export(crate) data Agreement = Agreement { export(crate) checked : usize, export(crate) agreed : usize, export(crate) differed : Vec<(String, String, String)> }
@@ -26,10 +26,20 @@ parse_sig_args args =
   mut inputs = Vec::new ()
   mut why = None
   mut verify = false
+  mut emit = false
+  mut against = None
   mut index = 0
   while index < .len args
     arg = &args[index]
-    if arg == "--verify"
+    if arg == "--emit"
+      emit := true
+      index += 1
+    else if arg == "--semver"
+      if index + 1 >= .len args
+        return Err (.to_string "error: `--semver` needs the sidecar to compare against")
+      against := Some (PathBuf::from (&args[index + 1]))
+      index += 2
+    else if arg == "--verify"
       verify := true
       index += 1
     else if arg == "--why"
@@ -46,11 +56,19 @@ parse_sig_args args =
   if .is_empty inputs
     help = usage ()
     return Err (format! \-> "error: sig needs at least one .vlt\n\n#{help}")
-  Ok (SigArgs { inputs, why, verify })
+  Ok (SigArgs { inputs, why, verify, emit, against })
 
 export(crate) sig_command : &[String] -> Result<(), String>
 sig_command args =
   parsed = (parse_sig_args args)?
+  if parsed.against is Some older
+    if .len parsed.inputs != 1
+      return Err (.to_string "error: `--semver` compares one .vlt against one sidecar")
+    return semver (&parsed.inputs[0]) (&older)
+  if parsed.emit
+    for input in .iter parsed.inputs
+      (emit_one input)?
+    return Ok ()
   if parsed.verify
     mut total = Agreement::new ()
     for input in .iter parsed.inputs
@@ -63,6 +81,48 @@ sig_command args =
   for input in .iter parsed.inputs
     (report input (.as_deref parsed.why))?
   Ok ()
+
+sidecar_path : &PathBuf -> PathBuf
+sidecar_path input =
+  mut shown = input |> .as_os_str |> .to_os_string
+  shown |> .push ".sig"
+  PathBuf::from shown
+
+built : &PathBuf -> Result<voltaic_lattice::Sidecar, String>
+built input =
+  shown = input |> .display |> .to_string
+  source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
+  program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
+  found = walk (&program)
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+  Ok (voltaic_lattice::of_report (&found) (&outcome))
+
+emit_one : &PathBuf -> Result<(), String>
+emit_one input =
+  sidecar = (built input)?
+  target = sidecar_path input
+  text = voltaic_lattice::render_sidecar (&sidecar)
+  (.map_err (\e -> format! \-> "error: cannot write #{(.display target)}: #{e}") (std::fs::write (&target) text))?
+  println! \-> "#{(.display target)}: #{(.len sidecar)} published"
+  Ok ()
+
+semver : &PathBuf -> &PathBuf -> Result<(), String>
+semver input older =
+  recorded = (.map_err (\e -> format! \-> "error: cannot read #{(.display older)}: #{e}") (std::fs::read_to_string older))?
+  before = voltaic_lattice::read_sidecar (&recorded)
+  after = (built input)?
+  changes = voltaic_lattice::compare (&before) (&after)
+  if .is_empty changes
+    println! \-> "no API change"
+    return Ok ()
+  for change in .iter changes
+    println! \-> "#{change}"
+  count = voltaic_lattice::breaking (.as_slice changes)
+  if count == 0
+    println! \-> "#{(.len changes)} change(s), none breaking"
+    Ok ()
+  else
+    Err (format! \-> "error: #{count} breaking change(s) of #{(.len changes)}")
 
 verify_one : &PathBuf -> Result<Agreement, String>
 verify_one input =

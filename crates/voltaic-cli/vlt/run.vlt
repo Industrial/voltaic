@@ -92,7 +92,7 @@ export(crate) data State
   | Planned { plan : u32, id : &'static str }
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
-export(crate) const COMMANDS : &[Command] = &[Command { name = "build", summary = "transpile a .vlt to .vrs", state = State::Ready }, Command { name = "check", summary = "transpile, then report rustc's errors against the .vlt", state = State::Ready }, Command { name = "fmt", summary = "format .vlt files in place, or --check them", state = State::Ready }, Command { name = "sig", summary = "print the judgement Lattice inferred for every definition; --verify checks it against the written one", state = State::Ready }, Command { name = "watch", summary = "rebuild on change", state = State::Ready }, Command { name = "--version", summary = "print the version", state = State::Ready }, Command { name = "--help", summary = "print this message", state = State::Ready }]
+export(crate) const COMMANDS : &[Command] = &[Command { name = "build", summary = "transpile a .vlt to .vrs", state = State::Ready }, Command { name = "check", summary = "transpile, then report rustc's errors against the .vlt", state = State::Ready }, Command { name = "fmt", summary = "format .vlt files in place, or --check them", state = State::Ready }, Command { name = "sig", summary = "print the judgement Lattice inferred for every definition; --verify, --emit and --semver", state = State::Ready }, Command { name = "watch", summary = "rebuild on change", state = State::Ready }, Command { name = "--version", summary = "print the version", state = State::Ready }, Command { name = "--help", summary = "print this message", state = State::Ready }]
 
 test "every command has a summary"
   for command in COMMANDS

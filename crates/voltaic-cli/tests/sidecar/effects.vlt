@@ -1,0 +1,9 @@
+announce : ()
+announce =
+  println! \-> "ready"
+  ()
+
+main : ()
+main =
+  announce
+  ()
