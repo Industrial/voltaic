@@ -5,7 +5,7 @@ with_help : Code -> impl Into<String> -> impl Into<String> -> Span -> ParseError
 nesting_depth : &[Token] -> usize @ toks shared
 above_bitor : u8
 binary_power : &TokenKind -> Option<(BinaryOp, u8, u8)> ! none @ kind shared
-power : TokenKind -> u8 @ kind shared
+power : TokenKind -> u8 ! none + panic @ kind shared
 parse_source : &str -> Result<Program, ParseFailure> ! fail ParseFailure @ src owned
 ParseError.code field
 ParseError.message field

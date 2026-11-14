@@ -247,3 +247,85 @@ fn mutual_recursion_reaches_a_fixed_point() {
     );
   }
 }
+
+/// A receiver-first call propagates its callee's row, exactly like a pipeline.
+///
+/// This was a real hole, found by row 103 leaf 6 migrating `voltaic-lexer` and
+/// watching its sidecar *lose* effects: `lex`, `run` and `finish` each dropped
+/// `mut last` when `self |> .end_of_line` became `self.end_of_line ()`. The
+/// generated Rust was byte-identical — the identity gate said so — so nothing
+/// about the program changed; what changed was Lattice's report of it.
+///
+/// The cause was `expr_row_with` having no `Expr::Dot` arm, so a receiver-first
+/// call fell to `_ -> Row::empty ()` and discarded the receiver's effects, the
+/// arguments' effects, the callee's row, and `PANICKING` detection all at once.
+///
+/// Both spellings are asserted together, because the property that matters is
+/// not "a `Dot` has effects" but **"the two spellings agree"** — a migration
+/// that changes a published row is not a respelling, whatever the Rust says.
+#[test]
+fn a_receiver_first_call_propagates_its_callees_row() {
+  let source = "data T = T { export trailing : Option<u8> }\n\ndata H = H { export items : Vec<T> }\n\
+                \n\ninstance H\n  inner : &mut self -> ()\n  inner self =\n    \
+                last = self.items.last_mut ().expect \"nonempty\"\n    last.trailing := None\n    ()\n\n  \
+                export outer_pipe : &mut self -> ()\n  outer_pipe self =\n    self |> .inner\n    ()\n\n  \
+                export outer_dot : &mut self -> ()\n  outer_dot self =\n    self.inner ()\n    ()\n";
+  let program = voltaic_parser::parse_source(source).expect("should parse");
+  let found = voltaic_lattice::walk(&program);
+  let rows: Vec<String> = ["inner", "outer_pipe", "outer_dot"]
+    .iter()
+    .map(|n| {
+      found
+        .find(n)
+        .unwrap_or_else(|| panic!("{n} should be inferred"))
+        .row
+        .to_string()
+    })
+    .collect();
+  assert_eq!(
+    rows[1], rows[0],
+    "the pipeline spelling propagated `inner`'s row before this fix, and still must"
+  );
+  assert_eq!(
+    rows[2], rows[1],
+    "and the receiver-first spelling must agree with it — if these differ, \
+     migrating `|>` to `.` silently rewrites every published effect row in the \
+     compiler"
+  );
+  assert!(
+    !rows[0].is_empty(),
+    "the probe is only meaningful if `inner` has an effect to lose; got an \
+     empty row, so this test would pass on three empty rows"
+  );
+}
+
+/// A field read of an effectful expression keeps the effects.
+///
+/// Found by the same migration, and **it is not migration-specific** — it was
+/// wrong for generation 1 too, and one line of the committed corpus proved it:
+/// `voltaic-parser`'s `power` is
+/// `(.expect "should have a precedence" (binary_power (&kind))).1`, and its
+/// sidecar recorded no row at all. The tuple index is an `Expr::Field`, which
+/// swallowed both the `none` from `binary_power` and the `panic` from `.expect`.
+///
+/// It now reads `! none + panic`. That was the only one of 110 sidecars this
+/// fix changed, which is the useful part of the number: the hole was real and
+/// narrow, not a wholesale under-report.
+#[test]
+fn a_field_read_keeps_its_receivers_effects() {
+  let source = "data T = T { export mark : u8 }\n\ndata H = H { export items : Vec<T> }\n\
+                \n\ninstance H\n  inner : &self -> &T\n  inner self = .expect \"nonempty\" (.first self.items)\n\n  \
+                export via_field : &self -> u8\n  via_field self = self.inner ().mark\n";
+  let program = voltaic_parser::parse_source(source).expect("should parse");
+  let found = voltaic_lattice::walk(&program);
+  for name in ["inner", "via_field"] {
+    let d = found
+      .find(name)
+      .unwrap_or_else(|| panic!("{name} should be inferred"));
+    assert!(
+      d.row.holds(&voltaic_lattice::Effect::Panics),
+      "`{name}` reaches `.expect`, so it panics; got `{}`",
+      d.row
+    );
+  }
+}

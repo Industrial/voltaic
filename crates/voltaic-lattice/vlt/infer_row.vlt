@@ -70,11 +70,20 @@ expr_row_with e known = case e of
     for a in .iter args
       found := .join (&expr_row_with a known) found
     found
+  Expr::Dot { recv, name, args, .. } ->
+    mut found = expr_row_with recv known
+    for a in .iter args
+      found := .join (&expr_row_with a known) found
+    if .contains (&.as_str name.text) PANICKING
+      return .join (&Row::single Effect::Panics) found
+    .join (&called (&name.text) known) found
   Expr::Ident name -> called (&name.text) known
   Expr::MethodRef { name, .. } ->
     if .contains (&.as_str name.text) PANICKING
       return Row::single Effect::Panics
     called (&name.text) known
+  Expr::Field { recv, .. } -> expr_row_with recv known
+  Expr::Index { recv, index, .. } -> .join (&expr_row_with index known) (expr_row_with recv known)
   Expr::Paren { inner, .. } -> expr_row_with inner known
   Expr::Ascribe { inner, .. } -> expr_row_with inner known
   Expr::Block { body, .. } -> block_row_with body known
