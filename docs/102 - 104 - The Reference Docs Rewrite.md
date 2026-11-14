@@ -459,21 +459,32 @@ the *fixtures* were right and the *prediction* was wrong: both
 `tests/unreachable/` comments already said as much, and both are gated where the
 table was not.
 
-#### Leaf 1, blocked per construct rather than on "waves 4–9"
+#### Leaf 1, blocked per construct — and doc 97 §10.11 already said so
 
-§10.8's *"blocked on row 99 waves 4–9"* is true but too coarse to act on. Measured
-by running the fixtures:
+§10.8's *"blocked on row 99 waves 4–9"* is true but too coarse to act on. The
+per-construct answer is **doc 97 §10.11's table**, which this section rediscovered
+by running the fixtures rather than by reading it — and got one of three rows
+wrong in the process. §10.11 is the authority; it is reproduced here with
+today's diagnostics beside it:
 
-| Row | Diagnostic today | What would close it |
+| Row | Diagnostic today | Blocked on |
 |---|---|---|
-| `\|` or-patterns | `E0308` — `1 \| 2` parses as a **guard**, meaning `1` guarded by `2` | wave **2** finishing the guard-ladder replacement. `examples/case.vlt:10` still writes `n \| n > 65`, so `\|` is not free |
-| `as` casts | `VLT0101` on `n as u8` | `as` freed from `import … as`, which is wave **6**'s import deletion — and that closes the *spelling* only, per the measurement above |
-| `ref` / `ref mut` | `VLT0101` then `VLT0103` — `ref a` is two identifiers | reserving `ref`, which is **no wave's work**: doc 18 §7 keeps the reserved set small and `ref` is a plausible identifier in a compiler. A decision nobody has scheduled |
+| `\|` or-patterns | `E0308` — `1 \| 2` parses as a **guard**, meaning `1` guarded by `2` | wave **2**. `examples/case.vlt:10` still writes `n \| n > 65`, so `\|` is not free |
+| `as` casts | `VLT0101` on `n as u8` | wave **6**, which deletes `import … as` and frees the word — and that closes the *spelling* only, per the measurement above |
+| `ref` / `ref mut` | `VLT0101` then `VLT0103` — `ref a` is two identifiers | wave **4**. Reserving `ref` is *"what the keyword cull decides"*, and the fixture argues against reserving it at all |
 
-So two rows wait on two specific waves and the third waits on a decision. §1.1's
-argument for this row being last holds unchanged — a regrade now would produce
-rows needing a regrade again — but it holds for a nameable reason per row rather
-than for the surface in general.
+**The row this section got wrong was `ref`**, which a first draft called *"no
+wave's work — a decision nobody has scheduled"*. It is wave 4's, and wave 4 is
+scheduled. The mistake is the one `AGENTS.md` names twice: *"I could not find
+it" is not "it does not exist"*, and a measurement taken instead of a search
+answers a narrower question than the one asked. Running three fixtures told me
+the diagnostics; it could not tell me who owns the decision, and doc 97 §10.11
+could.
+
+So all three rows wait on a scheduled wave. §1.1's argument for this row being
+last holds unchanged — a regrade now would produce rows needing a regrade
+again — but it now holds for a nameable wave per row rather than for the surface
+in general.
 
 #### Leaf 3 is blocked on wave 6, and is smaller than §4 wrote it
 
