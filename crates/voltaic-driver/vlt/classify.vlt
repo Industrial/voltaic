@@ -16,7 +16,13 @@ instance Display Class
     Class::Review -> write! \-> f \-> "review"
     Class::Manual -> write! \-> f \-> "manual"
 
-export data Marker = Marker { export needle : String, export construct : String, export kind : Class, export tail : bool }
+export data Position
+  = Anywhere
+  | AtEnd
+  | AtStart
+  deriving (Debug, Clone, Copy, PartialEq, Eq)
+
+export data Marker = Marker { export needle : String, export construct : String, export kind : Class, export position : Position }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export markers : Vec<Marker>
@@ -44,16 +50,25 @@ markers =
   add (&mut found) ".await" "`await`" Class::Auto
   add (&mut found) "catch " "`catch`" Class::Auto
   add (&mut found) "&mut " "an explicit `&mut`" Class::Auto
+  at_start (&mut found) "if" "an `if` statement" Class::Review
+  at_start (&mut found) "while" "a `while` loop" Class::Review
+  at_start (&mut found) "for" "a `for` loop" Class::Review
+  add (&mut found) "case" "a `case` expression" Class::Review
+  at_start (&mut found) "guard" "a `guard`" Class::Auto
   found
 
 add : &mut Vec<Marker> -> &str -> &str -> Class -> ()
-add into needle construct kind =
-  into |> .push (Marker { needle = .to_string needle, construct = .to_string construct, kind, tail = false })
-  ()
+add into needle construct kind = at into needle construct kind Position::Anywhere
 
 at_end : &mut Vec<Marker> -> &str -> &str -> Class -> ()
-at_end into needle construct kind =
-  into |> .push (Marker { needle = .to_string needle, construct = .to_string construct, kind, tail = true })
+at_end into needle construct kind = at into needle construct kind Position::AtEnd
+
+at_start : &mut Vec<Marker> -> &str -> &str -> Class -> ()
+at_start into needle construct kind = at into needle construct kind Position::AtStart
+
+at : &mut Vec<Marker> -> &str -> &str -> Class -> Position -> ()
+at into needle construct kind position =
+  into |> .push (Marker { needle = .to_string needle, construct = .to_string construct, kind, position })
   ()
 
 export data Finding = Finding { export line : usize, export construct : String, export kind : Class }
@@ -84,9 +99,21 @@ classify source =
 
 export hits : &str -> &Marker -> bool
 hits text marker =
-  if marker.tail
-    return .ends_with (.as_str marker.needle) (.trim_end text) && mentions text (.as_str marker.needle)
-  mentions text (.as_str marker.needle)
+  needle = .as_str marker.needle
+  case marker.position of
+    Position::AtEnd -> .ends_with needle (.trim_end text) && mentions text needle
+    Position::AtStart -> opens_a_statement text needle
+    Position::Anywhere -> mentions text needle
+
+export opens_a_statement : &str -> &str -> bool
+opens_a_statement text raw =
+  needle = .trim raw
+  body = .trim_start text
+  if !.starts_with needle body
+    return false
+  start = .len needle
+  end = .len body
+  start >= end || !is_word_byte (&body[start .. start + 1])
 
 export mentions : &str -> &str -> bool
 mentions text raw =

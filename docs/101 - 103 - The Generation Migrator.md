@@ -332,14 +332,18 @@ while the line count predates `voltaic-lattice`. Both numbers were also in
 `AGENTS.md`, and both were quoted into a new test file *this session* before being
 measured — which is the mechanism by which a wrong number survives a rewrite.
 
-### 10.5 The measured classes, and three rounds of getting there
+### 10.5 The measured classes, and four rounds of getting there
 
-| | Files |
-|---|---:|
-| auto | 88 |
-| review | 14 |
-| **manual** | **3** |
-| | 105 |
+| | Files | …after wave 2's constructs were added |
+|---|---:|---:|
+| auto | 88 | **20** |
+| review | 14 | **83** |
+| **manual** | **3** | **3** |
+| | 105 | 106 |
+
+**The right-hand column is the real one, and the left-hand one measured the corpus
+with the generation's largest change missing from the table.** The fourth round is
+§10.5.1; the first three are below it and stand.
 
 The number started at 21 and the two tightenings that moved it are each a
 finding rather than a tuning:
@@ -367,6 +371,76 @@ is why the third matching mode exists and why there is not a fourth.
 The anchor also removed the self-match, so the exclusion added to hide that is
 deleted. The exclusion list is kept, **empty**, with the note that an exemption is
 a permanent hole with a comment beside it while a rule is a rule.
+
+#### 10.5.1 Round four: the table named none of wave 2, and 88 `auto` was the dangerous direction
+
+The twenty-two needles covered §1.3's auto list — pipelines, composition,
+`otherwise`, `newtype`, `errors`, `deriving`, `instance`, modules, `async`,
+`catch`, `&mut` — the `review` pair, and the `manual` four. **None of them was
+`if`, `while`, `for`, `case` or `guard`**, which is doc 97 §1.3's *wave 2*:
+
+> `if`/`else if`/`match`/`case`/`cond`/`switch`/`when`/`iff`/`unless`/`guard`/`then`
+> collapse into the guard ladder and pattern rows. `otherwise` becomes `_`.
+> `for`/`while`/`until` become comprehensions, iterator methods, and `loop`/`break`.
+
+So a file whose only generation-2 work was control flow classified **`auto`** —
+"mechanical, with the identity gate as proof". §10.2 names that error and names it
+as the serious one:
+
+> The opposite error — a file classified `auto` that needs a human — is the one
+> that ships a silently wrong migration.
+
+It was live, in 83 files, while §10.2 was asserting the counts were "an upper
+bound on the human effort". They were a **lower** bound by a factor of 5.9 on
+`review`.
+
+**The classes assigned, and why three of five are `review`.** `guard` is `auto`:
+it is one-to-one with doc 87 §5.6's `else` tail, which row 99 wave 2 has now
+built, and the translation moves no code. The other four restructure. Collapsing a
+statement `if` into a ladder hoists the rest of the body into the catch-all arm;
+`for` and `while` become a comprehension or an iterator method, which is §1.4's own
+example of what the migrator does **not** do mechanically; `case … of` moves its
+scrutinee into every arm as a pattern test, which is arm-for-arm but changes every
+arm. Erring towards the human is §10.2's stated safe direction.
+
+**A fourth matching mode, and §10.5's "there is not a fourth" is retired.** That
+sentence was true of a table with no control flow in it: `do` was the only needle
+whose *position* told it from a word meaning something else. `if`, `while`, `for`
+and `guard` all open a statement, so they take an `AtStart` anchor for exactly
+`do`'s reason — `if` appears in English in test names, and `test "it fails if the
+input is empty"` is not an `if` statement. `case` keeps `Anywhere`, because
+`y = case held of` is a value position and the construct is not statement-initial.
+
+`Marker`'s `tail : bool` became a `Position` enum in the same change. Two booleans
+would have admitted `tail && head`, which has no meaning; three variants cannot be
+combined wrongly.
+
+**The count agrees with an independent measurement, which is why it is trusted.**
+86 of 106 `.vlt` files hold a statement-initial `if`/`while`/`for`/`guard` or a
+`case`, counted by a script that shares no code with the classifier. The classifier
+says 83 `review` + 3 `manual` = 86 non-`auto`. Exact.
+
+**Two gates, because the omission had none.** `classify_corpus.rs` reported the
+counts and asserted only a floor on the corpus *size*, so a marker table missing a
+third of the generation changed a printed number and failed nothing.
+
+- `every_wave_two_construct_is_in_the_marker_table` asks the **table**: each of the
+  five needles must match something.
+- `no_file_holding_control_flow_classifies_auto` asks the **tree**: no file holding
+  one of the constructs may come back `auto`.
+
+Both, and not either, for a reason the session supplied directly. The first
+attempt at `opens_a_statement` **did not transpile** — `&body[.len needle ..]`, an
+open-ended range in an index, which this surface does not parse. The port refused
+and left `crates/voltaic-driver/src/` untouched, which is exactly what it is built
+to do; `cargo build` then succeeded against the **stale** generated tree, and the
+survey printed the old 88/14/3 as though the new markers had been measured. A
+table-only gate reads the table it compiled against and would have passed that.
+Only a gate that reads the files catches a marker that is present and not firing.
+
+That is also `AGENTS.md`'s *"do not grep compiler output for `^error`"* in a new
+costume: the port's refusal says *"should transpile"*, not *"error"*, so a filter
+built to catch `^error|E0[0-9]+` showed nothing and the silence read as success.
 
 ### 10.6 Every `manual` hit was the compiler talking *about* a construct
 

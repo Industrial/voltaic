@@ -197,6 +197,81 @@ fn the_auto_class_is_reachable() {
   assert_eq!(verdict.kind, Class::Auto);
 }
 
+/// Wave 2's constructs are in the marker table.
+///
+/// This is the gate whose absence let the table ship without them. Doc 97 §1.3's
+/// wave 2 — *"`if`/`else if`/`match`/`case`/… collapse into the guard ladder and
+/// pattern rows. `for`/`while`/`until` become comprehensions, iterator methods,
+/// and `loop`/`break`"* — is the largest change in the generation, and the
+/// table's twenty-two needles named none of it. Every file whose only
+/// generation-2 work was control flow therefore classified **`auto`**: "mechanical,
+/// with the identity gate as proof".
+///
+/// That is the direction this file's own header calls dangerous — *"the opposite
+/// error, classifying a file `auto` that needs a human, is the one that would ship
+/// a silently wrong migration"* — so the omission was not a missing nicety, it was
+/// the failure mode, live.
+///
+/// Spelled as the needles rather than as a count, because a count is what failed:
+/// 88/14/3 looked like a measurement and was a measurement of everything except
+/// the generation's largest change.
+#[test]
+fn every_wave_two_construct_is_in_the_marker_table() {
+  for needle in ["if", "while", "for", "case", "guard"] {
+    let found = classify(&format!("f x =\n  {needle} q\n"));
+    assert_ne!(
+      found.findings.len(),
+      0,
+      "the marker table has no needle matching `{needle}`, which doc 97 §1.3's wave 2        deletes. A file whose only generation-2 work is `{needle}` would classify as        `auto` — the one error this gate exists to make impossible."
+    );
+  }
+}
+
+/// No file holding control flow classifies `auto`.
+///
+/// The other side of the test above, and the one that reads the *tree* rather
+/// than the table: a needle can be present and still not fire, which is exactly
+/// what happened on the first attempt here — `opens_a_statement` failed to
+/// transpile, the port **refused and left `src/` untouched**, `cargo build` stayed
+/// green on the stale tree, and the survey reported the old 88/14/3 as though the
+/// new markers had been measured.
+///
+/// A table-only check would have passed that. This one cannot: it asks each file
+/// what the classifier says about it.
+#[test]
+fn no_file_holding_control_flow_classifies_auto() {
+  if support::mid_turn() {
+    eprintln!(
+      "deferred: the accepted surface is ahead of the tree's source, so this gate \
+       cannot parse the compiler's own generation-1 files. Doc 97 §2.2 and \
+       `support::mid_turn`; row 103 re-arms it crate by crate."
+    );
+    return;
+  }
+  let mut wrong = Vec::new();
+  for path in compiler_sources() {
+    let source = std::fs::read_to_string(&path).expect("a listed file should be readable");
+    let holds = source.lines().any(|line| {
+      let body = line.trim_start();
+      if body.starts_with("--") {
+        return false;
+      }
+      ["if ", "while ", "for ", "guard "]
+        .iter()
+        .any(|k| body.starts_with(k))
+        || body.contains("case ")
+    });
+    if holds && classify(&source).kind == Class::Auto {
+      wrong.push(path.display().to_string());
+    }
+  }
+  assert!(
+    wrong.is_empty(),
+    "these files hold a generation-1 control-flow construct and classify as `auto`, \
+     so row 103 would migrate them with no human reading the result: {wrong:#?}"
+  );
+}
+
 /// An exclusion that names a file which no longer exists is a hole that looks
 /// like a decision. The list is empty today, and this is what keeps it honest if
 /// it stops being.
