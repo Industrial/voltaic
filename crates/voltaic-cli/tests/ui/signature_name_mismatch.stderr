@@ -1,12 +1,6 @@
-error[VLT0103]: this equation defines `subtract`, but the signature above it is for `add`
-  --> signature_name_mismatch.vlt:2:1
+error[VLT0105]: `add` has a signature and no equations; write its body, or delete the signature and let it be inferred
+  --> signature_name_mismatch.vlt:1:1
   |
-2 | subtract a =
-  | ^^^^^^^^
-
-error[VLT0101]: expected `:` after the name, to begin the signature
-  --> signature_name_mismatch.vlt:2:12
-  |
-2 | subtract a =
-  |            ^
+1 | add : i32 -> i32
+  | ^^^
 

@@ -288,16 +288,17 @@ because `no_literal_expectations.rs` has been enforcing the rule since plan 08.
 
 ## 10. Result
 
-In progress. Wave 1's **answer key is established and gated**, which is the thing
-§4 ordered wave 1 first in order to get. Waves 2–9 are open.
+In progress. **Wave 1 is complete**: the signature is optional, the emitter writes
+the inferred one, and the answer key that licensed the deletion is gated at
+1,165/1,165. Waves 2–9 are open.
 
 ### 10.1 Inferred equals written, 809 out of 809
 
 | Corpus | Written signatures | Inferred equals written |
 |---|---:|---:|
-| `examples/` (43 programs) | 229 | **229** |
-| `crates/*/vlt/` (122 files) | 910 | **910** |
-| | **1,139** | **1,139** |
+| `examples/` (44 programs) | 231 | **231** |
+| `crates/*/vlt/` (123 files) | 934 | **934** |
+| | **1,165** | **1,165** |
 
 **These were 215 and 594 when this section was first written**, and the
 difference is not growth — it is 330 definitions the gate had been skipping.
@@ -318,6 +319,138 @@ deletion rather than run once beside it.
 program and does not parse by design. A test asserts that it still does not parse,
 so the exclusion cannot quietly widen to cover a file that stopped parsing for a
 real reason.
+
+### 10.5 Wave 1 is complete: the signature is optional and the emitter writes it
+
+`examples/inferred.vlt` is the proof, and it is in the CI-checked corpus:
+
+```
+scaled : u64 -> u64
+scaled n = n * 2
+
+doubled n = scaled n
+
+quadrupled n = doubled (doubled n)
+```
+
+emits
+
+```rust
+fn doubled(n: u64) -> u64 { scaled(n) }
+fn quadrupled(n: u64) -> u64 { doubled(doubled(n)) }
+```
+
+The pipeline is now **PARSE → SOLVE → ANNOTATE → EMIT**. ANNOTATE
+(`voltaic-driver/vlt/annotate.vlt`) writes the inferred judgement back into the
+AST, so `voltaic-emit` stays a pure AST-to-Rust function and the source map,
+the goldens and everything downstream are untouched. The alternative — teaching
+the emitter to call the solver — would have made emission depend on inference
+and given two crates a reason to disagree about one answer.
+
+### 10.6 `ty = None` on a parameter already meant something, and it is a trap
+
+`voltaic-emit` reads an untyped parameter as **the receiver**: it moves it to
+position 0 and emits it without a type. That is how `self` works and it predates
+this row. So an unsigned definition that reaches the emitter unannotated **does
+not fail** — it silently emits `fn across(p) -> f64`, with `p` in the receiver
+slot.
+
+`ret = None` is therefore the discriminator for "unsigned", because a signed
+declaration always has a return type. And the rule *"annotate before you emit"*
+needed a gate rather than a convention, which the evidence settled twice over:
+
+- `crates/voltaic-fuzz/vlt/target.vlt` emitted without annotating, and
+  `the_generated_rust_always_parses` went red the moment `examples/inferred.vlt`
+  entered the fuzz corpus. Four call sites, one missed.
+- `crates/voltaic-cli/tests/annotate_before_emit.rs`, written in response, then
+  found a **fifth** site nobody had looked at — `voltaic-mcp/vlt/tools.vlt`.
+
+### 10.7 A call to a sibling contributed nothing, which only mattered once
+
+`lookup` saw a clause's own parameters and handed back a fresh hole for every
+other name, so `doubled n = scaled n` inferred `?3 -> ?6`. That was invisible
+while every definition carried a signature — the types came from the annotations
+either way — and it is the whole game once they do not.
+
+`written_globals` seeds the environment with the types the programmer *wrote*,
+and `grown_globals` then grows it to a least fixed point: each round solves, adds
+back every definition whose judgement came out **hole-free**, and re-infers.
+`quadrupled` needs the second round, because `doubled` is itself unsigned.
+
+Two details are load-bearing:
+
+- **Only hole-free types are added.** A partly resolved type in the table would
+  make the next round depend on how far the previous one happened to get, which
+  is how inference stops being a function of its input.
+- **Methods are excluded.** `grown_globals` first added every definition,
+  instance members included, and `Store::push` then shadowed every `.push` in
+  the crate — including `Vec::push`, which is not a definition at all. A method
+  is not in scope by its bare name. The answer key caught it as one disagreement
+  out of 934.
+
+### 10.8 What is *not* inferable, and why that is Rust's answer too
+
+`across p = p.x` is refused. A field access on an unannotated binder does not
+determine the receiver's type, and rustc cannot infer it either — the signature
+there is load-bearing rather than ceremony. `VLT0128` says so and names the
+command that explains the chain:
+
+```
+error[VLT0128]: cannot infer a signature for `across`
+  --> signature_not_inferred.vlt:8:1
+  |
+8 | across p = p.x
+  | ^^^^^^^^^^^^^^
+  = help: Lattice reached `?0 -> ?2`, which has no Rust spelling. Write the
+    signature, or annotate a parameter so inference can reach one.
+    `voltaic sig --why across` shows the chain.
+```
+
+This is an **error**, not a lint, and the distinction from row 101 §10.1 is
+exact: there, rustc is the authority and can overrule a judgement about a signed
+program. Here there is nothing to overrule — the alternative to refusing is
+emitting a parameter in the receiver slot.
+
+`write_type` is the refusal's mechanism, and it refuses two things `Display`
+happily prints: a **hole**, which has no Rust spelling, and an **arrow**, which
+Rust writes three incompatible ways (`impl Fn`, `fn`, `&dyn Fn`) and Lattice does
+not choose between. A refusal anywhere inside refuses the whole type, because a
+partly written type would not compile.
+
+### 10.9 Three diagnostics changed, and one was deleted
+
+- **Deleted: "this equation defines X, but the signature above it is for Y."**
+  The program it reported — `add : i32 -> i32` then `subtract a = a` — is now a
+  signature for `add` and an unsigned definition of `subtract`. §2.3's *deleted*
+  category, exactly as written.
+- **Added: a signature with no equations.** This replaces it and catches strictly
+  more: the old message fired only when a mistyped name happened to follow a
+  signature; this fires on the missing body however the file continues.
+- **Kept: `VLT0106`, the module-scope binding.** `main =` with an indented body
+  is a nullary function; `main = 1` is a `let` at module scope, which Rust
+  forbids. Making the signature optional must not make that legal, and the
+  distinction is the newline.
+
+Three tests that used "a definition with no signature" as their example of a
+*malformed item* had to be repointed, which is worth noting as a pattern: a test
+whose fixture is "something invalid" silently stops testing its axis when the
+thing becomes valid. All three were about recovery, not about signatures.
+
+### 10.10 The answer key after the widening
+
+| Corpus | Written signatures | Congruent with inferred |
+|---|---:|---:|
+| `examples/` | 231 | **231** |
+| `crates/*/vlt/` | 934 | **934** |
+| | **1,165** | **1,165** |
+
+Comparison is now **congruence** rather than equality, for one narrow reason:
+Lattice has no module resolver — imports are wave 6 — so a type written
+`voltaic_diag::Diagnostic` and the same type inferred from a call returning the
+imported `Diagnostic` compared unequal while naming one type. A qualified name
+is congruent with **its own final segment** and nothing else; `a::T` and `b::T`
+stay distinct. Nothing is rewritten, so no diagnostic or sidecar line ever shows
+a name the author did not write.
 
 ### 10.2 Both corpora were necessary, and that was not the expectation
 

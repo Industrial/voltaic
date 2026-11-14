@@ -10,7 +10,10 @@ build_command args =
   shown = parsed.input |> .display |> .to_string
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string (&parsed.input)))?
 
-  program = (.map_err (\failure -> voltaic_diag::render (&diagnose (&parsed.input) (&source) (&failure)) parsed.plain) (voltaic_parser::parse_source (&source)))?
+  mut program = (.map_err (\failure -> voltaic_diag::render (&diagnose (&parsed.input) (&source) (&failure)) parsed.plain) (voltaic_parser::parse_source (&source)))?
+  open = voltaic_driver::annotate (&mut program)
+  if !.is_empty open
+    return Err (voltaic_diag::render (&voltaic_driver::refusals (&parsed.input) (&source) (.as_slice open)) parsed.plain)
   warnings = voltaic_driver::lint (&parsed.input) (&source) (Some (&program))
   if !.is_empty warnings
     rendered = voltaic_diag::render (&warnings) parsed.plain

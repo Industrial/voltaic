@@ -4,13 +4,7 @@ error[VLT0101]: `current` needs a signature: an inherent `instance` has no class
 16 |   current self = self.value
    |   ^^^^^^^
 
-error[VLT0101]: expected `:` after the name, to begin the signature
-  --> elided_without_a_class.vlt:16:11
-   |
-16 |   current self = self.value
-   |           ^^^^
-
-error[VLT0101]: expected `:` after the name, to begin the signature
+error[VLT0103]: expected a name to begin a declaration
   --> elided_without_a_class.vlt:17:1
    |
 16 |   current self = self.value

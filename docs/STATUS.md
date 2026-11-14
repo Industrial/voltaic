@@ -35,19 +35,19 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---:|
 | `voltaic-ast` | 1626 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1395 | 11910 |
-| `voltaic-diag` | 1055 | 0 |
-| `voltaic-driver` | 2028 | 0 |
+| `voltaic-cli` | 1402 | 12050 |
+| `voltaic-diag` | 1058 | 0 |
+| `voltaic-driver` | 2304 | 0 |
 | `voltaic-emit` | 3696 | 4572 |
 | `voltaic-fmt` | 1494 | 1497 |
-| `voltaic-fuzz` | 48 | 362 |
-| `voltaic-lattice` | 5421 | 1122 |
+| `voltaic-fuzz` | 54 | 362 |
+| `voltaic-lattice` | 5712 | 1151 |
 | `voltaic-lexer` | 2176 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
-| `voltaic-mcp` | 446 | 776 |
-| `voltaic-parser` | 5604 | 706 |
+| `voltaic-mcp` | 459 | 776 |
+| `voltaic-parser` | 5805 | 787 |
 | `voltaic-seed` | 146 | 676 |
-| **total** | **26370** | **23790** |
+| **total** | **27167** | **24040** |
 
 ---
 
@@ -55,13 +55,13 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.vlt` | 44 | the CI-checked source of truth for what works |
-| `tests/golden/*.vrs` | 43 | the generated Rust, as exact text |
-| `crates/voltaic-cli/tests/ui/*.vlt` | 55 | the diagnostic a bad program gets |
+| `examples/*.vlt` | 45 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 44 | the generated Rust, as exact text |
+| `crates/voltaic-cli/tests/ui/*.vlt` | 56 | the diagnostic a bad program gets |
 | `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**44 examples and 43 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "44 examples, all green" would be rounding up by exactly one file.
+**45 examples and 44 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "45 examples, all green" would be rounding up by exactly one file.
 
 ---
 

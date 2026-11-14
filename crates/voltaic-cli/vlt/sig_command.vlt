@@ -170,7 +170,7 @@ verify_one input =
       tally.checked += 1
       inferred = .judged (&outcome) definition
       expanded = .expand (&self_free written definition) found.known
-      if inferred == expanded
+      if voltaic_lattice::congruent (&inferred) (&expanded)
         tally.agreed += 1
       else
         tally.differed |> .push (format! \-> "#{shown}: #{definition.name}", .to_string expanded, .to_string inferred)

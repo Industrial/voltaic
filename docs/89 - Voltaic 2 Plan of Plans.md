@@ -211,7 +211,7 @@ Two notes:
 - **§6's open question is still open.** Whether `examples/template.vlt` uses
   `Fields`/`FieldNames` — and so whether declaration reflection becomes a graded
   `UNREACHABLE` — only matters once `deriving template` is removed, which is row 99's.
-| 99 | The Surface Contraction | 74 keywords to 11. Signature lines deleted. `\|>`/`>>>`/`<<<`/`$` deleted. Receiver-first dots. Juxtaposed fields. Computed derives. `errors`→`data`. Imports deleted. Or-patterns, `as`, `ref` reachable. | `in-progress` — wave 1's answer key gated at 1,139/1,139, `done` 2026-11-14; waves 2–9 open | 95, 96, 98 |
+| 99 | The Surface Contraction | 74 keywords to 11. Signature lines deleted. `\|>`/`>>>`/`<<<`/`$` deleted. Receiver-first dots. Juxtaposed fields. Computed derives. `errors`→`data`. Imports deleted. Or-patterns, `as`, `ref` reachable. | `in-progress` — **wave 1 `done`** 2026-11-14 (signature optional, emitter writes the inferred one, answer key gated at 1,165/1,165); waves 2–9 open | 95, 96, 98 |
 | 100 | The Signature Sidecar | `.vlt.sig` generation, the published-API rule, `voltaic sig`, `--why`, `--semver`, `--require-signatures`. | `in-progress` — leaf 1's format, generation and gate, leaf 4 and leaf 5 `done` 2026-11-14; leaves 2, 6, 7 open | 94, 99 |
 
 **Row 99 is the largest row in either register.** It is deliberately one row rather

@@ -1,6 +1,27 @@
 import crate::ty::Ty
 import voltaic_ast::TypeExpr
 
+export write_type : &Ty -> Option<String>
+write_type t = case t of
+  Ty::Nil -> Some (.to_string "()")
+  Ty::Hole _ -> None
+  Ty::Con { name, args, .. } ->
+    if name == crate::ty::ARROW
+      return None
+    if .is_empty args
+      return Some (.clone name)
+    if (name == "&" || name == "&mut") && .len args == 1
+      inner = (write_type (&args[0]))?
+      separator = if name == "&mut"
+        " "
+      else
+        ""
+      return Some (format! \-> "#{name}#{separator}#{inner}")
+    mut shown = Vec::new ()
+    for a in .iter args
+      shown |> .push ((write_type a)?)
+    Some (format! \-> "#{name}<#{(.join ", " (.as_slice shown))}>")
+
 export with_owner : &Ty -> &str -> Ty
 with_owner t owner = case t of
   Ty::Con { name, args, .. } ->
@@ -80,6 +101,31 @@ split_arguments body =
   if start < .len bytes
     parts |> .push (from_text (.trim body[start .. .len bytes]))
   parts
+
+test "a nullary constructor writes as its name"
+  assert_eq! \-> write_type (&Ty::named "u64") \-> Some (.to_string "u64")
+
+test "unit writes as unit"
+  assert_eq! \-> write_type (&Ty::unit ()) \-> Some (.to_string "()")
+
+test "a hole has no Rust spelling, so writing it refuses"
+  assert_eq! \-> write_type (&Ty::hole (crate::variable::Variable::new 0)) \-> None
+
+test "an arrow refuses, because Rust has three spellings and Lattice picks none"
+  arrow = Ty::arrow (Ty::named "u64") (Ty::named "bool")
+  assert_eq! \-> write_type (&arrow) \-> None \-> "`impl Fn`, `fn` and `&dyn Fn` are not interchangeable"
+
+test "a reference writes the way Rust writes it"
+  assert_eq! \-> write_type (&Ty::applied "&" (vec! \-> Ty::named "Point")) \-> Some (.to_string "&Point")
+  assert_eq! \-> write_type (&Ty::applied "&mut" (vec! \-> Ty::named "Cursor")) \-> Some (.to_string "&mut Cursor")
+
+test "an applied type writes with angle brackets"
+  held = Ty::applied "Vec" (vec! \-> Ty::named "u8")
+  assert_eq! \-> write_type (&held) \-> Some (.to_string "Vec<u8>")
+
+test "a refusal anywhere inside refuses the whole type"
+  nested = Ty::applied "Vec" (vec! \-> Ty::hole (crate::variable::Variable::new 1))
+  assert_eq! \-> write_type (&nested) \-> None \-> "a partly written type would not compile"
 
 test "Self resolves to the owner, at the top level and nested"
   assert_eq! \-> with_owner (&Ty::named "Self") "Mode" \-> Ty::named "Mode"

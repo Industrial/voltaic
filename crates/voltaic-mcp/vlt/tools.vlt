@@ -8,13 +8,20 @@ build request =
   shown = .clone request.path
   source = (.map_err (\e -> format! \-> "cannot read #{shown}: #{e}") (std::fs::read_to_string path))?
 
-  program = case voltaic_parser::parse_source (&source) of
+  mut program = case voltaic_parser::parse_source (&source) of
     Ok parsed -> parsed
     Err failure ->
       return Ok (BuildResponse { ok = false, output = None, map = None, diagnostics = diagnose path (&source) (&failure)
         |> .iter
         |> .map diagnostic_from_voltaic
         |> .collect })
+
+  open = voltaic_driver::annotate (&mut program)
+  if !.is_empty open
+    return Ok (BuildResponse { ok = false, output = None, map = None, diagnostics = voltaic_driver::refusals path (&source) (.as_slice open)
+      |> .iter
+      |> .map diagnostic_from_voltaic
+      |> .collect })
 
   diagnostics = voltaic_driver::lint path (&source) (Some (&program))
   emitted = voltaic_emit::emit_with_map (&program) (&source) (&request.path)

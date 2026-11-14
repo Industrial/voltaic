@@ -1,0 +1,28 @@
+// Row 99 wave 1: a definition may omit its signature, and the judgement is
+// inferred. The signature line is the single largest thing generation 1 spends
+// on ceremony — doc 97 §4 puts it at about 8.7% of the corpus's lines — and it
+// is deleted first because it is the only deletion with an answer key:
+// generation 1's hand-written signatures are still in every other file, so
+// `voltaic sig --verify` can check inferred-against-written before anything is
+// removed. 1,165 of 1,165 agree, which is the licence for this file.
+//
+// What makes these inferable is that each one reaches a *written* type: `scaled`
+// is annotated, so `doubled` learns `u64 -> u64` from the call alone. An
+// unsigned definition that reaches no written type anywhere is not inferable,
+// and that is not a gap — rustc needs an annotation to break the same cycle.
+fn scaled(n: u64) -> u64 {
+    n * 2
+}
+
+fn doubled(n: u64) -> u64 {
+    scaled(n)
+}
+
+fn quadrupled(n: u64) -> u64 {
+    doubled(doubled(n))
+}
+
+fn main() {
+    println!("{}", quadrupled(3));
+    ();
+}

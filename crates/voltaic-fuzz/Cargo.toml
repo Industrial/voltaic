@@ -13,6 +13,7 @@ publish = false
 # Plan 42 §1.2: the target **logic** lives here, in stable Rust, so the
 # ordinary gate exercises it. The libFuzzer harnesses in `fuzz/` are three-line
 # wrappers around these functions and are outside the workspace.
+voltaic-driver = { path = "../voltaic-driver" }
 voltaic-emit = { path = "../voltaic-emit" }
 voltaic-lattice = { path = "../voltaic-lattice" }
 voltaic-lexer = { path = "../voltaic-lexer" }

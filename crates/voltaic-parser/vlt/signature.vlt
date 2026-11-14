@@ -155,6 +155,39 @@ signature_from spine bound span =
     .push (Param { name, ty = Some (.clone ty), is_mut = false, span = .span binder }) params
   Ok (Signature { params, ret = Some (.clone ret), generics = Vec::new (), is_const = false, is_async = false, is_unsafe = false, bounds = Vec::new (), r#given = None, predicates = None, span })
 
+export(crate) signature_unsigned : &[Pattern] -> Span -> Signature
+signature_unsigned bound span =
+  mut params = Vec::new ()
+  for entry in .enumerate (.iter bound)
+    i = entry.0
+    binder = entry.1
+    lends_its_name = case binder of
+      Pattern::Binding ident -> !.is_some_and char::is_uppercase (.next (.chars ident.text))
+      _ -> false
+    name = if lends_its_name
+      case binder of
+        Pattern::Binding ident -> .clone ident
+        _ -> Ident { text = format! \-> "__vlt_a#{i}", span = .span binder }
+    else
+      Ident { text = format! \-> "__vlt_a#{i}", span = .span binder }
+    .push (Param { name, ty = None, is_mut = false, span = .span binder }) params
+  Signature { params, ret = None, generics = Vec::new (), is_const = false, is_async = false, is_unsafe = false, bounds = Vec::new (), r#given = None, predicates = None, span }
+
+test "an unsigned equation takes its parameter names from its binders"
+  sig = signature_unsigned (&[id "a", id "b"]) (0, 0)
+  assert_eq! \-> .len sig.params \-> 2
+  assert_eq! \-> sig.params[0].name.text \-> "a"
+  assert! \-> .is_none sig.params[0].ty \-> "the type is the annotate pass's to fill"
+
+test "an unsigned signature has no return type, which is what marks it unsigned"
+  sig = signature_unsigned (&[]) (0, 0)
+  assert! \-> .is_none sig.ret \-> "`ty = None` already means `self` to the emitter; `ret = None` is the discriminator"
+  assert! \-> .is_empty sig.params
+
+test "an absent return type reads as unit, which is why annotation must precede emission"
+  sig = signature_unsigned (&[]) (0, 0)
+  assert! \-> .returns_unit sig \-> "`returns_unit` cannot tell `()` from unknown, and the emitter asks it"
+
 #[cfg(test)]
 ty : &str -> TypeExpr
 ty text = TypeExpr { text = .to_string text, span = (0, 0) }

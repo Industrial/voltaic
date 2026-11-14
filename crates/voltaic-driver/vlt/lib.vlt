@@ -1,6 +1,7 @@
 module cache
 module check
 module compile_dir
+module annotate
 module judge
 module lint
 module remap
@@ -8,6 +9,9 @@ module remap
 export import cache::CacheReporter
 export import cache::Fingerprint
 export import cache::Silent
+export import annotate::Unresolved
+export import annotate::annotate
+export import annotate::refusals
 export import check::CheckOutcome
 export import check::check
 export import check::diagnose

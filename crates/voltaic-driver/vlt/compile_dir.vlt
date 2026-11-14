@@ -23,7 +23,10 @@ compile_file source out store fingerprint =
     cached = (write_outputs source out (&path) (&hit))?
     return Ok (Outcome { written = cached, was_cached = true })
 
-  program = (.map_err (\failure -> diagnose source (&text) (&failure)) (voltaic_parser::parse_source (&text)))?
+  mut program = (.map_err (\failure -> diagnose source (&text) (&failure)) (voltaic_parser::parse_source (&text)))?
+  open = crate::annotate::annotate (&mut program)
+  if !.is_empty open
+    return Err (crate::annotate::refusals source (&text) (.as_slice open))
   emitted = voltaic_emit::emit_with_map (&program) (&text) (&path)
   fresh = Cached { r#rust = emitted.0, map = voltaic_diag::render_map (&emitted.1) }
 

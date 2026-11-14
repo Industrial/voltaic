@@ -11,10 +11,14 @@ export check : &Path -> &str -> Result<CheckOutcome, String>
 check path source =
   vlt_path = path |> .display |> .to_string
 
-  program = case voltaic_parser::parse_source source of
+  mut program = case voltaic_parser::parse_source source of
     Ok parsed -> parsed
     Err failure ->
       return Ok (CheckOutcome { diagnostics = diagnose path source (&failure), failed = true })
+
+  open = crate::annotate::annotate (&mut program)
+  if !.is_empty open
+    return Ok (CheckOutcome { diagnostics = crate::annotate::refusals path source (.as_slice open), failed = true })
 
   mut diagnostics = crate::lint path source (Some (&program))
 

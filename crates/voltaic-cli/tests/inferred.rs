@@ -15,8 +15,8 @@
 //!
 //! # The numbers, and why the set is bigger than it first looked
 //!
-//! 229 written signatures in the examples and 910 in the compiler, all of them
-//! equal to the inferred judgement. That set was 215 and 594 until
+//! 231 written signatures in the examples and 934 in the compiler, all of them
+//! congruent with the inferred judgement. That set was 215 and 594 until
 //! `signature_type` stopped returning `None` for every method with a `self`
 //! receiver: `self` has no written param type, so a fully annotated
 //! `skip_layout : &mut self -> ()` read as unannotated and was skipped. The
@@ -125,7 +125,7 @@ fn verify(path: &Path) -> (usize, Vec<Disagreement>) {
     checked += 1;
     let inferred = definition.judged(&outcome);
     let expanded = found.known.expand(&written);
-    if inferred != expanded {
+    if !voltaic_lattice::congruent(&inferred, &expanded) {
       differed.push(Disagreement {
         where_: format!("{shown}: {}", definition.name),
         written: expanded.to_string(),
@@ -199,13 +199,13 @@ fn the_compared_set_has_not_shrunk() {
     .map(|p| verify(p))
     .fold((0, 0), |(n, z), (c, _)| (n + c, z));
   assert!(
-    examples >= 229,
-    "the examples compared 229 signatures when this floor was set; now {examples}. A \
+    examples >= 231,
+    "the examples compared 231 signatures when this floor was set; now {examples}. A \
      *smaller* set passing is the failure mode, not a success"
   );
   assert!(
-    compiler >= 910,
-    "the compiler compared 910 signatures when this floor was set; now {compiler}"
+    compiler >= 934,
+    "the compiler compared 934 signatures when this floor was set; now {compiler}"
   );
 }
 

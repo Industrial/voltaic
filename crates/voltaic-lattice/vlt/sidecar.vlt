@@ -122,11 +122,37 @@ test "a published definition with a written signature satisfies the demand"
   outcome = crate::driver::solve_with (&found.store) (&found.known)
   assert! \-> .is_empty (unwritten (&found) (&outcome))
 
-test "generation 1 cannot express an unsigned definition at all, so the demand is vacuous here"
-  refused = voltaic_parser::parse_source "data Point = Point { x : f64 }\nexport across p = p.x\n"
-  assert! \-> .is_err refused \-> "if this parses, row 99 wave 1 has landed and `unwritten` needs a real case"
+test "a published definition whose type is only inferred is reported"
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nexport across p = p.x\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  missing = unwritten (&found) (&outcome)
+  assert_eq! \-> .len missing \-> 1 \-> "wave 1 made the signature optional, so the demand now bites"
+  assert_eq! \-> missing[0].name \-> "across"
 
-test "a private definition is not asked for a signature even when it has one"
+test "the report names the inferred judgement, so the fix can be pasted"
+  program = .expect "should parse" (voltaic_parser::parse_source "scaled : u64 -> u64\nscaled n = n * 2\n\nexport applied n = scaled n\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  missing = unwritten (&found) (&outcome)
+  assert_eq! \-> .len missing \-> 1
+  assert_eq! \-> missing[0].name \-> "applied"
+  assert_eq! \-> missing[0].inferred \-> "u64 -> u64 @ n owned" \-> "inferred from the call alone"
+
+test "a field access on an unannotated binder does not determine the receiver"
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nexport across p = p.x\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  missing = unwritten (&found) (&outcome)
+  assert! \-> .contains "?" missing[0].inferred \-> "rustc cannot infer this either; the signature is load-bearing"
+
+test "an unsigned private definition is not reported"
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nacross p = p.x\n")
+  found = crate::generate::walk (&program)
+  outcome = crate::driver::solve_with (&found.store) (&found.known)
+  assert! \-> .is_empty (unwritten (&found) (&outcome)) \-> "the demand is on the published surface only"
+
+test "a signed private definition is not asked for anything"
   program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nacross : &Point -> f64\nacross p = p.x\n")
   found = crate::generate::walk (&program)
   outcome = crate::driver::solve_with (&found.store) (&found.known)

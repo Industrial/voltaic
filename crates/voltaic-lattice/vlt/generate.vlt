@@ -39,27 +39,60 @@ instance Report
   export find : &str -> &self -> Option<&Inferred>
   find name self = .find (\d -> d.name == name) (.iter self.definitions)
 
+export const GLOBAL_ROUNDS : u32 = 4
+
 export walk : &Program -> Report
 walk program =
+  known = crate::declarations::collect program
+  mut globals = written_globals program
+  mut built = infer_all program (.as_slice globals)
+  mut rounds = 0
+  while rounds < GLOBAL_ROUNDS
+    rounds += 1
+    outcome = crate::driver::solve_with (&built.0) (&known)
+    grown = grown_globals (.as_slice built.1) (&outcome) (.as_slice globals)
+    if .len grown == .len globals
+      break
+    globals := grown
+    built := infer_all program (.as_slice globals)
+  store = built.0
+  mut definitions = built.1
+  raise_receivers (.as_mut_slice definitions) program
+  raise_rows (.as_mut_slice definitions) program
+  Report { store, definitions, known }
+
+infer_all : &Program -> &[(String, Ty)] -> (Store, Vec<Inferred>)
+infer_all program globals =
   mut store = Store::new ()
   mut definitions = Vec::new ()
   for item in .iter program.items
     case item of
       Item::Fn f ->
-        definitions |> .push (one f None (&mut store))
+        definitions |> .push (one f None (&mut store) globals)
       Item::Instance block ->
         owner = .clone block.target.head.text
         for member in .iter block.members
           if member is ClassMember::Method f
-            definitions |> .push (one f (Some (&owner)) (&mut store))
+            definitions |> .push (one f (Some (&owner)) (&mut store) globals)
       Item::Class block ->
         for member in .iter block.members
           if member is ClassMember::Method f
-            definitions |> .push (one f None (&mut store))
+            definitions |> .push (one f None (&mut store) globals)
       _ -> ()
-  raise_receivers (.as_mut_slice definitions) program
-  raise_rows (.as_mut_slice definitions) program
-  Report { store, definitions, known = crate::declarations::collect program }
+  (store, definitions)
+
+grown_globals : &[Inferred] -> &crate::driver::Outcome -> &[(String, Ty)] -> Vec<(String, Ty)>
+grown_globals definitions outcome globals =
+  mut found = .to_vec globals
+  for definition in .iter definitions
+    if .is_some definition.owner
+      continue
+    if .any (\pair -> pair.0 == definition.name) (.iter found)
+      continue
+    resolved = .judged outcome definition
+    if .is_empty (.holes resolved)
+      found |> .push (.clone definition.name, resolved)
+  found
 
 raise_receivers : &mut [Inferred] -> &Program -> ()
 raise_receivers definitions program =
@@ -73,6 +106,14 @@ raise_receivers definitions program =
       if receiver_mode definitions (&edge.0) is Some needed && raise_in definitions (&edge.1) (&edge.2) needed
         changed := true
   ()
+
+written_globals : &Program -> Vec<(String, Ty)>
+written_globals program =
+  mut found = Vec::new ()
+  for item in .iter program.items
+    if item is Item::Fn f && signature_type (&f.sig) None is Some written
+      found |> .push (.clone f.name.text, written)
+  found
 
 raise_rows : &mut [Inferred] -> &Program -> ()
 raise_rows definitions program =
@@ -152,9 +193,9 @@ raise_in definitions caller binder needed =
           changed := true
   changed
 
-one : &voltaic_ast::FnDecl -> Option<&str> -> &mut Store -> Inferred
-one f owner store =
-  mut env = Vec::new ()
+one : &voltaic_ast::FnDecl -> Option<&str> -> &mut Store -> &[(String, Ty)] -> Inferred
+one f owner store globals =
+  mut env = .to_vec globals
   mut params = Vec::new ()
   for p in .iter f.sig.params
     hole = .fresh_hole store

@@ -1,0 +1,13 @@
+-- Row 99 wave 1 made the signature optional, and this is the boundary: a field
+-- access on an unannotated binder does not determine the receiver's type, so
+-- there is nothing for the emitter to write. rustc cannot infer it either, so
+-- refusing is the same answer Rust gives — the signature here is load-bearing,
+-- not ceremony.
+data Point = Point { x : f64, y : f64 }
+
+across p = p.x
+
+main : ()
+main =
+  println! \-> "#{(across (&Point { x = 1.0, y = 2.0 }))}"
+  ()

@@ -1,10 +1,12 @@
 export emit_program : &[u8] -> ()
 emit_program bytes =
   text = String::from_utf8_lossy bytes
-  program = case voltaic_parser::parse_source (&text) of
+  mut program = case voltaic_parser::parse_source (&text) of
     Ok p -> p
     Err _ ->
       return ()
+  if !.is_empty (voltaic_driver::annotate (&mut program))
+    return ()
   _dropped = voltaic_emit::emit (&program)
   ()
 
@@ -23,7 +25,9 @@ parse_program bytes =
 export roundtrip : &[u8] -> Option<String>
 roundtrip bytes =
   text = String::from_utf8_lossy bytes
-  program = (.ok (voltaic_parser::parse_source (&text)))?
+  mut program = (.ok (voltaic_parser::parse_source (&text)))?
+  if !.is_empty (voltaic_driver::annotate (&mut program))
+    return None
   Some (voltaic_emit::emit (&program))
 
 export solve_program : &[u8] -> Option<u32>

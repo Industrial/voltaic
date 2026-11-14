@@ -184,3 +184,32 @@ fn an_empty_program_solves_to_nothing() {
   assert!(report.definitions.is_empty());
   assert!(solve(&report.store).is_solved());
 }
+
+/// A method is not in scope by its bare name, so it must not reach the globals
+/// table.
+///
+/// `grown_globals` first added every definition, instance members included, and
+/// `Store::push` then shadowed every `.push` in the crate — including
+/// `Vec::push`, which is not a definition at all. The answer key caught it as
+/// one disagreement out of 934.
+#[test]
+fn a_method_does_not_enter_the_global_scope_under_its_bare_name() {
+  let program = voltaic_parser::parse_source(
+    "data Bag = Bag { count : u64 }\n\ninstance Bag\n  export push : u64 -> &mut self -> ()\n  push n self =\n    self.count += n\n    ()\n\nholder : Vec<u64> -> Vec<u64>\nholder xs = xs\n\nstacked ys = holder ys\n",
+  )
+  .expect("should parse");
+  let found = voltaic_lattice::walk(&program);
+  let outcome = voltaic_lattice::solve_with(&found.store, &found.known);
+  let method = found.find("push").expect("the method is still inferred");
+  assert_eq!(
+    method.owner.as_deref(),
+    Some("Bag"),
+    "the method keeps its owner"
+  );
+  let free = found.find("stacked").expect("stacked");
+  assert_eq!(
+    free.judged(&outcome).to_string(),
+    "Vec<u64> -> Vec<u64>",
+    "an unsigned free function still resolves through the globals table"
+  );
+}

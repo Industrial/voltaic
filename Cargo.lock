@@ -1471,6 +1471,7 @@ name = "voltaic-fuzz"
 version = "0.1.1"
 dependencies = [
  "syn 3.0.9",
+ "voltaic-driver",
  "voltaic-emit",
  "voltaic-lattice",
  "voltaic-lexer",

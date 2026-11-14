@@ -16,7 +16,11 @@ fn errors(src: &str) -> Vec<ParseError> {
 /// Criterion 6: three independent mistakes produce three diagnostics.
 #[test]
 fn three_errors_in_one_file_produce_three_diagnostics() {
-  let src = "a =\n  println! \\-> \"#{1}\"\n\nb =\n  println! \\-> \"#{2}\"\n\nc =\n  println! \\-> \"#{3}\"\n";
+  // These three used to be malformed for want of a signature; row 99 wave 1
+  // made that legal, so the axis — three independent mistakes, three
+  // diagnostics — needs three mistakes that remain mistakes. An inline
+  // `name = expr` at module scope is a `let`, which Rust forbids.
+  let src = "a = 1\n\nb = 2\n\nc = 3\n";
   assert_eq!(
     errors(src).len(),
     3,

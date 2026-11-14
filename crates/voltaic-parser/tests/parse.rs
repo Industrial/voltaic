@@ -131,24 +131,96 @@ fn keeps_a_comment_at_end_of_file() {
 /// colon — and why it asserts on the message text at all: this is the test
 /// that would otherwise keep passing while telling the author to type a
 /// spelling the parser no longer accepts.
+/// Row 99 wave 1 made the signature optional, so the thing this test used to
+/// assert — that `main =` without `main : ()` is an error — is now the feature.
+/// It asserts acceptance instead, and
+/// [`still_refuses_an_inline_module_scope_binding`] keeps the case that is still
+/// wrong, which is the one the old error was really protecting.
 #[test]
-fn reports_a_missing_signature_marker() {
-  let errs = errors("main =\n  println! \\-> \"x\"\n");
-  assert_eq!(errs.len(), 1);
-  assert!(errs[0].message.contains("`:`"), "{}", errs[0].message);
+fn accepts_a_definition_with_no_signature() {
+  let program =
+    parse_source("main =\n  println! \\-> \"x\"\n").expect("an unsigned definition should parse");
+  let Item::Fn(f) = &program.items[0] else {
+    panic!("expected a function");
+  };
+  assert!(
+    f.sig.ret.is_none(),
+    "an absent return type is what marks the signature unsigned"
+  );
+  assert!(f.sig.params.is_empty(), "`main` takes nothing");
 }
 
-/// The two names must agree — the one thing doc 18's two-line form can get
-/// wrong that doc 03's one-line form could not.
+/// Parameters come from the binders, and carry no types for the annotate pass
+/// to fill.
 #[test]
-fn reports_an_equation_that_names_a_different_function() {
+fn an_unsigned_definition_names_its_parameters_from_its_binders() {
+  let program = parse_source("double n =\n  n * 2\n").expect("should parse");
+  let Item::Fn(f) = &program.items[0] else {
+    panic!("expected a function");
+  };
+  assert_eq!(f.sig.params.len(), 1);
+  assert_eq!(f.sig.params[0].name.text, "n");
+  assert!(f.sig.params[0].ty.is_none());
+}
+
+/// `name = expr` on one line is a `let` at module scope, which Rust forbids —
+/// doc 03 §13.4. Making the signature optional must not make *this* legal, and
+/// the distinction is the newline: `main =` then an indented body is a nullary
+/// function, `main = 1` is a binding.
+#[test]
+fn still_refuses_an_inline_module_scope_binding() {
+  let errs = errors("ready = true\n");
+  assert!(!errs.is_empty(), "an inline binding is still wrong");
+  assert!(
+    errs[0].message.contains("const"),
+    "the message should name the fix: {}",
+    errs[0].message
+  );
+}
+
+/// Row 99 wave 1 deleted the diagnostic this test asserted, because the program
+/// it reported is now legal: `add : i32 -> i32` followed by `subtract a = a` is
+/// a signature for `add` and an *unsigned definition* of `subtract`.
+///
+/// What is still wrong is `add` itself — a signature with no equations — and the
+/// replacement catches strictly more. The old message fired only when the
+/// mistyped name happened to follow a signature; this fires on the missing body
+/// however the file goes on, which is the actual defect under both readings.
+#[test]
+fn reports_a_signature_with_no_equations() {
   let errs = errors("add : i32 -> i32\nsubtract a =\n  a\n");
-  // The count is not asserted: item recovery resumes at the next declaration
-  // and finds the orphaned equation, so a second error is correct. What
-  // matters is that the *first* one names both halves of the disagreement,
-  // because that is the message the user reads and acts on.
-  assert!(errs[0].message.contains("subtract"), "{}", errs[0].message);
+  assert!(
+    errs[0].message.contains("no equations"),
+    "{}",
+    errs[0].message
+  );
   assert!(errs[0].message.contains("add"), "{}", errs[0].message);
+}
+
+/// The same defect with nothing after it at all, so the diagnostic cannot be
+/// coming from the *next* declaration.
+#[test]
+fn reports_a_signature_with_no_equations_at_end_of_file() {
+  let errs = errors("add : i32 -> i32\n");
+  assert!(
+    errs[0].message.contains("no equations"),
+    "{}",
+    errs[0].message
+  );
+}
+
+/// An equation naming a different function is still caught where it is still
+/// wrong: inside a `where` group, where a signature's equations may not be
+/// interrupted by an unrelated name.
+#[test]
+fn an_unsigned_definition_may_follow_a_signed_one() {
+  let program =
+    parse_source("add : i32 -> i32\nadd a =\n  a\n\nsubtract b =\n  b\n").expect("should parse");
+  assert_eq!(
+    program.items.len(),
+    2,
+    "two declarations, not one with a stray equation"
+  );
 }
 
 /// And so must the arity.
@@ -173,10 +245,15 @@ fn reports_an_empty_body() {
 /// LALRPOP arm reports one and stops — `docs/COMPILER.md` §1.
 #[test]
 fn recovers_at_item_boundaries_and_reports_every_bad_item() {
-  let errs = errors(
-    "a =\n  println! \\-> \"1\"\n\nb =\n  println! \\-> \"2\"\n\nc : ()\nc =\n  println! \\-> \"3\"\n  ()\n",
+  // The two bad items used to be `a =` and `b =` with no signature. Row 99
+  // wave 1 makes those legal, so the axis — one pass, every bad item — needs
+  // items that are still bad: an inline module-scope binding each.
+  let errs = errors("a = 1\n\nb = 2\n\nc : ()\nc =\n  println! \\-> \"3\"\n  ()\n");
+  assert_eq!(
+    errs.len(),
+    2,
+    "both malformed items should be reported: {errs:?}"
   );
-  assert_eq!(errs.len(), 2, "both malformed items should be reported");
 }
 
 #[test]

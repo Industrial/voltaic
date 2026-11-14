@@ -26,6 +26,7 @@ import crate::signature::capture_type
 import crate::signature::clause
 import crate::signature::signature_from
 import crate::signature::signature_only
+import crate::signature::signature_unsigned
 import crate::support::MAX_NESTING
 import crate::support::nesting_depth
 import crate::token::inline_rust
@@ -175,16 +176,34 @@ instance (Parser 'a)
   function reserved self =
     leading = .peek_leading self
     start = (.peek_span self).0
+    if !.signed self
+      name = (.peeked_name "expected a name to begin a declaration" self)?
+      return .unsigned_equations name leading start reserved false self
     name = (.ident "expected a name to begin a declaration" self)?
     head = (.signature_head (&name) self)?
-    .equations name leading start (&head) reserved false self
+    decl = (.equations (.clone name) leading start (&head) reserved true self)?
+    if .is_empty decl.clauses
+      message = format! \-> "`#{name.text}` has a signature and no equations; write its body, or delete the signature and let it be inferred"
+      return Err (ParseError::r#with Code::EmptyBody message name.span)
+    Ok decl
   export(crate) where_function : &mut self -> Result<FnDecl, ParseError>
   where_function self =
     leading = .peek_leading self
     start = (.peek_span self).0
+    if !.signed self
+      name = (.peeked_name "expected a name to begin a declaration" self)?
+      return .unsigned_equations name leading start (&[]) true self
     name = (.ident "expected a name to begin a declaration" self)?
     head = (.signature_head (&name) self)?
     .equations name leading start (&head) (&[]) true self
+  export(crate) signed : &self -> bool
+  signed self = case &(.peek self).kind of
+    TokenKind::Ident _ -> .is_some_and (\t -> t.kind == TokenKind::Colon) (.peek_at 1 self)
+    _ -> true
+  export(crate) peeked_name : &str -> &self -> Result<Ident, ParseError>
+  peeked_name message self = case &(.peek self).kind of
+    TokenKind::Ident text -> Ok (Ident { text = .clone text, span = .peek_span self })
+    _ -> Err (ParseError::r#with Code::ExpectedName (.to_string message) (.peek_span self))
   export(crate) signature_head : &Ident -> &mut self -> Result<SignatureHead, ParseError>
   signature_head name self =
     binds_on_this_line = .check (&TokenKind::Eq) self && .is_some_and (\t -> t.kind != TokenKind::Newline) (.peek_at 1 self)
@@ -250,6 +269,44 @@ instance (Parser 'a)
     settled.is_const := head.is_const
     settled.is_async := head.is_async
     settled.is_unsafe := head.is_unsafe
+    end = (.prev_span self).1
+    trailing = .and_then (\c -> .clone c.trailing) (.last clauses)
+    Ok (FnDecl { name, sig = settled, clauses, visibility = Visibility::Private, span = (start, end), leading, trailing })
+  export(crate) unsigned_equations : Ident -> Vec<Trivia> -> usize -> &[String] -> bool -> &mut self -> Result<FnDecl, ParseError>
+  unsigned_equations name leading start reserved ends_on_a_new_name self =
+    if .check (&TokenKind::Eq) self && .is_some_and (\t -> t.kind != TokenKind::Newline) (.peek_at 1 self)
+      message = format! \-> "a module-scope binding needs `const` or `static` and a type: `const #{name.text} : T = …`. Rust forbids `let` at module scope, and doc 03 §13.4 corrects doc 01 §4.3 accordingly"
+      return Err (ParseError::r#with Code::ModuleScopeBinding message name.span)
+    mut clauses = Vec::new ()
+    mut sig = None
+    loop
+      is_equation = case &(.peek self).kind of
+        TokenKind::Ident _ -> !.is_some_and (\t -> t.kind == TokenKind::Colon) (.peek_at 1 self)
+        _ -> false
+      if !is_equation
+        break
+      if declares_an_operator self
+        break
+      same_name = case &(.peek self).kind of
+        TokenKind::Ident text | text == &name.text -> true
+        _ -> false
+      if !same_name && (ends_on_a_new_name || !.is_empty clauses)
+        break
+      again = (.ident "expected the equation to repeat the name" self)?
+      if again.text != name.text
+        message = format! \-> "this equation defines `#{again.text}`, but the one above it defines `#{name.text}`"
+        return Err (ParseError::r#with Code::ExpectedName message again.span)
+      row = (patterns self)?
+      if .check (&TokenKind::Eq) self && .is_some_and (\t -> t.kind != TokenKind::Newline) (.peek_at 1 self) && .is_empty row
+        message = format! \-> "a module-scope binding needs `const` or `static` and a type: `const #{name.text} : T = …`. Rust forbids `let` at module scope, and doc 03 §13.4 corrects doc 01 §4.3 accordingly"
+        return Err (ParseError::r#with Code::ModuleScopeBinding message again.span)
+      built = signature_unsigned (&row) (again.span.0, (.prev_span self).1)
+      if .is_none sig
+        sig := Some built
+      .push (clause row (&name) false self)? clauses
+      .skip_separators self
+    mut settled = .unwrap_or_else (\-> signature_unsigned (&[]) (name.span.0, (.prev_span self).1)) sig
+    generalise (&mut settled) (&[]) reserved
     end = (.prev_span self).1
     trailing = .and_then (\c -> .clone c.trailing) (.last clauses)
     Ok (FnDecl { name, sig = settled, clauses, visibility = Visibility::Private, span = (start, end), leading, trailing })

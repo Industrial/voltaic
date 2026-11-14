@@ -56,6 +56,27 @@ instance Ty
       Ty::Nil -> ()
     ()
 
+export congruent : &Ty -> &Ty -> bool
+congruent left right =
+  if left == right
+    return true
+  if left is Ty::Con { name = left_name, args = left_args, .. } && right is Ty::Con { name = right_name, args = right_args, .. }
+    if !same_name left_name right_name || .len left_args != .len right_args
+      return false
+    for pair in .zip (.iter left_args) (.iter right_args)
+      if !congruent pair.0 pair.1
+        return false
+    return true
+  false
+
+same_name : &str -> &str -> bool
+same_name left right =
+  if left == right
+    return true
+  if .ends_with (&format! \-> "::#{right}") left
+    return true
+  .ends_with (&format! \-> "::#{left}") right
+
 instance Display Ty
   fmt : &self -> &mut Formatter<'_> -> Result
   fmt self f = case self of
@@ -88,6 +109,30 @@ test "a reference to an applied type keeps the inner angle brackets"
 
 test "a constructor merely named `&` with the wrong arity falls back to the generic form"
   assert_eq! \-> .to_string (Ty::applied "&" (vec! \-> Ty::named "a" \-> Ty::named "b")) \-> "&<a, b>"
+
+test "a qualified name is congruent with its own final segment"
+  assert! \-> congruent (&Ty::named "voltaic_diag::Diagnostic") (&Ty::named "Diagnostic")
+  assert! \-> congruent (&Ty::named "Diagnostic") (&Ty::named "voltaic_diag::Diagnostic") \-> "congruence is symmetric"
+
+test "two differently qualified names are not congruent"
+  assert! \-> !congruent (&Ty::named "a::T") (&Ty::named "b::T") \-> "only a name and its own suffix, never two paths"
+
+test "a partial segment match is not a suffix match"
+  assert! \-> !congruent (&Ty::named "voltaic_diag::Diagnostic") (&Ty::named "agnostic") \-> "the boundary is `::`, not any substring"
+
+test "congruence descends into arguments"
+  left = Ty::applied "Vec" (vec! \-> Ty::named "voltaic_diag::Diagnostic")
+  right = Ty::applied "Vec" (vec! \-> Ty::named "Diagnostic")
+  assert! \-> congruent (&left) (&right)
+
+test "congruence still separates genuinely different types"
+  assert! \-> !congruent (&Ty::named "u64") (&Ty::named "bool")
+  assert! \-> !congruent (&Ty::applied "Vec" (vec! \-> Ty::named "u8")) (&Ty::applied "Vec" (vec! \-> Ty::named "u16"))
+
+test "congruence is reflexive on a hole"
+  held = Ty::hole (Variable::new 2)
+  assert! \-> congruent (&held) (&held)
+  assert! \-> !congruent (&held) (&Ty::hole (Variable::new 3))
 
 test "a nullary constructor prints as its name"
   assert_eq! \-> .to_string (Ty::named "u64") \-> "u64"

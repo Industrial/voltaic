@@ -1,0 +1,7 @@
+error[VLT0128]: cannot infer a signature for `across`
+  --> signature_not_inferred.vlt:8:1
+  |
+8 | across p = p.x
+  | ^^^^^^^^^^^^^^
+  = help: Lattice reached `?0 -> ?2`, which has no Rust spelling. Write the signature, or annotate a parameter so inference can reach one. `voltaic sig --why across` shows the chain.
+

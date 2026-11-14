@@ -21,6 +21,8 @@ fileGroups:
     - '/crates/voltaic-ast/Cargo.toml'
     - '/crates/voltaic-diag/src/**/*'
     - '/crates/voltaic-diag/Cargo.toml'
+    - '/crates/voltaic-driver/src/**/*'
+    - '/crates/voltaic-driver/Cargo.toml'
     - '/crates/voltaic-emit/src/**/*'
     - '/crates/voltaic-emit/Cargo.toml'
     - '/crates/voltaic-lattice/src/**/*'

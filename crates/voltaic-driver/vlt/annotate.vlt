@@ -1,0 +1,152 @@
+import voltaic_ast::ClassMember
+import voltaic_ast::FnDecl
+import voltaic_ast::Item
+import voltaic_ast::Program
+import voltaic_ast::TypeExpr
+import voltaic_lattice::Ty
+import voltaic_diag::Code
+import voltaic_diag::Diagnostic
+import voltaic_diag::DiagnosticCode
+import voltaic_diag::Severity
+import std::path::Path
+
+export data Unresolved = Unresolved { export name : String, export shown : String, export span : voltaic_ast::Span }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export annotate : &mut Program -> Vec<Unresolved>
+annotate program =
+  found = voltaic_lattice::walk program
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+  mut filled = Vec::new ()
+  for definition in .iter found.definitions
+    if .is_none definition.written
+      filled |> .push (.clone definition.name, .judged (&outcome) definition, definition.span)
+  if .is_empty filled
+    return Vec::new ()
+
+  mut open = Vec::new ()
+  for item in .iter_mut program.items
+    for f in methods_of item
+      if .is_none f.sig.ret
+        if written_for (&f.name.text) f.span (.as_slice filled) is Some whole
+          if !fill f (&whole)
+            open |> .push (Unresolved { name = .clone f.name.text, shown = .to_string whole, span = f.span })
+        else
+          open |> .push (Unresolved { name = .clone f.name.text, shown = .to_string "?", span = f.span })
+  open
+
+methods_of : &mut Item -> Vec<&mut FnDecl>
+methods_of item =
+  mut found = Vec::new ()
+  case item of
+    Item::Fn f -> found |> .push f
+    Item::Instance block ->
+      for member in .iter_mut block.members
+        if member is ClassMember::Method f
+          found |> .push f
+    _ -> ()
+  found
+
+written_for : &str -> voltaic_ast::Span -> &[(String, Ty, voltaic_ast::Span)] -> Option<Ty>
+written_for name span filled =
+  for row in .iter filled
+    if row.0 == name && row.2 == span
+      return Some (.clone row.1)
+  None
+
+fill : &mut FnDecl -> &Ty -> bool
+fill f whole =
+  parts = spine_of whole (.len f.sig.params)
+  if parts is Some rows
+    for pair in .zip (.iter rows.0) (.iter_mut f.sig.params)
+      pair.0.ty := Some (TypeExpr { text = .clone pair.1, span = pair.0.span })
+    f.sig.ret := Some (TypeExpr { text = .clone rows.1, span = f.sig.span })
+    return true
+  false
+
+spine_of : &Ty -> usize -> Option<(Vec<String>, String)>
+spine_of whole arity =
+  mut cursor = .clone whole
+  mut params = Vec::new ()
+  mut taken = 0
+  while taken < arity
+    next = (arrow_parts (&cursor))?
+    params |> .push ((voltaic_lattice::write_type (&next.0))?)
+    cursor := next.1
+    taken += 1
+  ret = (voltaic_lattice::write_type (&cursor))?
+  Some (params, ret)
+
+arrow_parts : &Ty -> Option<(Ty, Ty)>
+arrow_parts held = case held of
+  Ty::Con { name, args, .. } ->
+    if name == voltaic_lattice::ARROW && .len args == 2
+      return Some (.clone args[0], .clone args[1])
+    None
+  _ -> None
+
+export refusals : &Path -> &str -> &[Unresolved] -> Vec<Diagnostic>
+refusals path source open =
+  shown = path |> .display |> .to_string
+  mut diagnostics = Vec::new ()
+  for one in .iter open
+    diagnostics |> .push (Diagnostic {
+      code = DiagnosticCode::from Code::SignatureNotInferred,
+      severity = Severity::Error,
+      message = format! \-> "cannot infer a signature for `#{one.name}`",
+      span = one.span,
+      related = Vec::new (),
+      help = Some (format! \-> "Lattice reached `#{one.shown}`, which has no Rust spelling. Write the signature, or annotate a parameter so inference can reach one. `voltaic sig --why #{one.name}` shows the chain."),
+      path = .clone shown,
+      source = .to_string source })
+  diagnostics
+
+test "a program whose definitions are all signed is left alone"
+  mut program = .expect "should parse" (voltaic_parser::parse_source "twice : u64 -> u64\ntwice n = n + n\n")
+  assert! \-> .is_empty (annotate (&mut program))
+  if &program.items[0] is Item::Fn f
+    assert_eq! \-> (.expect "a written return" (.as_ref f.sig.ret)).text \-> "u64"
+
+test "an unsigned definition gains the inferred types"
+  mut program = .expect "should parse" (voltaic_parser::parse_source "scaled : u64 -> u64\nscaled n = n * 2\n\ndoubled n = scaled n\n")
+  assert! \-> .is_empty (annotate (&mut program))
+  if &program.items[1] is Item::Fn f
+    assert_eq! \-> (.expect "a return" (.as_ref f.sig.ret)).text \-> "u64"
+    assert_eq! \-> (.expect "a param" (.as_ref f.sig.params[0].ty)).text \-> "u64"
+
+test "an unsigned nullary definition gains only a return type"
+  mut program = .expect "should parse" (voltaic_parser::parse_source "ready =\n  true\n")
+  assert! \-> .is_empty (annotate (&mut program))
+  if &program.items[0] is Item::Fn f
+    assert! \-> .is_empty f.sig.params
+    assert_eq! \-> (.expect "a return" (.as_ref f.sig.ret)).text \-> "bool"
+
+test "a definition inference cannot reach is refused, not guessed"
+  mut program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nacross p = p.x\n")
+  open = annotate (&mut program)
+  assert_eq! \-> .len open \-> 1
+  assert_eq! \-> open[0].name \-> "across"
+
+test "a refusal is an error naming the type it got to and the command that explains it"
+  mut program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64 }\nacross p = p.x\n")
+  open = annotate (&mut program)
+  shown = refusals (Path::new "probe.vlt") "" (.as_slice open)
+  assert_eq! \-> .len shown \-> 1
+  assert_eq! \-> shown[0].severity \-> Severity::Error \-> "an unemittable program must not build"
+  help = .expect "a help line" (.clone shown[0].help)
+  assert! \-> .contains "sig --why across" help \-> "#{help}"
+
+test "a chain of unsigned definitions resolves through the globals fixed point"
+  mut program = .expect "should parse" (voltaic_parser::parse_source "scaled : u64 -> u64\nscaled n = n * 2\n\ndoubled n = scaled n\n\nquadrupled n = doubled n\n")
+  assert! \-> .is_empty (annotate (&mut program))
+  if &program.items[2] is Item::Fn f
+    assert_eq! \-> (.expect "a return" (.as_ref f.sig.ret)).text \-> "u64"
+
+test "annotating twice is the same as annotating once"
+  source = "scaled : u64 -> u64\nscaled n = n * 2\n\ndoubled n = scaled n\n"
+  mut once = .expect "should parse" (voltaic_parser::parse_source source)
+  _ = annotate (&mut once)
+  mut twice = .expect "should parse" (voltaic_parser::parse_source source)
+  _ = annotate (&mut twice)
+  _ = annotate (&mut twice)
+  assert_eq! \-> once \-> twice \-> "a second pass sees signed definitions and must not re-decide"

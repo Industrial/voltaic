@@ -4,25 +4,25 @@ error[VLT0103]: expected a lambda parameter name
 17 |   |> .map (\(i, n) -> format! \-> "#{i}:#{n}")
    |             ^
 
-error[VLT0101]: expected `:` after the name, to begin the signature
+error[VLT0103]: expected a parameter name, a literal pattern, a range, `_`, `(`, `[`, or `=`
   --> lambda_parameter_is_not_a_pattern.vlt:17:15
    |
 17 |   |> .map (\(i, n) -> format! \-> "#{i}:#{n}")
    |               ^
 
-error[VLT0101]: expected `:` after the name, to begin the signature
+error[VLT0103]: expected a parameter name, a literal pattern, a range, `_`, `(`, `[`, or `=`
   --> lambda_parameter_is_not_a_pattern.vlt:17:18
    |
 17 |   |> .map (\(i, n) -> format! \-> "#{i}:#{n}")
    |                  ^
 
-error[VLT0101]: expected `:` after the name, to begin the signature
+error[VLT0103]: expected a parameter name, a literal pattern, a range, `_`, `(`, `[`, or `=`
   --> lambda_parameter_is_not_a_pattern.vlt:17:29
    |
 17 |   |> .map (\(i, n) -> format! \-> "#{i}:#{n}")
    |                             ^
 
-error[VLT0101]: expected `:` after the name, to begin the signature
+error[VLT0101]: expected `=` after the equation's parameters, or an indented `|` guard list
   --> lambda_parameter_is_not_a_pattern.vlt:19:1
    |
 18 |   |> .collect
