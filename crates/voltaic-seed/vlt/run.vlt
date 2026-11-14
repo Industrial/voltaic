@@ -71,11 +71,7 @@ walk src out =
     at += 1
     guard std::fs::read_dir (&from) is Ok entries else
       continue
-    mut children : Vec<PathBuf> = entries
-      |> .flatten
-      |> .map (\e -> .path e)
-      |> .filter (\p -> .is_dir p)
-      |> .collect
+    mut children : Vec<PathBuf> = ((entries.flatten ().map (\e -> .path e)).filter (\p -> .is_dir p)).collect ()
     .sort children
     for child in children
       guard .file_name child is Some name else
