@@ -1,0 +1,72 @@
+import crate::ty::Ty
+import crate::variable::Variable
+import std::collections::BTreeMap
+
+export data Substitution = Substitution { bound : BTreeMap<Variable, Ty> }
+  deriving (Debug, Clone, Default, PartialEq, Eq)
+
+instance Substitution
+  export new : Self
+  new = Substitution { bound = BTreeMap::new () }
+
+  export len : &self -> usize
+  len self = .len self.bound
+
+  export is_empty : &self -> bool
+  is_empty self = .is_empty self.bound
+
+  export get : &Variable -> &self -> Option<&Ty>
+  get v self = .get v self.bound
+
+  export bind : Variable -> Ty -> &mut self -> ()
+  bind v t self =
+    .insert v t self.bound
+    ()
+
+  export bound_variables : &self -> Vec<Variable>
+  bound_variables self = self.bound |> .keys |> .copied |> .collect
+
+  export resolve : &Ty -> &self -> Ty
+  resolve t self = case t of
+    Ty::Hole v ->
+      if .get v self is Some found
+        if found == t
+          .clone t
+        else
+          .resolve found self
+      else
+        .clone t
+    Ty::Con { name, args, .. } -> Ty::Con { name = .clone name, args = args |> .iter |> .map (\a -> .resolve a self) |> .collect }
+    Ty::Nil -> Ty::Nil
+
+test "a fresh substitution binds nothing"
+  s = Substitution::new ()
+  assert! \-> .is_empty s
+  assert_eq! \-> .get (&Variable::new 0) s \-> None
+
+test "a bound variable resolves to its type"
+  mut s = Substitution::new ()
+  .bind (Variable::new 0) (Ty::named "u64") s
+  assert_eq! \-> .resolve (&Ty::hole (Variable::new 0)) s \-> Ty::named "u64"
+
+test "resolution follows a chain of bindings"
+  mut s = Substitution::new ()
+  .bind (Variable::new 0) (Ty::hole (Variable::new 1)) s
+  .bind (Variable::new 1) (Ty::named "bool") s
+  assert_eq! \-> .resolve (&Ty::hole (Variable::new 0)) s \-> Ty::named "bool"
+
+test "resolution reaches inside a constructor's arguments"
+  mut s = Substitution::new ()
+  .bind (Variable::new 0) (Ty::named "char") s
+  wrapped = Ty::applied "Option" (vec! \-> Ty::hole (Variable::new 0))
+  assert_eq! \-> .resolve (&wrapped) s \-> Ty::applied "Option" (vec! \-> Ty::named "char")
+
+test "an unbound hole resolves to itself"
+  s = Substitution::new ()
+  assert_eq! \-> .resolve (&Ty::hole (Variable::new 7)) s \-> Ty::hole (Variable::new 7)
+
+test "bound variables come back in index order"
+  mut s = Substitution::new ()
+  .bind (Variable::new 2) (Ty::named "u8") s
+  .bind (Variable::new 0) (Ty::named "u8") s
+  assert_eq! \-> .bound_variables s \-> vec! \-> Variable::new 0 \-> Variable::new 2

@@ -298,13 +298,65 @@ own bug* — and it is what `docs/102 - 104` §1.2 predicted of that table. It w
 reading the corpus for an unrelated reason, which is the argument for regrading against
 fixtures rather than against prose.
 
-### 10.6 Leaves outstanding
+### 10.6 Leaves 2 and 3 shipped together, 2026-11-14
+
+`substitution.vlt`, `unify.vlt`, `driver.vlt`, `scheme.vlt`. 72 tests — 63 inline, 9
+integration. Clippy clean under `-D warnings`; gate green at 28 tasks.
+
+They shipped as one commit because a driver with no transfer function cannot be
+tested and unification is the first transfer function. Splitting them would have meant
+a commit whose only assertion was that a loop terminates on an empty worklist.
+
+**What `solve` does and does not do.** `Unify` is discharged by unification;
+`Callable` is discharged by building the arrow its use implies (`arrow_of`) and
+unifying the callee against it; **`Member` is deferred, not guessed.** A field access
+needs to know a type's fields, which needs a declaration environment, which is row
+98's. The driver collects deferred indices rather than failing, and the test naming
+that behaviour is what stops a later row from quietly making something up.
+
+**The round bound holds by the shape of the lattice, not by hope.** `MAX_ROUNDS` is 16
+and the loop exits as soon as a round binds nothing new. A 64-link chain of holes
+solves inside the bound, which is the test; the general argument is that each round
+either binds at least one variable or is the last.
+
+### 10.7 The occurs check is not enough on its own
+
+`unify` has an occurs check, so unification cannot build `?0 = Vec<?0>`. But
+`Substitution::bind` is a raw primitive with no check, and `instantiate` used it — so
+when a scheme quantified `?0` and the instantiating store's counter also stood at 0,
+`instantiate` bound `?0 → ?0` and `resolve` recursed until the **stack overflowed**.
+
+A real bug, found by a test rather than by review, and fixed at both ends: `resolve`
+treats a self-binding as the identity, and `instantiate` skips an identity binding
+rather than making one. Two tests now name each half.
+
+The collision is artificial in the test — a real caller generalises and instantiates
+against the same store, whose counter is always past the quantified set — but a
+primitive that diverges on a reachable input is a primitive to fix, not to document.
+
+### 10.8 `.voltaic-cache` can serve stale output across a `.vlt` edit
+
+This cost more round trips than any other single thing in the leaf. `bootstrap.sh`
+appeared to succeed, reported every file, and left `src/` holding the *previous*
+generation — so clippy kept reporting findings that the source had already fixed.
+
+The cache is `crates/<crate>/src/.voltaic-cache`, written by `voltaic-driver`. Running
+the seed directly over the source directory produced correct output immediately, which
+is what isolated it.
+
+**This is the same shape as `AGENTS.md`'s seed-refresh trap** — *"`moon run
+:seed-refresh` replays a cached size, so the number it prints can be a previous
+run's"* — and the same remedy applies: do not trust the task's report, check the
+artifact. For regeneration the check is to read the generated file, and the fix when it
+is stale is `rm -rf crates/*/src/.voltaic-cache`.
+
+### 10.9 Leaves outstanding
 
 | Leaf | Status |
 |---|---|
 | 1 — the constraint store | `done` |
-| 2 — the fixed-point driver | outstanding |
-| 3 — unification, generalisation, instantiation | outstanding |
+| 2 — the fixed-point driver | `done` |
+| 3 — unification, generalisation, instantiation | `done` |
 | 4 — `voltaic sig` | outstanding |
 | 5 — `tests/solve/` | outstanding |
 | 6 — the fuzz target | outstanding |

@@ -1,0 +1,79 @@
+import crate::store::Store
+import crate::substitution::Substitution
+import crate::ty::Ty
+import crate::variable::Variable
+
+export data Scheme = Scheme { export quantified : Vec<Variable>, export body : Ty }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+instance Scheme
+  export monomorphic : Ty -> Self
+  monomorphic body = Scheme { quantified = Vec::new (), body }
+
+  export is_polymorphic : &self -> bool
+  is_polymorphic self = !.is_empty self.quantified
+
+  export arity : &self -> usize
+  arity self = .len self.quantified
+
+export generalise : &Ty -> &[Variable] -> Scheme
+generalise t bound_outside =
+  quantified = t |> .holes |> .into_iter |> .filter (\v -> !.contains v bound_outside) |> .collect
+  Scheme { quantified, body = .clone t }
+
+export instantiate : &Scheme -> &mut Store -> Ty
+instantiate scheme store =
+  mut fresh = Substitution::new ()
+  for v in .iter scheme.quantified
+    replacement = .fresh_hole store
+    if replacement != Ty::hole (*v)
+      .bind (*v) replacement fresh
+  .resolve (&scheme.body) fresh
+
+test "a type with no free holes generalises to a monomorphic scheme"
+  s = generalise (&Ty::named "u64") (&Vec::new ())
+  assert! \-> !.is_polymorphic s
+  assert_eq! \-> s.body \-> Ty::named "u64"
+
+test "a free hole is quantified"
+  t = Ty::arrow (Ty::hole (Variable::new 0)) (Ty::hole (Variable::new 0))
+  s = generalise (&t) (&Vec::new ())
+  assert_eq! \-> .arity s \-> 1
+  assert_eq! \-> s.quantified \-> vec! \-> Variable::new 0
+
+test "a hole bound in the enclosing scope is not quantified"
+  t = Ty::arrow (Ty::hole (Variable::new 0)) (Ty::hole (Variable::new 1))
+  outer = vec! \-> Variable::new 0
+  s = generalise (&t) (.as_slice outer)
+  assert_eq! \-> s.quantified \-> vec! \-> Variable::new 1
+
+test "instantiating a monomorphic scheme changes nothing"
+  mut store = Store::new ()
+  s = Scheme::monomorphic (Ty::named "u64")
+  assert_eq! \-> instantiate (&s) (&mut store) \-> Ty::named "u64"
+
+test "instantiating a polymorphic scheme hands out fresh holes"
+  mut store = Store::new ()
+  s = generalise (&Ty::arrow (Ty::hole (Variable::new 0)) (Ty::hole (Variable::new 0))) (&Vec::new ())
+  first = instantiate (&s) (&mut store)
+  second = instantiate (&s) (&mut store)
+  assert! \-> first != second \-> "#{first} and #{second} should not share a hole"
+  assert_eq! \-> .to_string first \-> "?0 -> ?0"
+  assert_eq! \-> .to_string second \-> "?1 -> ?1"
+
+test "instantiation keeps a repeated variable repeated"
+  mut store = Store::new ()
+  s = generalise (&Ty::applied "Pair" (vec! \-> Ty::hole (Variable::new 0) \-> Ty::hole (Variable::new 0))) (&Vec::new ())
+  made = instantiate (&s) (&mut store)
+  assert_eq! \-> .len (.holes made) \-> 1
+
+test "a fresh hole that collides with a quantified variable is the identity"
+  mut store = Store::new ()
+  s = generalise (&Ty::hole (Variable::new 0)) (&Vec::new ())
+  made = instantiate (&s) (&mut store)
+  assert_eq! \-> made \-> Ty::hole (Variable::new 0)
+
+test "a substitution binding a hole to itself resolves rather than diverging"
+  mut subst = Substitution::new ()
+  .bind (Variable::new 0) (Ty::hole (Variable::new 0)) subst
+  assert_eq! \-> .resolve (&Ty::hole (Variable::new 0)) subst \-> Ty::hole (Variable::new 0)

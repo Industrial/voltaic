@@ -1,0 +1,121 @@
+import crate::substitution::Substitution
+import crate::ty::Ty
+import crate::variable::Variable
+
+export data Mismatch = Mismatch { export left : Ty, export right : Ty, export occurs : bool }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+instance Mismatch
+  export between : &Ty -> &Ty -> Self
+  between left right = Mismatch { left = .clone left, right = .clone right, occurs = false }
+
+  export cycle : Variable -> &Ty -> Self
+  cycle v right = Mismatch { left = Ty::hole v, right = .clone right, occurs = true }
+
+  export is_cycle : &self -> bool
+  is_cycle self = self.occurs
+
+export unify : &Ty -> &Ty -> &mut Substitution -> Result<(), Mismatch>
+unify left right subst =
+  l = .resolve left subst
+  r = .resolve right subst
+  if l == r
+    return Ok ()
+  if l is Ty::Hole v
+    return bind v (&r) subst
+  if r is Ty::Hole v
+    return bind v (&l) subst
+  unify_constructors (&l) (&r) subst
+
+bind : Variable -> &Ty -> &mut Substitution -> Result<(), Mismatch>
+bind v t subst =
+  if .contains (&v) (.holes t)
+    return Err (Mismatch::cycle v t)
+  .bind v (.clone t) subst
+  Ok ()
+
+unify_constructors : &Ty -> &Ty -> &mut Substitution -> Result<(), Mismatch>
+unify_constructors l r subst =
+  if l is Ty::Con { name = left_name, args = left_args, .. } && r is Ty::Con { name = right_name, args = right_args, .. }
+    if left_name != right_name || .len left_args != .len right_args
+      return Err (Mismatch::between l r)
+    for pair in .zip (.iter right_args) (.iter left_args)
+      (unify pair.0 pair.1 subst)?
+    return Ok ()
+  Err (Mismatch::between l r)
+
+export unify_all : &[Ty] -> &[Ty] -> &mut Substitution -> Result<(), Mismatch>
+unify_all left right subst =
+  if .len left != .len right
+    return Err (Mismatch::between (&Ty::applied "..." (.to_vec left)) (&Ty::applied "..." (.to_vec right)))
+  for pair in .zip (.iter right) (.iter left)
+    (unify pair.0 pair.1 subst)?
+  Ok ()
+
+test "two identical concrete types unify with no binding"
+  mut s = Substitution::new ()
+  assert! \-> .is_ok (unify (&Ty::named "u64") (&Ty::named "u64") (&mut s))
+  assert! \-> .is_empty s
+
+test "a hole unifies with a concrete type by binding"
+  mut s = Substitution::new ()
+  assert! \-> .is_ok (unify (&Ty::hole (Variable::new 0)) (&Ty::named "u64") (&mut s))
+  assert_eq! \-> .get (&Variable::new 0) s \-> Some (&Ty::named "u64")
+
+test "a hole on the right binds just as well"
+  mut s = Substitution::new ()
+  assert! \-> .is_ok (unify (&Ty::named "bool") (&Ty::hole (Variable::new 3)) (&mut s))
+  assert_eq! \-> .get (&Variable::new 3) s \-> Some (&Ty::named "bool")
+
+test "two different concrete types do not unify"
+  mut s = Substitution::new ()
+  outcome = unify (&Ty::named "u64") (&Ty::named "bool") (&mut s)
+  assert! \-> .is_err outcome
+  assert! \-> !.is_cycle (.unwrap_err outcome)
+
+test "constructors unify argument by argument"
+  mut s = Substitution::new ()
+  left = Ty::applied "Option" (vec! \-> Ty::hole (Variable::new 0))
+  right = Ty::applied "Option" (vec! \-> Ty::named "char")
+  assert! \-> .is_ok (unify (&left) (&right) (&mut s))
+  assert_eq! \-> .get (&Variable::new 0) s \-> Some (&Ty::named "char")
+
+test "constructors of different arity do not unify"
+  mut s = Substitution::new ()
+  left = Ty::applied "Result" (vec! \-> Ty::named "u64" \-> Ty::named "String")
+  right = Ty::applied "Result" (vec! \-> Ty::named "u64")
+  assert! \-> .is_err (unify (&left) (&right) (&mut s))
+
+test "an arrow unifies with an arrow, both sides"
+  mut s = Substitution::new ()
+  left = Ty::arrow (Ty::hole (Variable::new 0)) (Ty::hole (Variable::new 1))
+  right = Ty::arrow (Ty::named "u64") (Ty::named "bool")
+  assert! \-> .is_ok (unify (&left) (&right) (&mut s))
+  assert_eq! \-> .get (&Variable::new 0) s \-> Some (&Ty::named "u64")
+  assert_eq! \-> .get (&Variable::new 1) s \-> Some (&Ty::named "bool")
+
+test "the occurs check refuses an infinite type"
+  mut s = Substitution::new ()
+  cyclic = Ty::applied "Vec" (vec! \-> Ty::hole (Variable::new 0))
+  outcome = unify (&Ty::hole (Variable::new 0)) (&cyclic) (&mut s)
+  assert! \-> .is_err outcome
+  assert! \-> .is_cycle (.unwrap_err outcome)
+
+test "unification is transitive through two holes"
+  mut s = Substitution::new ()
+  assert! \-> .is_ok (unify (&Ty::hole (Variable::new 0)) (&Ty::hole (Variable::new 1)) (&mut s))
+  assert! \-> .is_ok (unify (&Ty::hole (Variable::new 1)) (&Ty::named "u64") (&mut s))
+  assert_eq! \-> .resolve (&Ty::hole (Variable::new 0)) s \-> Ty::named "u64"
+
+test "unifying two lists pairs them up"
+  mut s = Substitution::new ()
+  left = vec! \-> Ty::hole (Variable::new 0) \-> Ty::named "bool"
+  right = vec! \-> Ty::named "u64" \-> Ty::named "bool"
+  assert! \-> .is_ok (unify_all (.as_slice left) (.as_slice right) (&mut s))
+  assert_eq! \-> .get (&Variable::new 0) s \-> Some (&Ty::named "u64")
+
+test "unifying lists of different length fails"
+  mut s = Substitution::new ()
+  left = vec! \-> Ty::named "u64"
+  right = vec! \-> Ty::named "u64" \-> Ty::named "bool"
+  assert! \-> .is_err (unify_all (.as_slice left) (.as_slice right) (&mut s))

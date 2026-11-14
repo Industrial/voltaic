@@ -1,0 +1,129 @@
+import crate::constraint::Obligation
+import crate::store::Store
+import crate::substitution::Substitution
+import crate::ty::Ty
+import crate::unify::Mismatch
+import crate::unify::unify
+
+export const MAX_ROUNDS : u32 = 16
+
+export data Failure = Failure { export at : usize, export mismatch : Mismatch }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export data Outcome = Outcome { export substitution : Substitution, export failures : Vec<Failure>, export rounds : u32, export deferred : Vec<usize> }
+  deriving (Debug, Clone)
+
+instance Outcome
+  export is_solved : &self -> bool
+  is_solved self = .is_empty self.failures
+
+  export resolved : &Ty -> &self -> Ty
+  resolved t self = .resolve t self.substitution
+
+export solve : &Store -> Outcome
+solve store =
+  mut subst = Substitution::new ()
+  mut failures = Vec::new ()
+  mut deferred = Vec::new ()
+  mut rounds = 0
+  mut changed = true
+  while changed && rounds < MAX_ROUNDS
+    changed := false
+    rounds += 1
+    before = .len subst
+    failures := Vec::new ()
+    deferred := Vec::new ()
+    for pair in .enumerate (.iter (.all store))
+      apply pair.0 pair.1 (&mut subst) (&mut failures) (&mut deferred)
+    if .len subst != before
+      changed := true
+  Outcome { substitution = subst, failures, rounds, deferred }
+
+apply : usize -> &crate::constraint::Constraint -> &mut Substitution -> &mut Vec<Failure> -> &mut Vec<usize> -> ()
+apply at c subst failures deferred =
+  case &c.obligation of
+    Obligation::Unify { left, right, .. } ->
+      if unify left right subst is Err m
+        failures |> .push (Failure { at, mismatch = m })
+    Obligation::Callable { callee, args, result, .. } ->
+      expected = arrow_of (.as_slice args) result
+      if unify callee (&expected) subst is Err m
+        failures |> .push (Failure { at, mismatch = m })
+    Obligation::Member { .. } -> deferred |> .push at
+  ()
+
+export arrow_of : &[Ty] -> &Ty -> Ty
+arrow_of args result =
+  mut built = .clone result
+  for a in .rev (.iter args)
+    built := Ty::arrow (.clone a) built
+  built
+
+test "an empty store solves in one round with nothing bound"
+  s = Store::new ()
+  outcome = solve (&s)
+  assert! \-> .is_solved outcome
+  assert! \-> .is_empty outcome.substitution
+  assert_eq! \-> outcome.rounds \-> 1
+
+test "a single unify constraint is solved"
+  mut s = Store::new ()
+  hole = .fresh_hole s
+  .require (Obligation::Unify { left = .clone hole, right = Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
+  outcome = solve (&s)
+  assert! \-> .is_solved outcome
+  assert_eq! \-> .resolved (&hole) outcome \-> Ty::named "u64"
+
+test "a contradiction is reported against the constraint that caused it"
+  mut s = Store::new ()
+  hole = .fresh_hole s
+  .require (Obligation::Unify { left = .clone hole, right = Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
+  bad = .require (Obligation::Unify { left = .clone hole, right = Ty::named "bool" }) (9, 13) crate::reason::Reason::ReturnPosition s
+  outcome = solve (&s)
+  assert! \-> !.is_solved outcome
+  assert_eq! \-> .len outcome.failures \-> 1
+  assert_eq! \-> outcome.failures[0].at \-> bad
+
+test "an arrow is built right-associated from the argument list"
+  args = vec! \-> Ty::named "u64" \-> Ty::named "bool"
+  built = arrow_of (.as_slice args) (&Ty::named "char")
+  assert_eq! \-> .to_string built \-> "u64 -> bool -> char"
+
+test "a nullary call's expected type is just its result"
+  args = Vec::new () : Vec<Ty>
+  assert_eq! \-> arrow_of (.as_slice args) (&Ty::named "u64") \-> Ty::named "u64"
+
+test "a callable constraint unifies the callee against the arrow its use implies"
+  mut s = Store::new ()
+  callee = .fresh_hole s
+  .require (Obligation::Callable { callee = .clone callee, args = vec! \-> Ty::named "u64", result = Ty::named "bool" }) (0, 8) crate::reason::Reason::CallCallee s
+  outcome = solve (&s)
+  assert! \-> .is_solved outcome
+  assert_eq! \-> .to_string (.resolved (&callee) outcome) \-> "u64 -> bool"
+
+test "a member constraint is deferred rather than guessed at"
+  mut s = Store::new ()
+  at = .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (0, 7) crate::reason::Reason::FieldAccess s
+  outcome = solve (&s)
+  assert! \-> .is_solved outcome
+  assert_eq! \-> outcome.deferred \-> vec! \-> at
+
+test "the driver never exceeds its round bound"
+  mut s = Store::new ()
+  mut previous = .fresh_hole s
+  for _step in 0 .. 64
+    next = .fresh_hole s
+    .require (Obligation::Unify { left = .clone previous, right = .clone next }) (0, 1) crate::reason::Reason::EquationBody s
+    previous := next
+  outcome = solve (&s)
+  assert! \-> outcome.rounds <= MAX_ROUNDS \-> "#{outcome.rounds} rounds"
+
+test "a chain of holes collapses to the concrete type at its end"
+  mut s = Store::new ()
+  first = .fresh_hole s
+  middle = .fresh_hole s
+  .require (Obligation::Unify { left = .clone first, right = .clone middle }) (0, 1) crate::reason::Reason::EquationBody s
+  .require (Obligation::Unify { left = .clone middle, right = Ty::named "u64" }) (2, 3) crate::reason::Reason::LiteralKind s
+  outcome = solve (&s)
+  assert! \-> .is_solved outcome
+  assert_eq! \-> .resolved (&first) outcome \-> Ty::named "u64"

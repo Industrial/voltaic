@@ -1,17 +1,33 @@
 module constraint
+module driver
 module explain
 module provenance
 module reason
+module scheme
 module store
+module substitution
 module ty
+module unify
 module variable
 
 export import constraint::Constraint
 export import constraint::Obligation
+export import driver::Failure
+export import driver::MAX_ROUNDS
+export import driver::Outcome
+export import driver::arrow_of
+export import driver::solve
 export import explain::explain
 export import explain::summarise
 export import provenance::Provenance
 export import reason::Reason
+export import scheme::Scheme
+export import scheme::generalise
+export import scheme::instantiate
 export import store::Store
+export import substitution::Substitution
 export import ty::Ty
+export import unify::Mismatch
+export import unify::unify
+export import unify::unify_all
 export import variable::Variable
