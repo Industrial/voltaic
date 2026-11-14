@@ -650,7 +650,7 @@ Two reverts of one rule is worth a sentence of its own: the first blamed the
 missing sidecars, and fixing those was correct and necessary work. It was not
 what made the rule sound, and the second attempt is what established that.
 
-### 10.14 The printer was half of it; the other half is why deletion 3 cannot be written as specified
+### 10.14 The printer, then the parser: deletion 3 works, bar the line breaks
 
 **§10.14 first claimed the blocker was the printer and that §10.8 and §10.12 had
 been asking the wrong question. That was wrong in its central claim, and the
@@ -679,39 +679,89 @@ one hold it as data — the AST's `Pipeline -> "|>"`, the lexer's
 formatter's own pipeline printer, two fixtures. The gate asserts that rather
 than counting it: a `|>` surviving on a line with no string literal on it fails.
 
-`takes_a_postfix` and `stands_alone` lost their `| !.is_empty args` guards with
-it, and **that is not over-caution — it is forced.** Measured against the
-compiler:
+#### The parenthesis obstacle was real and is now fixed in the parser
+
+A first version of this section said every zero-argument link needs a
+parenthesis, permanently, because *"juxtaposition application cannot tell a
+zero-argument call's `()` from a unit first argument"*. The diagnosis was right
+and the "permanently" was wrong. Measured, before:
 
 ```
-a h = (h.s.len ()).count_ones ()   ->  h.s.len().count_ones()
 b h = h.s.len ().count_ones ()     ->  h.s.len(().count_ones, ())
 ```
 
-An unparenthesised chain is not a chain. Juxtaposition application cannot tell a
-zero-argument call's `()` from a unit first argument, so the `()`, the
-`.count_ones` and the second `()` all become arguments to `len`. Every
-zero-argument link in a `.` chain therefore needs a parenthesis.
+The `()` was collected as a juxtaposed **Unit argument**, and `postfix` then
+attached `.count_ones` to *it* — so the `()`, the `().count_ones` and the second
+`()` all became arguments to `len`. Two rules in `voltaic-parser` fix it, and
+both are **type-free facts** rather than inference, which is what makes them
+admissible under doc 97 §10.36:
 
-#### Which is why the migration is still declined, and now for a measured reason
+- **no postfix is meaningful on a unit literal.** `().name`, `()?`, `()[i]` and
+  `(){…}` are nonsense in every program, so `postfix` declines all of them and
+  the `()` stays the call's empty argument list.
+- **an application continues its own postfix chain.** Without this the first rule
+  *breaks* `x.ok ()?`: the `?` no longer attaches to the `()` and has nowhere to
+  go. One file — `voltaic-bench/vlt/ir.vlt` — failed exactly that way and is what
+  found the second rule. Now the `?` and the next `.link` attach to the link just
+  built.
+
+After: both spellings emit `h.s.len().count_ones()`.
+
+**The change is byte-neutral over the whole corpus**, which is the standard this
+project holds a parser change to: every example, golden, `.stderr` and `.stdout`
+expectation unchanged, and `the_g2_blob_and_the_tree_agree_on_every_ported_crate`
+still green, so no seed refresh was needed.
+
+**A link that carries arguments still needs its parenthesis**, and that half is
+genuinely not fixable this way: in `xs.map (\a -> …).collect`, the `.collect`
+attaches to the lambda's closing paren, and `(g x).y` is a legitimate expression,
+so there is nothing type-free to decline. `takes_a_postfix` is therefore `false`
+for a `Dot` **with** arguments and `true` for one without —
+`a_dot_with_arguments_still_needs_its_parenthesis` pins it, and 25 of the
+corpus's files proved the need by failing the identity gate when the distinction
+was not made.
+
+#### What the corpus becomes, and it now reads better than what it replaces
 
 §10.11 reverted the application because the pass reached 5% and a half-migrated
-chain read worse. At 73 files that reason is gone and a sharper one replaces it.
-This is what the corpus becomes:
+chain read worse. With the parser fix above, this is what `lex.vlt` becomes —
+applied for real with `VOLTAIC_UPDATE=1`, each of 73 files gated to
+byte-identical Rust before writing:
 
 ```
 -    ch = self.cur |> .peek |> .expect "step checked for eof"
-+    ch = (self.cur.peek ()).expect "step checked for eof"
++    ch = self.cur.peek ().expect "step checked for eof"
+
+-      self.pending
+-        |> .push (Trivia::comment marker text (start, .pos self.cur))
++      self.pending.push (Trivia::comment marker text (start, .pos self.cur))
+
+-      last = self.toks
+-        |> .last_mut
+-        |> .expect "a Newline was just pushed"
++      last = self.toks.last_mut ().expect "a Newline was just pushed"
 
 -      text = self.cur
--        |> .slice (body_start, .pos self.cur - 1)
+-        |> .slice (body_start, end)
+-        |> .trim
 -        |> .to_string
-+      text = (self.cur.slice (body_start, .pos self.cur - 1)).to_string ()
++      text = (self.cur.slice (body_start, end)).trim ().to_string ()
 ```
 
-A three-stage chain nests two levels of parentheses, and the multi-line form
-collapses onto one long line. **The second of those is not a missing printer —
-it is a surface limit, measured:**
+No nesting, and one parenthesis only where a link carries arguments. That is an
+improvement, which is what §10.11's objection asked for and did not get.
+
+**It was still reverted, and this time for a reason about process rather than
+about the result.** Leaf 6 says *crate by crate, with a reviewable state after
+each*; writing 73 files in one commit is the thing that leaf exists to prevent.
+The bulk application also drags in deletion 5's spelling — `export code Code`
+for `export code : Code` — because the rewrite goes through
+`voltaic_fmt::format`, which prints the canonical form for the whole file and
+cannot be asked for only one deletion's worth of it. So the transform stays
+gated-and-unapplied here, and leaf 6 applies it.
+
+The multi-line form collapses onto one long line. **That is not a missing
+printer — it is a surface limit, measured:**
 
 ```
 two h = (h.s.to_string ())
@@ -724,12 +774,16 @@ rule ends the expression at the newline, leaving the continuation to parse as a
 receiver-last application of its own.
 
 **So doc 97 §1.3's deletion 3 — *"`|>` … replaced by `.` chains that break
-across lines"* — is unavailable on both counts.** A migrated chain needs a
-parenthesis at every zero-argument link *and* must be one line however long. The
-first draft of this section listed a multi-line `.`-chain printer as work the
-formatter could simply grow; there is nothing for it to print until the surface
-admits the form. `a_dot_chain_cannot_break_across_lines` is the gate, and it
-fails — helpfully — if that changes.
+across lines"* — is available except for the words *"across lines"*.** A migrated
+chain must be one line, however long. A draft of this section listed a multi-line
+`.`-chain printer as work the formatter could simply grow; there is nothing for
+it to print until the surface admits the form, and admitting it is not trivial —
+a continuation line beginning with `.` is ambiguous with a receiver-last
+statement, which `lex.vlt` itself writes (`.push TokenKind::Dedent … self` at
+block level). An indentation-sensitive rule could separate them, and it would
+have to handle a `.`-leading statement that opens a block. That is row 99 wave 3's
+work. `a_dot_chain_cannot_break_across_lines` is the gate, and it fails —
+helpfully — when that lands.
 
 #### §10.8 is not retired; it is the route
 
@@ -780,30 +834,38 @@ The transform is **built, gated and correct, and deliberately not applied.**
 Three things must land before applying it is an improvement rather than a
 regression, and none is a defect in the pass:
 
-1. **a surface decision**, because neither obstacle is in the compiler: a `.`
-   chain cannot break across lines, and a zero-argument link needs a
-   parenthesis. Both are consequences of juxtaposition application and the
-   off-side rule, so both belong to row 99 rather than here;
-2. **a decision on `std` receivers** — doc 86 §4.3 clause 2 keeps `std` outside
-   Lattice's environment, and that clause is what makes the parentheses
-   permanent even once a chain can break;
-3. only then leaf 6, crate by crate.
+1. **leaf 6, crate by crate** — the transform is ready and the result is an
+   improvement; what is left is applying it in reviewable commits rather than
+   one. Each crate's commit also flips its `GENERATION` line to `g2`, which
+   needs a seed refresh first, since `voltaic-g2.wasm` predates the parser fix
+   above.
+2. **a multi-line chain**, if wanted: row 99 wave 3's, and optional rather than
+   blocking — a one-line chain is longer, not wrong.
+3. **`std` receivers**, if the remaining parentheses on argument-carrying links
+   are to go: doc 86 §4.3 clause 2 keeps `std` outside Lattice's environment
+   deliberately, so this one may simply stay declined.
 
-Stated plainly, because a plan row should not read as nearly-done when it is
-not: **the `|>` transform is finished and the deletion it serves is blocked on
-row 99.** Three gates hold the measurements so none of this has to be
-rediscovered — `an_unparenthesised_chain_is_not_a_chain`,
-`a_dot_chain_cannot_break_across_lines`, and
-`a_declared_method_classifies_and_a_std_method_does_not`. Each one failing is
-good news.
+Stated plainly: **the `|>` transform is finished, byte-neutral, and now an
+improvement on what it replaces.** Four gates hold the measurements so none of
+this has to be rediscovered — `a_zero_argument_chain_composes_without_parentheses`,
+`a_dot_with_arguments_still_needs_its_parenthesis`,
+`a_dot_chain_cannot_break_across_lines` and
+`a_declared_method_classifies_and_a_std_method_does_not`. The last two failing
+would be good news.
 
-**The mistake worth keeping is the order I looked in.** §10.14's first draft
-concluded that three sessions had reached for more inference when the defect was
-in the printer. The printer *was* a defect, and finding it was worth the session;
-the error was inferring from one true finding that the earlier sessions had been
-wrong, when the probe that would have checked it — does a classified chain need
-the parentheses? — takes a minute and says they had been right. **A newly found
-cause is not evidence that a previously suspected cause was innocent.**
+**Two mistakes worth keeping, and they are opposite.** The first draft of this
+section concluded that three earlier sessions had reached for more inference when
+the defect was in the printer — too quick to acquit the earlier work's target.
+The second draft then concluded the parentheses were a permanent surface limit
+and the deletion unachievable — too quick to accept a measured obstacle as a
+fixed one. Both errors have the same shape: **one true measurement was treated as
+settling a question it only bore on.** `h.s.len (().count_ones, ())` really is
+what the parser produced; it did not follow that it had to.
+
+What distinguishes them is cheapness of the next probe. In the first case the
+check — does a classified chain need the parentheses? — took a minute. In the
+second, asking *why* the `()` was absorbed took reading one function. Neither was
+expensive, and in both cases the conclusion was written before the reading.
 
 ### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
 

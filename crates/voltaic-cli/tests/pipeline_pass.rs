@@ -222,24 +222,64 @@ fn a_collapsed_no_argument_stage_prints_as_a_call() {
   );
 }
 
-/// Why the parentheses in a migrated chain are mandatory, pinned so nobody
-/// removes them as noise.
+/// A zero-argument chain composes with nothing between the links.
 ///
-/// Juxtaposition application cannot tell a zero-argument call's `()` from a unit
-/// first argument, so an unparenthesised chain is not a chain: the `()`, the
-/// next `.name` and *its* `()` all become arguments to the first call. This is
-/// the measurement doc 101 §10.14 rests on, and it is the reason
-/// `takes_a_postfix` returns `false` for a `Dot`.
+/// **This assertion was the reverse, one commit ago**, and the reversal is the
+/// finding. `s.len ().count_ones ()` used to parse as `s.len((), .count_ones,
+/// ())`, because `()` was collected as a juxtaposed Unit argument and then
+/// `postfix` attached `.count_ones` to *it*. Two parser rules fix it, and both
+/// are type-free facts rather than guesses:
+///
+/// - **no postfix is meaningful on a unit literal** — `().name`, `()?`, `()[i]`
+///   and `(){…}` are all nonsense, so `postfix` declines them all and the `()`
+///   stays the call's empty argument list;
+/// - **an application continues its own postfix chain**, so the `?` in
+///   `x.ok ()?` and the `.count_ones` here attach to the link just built rather
+///   than dangling. Without the second rule the first one breaks `x.ok ()?`.
+///
+/// A link that *carries* arguments still needs its parenthesis, and that is not
+/// fixable the same way — see
+/// `a_dot_with_arguments_still_needs_its_parenthesis`.
 #[test]
-fn an_unparenthesised_chain_is_not_a_chain() {
-  let chained = voltaic_parser::parse_source("f : &str -> usize\nf s = s.len ().count_ones ()\n")
-    .expect("it parses — wrongly, which is the point");
+fn a_zero_argument_chain_composes_without_parentheses() {
+  let chained = voltaic_parser::parse_source("f : &str -> u32\nf s = s.len ().count_ones ()\n")
+    .expect("should parse");
   let shown = format!("{chained:?}");
+  assert_eq!(
+    shown.matches("Dot").count(),
+    2,
+    "`s.len ().count_ones ()` must be a two-link chain, not one call swallowing \
+     the rest: {shown}"
+  );
+}
+
+/// The limit of the fix above, pinned because it is what keeps the formatter's
+/// parentheses honest.
+///
+/// `xs.map (\a -> …)` as a receiver must be parenthesised: a following
+/// `.collect` would otherwise attach to the lambda's closing paren and become an
+/// argument to `map`. That is not the unit case — `(g x).y` is a real
+/// expression — so there is nothing type-free to decline, and the parenthesis
+/// stays. Hence `takes_a_postfix` is `false` for a `Dot` **with** arguments and
+/// `true` for one without.
+#[test]
+fn a_dot_with_arguments_still_needs_its_parenthesis() {
+  let bare = support::transpile_source(
+    "chain_bare",
+    "f : &Vec<u64> -> Vec<u64>\nf xs = (xs.iter ()).map (\\a -> *a + 1).collect ()\n",
+  );
   assert!(
-    shown.matches("Dot").count() == 1,
-    "`s.len ().count_ones ()` should be ONE call taking the rest as arguments, \
-     not a two-link chain; if this ever becomes two the surface has changed and \
-     the migrated parentheses can go: {shown}"
+    bare.contains(".collect, ())"),
+    "unparenthesised, the `.collect` belongs to the lambda — which is why the \
+     printer brackets a Dot that carries arguments: {bare}"
+  );
+  let bracketed = support::transpile_source(
+    "chain_bracketed",
+    "f : &Vec<u64> -> Vec<u64>\nf xs = ((xs.iter ()).map (\\a -> *a + 1)).collect ()\n",
+  );
+  assert!(
+    bracketed.contains(".map(|a| *a + 1).collect()"),
+    "and bracketed it is the chain it reads as: {bracketed}"
   );
 }
 

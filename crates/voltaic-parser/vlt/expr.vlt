@@ -34,16 +34,23 @@ export(crate) const ABOVE_AND_AND : u8 = 10
 
 export(crate) application : &mut Parser -> Result<Expr, ParseError>
 application p =
-  head = (atom p)?
-  if .just_dedented p || !starts_argument (&(.peek p).kind)
-    return Ok head
-  mut args = Vec::new ()
-  while starts_argument (&(.peek p).kind)
-    .push (atom p)? args
-  span = ((.span head).0, (.prev_span p).1)
-  if head is Expr::Field { recv, name, .. }
-    return Ok (Expr::Dot { recv, name, args, span })
-  Ok (Expr::Call { callee = Box::new head, args, is_dollar = false, span })
+  mut head = (atom p)?
+  while !.just_dedented p && starts_argument (&(.peek p).kind)
+    mut args = Vec::new ()
+    while starts_argument (&(.peek p).kind)
+      .push (atom p)? args
+    span = ((.span head).0, (.prev_span p).1)
+    built = case head of
+      Expr::Field { recv, name, .. } -> Expr::Dot { recv, name, args, span }
+      other -> Expr::Call { callee = Box::new other, args, is_dollar = false, span }
+    head := built
+    loop
+      case (postfix p head)? of
+        Ok grown -> head := grown
+        Err unchanged ->
+          head := unchanged
+          break
+  Ok head
 
 export(crate) atom : &mut Parser -> Result<Expr, ParseError>
 atom p =
@@ -129,6 +136,8 @@ parse_spine p =
 export(crate) postfix : &mut Parser -> Expr -> Result<Result<Expr, Expr>, ParseError>
 postfix p lhs =
   if .just_dedented p
+    return Ok (Err lhs)
+  if lhs is Expr::Unit { .. }
     return Ok (Err lhs)
   start = (.span lhs).0
 
