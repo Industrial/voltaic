@@ -3,11 +3,13 @@ module constraint
 module declarations
 module driver
 module effect
+module fragment
 module explain
 module generate
 module infer_mode
 module infer_row
 module mode
+module predicate
 module provenance
 module reason
 module row
@@ -32,6 +34,13 @@ export import driver::solve
 export import driver::solve_with
 export import effect::ALPHABET
 export import effect::Effect
+export import fragment::Refusal
+export import fragment::RULE_CALL
+export import fragment::RULE_DIVISION
+export import fragment::RULE_PRODUCT
+export import fragment::RULE_SHAPE
+export import fragment::read as read_predicate
+export import fragment::term_of
 export import explain::explain
 export import explain::summarise
 export import generate::Inferred
@@ -44,6 +53,9 @@ export import infer_row::clause_row
 export import infer_row::expr_row
 export import infer_row::fail_of
 export import mode::Mode
+export import predicate::Comparison
+export import predicate::Predicate
+export import predicate::Term
 export import provenance::Provenance
 export import reason::Reason
 export import row::Row

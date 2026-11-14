@@ -1,0 +1,102 @@
+import crate::predicate::Comparison
+import crate::predicate::Predicate
+import crate::predicate::Term
+import voltaic_ast::BinaryOp
+import voltaic_ast::UnaryOp
+import voltaic_ast::Expr
+
+export data Refusal = Refusal { export subterm : String, export rule : &'static str, export span : voltaic_ast::Span }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export const RULE_PRODUCT : &str = "two variables may not be multiplied: the fragment is linear"
+
+export const RULE_DIVISION : &str = "division is outside the fragment"
+
+export const RULE_CALL : &str = "a predicate may not call a function"
+
+export const RULE_SHAPE : &str = "only integer arithmetic over parameters, their fields and `.len` is admitted"
+
+export read : &Expr -> Result<Predicate, Refusal>
+read e = case e of
+  Expr::Paren { inner, .. } -> read inner
+  Expr::Binary { op, lhs, rhs, span, .. } ->
+    if comparison_of (*op) is Some relation
+      left = (term_of lhs)?
+      right = (term_of rhs)?
+      return Ok (Predicate::compare left relation right)
+    if *op == BinaryOp::And
+      return Ok (Predicate::All (vec! \-> (read lhs)? \-> (read rhs)?))
+    if *op == BinaryOp::Or
+      return Ok (Predicate::Any (vec! \-> (read lhs)? \-> (read rhs)?))
+    Err (Refusal { subterm = shown e, rule = RULE_SHAPE, span = *span })
+  Expr::Bool { value, .. } ->
+    if *value
+      return Ok (Predicate::always ())
+    Ok (Predicate::never ())
+  _ -> Err (Refusal { subterm = shown e, rule = RULE_SHAPE, span = .span e })
+
+export term_of : &Expr -> Result<Term, Refusal>
+term_of e = case e of
+  Expr::Paren { inner, .. } -> term_of inner
+  Expr::Num { text, span, .. } ->
+    parsed = .parse text : Result<i64, std::num::ParseIntError>
+    if parsed is Ok value
+      return Ok (Term::literal value)
+    Err (Refusal { subterm = .clone text, rule = RULE_SHAPE, span = *span })
+  Expr::Ident name -> Ok (Term::variable (&name.text))
+  Expr::Field { recv, name, .. } ->
+    root = (path_of recv)?
+    if name.text == "len"
+      return Ok (Term::length_of (&root))
+    Ok (Term::variable (&format! \-> "#{root}.#{name.text}"))
+  Expr::Unary { op, operand, .. } ->
+    if *op == UnaryOp::Neg
+      return Ok (.scaled (-1) ((term_of operand)?))
+    Err (Refusal { subterm = shown e, rule = RULE_SHAPE, span = .span e })
+  Expr::Binary { op, lhs, rhs, span, .. } ->
+    left = (term_of lhs)?
+    right = (term_of rhs)?
+    if *op == BinaryOp::Add
+      return Ok (.plus (&right) left)
+    if *op == BinaryOp::Sub
+      return Ok (.minus (&right) left)
+    if *op == BinaryOp::Mul
+      if .is_constant left
+        return Ok (.scaled left.constant right)
+      if .is_constant right
+        return Ok (.scaled right.constant left)
+      return Err (Refusal { subterm = format! \-> "#{left} * #{right}", rule = RULE_PRODUCT, span = *span })
+    if *op == BinaryOp::Div || *op == BinaryOp::Rem
+      return Err (Refusal { subterm = format! \-> "#{left} #{(divisor_label (*op))} #{right}", rule = RULE_DIVISION, span = *span })
+    Err (Refusal { subterm = shown e, rule = RULE_SHAPE, span = *span })
+  Expr::Call { span, .. } -> Err (Refusal { subterm = shown e, rule = RULE_CALL, span = *span })
+  Expr::MethodRef { name, span, .. } -> Err (Refusal { subterm = .clone name.text, rule = RULE_CALL, span = *span })
+  _ -> Err (Refusal { subterm = shown e, rule = RULE_SHAPE, span = .span e })
+
+path_of : &Expr -> Result<String, Refusal>
+path_of e = case e of
+  Expr::Ident name -> Ok (.clone name.text)
+  Expr::Paren { inner, .. } -> path_of inner
+  Expr::Field { recv, name, .. } ->
+    root = (path_of recv)?
+    Ok (format! \-> "#{root}.#{name.text}")
+  _ -> Err (Refusal { subterm = shown e, rule = RULE_SHAPE, span = .span e })
+
+comparison_of : BinaryOp -> Option<Comparison>
+comparison_of op = case op of
+  BinaryOp::Lt -> Some Comparison::Below
+  BinaryOp::Le -> Some Comparison::AtMost
+  BinaryOp::Eq -> Some Comparison::Same
+  BinaryOp::Ne -> Some Comparison::Different
+  BinaryOp::Ge -> Some Comparison::AtLeast
+  BinaryOp::Gt -> Some Comparison::Above
+  _ -> None
+
+shown : &Expr -> String
+shown e = format! \-> "#{(.span e).0}..#{(.span e).1}"
+
+divisor_label : BinaryOp -> &'static str
+divisor_label op = case op of
+  BinaryOp::Div -> "/"
+  BinaryOp::Rem -> "%"
+  _ -> "?"

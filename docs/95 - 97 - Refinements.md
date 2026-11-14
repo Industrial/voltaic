@@ -240,5 +240,64 @@ else's code.
 
 ## 10. Result
 
-*To be filled after execution. Including: the solver pinned, its startup cost, the
-measured cache hit rate, and whether either of doc 88 §4.2's thresholds was exceeded.*
+In progress. Leaf 1 shipped 2026-11-14: the predicate representation and the fragment
+check. 196 tests in the crate. Clippy clean; gate green at 28 tasks.
+
+### 10.1 The representation *is* the fragment, which is stronger than checking it
+
+§1.3 states the admitted fragment and leaf 1 asks for a check that refuses anything
+outside it. What shipped makes the refusal **structural**: a `Term` is a `BTreeMap`
+from names to integer coefficients plus a constant, so it is a linear combination *by
+construction* and a product of two variables cannot be built at all.
+
+`term_of` therefore cannot *silently* accept something it would be unable to decide —
+there is nowhere to put it. The refusal depends on the shape of the expression and
+never on how a solver behaved, which is what §1.4 asks for in its strongest form: not
+"a timeout is a diagnostic" but "the undecidable case has no representation".
+
+Two consequences worth naming:
+
+- **There is no `Not` constructor.** Comparisons are closed under negation
+  (`!(a < b)` is `a >= b`), so negation needs no node and the predicate type stays
+  exactly the fragment rather than the fragment plus a case that might escape it.
+- **`.len` is a reserved variable name**, `len xs`, rather than a function. A
+  sequence and its length are two different unknowns, which is what makes
+  `i < xs.len` linear instead of a call.
+
+§3's fourth target is the one the plan calls *"more important than the three positive
+cases"* and it passes: `i * j` is refused naming `RULE_PRODUCT` and the offending
+subterm, before any solve runs.
+
+### 10.2 Leaf 2 is blocked on a measurement, and that is §2.1's own rule
+
+§2.1 is explicit that the solver is a **dependency, not an implementation** —
+`AGENTS.md`'s *no plan implements a library function*, applied to the largest possible
+instance of the temptation. §4.1 then says the pin is recorded *"together with the
+measured startup cost, because a pin without a measurement is a guess"*.
+
+That measurement cannot be made here: CI has no build-time network, the solver must be
+vendorable and offline (§2's requirement list), and vendoring one is a toolchain
+decision that `docs/COMPILER.md` §6 deliberately leaves to this leaf rather than
+pre-empting. So leaf 2 stays outstanding **by its own criterion** rather than for want
+of effort, and §6 of `docs/COMPILER.md` already carries the requirement list a
+candidate has to satisfy.
+
+What is *not* blocked and is done: everything a solver would be handed. A predicate
+reaches it already normalised into a linear form, with its free names enumerated, and
+anything the solver could not decide has been refused before it was called.
+
+### 10.3 Leaves outstanding
+
+| Leaf | Status |
+|---|---|
+| 1 — extraction and the fragment check | `done` |
+| 2 — the solver interface and the pin | outstanding — §10.2; blocked on a measurement §2.1 requires |
+| 3 — the cache | outstanding, with leaf 2 |
+| 4 — path constraints | outstanding, with leaf 2 |
+| 5 — erasure | outstanding — nothing is emitted yet, so there is nothing to assert the absence of; the assertion belongs with row 99's emitter |
+| 6 — `tests/refine/` and `VLT08xx` fixtures | `done` as `tests/fragment.rs`; the `VLT08xx` UI fixtures wait on row 101, which owns the diagnostic ranges |
+
+The `where` *spelling* is generation 2 surface and so row 99's, like rows 95's leaf 3,
+96's leaves 4–5 and 98's leaves 1, 2, 4, 5. The pattern is now consistent across four
+rows: **the engines are ahead of the surface by design**, each measured against
+generation 1's own source while that source still states the answers.

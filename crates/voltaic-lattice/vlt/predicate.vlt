@@ -1,0 +1,216 @@
+import std::collections::BTreeMap
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export const LEN : &str = "len "
+
+export data Term = Term { export weights : BTreeMap<String, i64>, export constant : i64 }
+  deriving (Debug, Clone, Default, PartialEq, Eq)
+
+instance Term
+  export literal : i64 -> Self
+  literal constant = Term { weights = BTreeMap::new (), constant }
+
+  export variable : &str -> Self
+  variable name =
+    mut weights = BTreeMap::new ()
+    .insert (.to_string name) 1 weights
+    Term { weights, constant = 0 }
+
+  export length_of : &str -> Self
+  length_of name = Term::variable (&format! \-> "#{LEN}#{name}")
+
+  export is_constant : &self -> bool
+  is_constant self = .is_empty self.weights
+
+  export plus : &Term -> &self -> Self
+  plus other self =
+    mut weights = .clone self.weights
+    for pair in .iter other.weights
+      running = .unwrap_or 0 (.copied (.get pair.0 weights))
+      total = running + *pair.1
+      if total == 0
+        .remove pair.0 weights
+      else
+        .insert (.clone pair.0) total weights
+      ()
+    Term { weights, constant = self.constant + other.constant }
+
+  export scaled : i64 -> &self -> Self
+  scaled factor self =
+    if factor == 0
+      return Term::literal 0
+    mut weights = BTreeMap::new ()
+    for pair in .iter self.weights
+      .insert (.clone pair.0) (*pair.1 * factor) weights
+      ()
+    Term { weights, constant = self.constant * factor }
+
+  export minus : &Term -> &self -> Self
+  minus other self = .plus (&.scaled (-1) other) self
+
+  export mentions : &self -> Vec<&String>
+  mentions self = self.weights |> .keys |> .collect
+
+instance Display Term
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f =
+    if .is_constant self
+      return write! \-> f \-> "#{self.constant}"
+    mut parts = Vec::new ()
+    for pair in .iter self.weights
+      if *pair.1 == 1
+        parts |> .push (.clone pair.0)
+      else
+        parts |> .push (format! \-> "#{pair.1}*#{pair.0}")
+    if self.constant != 0
+      parts |> .push (format! \-> "#{self.constant}")
+    write! \-> f \-> "#{(.join " + " (.as_slice parts))}"
+
+export data Comparison
+  = Below
+  | AtMost
+  | Same
+  | Different
+  | AtLeast
+  | Above
+  deriving (Debug, Clone, Copy, PartialEq, Eq)
+
+instance Comparison
+  export label : self -> &'static str
+  label self = case self of
+    Comparison::Below -> "<"
+    Comparison::AtMost -> "<="
+    Comparison::Same -> "=="
+    Comparison::Different -> "!="
+    Comparison::AtLeast -> ">="
+    Comparison::Above -> ">"
+
+  export negated : self -> Self
+  negated self = case self of
+    Comparison::Below -> Comparison::AtLeast
+    Comparison::AtMost -> Comparison::Above
+    Comparison::Same -> Comparison::Different
+    Comparison::Different -> Comparison::Same
+    Comparison::AtLeast -> Comparison::Below
+    Comparison::Above -> Comparison::AtMost
+
+export data Predicate
+  = Compare { left : Term, op : Comparison, right : Term }
+  | All Vec<Predicate>
+  | Any Vec<Predicate>
+  deriving (Debug, Clone, PartialEq, Eq)
+
+instance Predicate
+  export always : Self
+  always = Predicate::All (Vec::new ())
+
+  export never : Self
+  never = Predicate::Any (Vec::new ())
+
+  export compare : Term -> Comparison -> Term -> Self
+  compare left op right = Predicate::Compare { left, op, right }
+
+  export mentions : &self -> Vec<String>
+  mentions self =
+    mut found = Vec::new ()
+    .collect_mentions (&mut found) self
+    found
+
+  collect_mentions : &mut Vec<String> -> &self -> ()
+  collect_mentions out self =
+    case self of
+      Predicate::Compare { left, right, .. } ->
+        for name in .mentions left
+          if !.contains name out
+            out |> .push (.clone name)
+        for name in .mentions right
+          if !.contains name out
+            out |> .push (.clone name)
+      Predicate::All every ->
+        for p in .iter every
+          .collect_mentions out p
+      Predicate::Any every ->
+        for p in .iter every
+          .collect_mentions out p
+    ()
+
+instance Display Predicate
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f = case self of
+    Predicate::Compare { left, op, right } -> write! \-> f \-> "#{left} #{(.label (*op))} #{right}"
+    Predicate::All every ->
+      if .is_empty every
+        return write! \-> f \-> "true"
+      shown = every |> .iter |> .map (\p -> .to_string p) |> .collect : Vec<String>
+      write! \-> f \-> "#{(.join " and " (.as_slice shown))}"
+    Predicate::Any every ->
+      if .is_empty every
+        return write! \-> f \-> "false"
+      shown = every |> .iter |> .map (\p -> .to_string p) |> .collect : Vec<String>
+      write! \-> f \-> "#{(.join " or " (.as_slice shown))}"
+
+test "a literal term is constant and prints as itself"
+  t = Term::literal 7
+  assert! \-> .is_constant t
+  assert_eq! \-> .to_string t \-> "7"
+
+test "a variable term mentions exactly its name"
+  t = Term::variable "i"
+  assert! \-> !.is_constant t
+  assert_eq! \-> .len (.mentions t) \-> 1
+  assert_eq! \-> .to_string t \-> "i"
+
+test "a length term is a variable under a reserved prefix"
+  t = Term::length_of "xs"
+  assert_eq! \-> .to_string t \-> "len xs"
+  assert! \-> t != Term::variable "xs" \-> "a sequence and its length are different unknowns"
+
+test "addition combines weights and constants"
+  t = .plus (&Term::literal 3) (Term::variable "i")
+  assert_eq! \-> .to_string t \-> "i + 3"
+
+test "adding a variable to itself doubles its weight"
+  t = .plus (&Term::variable "i") (Term::variable "i")
+  assert_eq! \-> .to_string t \-> "2*i"
+
+test "subtracting a variable from itself cancels it out"
+  t = .minus (&Term::variable "i") (Term::variable "i")
+  assert! \-> .is_constant t
+  assert_eq! \-> t.constant \-> 0
+
+test "scaling by zero collapses to zero"
+  t = .scaled 0 (Term::variable "i")
+  assert_eq! \-> t \-> Term::literal 0
+
+test "scaling distributes over a sum"
+  sum = .plus (&Term::literal 1) (Term::variable "i")
+  assert_eq! \-> .scaled 2 sum \-> .plus (&Term::literal 2) (Term::variable "i" |> .scaled 2)
+
+test "every comparison has a label and a negation that is its own inverse"
+  every = [Comparison::Below, Comparison::AtMost, Comparison::Same, Comparison::Different, Comparison::AtLeast, Comparison::Above]
+  for op in every
+    assert! \-> !.is_empty (.label op)
+    assert_eq! \-> .negated (.negated op) \-> op
+
+test "a comparison prints as its operands and its operator"
+  p = Predicate::compare (Term::variable "i") Comparison::Below (Term::length_of "xs")
+  assert_eq! \-> .to_string p \-> "i < len xs"
+
+test "an empty conjunction is true and an empty disjunction is false"
+  assert_eq! \-> .to_string (Predicate::always ()) \-> "true"
+  assert_eq! \-> .to_string (Predicate::never ()) \-> "false"
+
+test "a predicate reports every name it mentions, once each"
+  p = Predicate::All (vec! \-> Predicate::compare (Term::variable "i") Comparison::Below (Term::length_of "xs") \-> Predicate::compare (Term::variable "i") Comparison::AtLeast (Term::literal 0))
+  named = .mentions p
+  assert_eq! \-> .len named \-> 2
+  assert! \-> .contains (&.to_string "i") named
+  assert! \-> .contains (&.to_string "len xs") named
+
+test "there is no negation constructor, because comparisons are closed under it"
+  p = Predicate::compare (Term::variable "i") Comparison::Below (Term::literal 3)
+  flipped = Predicate::compare (Term::variable "i") Comparison::AtLeast (Term::literal 3)
+  assert_eq! \-> .to_string flipped \-> "i >= 3"
+  assert! \-> p != flipped

@@ -164,7 +164,21 @@ Leaves 4 and 5 are blocked on the surface, like row 95's leaf 3: `@clone` cannot
 written until row 99 admits it, and no inferred borrow can be emitted until the
 emitter consumes the judgement. The engine is ahead of the spelling, deliberately —
 measured against the answer key while the answer key still exists.
-| 97 | Refinements | Predicate extraction, the QF_ALIA fragment, the solver interface and pin, the timeout-is-a-diagnostic policy, `tests/refine/`. | `planned` | 94 |
+| 97 | Refinements | Predicate extraction, the QF_ALIA fragment, the solver interface and pin, the timeout-is-a-diagnostic policy, `tests/refine/`. | `in-progress` — leaf 1 `done` 2026-11-14 | 94 |
+
+Leaf 1 shipped, and it makes the refusal **structural** rather than checked (doc 95
+§10.1): a `Term` is a map from names to integer coefficients, so a product of two
+variables cannot be built at all. That is §1.4's "a timeout is never a pass" in its
+strongest form — the undecidable case has no representation. `i * j` is refused
+naming the rule and the subterm before any solve runs, which is §3's fourth target and
+the one the plan calls more important than the three positive cases.
+
+**Leaf 2 is blocked by its own criterion**, not for want of effort (doc 95 §10.2).
+§2.1 makes the solver a dependency rather than an implementation, and §4.1 says the
+pin is recorded *with its measured startup cost, because a pin without a measurement
+is a guess*. That measurement needs a vendorable offline solver, which CI's
+no-build-time-network constraint makes a toolchain decision this leaf owns.
+`docs/COMPILER.md` §6 already carries the requirement list a candidate must satisfy.
 
 **Milestone test:** `tests/solve/` green with an expectation file for every corpus
 program, and `voltaic-bench`'s three new axes inside the thresholds doc 88 §4.2
