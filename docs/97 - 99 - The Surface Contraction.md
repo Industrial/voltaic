@@ -793,6 +793,12 @@ would have broken have a defined behaviour for the window in which they must.
 
 ### 10.23 Wave 2's deletion list contradicts doc 87, and doc 87 is the surface
 
+> **Withdrawn by §10.27.** This section's conclusion — that doc 87 does not
+> delete `if`, `else` or `case`, and that wave 2 is therefore complete — is
+> wrong. §1.4's eleven surviving keywords exclude `if` and `case`, which settles
+> it the other way. The section is kept rather than deleted, per doc 04 rule 3,
+> because §10.29 is about how it went wrong.
+
 §4's wave 2 reads:
 
 > `if`/`else if`/`match`/`case`/`cond`/`switch`/`when`/`iff`/`unless`/`guard`/`then`
@@ -844,6 +850,10 @@ Taking the first reading until doc 87 says otherwise, because §20 is explicit a
 a plan does not overrule a specification.
 
 ### 10.25 What that makes wave 2
+
+> **Superseded by §10.28.** The table below is right about the six constructs
+> that were never keywords and about the three that are done; it is wrong that
+> `if`, `else` and `case` are *"not doc 87's to delete"*.
 
 | Item | Status |
 |---|---|
@@ -928,6 +938,71 @@ surface parser ambiguities"*. Landing half of it would leave the parser acceptin
 two incompatible readings of `.`, which is strictly worse than either. The two
 gaps above are doc 87's to close first: the chain form has to be built before the
 operators it replaces can go, and the point-free definition needs a stated rule.
+
+### 10.27 §10.23 was wrong, and §1.4 is the evidence that settles it
+
+§10.23 concluded that doc 87 does not delete `if`, `else` or `case`, and that
+wave 2 was therefore complete. **That conclusion is withdrawn.** The reasoning
+rested on doc 87 §20 listing *"pattern rows, guard ladders"* under what the
+surface does not change, and §20 does not mean what §10.23 took it to mean.
+
+§1.4 of this document lists the eleven keywords that survive:
+
+```
+data  class  where  pub  mut  self  test  loop  break  rust  else
+```
+
+`if` is not there. Neither is `case`, `while`, `for`, `in` or `guard`. `else`
+**is** — it survives for the `… else` tail. So the eleven-keyword target does
+delete `if` and `case`, and §1.3 row 2's *"63 keywords"* is the same statement
+counted the other way.
+
+The two readings reconcile, and the reconciliation is the useful part:
+
+> §20's *"guard ladders unchanged"* is about the **clause** ladder, which is not
+> changed by **adding** an expression form beside it.
+
+An addition leaves the existing construct exactly as it was, so a ladder
+expression is inside §20 rather than outside it. §10.24's revert of
+`Expr::Ladder` was therefore over-cautious on that specific point.
+
+### 10.28 What survives §10.23, and it is the thing that actually blocks wave 2
+
+One half of §10.24 stands, and it is the half that matters:
+
+> Doc 87 §5 has no subsection on conditionals.
+
+That is still true, and §1.4's keyword list does not fix it. A list of surviving
+keywords says `if` goes; it does not say what replaces it in expression position.
+The ladder expression's **syntax** is undetermined — where it may appear, how it
+interacts with a `case` arm's body, whether it needs a delimiter when nested —
+and doc 87 §21 still says *"Open items. None."*
+
+So wave 2 is **not** complete, and the blocker is narrower than §10.23 claimed:
+it is one unwritten subsection of doc 87, not a contradiction between documents.
+`Expr::Ladder` is the right construct and inventing its surface in a parser is
+still the wrong way to get it.
+
+What is genuinely settled by this pass, and stands:
+
+- six of wave 2's eleven named constructs were never keywords (§10.14);
+- `otherwise`, `when` and `until` are deleted (§10.15, §10.17, §10.18);
+- pattern rows are added and the clause ladder is untouched (§10.19);
+- `if`, `case`, `while`, `for`, `in` and `guard` are scheduled to go, and the
+  first two need doc 87 to specify the expression form first.
+
+### 10.29 The correction's own lesson
+
+§10.23 read one list in doc 87 and did not read §1.4 of the document it was being
+written into. The list it did read is normative about *change*; the list it
+missed is normative about *the end state*, and they answer different questions.
+
+`AGENTS.md` records this shape twice already — *"a doc comment is not an oracle
+for its own code"* and *"a declaration read correctly still does not tell you the
+behaviour, because another rule can intercept the same input"*. This is the
+document-level version: **a section read correctly does not settle the question
+when a second section answers it more directly.** §20 says what is carried over;
+§1.4 says what is left. For *"is `if` deleted"*, §1.4 is the one being asked.
 
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
