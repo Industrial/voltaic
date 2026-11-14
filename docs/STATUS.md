@@ -35,7 +35,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---:|
 | `voltaic-ast` | 1721 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1416 | 13964 |
+| `voltaic-cli` | 1416 | 14025 |
 | `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 3676 | 316 |
 | `voltaic-emit` | 3974 | 4647 |
@@ -47,7 +47,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-mcp` | 464 | 776 |
 | `voltaic-parser` | 6013 | 787 |
 | `voltaic-seed` | 146 | 1130 |
-| **total** | **29590** | **27071** |
+| **total** | **29590** | **27132** |
 
 ---
 
@@ -75,7 +75,7 @@ A generation with no seed has been **retired**, which row 102 §3.1 permits only
 | `crates/voltaic-cli/tests/run/*.stdout` | 2 | what a program prints |
 | `crates/voltaic-cli/tests/explain/*.why` | 6 | the constraint chain behind an inference |
 | `crates/voltaic-cli/tests/sidecar/*.sig` | 2 | the published signature, as exact text |
-| `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
+| `tests/unreachable/*.vlt` | 8 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
 **53 examples and 52 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "53 examples, all green" would be rounding up by exactly one file.
@@ -84,12 +84,13 @@ A generation with no seed has been **retired**, which row 102 §3.1 permits only
 
 ## Gaps
 
-8 Rust constructs a Voltaic program cannot express. Read out of `docs/GRAMMAR.md`'s `UNREACHABLE` rows rather than listed again here, so the two cannot disagree; each has a fixture that the gate asserts **still fails**, so closing a gap breaks the build until both documents are updated.
+9 Rust constructs a Voltaic program cannot express. Read out of `docs/GRAMMAR.md`'s `UNREACHABLE` rows rather than listed again here, so the two cannot disagree; each has a fixture that the gate asserts **still fails**, so closing a gap breaks the build until both documents are updated.
 
 | Construct | Fixture |
 |---|---|
 | Macro definitions | `tests/unreachable/macro_def.vlt` |
 | Macro invocation with a non-expression argument | `tests/unreachable/macro_item_argument.vlt` |
+| Raw borrows `&raw const`, `&raw mut` | `tests/unreachable/raw_borrow.vlt` |
 | `as` casts | `tests/unreachable/as_cast.vlt` |
 | `extern "C" fn` (export) | `tests/unreachable/extern_fn_abi.vlt` |
 | `ref` and `ref mut` | `tests/unreachable/ref_pattern.vlt` |

@@ -71,12 +71,13 @@ use std::path::PathBuf;
 
 use crate::corpus::{Covers, Source, Witness, corpus};
 use crate::shape::{
-  has_a_block_valued_binding, has_a_late_receiver, has_a_local_declaration,
-  has_a_parameterised_class, has_an_associated_function, has_associated_const, has_async_marker,
-  has_const_item, has_const_marker, has_doc_comment, has_fenced_comment, has_ident,
-  has_inner_attribute, has_interpolation, has_line_comment, has_outer_attribute, has_raw_ident,
-  has_shadowing, has_signature_line, has_static_item, has_tight_path, has_triple_quoted,
-  has_two_impls_for_one_type, has_unit_struct, has_unsafe_marker,
+  has_a_binding_else_tail, has_a_block_valued_binding, has_a_late_receiver,
+  has_a_local_declaration, has_a_parameterised_class, has_an_associated_function,
+  has_associated_const, has_async_marker, has_const_item, has_const_marker, has_doc_comment,
+  has_fenced_comment, has_ident, has_inner_attribute, has_interpolation, has_line_comment,
+  has_outer_attribute, has_raw_ident, has_shadowing, has_signature_line, has_static_item,
+  has_tight_path, has_triple_quoted, has_two_impls_for_one_type, has_unit_struct,
+  has_unsafe_marker,
 };
 
 /// The smallest index that can be believed.
@@ -462,6 +463,34 @@ const WITNESSES: &[Covers] = &[
     witness: Witness::Shape(
       "a declaration keyword beginning a line in a block an equation opened",
       has_a_local_declaration,
+    ),
+  },
+  // Row 104 leaf 1's completeness pass. Each of these three was reachable and
+  // exampled for a whole generation with **no row in `docs/GRAMMAR.md`** — a
+  // gap neither this gate nor `grammar_inventory` can notice on its own,
+  // because both start from that document's rows. A missing row is an ungraded
+  // construct, which is doc 02 §4.1's risk with nothing watching it.
+  Covers {
+    row: "Visibility modifiers",
+    spelling: "`export(crate)`, `export(in path::to)`",
+    witness: Witness::Toks(&["export", "(", "crate", ")"]),
+  },
+  Covers {
+    row: "Turbofish x.parse::<T>()",
+    spelling: "`owned : Vec<String> = .collect made` — the ascription does the turbofish's job",
+    // The ascription itself, which is the whole construct: a binder whose type
+    // names a generic container, standing where Rust needs `::<T>`. A first
+    // attempt also demanded `.collect` and failed — the lexer does not spell a
+    // receiver-last call as one token — and the extra clause was incidental
+    // anyway: what makes this row true is the *ascription*, not what it pins.
+    witness: Witness::Toks(&[":", "Vec", "<", "String", ">", "="]),
+  },
+  Covers {
+    row: "let … else",
+    spelling: "`Some n = held else` with an indented diverging body",
+    witness: Witness::Shape(
+      "a refutable binding followed by `else` at the end of its line",
+      has_a_binding_else_tail,
     ),
   },
   Covers {

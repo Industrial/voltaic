@@ -1,0 +1,31 @@
+-- Rust's raw borrow, `&raw const` and `&raw mut`. UNREACHABLE: graded
+-- 2026-11-14 by row 104 leaf 1, which found the construct had **no row at
+-- all** rather than a wrong one.
+--
+-- `&` and `&mut` are unary operators Voltaic spells verbatim, so the shape
+-- looks like it should work. It does not: `raw` is an ordinary identifier, so
+-- `&raw const n` lexes as `&raw` applied to `const`, and the parser stops at
+-- the keyword with `VLT0101` — *"expected a line break after the body"*.
+--
+-- The nearest working thing is `std::ptr::addr_of!` and `addr_of_mut!`, which
+-- are what `&raw` replaced in Rust 2024 and which Voltaic can call, because
+-- macro invocation is reachable (`name! \-> e`). So the *capability* is not
+-- missing — a program that needs a raw pointer to a place can write one — and
+-- what has no spelling is the operator form that Rust now prefers.
+--
+-- That makes this the same shape as the `|` or-pattern row: cosmetic rather
+-- than expressive. Recorded as its own row anyway, because doc 02 §4.1's
+-- question is *"can a Voltaic user write this Rust construct"*, and the answer
+-- for this spelling is no.
+--
+-- Closing it needs `raw` to be contextual after `&`, which is a surface
+-- addition — and doc 97 wave 9's note records why an addition cannot land in
+-- generation 2 once row 103's migration has run.
+
+addr_of : u64 -> *const u64
+addr_of n = &raw const n
+
+main : ()
+main =
+  println! \-> "#{(addr_of 7) as usize}"
+  ()

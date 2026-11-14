@@ -471,3 +471,35 @@ pub(crate) fn has_two_impls_for_one_type(file: &Source) -> bool {
     .enumerate()
     .any(|(at, head)| heads[at + 1..].contains(head))
 }
+
+/// A **refutable binding with an `else` tail** — doc 87 §5.6, Rust's
+/// `let … else`.
+///
+/// `Some n = held else` followed by an indented diverging body. The shape is a
+/// line whose last token is the `else` keyword and which carries a `=` before
+/// it: an `if … else` has the `else` on its own line or after a body, and a
+/// `case` arm never does.
+///
+/// Added by row 104 leaf 1, which found the construct had no `GRAMMAR.md` row
+/// despite shipping with row 99 wave 2.
+pub(crate) fn has_a_binding_else_tail(file: &Source) -> bool {
+  let mut saw_equals = false;
+  for index in 0..file.spellings.len() {
+    match file.spellings[index].as_str() {
+      "«nl»" | "«indent»" | "«dedent»" => saw_equals = false,
+      "=" => saw_equals = true,
+      "else" => {
+        // The tail form ends its line at `else`; `if … else` continues.
+        let ends_line = file
+          .spellings
+          .get(index + 1)
+          .is_some_and(|next| next == "«nl»" || next == "«indent»");
+        if saw_equals && ends_line {
+          return true;
+        }
+      }
+      _ => {}
+    }
+  }
+  false
+}
