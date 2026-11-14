@@ -1672,3 +1672,76 @@ The agreement is a statement about *inference*, not about *emission*. Wave 1 als
 has the emitter write the inferred signature, and deleting the signature lines
 changes the parser's accepted surface — neither has happened. The number above is
 the licence to do that work, not the work.
+
+### 10.44 An inherent `instance` needs no signature, and the refusal was about the wrong component
+
+Doc 63 §6 held that an inherent `instance` member **cannot** elide its
+signature, and `tests/ui/elided_without_a_class.vlt` pinned the refusal with its
+reasoning written out: *"an inherent `instance` has no class, so there is
+nothing for an elided signature to be taken from. That is a property of the
+construct and not a limit of the lookup — widening the resolver would not
+help, because no class is named."*
+
+Every clause of that is true, and the conclusion does not follow. It is a fact
+about the **resolver**, which *looks a signature up*; it says nothing about the
+**solver**, which *computes one*. Nothing was being taken from anywhere:
+
+- the receiver's type is already pinned from the instance header — `generate.vlt`
+  emits `Unify { hole, Ty::named target }` for the `self` binder;
+- each parameter's type follows from the body, the same way it does for a
+  top-level unsigned definition;
+- the mode on `self` is what `infer_mode` already computes for every other
+  parameter.
+
+The parser was simply never wired to the path that existed: `unsigned_equations`
+in `parser.vlt` had been handling top-level unsigned definitions since wave 1,
+and the inherent-instance branch raised `VLT0101` instead of falling through to
+it. The fix is that fallthrough plus two small things the unsigned path had no
+reason to do before — `receiver` now recognises an **untyped** parameter named
+`self` (so it is moved to Rust's first position), and `annotate.vlt`'s `fill`
+decorates that parameter with the inferred mode rather than giving it a type.
+
+Measured on `tests/run/inherent_inference.vlt`, with no signature written
+anywhere: `fn current(&self) -> u32`, `fn bump(&mut self)`, and
+`fn plus(&self, extra: u32) -> u32` — both receiver modes, the parameter type,
+all three return types, and the reorder.
+
+**Three things this did not do, each worth more than the capability.**
+
+**It did not make the signatures deletable.** Re-measuring `signature_pass`
+across the compiler's 1,001 signature lines moved **31** of them out of *"needs
+it to compile at all"* (974 → 943) and into *"compiles without it, but the Rust
+changes"* (16 → 48). Removable went 4 → 3. So the relaxation is real and it is
+not the binding constraint: inference now *reaches* those 31, and the identity
+gate still rejects them because the inferred mode or type spelling is not the
+written one. **The remaining work is fidelity, not reach** — which is wave 8's,
+and is a different claim from the one row 99 wave 1 licensed.
+
+**It cannot be used in `crates/*/vlt/**` at all.** Not by policy — measured.
+Running `seed/voltaic-g2.wasm` under `wasmtime` over an unsigned inherent member
+still prints `VLT0101 ... has no class to take one from`, and the blob is what
+builds `src/` on a clean clone. Deleting one of these signatures from the
+compiler's own source would therefore break the bootstrap, and the refresh that
+would fix it is illegal: `SEED.md` records g2 as `built by: g1`, g1 is retired,
+and `blob.rs` refuses a blob whose `built by` names the generation in its
+`compiles`. The capability is available to user code today and to the compiler's
+own source at g3.
+
+**The same seed wall moved the witness out of `examples/`.**
+`the_g2_blob_and_the_tree_agree_on_the_examples` stages every example that has a
+golden and requires the blob to emit what the tree emits, so an `examples/`
+witness fails for exactly the reason above. It lives in
+`crates/voltaic-cli/tests/run/` instead, and the file says so in its own header
+rather than leaving the placement to look like a judgement about how narrow the
+case is.
+
+**One case is still inferred wrong, and it is a Lattice bug.** A member that
+moves a non-`Copy` field out of `self` — `tag_of self = self.tag` — is emitted
+with `&self` and rejected by rustc as `E0507`. Per `AGENTS.md`, a program
+Lattice accepts and rustc rejects is filed as a Lattice bug, and this one is
+filed here: `infer_mode` has no notion of a field *move* demanding an owned
+receiver, because deciding that needs the field's type and `mode_of` is
+syntactic. It is **ungated** — there is no corpus for "Voltaic emits it, rustc
+rejects it", `tests/unreachable/` is read against `GRAMMAR.md`'s rows and this
+is not a grammar gap, and inventing a corpus for one bug was declined. So it is
+recorded and not pinned, which is the weaker outcome and is stated as such.

@@ -89,10 +89,11 @@ class_member p ctx =
   else
     borrowed = ctx.implementing.as_deref ().and_then (\implemented -> .borrowed_head implemented (&name.text) p)
     guard borrowed is Some found else
-      message = case .as_deref ctx.implementing of
-        Some implemented -> format! \-> "`#{name.text}` has no signature here, and `#{implemented}` declares none for it earlier in this file — write the signature, or declare the class above the instance"
-        None -> format! \-> "`#{name.text}` needs a signature: an inherent `instance` has no class to take one from"
-      return Err (ParseError::r#with Code::ExpectedToken message name.span)
+      taken = (.peeked_name "expected a member's name" p)?
+      mut inferred = (.unsigned_equations taken leading start (&reserved) false p)?
+      inferred.visibility := member_visibility
+      receiver $ &mut inferred.sig
+      return Ok (ClassMember::Method inferred)
     found
   mut decl = (.equations name leading start (&head) (&reserved) true p)?
   decl.visibility := member_visibility

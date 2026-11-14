@@ -37,7 +37,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-bench` | 355 | 217 |
 | `voltaic-cli` | 1416 | 14281 |
 | `voltaic-diag` | 1055 | 0 |
-| `voltaic-driver` | 3676 | 316 |
+| `voltaic-driver` | 3706 | 316 |
 | `voltaic-emit` | 3974 | 4647 |
 | `voltaic-fmt` | 1604 | 1569 |
 | `voltaic-fuzz` | 65 | 378 |
@@ -45,9 +45,9 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-lexer` | 2208 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 464 | 776 |
-| `voltaic-parser` | 6013 | 787 |
+| `voltaic-parser` | 6019 | 787 |
 | `voltaic-seed` | 146 | 1130 |
-| **total** | **29590** | **27388** |
+| **total** | **29626** | **27388** |
 
 ---
 
@@ -70,9 +70,9 @@ A generation with no seed has been **retired**, which row 102 §3.1 permits only
 |---|---:|---|
 | `examples/*.vlt` | 53 | the CI-checked source of truth for what works |
 | `tests/golden/*.vrs` | 52 | the generated Rust, as exact text |
-| `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
+| `crates/voltaic-cli/tests/ui/*.vlt` | 56 | the diagnostic a bad program gets |
 | `crates/voltaic-cli/tests/lint/*.vlt` | 8 | the warning a questionable program gets |
-| `crates/voltaic-cli/tests/run/*.stdout` | 2 | what a program prints |
+| `crates/voltaic-cli/tests/run/*.stdout` | 3 | what a program prints |
 | `crates/voltaic-cli/tests/explain/*.why` | 6 | the constraint chain behind an inference |
 | `crates/voltaic-cli/tests/sidecar/*.sig` | 2 | the published signature, as exact text |
 | `tests/unreachable/*.vlt` | 8 | the gaps below, asserted to **still fail** |

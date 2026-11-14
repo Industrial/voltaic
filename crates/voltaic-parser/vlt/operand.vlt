@@ -268,11 +268,25 @@ range_or_literal p lo span =
   .advance p
   Pattern::Range { lo, hi, inclusive, span = (span.0, end) }
 
+export(crate) is_receiver : &Param -> bool
+is_receiver param =
+  if .is_some_and (\ty -> .is_some (receiver_text (&ty.text))) (.as_ref param.ty)
+    return true
+  .is_none param.ty && param.name.text == "self"
+
+export(crate) receiver_name : &Param -> String
+receiver_name param =
+  guard .as_ref param.ty is Some ty else
+    return .to_string "self"
+  guard receiver_text (&ty.text) is Some text else
+    return .to_string "self"
+  text
+
 export(crate) receiver : &mut Signature -> ()
 receiver sig =
-  guard .position (\param -> .is_some_and (\ty -> .is_some (receiver_text (&ty.text))) (.as_ref param.ty)) (.iter sig.params) is Some at else
+  guard .position is_receiver (.iter sig.params) is Some at else
     return ()
-  text = (sig.params[at].ty.as_ref ().and_then (\ty -> receiver_text (&ty.text))).expect "the position just matched"
+  text = receiver_name (&sig.params[at])
   span = sig.params[at].span
   sig.params[at] := Param { name = Ident { text, span }, ty = None, is_mut = false, span }
   if at > 0

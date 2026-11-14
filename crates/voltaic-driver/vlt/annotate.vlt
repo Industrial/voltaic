@@ -4,6 +4,7 @@ import voltaic_ast::Item
 import voltaic_ast::Program
 import voltaic_ast::TypeExpr
 import voltaic_lattice::Declarations
+import voltaic_lattice::Mode
 import voltaic_lattice::Obligation
 import voltaic_lattice::Outcome
 import voltaic_lattice::Store
@@ -14,6 +15,8 @@ import voltaic_diag::Diagnostic
 import voltaic_diag::DiagnosticCode
 import voltaic_diag::Severity
 import std::path::Path
+
+data Filled { name String, ty Ty, span voltaic_ast::Span, modes Vec<(String, Mode)> }
 
 export data Unresolved { export name String, export shown String, export span voltaic_ast::Span }
   deriving (Debug, Clone, PartialEq, Eq)
@@ -40,7 +43,7 @@ analyse_at program from =
   mut filled = Vec::new ()
   for definition in .iter found.definitions
     if .is_none definition.written
-      filled.push (.clone definition.name, .judged (&outcome) definition, definition.span)
+      filled.push (Filled { name = .clone definition.name, ty = .judged (&outcome) definition, span = definition.span, modes = .clone definition.modes })
   if .is_empty filled
     return Analysis { open = Vec::new (), methods }
 
@@ -49,7 +52,8 @@ analyse_at program from =
     for f in methods_of item
       if .is_none f.sig.ret
         if written_for (&f.name.text) f.span (.as_slice filled) is Some whole
-          if !fill f (&whole)
+          inferred_modes = modes_for (&f.name.text) f.span (.as_slice filled)
+          if !fill f (&whole) (&inferred_modes)
             open.push (Unresolved { name = .clone f.name.text, shown = .to_string whole, span = f.span })
         else
           open.push (Unresolved { name = .clone f.name.text, shown = .to_string "?", span = f.span })
@@ -76,19 +80,37 @@ methods_of item =
     _ -> ()
   found
 
-written_for : &str -> voltaic_ast::Span -> &[(String, Ty, voltaic_ast::Span)] -> Option<Ty>
+written_for : &str -> voltaic_ast::Span -> &[Filled] -> Option<Ty>
 written_for name span filled =
   for row in .iter filled
-    if row.0 == name && row.2 == span
-      return Some (.clone row.1)
+    if row.name == name && row.span == span
+      return Some (.clone row.ty)
   None
 
-fill : &mut FnDecl -> &Ty -> bool
-fill f whole =
+modes_for : &str -> voltaic_ast::Span -> &[Filled] -> Vec<(String, Mode)>
+modes_for name span filled =
+  for row in .iter filled
+    if row.name == name && row.span == span
+      return .clone row.modes
+  Vec::new ()
+
+receiver_mode : &[(String, Mode)] -> Mode
+receiver_mode modes =
+  for row in .iter modes
+    if row.0 == "self"
+      return row.1
+  Mode::Owned
+
+fill : &mut FnDecl -> &Ty -> &[(String, Mode)] -> bool
+fill f whole modes =
   parts = spine_of whole (.len f.sig.params)
   if parts is Some rows
     for pair in .zip (.iter rows.0) (.iter_mut f.sig.params)
-      pair.0.ty := Some (TypeExpr { text = .clone pair.1, span = pair.0.span })
+      if Mode::of_receiver (&pair.0.name.text) is Some _written
+        prefix = .emits (receiver_mode modes)
+        pair.0.name.text := format! \-> "#{prefix}self"
+      else
+        pair.0.ty := Some (TypeExpr { text = .clone pair.1, span = pair.0.span })
     f.sig.ret := Some (TypeExpr { text = .clone rows.1, span = f.sig.span })
     return true
   false

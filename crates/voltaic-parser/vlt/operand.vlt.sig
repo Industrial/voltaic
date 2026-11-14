@@ -19,6 +19,8 @@ over_update : &mut Parser -> usize -> Result<Expr, ParseError> ! fail ParseError
 path_or_ident : &mut Parser -> Result<Expr, ParseError> ! fail ParseError @ p shared
 pipeline_section : &str -> Span -> ParseError @ name shared, span owned
 range_or_literal : &mut Parser -> String -> Span -> Pattern @ p shared, lo shared, span shared
+is_receiver : &Param -> bool @ param shared
+receiver_name : &Param -> String @ param shared
 receiver : &mut Signature -> () ! mut sig @ sig unique
 receiver_text : &str -> Option<String> ! none @ ty shared
 record_literal : &mut Parser -> Expr -> Result<Expr, ParseError> ! fail ParseError + panic @ p shared, head owned

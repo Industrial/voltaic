@@ -1,0 +1,50 @@
+-- An inherent `instance` member needs no signature.
+--
+-- `docs/57 - 63 - Instance Inference.md` §6 held that an inherent instance
+-- could *not* elide one, and `tests/ui/elided_without_a_class.vlt` pinned the
+-- refusal: an inherent instance names no class, so there is nothing for an
+-- elided signature to be taken from.
+--
+-- That is true, and it is a fact about the **resolver**, which looks a
+-- signature up. It says nothing about the **solver**, which computes one. The
+-- receiver's type is fixed by the instance header, each parameter's type
+-- follows from the body, and the mode on `self` is what `infer_mode` already
+-- computes for every other parameter. Row 104 reads the signature off the
+-- solver instead of refusing, so the refusal and its fixture are gone.
+--
+-- Nothing below writes a signature, and every part of each one is inferred:
+-- the `&self` and `&mut self` receivers, `plus`'s `extra: u32`, all three
+-- return types, and the move of the receiver to Rust's first position.
+--
+-- **This is in `tests/run/` and not in `examples/` for one reason, and it is
+-- not that the case is too narrow.** `voltaic-seed`'s
+-- `the_g2_blob_and_the_tree_agree_on_the_examples` stages every example that
+-- has a golden and requires the g2 blob to emit what the tree emits. The blob
+-- predates this change and still refuses the file, so an `examples/` witness
+-- would fail — and the refresh that would fix it is illegal: `seed/SEED.md`
+-- records g2 as `built by: g1`, g1 is retired, and `blob.rs` refuses a blob
+-- whose `built by` names the generation in its `compiles`. So the capability
+-- ships and its `examples/` witness waits for the g3 seed, which is where doc
+-- 97 wave 9's three gap rows are already queued.
+--
+-- One case is still wrong, and it is a Lattice bug rather than a limit: a
+-- member that moves a non-`Copy` field out of `self` is emitted with `&self`
+-- and rejected by rustc as `E0507`. It is caught rather than miscompiled,
+-- which is why this file does not contain one.
+
+data Counter = Counter { value : u32 }
+
+instance Counter
+  current self = self.value
+  bump self =
+    self.value += 1
+    ()
+  plus extra self = self.value + extra
+
+main : ()
+main =
+  mut c = Counter { value = 1 }
+  .bump (&mut c)
+  println! \-> "#{.current (&c)}"
+  println! \-> "#{.plus 10 (&c)}"
+  ()
