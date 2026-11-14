@@ -1,0 +1,73 @@
+// Doc 87 §5.7: a conditional is a **guard ladder**, admissible wherever a value
+// is rather than only as a clause body.
+//
+// §5.7 was written by row 99 wave 2, and the gap it closes is worth recording
+// here because this is the only place a reader meets the construct. §1.4's
+// eleven surviving keywords delete `if` and `case`; §5 had no subsection saying
+// what replaces them in expression position. The surface deleted a construct and
+// did not say what took its place — found by trying to implement the deletion
+// and having nothing to implement it *to*.
+
+// A ladder as a clause body, which is §2.2's form and unchanged.
+fn tier(spend: u64) -> &'static str {
+    if spend > 10_000 {
+        "gold"
+    } else if spend > 1_000 {
+        "silver"
+    } else {
+        "basic"
+    }
+}
+
+// The same ladder as a **value**, bound to a name. This is §5.7's addition: the
+// dedent ends it and nothing delimits it, which is why no bracket or keyword
+// appears for a construct that needs `if`/`else`/`end` elsewhere.
+fn settled(n: u64) -> u64 {
+    let adjusted = if n > 5 { n - 5 } else { n };
+    adjusted * 2
+}
+
+// A pattern row in a ladder expression, so the arms are §2.2's arms unchanged
+// and pattern matching needs no second construct — which is why `case e of` is
+// deleted rather than respelled.
+fn named(held: Option<u64>) -> &'static str {
+    let shown = if let Some(_n) = held { "some" } else { "none" };
+    shown
+}
+
+// Nesting, and the reason the subsection exists. §2.2's clause ladder could
+// never nest: an arm takes one expression, and a `where` group cannot follow a
+// guard list at any indentation (doc 97 §10.24). Admitting the ladder as a
+// *value* is what makes nesting possible at all, and it nests the way every
+// other value does — through a binding.
+fn graded(spend: u64, floor: u64) -> &'static str {
+    let inner = if floor > 100 { "high" } else { "low" };
+    let outer = if spend > 1_000 { inner } else { "small" };
+    outer
+}
+
+// A ladder as an argument, which is the same admissibility seen from the other
+// side: no binding, and the parentheses are the ordinary ones an application
+// needs rather than anything the construct asks for.
+fn doubled(n: u64) -> u64 {
+    n * 2
+}
+
+fn reported(n: u64) -> u64 {
+    let chosen = if n > 100 { 100 } else { n };
+    doubled(chosen)
+}
+
+fn main() {
+    println!("{} {} {}", tier(20_000), tier(5_000), tier(10));
+    println!("{} {}", settled(9), settled(2));
+    println!("{} {}", named(Some(1)), named(None));
+    println!(
+        "{} {} {}",
+        graded(2_000, 500),
+        graded(2_000, 1),
+        graded(1, 1)
+    );
+    println!("{} {}", reported(7), reported(900));
+    ();
+}

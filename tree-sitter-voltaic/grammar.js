@@ -817,6 +817,10 @@ module.exports = grammar({
 						// See `_block_expression`'s note for why it is named here and
 						// not there.
 						$.block_expression,
+						// Doc 87 §5.7's ladder, here for the same reason and reached the
+						// same way: `value_or_ladder` is called from `try_binding` alone,
+						// so the grammar accepts the set the parser accepts.
+						$.ladder_expression,
 					),
 				),
 			),
@@ -1119,6 +1123,19 @@ module.exports = grammar({
 				$.try_block,
 				$.bind_block,
 			),
+
+		// Doc 87 §5.7: §2.2's ladder, admissible wherever a value is. The shape is
+		// the equation's own — `_indent`, the ladder, `_dedent` — minus the
+		// `where_clause`, which a guard list cannot carry in either position (doc
+		// 97 §10.24).
+		//
+		// Named in `binding` and kept **out** of `_block_expression`, for
+		// `block_expression`'s reason and not a new one: `_block_expression` is
+		// reached from `equation` too, where an `_indent`-initial rule is ambiguous
+		// with the statement-list branch. Tried the other way first and it broke
+		// `first_square_over` in `examples/control.vlt` — the very example the note
+		// on that branch cites.
+		ladder_expression: ($) => seq($._indent, $.guard_ladder, $._dedent),
 
 		// Block-bearing, so they keep real rules: folding wants them, and so does
 		// anyone pressing expand-selection.

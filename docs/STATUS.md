@@ -33,21 +33,21 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Crate | `src` | `tests` |
 |---|---:|---:|
-| `voltaic-ast` | 1636 | 0 |
+| `voltaic-ast` | 1642 | 0 |
 | `voltaic-bench` | 355 | 217 |
 | `voltaic-cli` | 1402 | 12480 |
 | `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 2701 | 0 |
-| `voltaic-emit` | 3689 | 4634 |
-| `voltaic-fmt` | 1491 | 1497 |
+| `voltaic-emit` | 3721 | 4634 |
+| `voltaic-fmt` | 1516 | 1497 |
 | `voltaic-fuzz` | 54 | 362 |
 | `voltaic-lattice` | 5720 | 1176 |
 | `voltaic-lexer` | 2222 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 459 | 776 |
-| `voltaic-parser` | 5841 | 787 |
+| `voltaic-parser` | 5855 | 787 |
 | `voltaic-seed` | 146 | 771 |
-| **total** | **27651** | **24652** |
+| **total** | **27728** | **24652** |
 
 ---
 
@@ -55,13 +55,13 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.vlt` | 46 | the CI-checked source of truth for what works |
-| `tests/golden/*.vrs` | 45 | the generated Rust, as exact text |
+| `examples/*.vlt` | 47 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 46 | the generated Rust, as exact text |
 | `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
 | `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**46 examples and 45 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "46 examples, all green" would be rounding up by exactly one file.
+**47 examples and 46 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "47 examples, all green" would be rounding up by exactly one file.
 
 ---
 

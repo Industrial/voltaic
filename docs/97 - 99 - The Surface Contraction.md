@@ -849,6 +849,12 @@ That is not true while `if`'s fate is undecided. Either:
 Taking the first reading until doc 87 says otherwise, because §20 is explicit and
 a plan does not overrule a specification.
 
+**Superseded by §10.30.** The first reading is the one §10.27 withdrew, and the
+second is what happened: doc 87 gained §5.7 and the `Expr::Ladder` reverted here
+was built against it. What stands from this subsection is the *reason* for the
+revert — a surface decision does not get taken in a parser — and that reason is
+why §5.7 was written before the variant was re-added rather than after.
+
 ### 10.25 What that makes wave 2
 
 > **Superseded by §10.28.** The table below is right about the six constructs
@@ -1003,6 +1009,62 @@ behaviour, because another rule can intercept the same input"*. This is the
 document-level version: **a section read correctly does not settle the question
 when a second section answers it more directly.** §20 says what is carried over;
 §1.4 says what is left. For *"is `if` deleted"*, §1.4 is the one being asked.
+
+### 10.30 §5.7 is written, and the ladder reaches expression position
+
+The blocker §10.28 named is closed. Doc 87 gained **§5.7 Conditionals**, and
+`Expr::Ladder` is implemented against it: `voltaic-ast`, `value_or_ladder` in the
+parser, `emit_ladder` in the emitter, the formatter's printer and precedence arm,
+`ladder_expression` in `grammar.js` with three corpus cases, and
+`examples/ladder.vlt` with its golden and `.stdout`.
+
+**The premise that had this deferred was wrong, and that is the finding.** §10.24
+declined to invent the construct, correctly. §10.28 then treated the specification
+as someone else's to write — but doc 87 is one of the eighteen documents written in
+*this* project, not part of the 01–85 record that is off-limits. A document being
+a specification makes it authoritative over the parser; it does not make it
+unwritable by the row that found the hole in it. The rule that applies is the one
+§10.24 already stated: the surface decision goes in doc 87 first, then the parser
+follows. Both halves of that were available the whole time.
+
+**§5.7's hardest rule took three drafts, and the first two were wrong the same
+way.** The construct's own shape is `_indent`, the arms, `_dedent` — specified
+once and right once. Nesting is where it went wrong:
+
+1. *A ladder nested inside an arm, indented past it.* Written from the shape of
+   the construct. An arm's body is `inline_body` — one expression on one line —
+   so this does not parse, and `examples/ladder.vlt` said so on the first run.
+2. *A ladder in a `where` group attached to the guarded clause.* Written from
+   §2.2's shape, which does have a `where`. It does not parse either, and the
+   reason is worth keeping: **a `where` group cannot follow a guard list at any
+   indentation.** `clause` consumes a `Dedent` to close the guard list where
+   `where_locals` needs an `Indent` to open, so the guarded equation is the one
+   equation shape with no `where` available to it. Both the inline-body and
+   indented-block forms call `where_locals` in a position where it can fire; the
+   guarded form calls it in a position where it structurally cannot.
+3. *A ladder bound to a name in the enclosing block.* Parses, compiles, and runs.
+
+The third draft is also the better rule, which is the part that makes this more
+than a correction. §2.2's clause ladder **could never nest** — an arm takes one
+expression and has no `where` to escape to. So admitting the ladder as a *value*
+is not merely one more position for an existing construct: it is what makes
+ladders nest at all, and it does so through the ordinary binding every other value
+nests through. The subsection earns its place rather than tidying up after a
+deletion.
+
+What the two wrong drafts have in common is that each described a nesting read off
+the shape of the construct instead of tried. `AGENTS.md` already carries the rule
+for this — *"for anything involving precedence, conflicts, or a flat `repeat1` …
+run the input"* — and the general form is wider than grammars: **a specification
+can be wrong about the language it specifies, and the cheapest check is to write
+the program.** A doc 87 subsection costs nothing to write and nothing to be wrong
+in; `examples/ladder.vlt` is what made it answerable.
+
+The asymmetry found in draft 2 is real and is **not** fixed here. A guarded
+equation having no `where` is a gap in §2.2, not in §5.7 — closing it means
+reworking `clause`'s indent bookkeeping and giving the emitter a place to put
+`wheres` on a `Guarded` body, with its own gate surface, and §5.7's nesting needs
+none of it. It is recorded for whoever wants it rather than folded into this row.
 
 ### 10.2 Both corpora were necessary, and that was not the expectation
 

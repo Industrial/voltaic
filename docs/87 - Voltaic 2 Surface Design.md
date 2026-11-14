@@ -394,6 +394,90 @@ with early exit is this. `break` carries a value where Rust's does.
 `diverge` effect, so it is a legal `else` arm and the two constructs compose without
 a rule saying they may.
 
+### 5.7 Conditionals
+
+`if`, `else if` and `case … of` are deleted. A conditional is a **guard ladder**,
+and §2.2's ladder is admissible wherever a value is rather than only as a clause
+body.
+
+```
+tier spend
+  | spend > 10_000 = "gold"
+  | spend > 1_000  = "silver"
+  | _              = "basic"
+```
+
+and nested, as a value:
+
+```
+settled n =
+  adjusted =
+    | n > 5 = n - 5
+    | _     = n
+  adjusted * 2
+```
+
+The arms are §2.2's arms **unchanged** — an ordinary condition, a pattern row
+(`held is Some n`), or `_`. So there is one notion of an arm, and pattern matching
+needs no second construct: `case e of` is deleted because a ladder of pattern rows
+is what it was.
+
+Three rules, and the off-side rule supplies all three:
+
+- A ladder opens on the line after `=`, or after a clause's parameters, indented
+  past it. **Nothing delimits it; the dedent ends it.** This is why no new
+  bracket or keyword appears — the construct that needed `if`/`else`/`end` in
+  other languages is carried by indentation here, as every other block is.
+- **An arm's body is a single expression**, which is §2.2's arm unchanged, so a
+  ladder does not nest *directly* inside an arm. **Admitting the ladder as a value
+  is what lets ladders nest at all**, through a binding:
+
+  ```
+  graded spend floor =
+    inner =
+      | floor > 100 = "high"
+      | _           = "low"
+    outer =
+      | spend > 1_000 = inner
+      | _             = "small"
+    outer
+  ```
+
+  This is the subsection earning its place rather than a restriction it adds.
+  §2.2's clause ladder could never nest — an arm takes one expression, and
+  widening it would change the ladder §20 keeps. What nests is the *expression*
+  ladder, and it nests the way every other value does.
+
+  The binding evaluates `inner` whichever arm is taken, where a ladder written
+  inside the arm would not. Where that matters — cost, or an effect — the arm
+  calls a function, which is the same answer the language gives everywhere else
+  and needs nothing added here.
+
+  Two drafts of this rule were wrong before this one, both in the same direction:
+  they described a nesting the parser does not accept, because nesting was read
+  off the shape of the construct instead of tried. The first put a ladder directly
+  in an arm; the second moved it to a `where` group. **A `where` group cannot
+  follow a guard list at any indentation** — `clause` expects a `Dedent` where
+  `where_locals` needs an `Indent`, so the guarded equation is the one equation
+  shape with no `where` available to it. That is a real asymmetry in §2.2, it is
+  recorded in doc 97 §10.24, and it is not this subsection's to fix, because the
+  binding above needs no `where`.
+- A ladder in expression position is a **value**, so its arms must agree in type
+  and it must be total. Voltaic does not check either: rustc does, per §19, and a
+  ladder with no `_` arm is an ordinary `E0317` against the generated
+  `if`/`else if` chain. That is the charter working rather than a gap — a Voltaic
+  exhaustiveness check would be the second checker doc 86 §2 forbids.
+
+The lowering is §2.2's, unchanged: an `if`/`else if` chain, with `if let` where an
+arm is a pattern row. Nothing new is emitted, which is the point — the construct
+is a respelling of what generation 1 already lowered, not a new shape in the
+output.
+
+**`guard … else` is deleted too, and §5.6 already shows its replacement**:
+`ch = self.peek else break` is a binding with an `else` tail. `else` is one of
+§1.4's eleven surviving keywords for exactly this, and it is why `else` survives
+while `if` does not.
+
 ---
 
 ## 6. Effects on the surface
@@ -672,6 +756,15 @@ None. §22 holds the declines; doc 86 §10 holds the predicted unreachable set; 
 sidecar's semver behaviour is the one piece of design whose details are deferred to
 its own plan rather than settled here, and that is named in `docs/89 - Voltaic 2 Plan
 of Plans.md` row 100 rather than left implicit.
+
+**One item was open and is now closed, which this section claimed was impossible.**
+§5 had no subsection on conditionals while §1.4's surviving eleven keywords deleted
+`if` and `case` — so the surface deleted a construct and did not say what replaced
+it. Found by row 99 wave 2 trying to implement the deletion and having nothing to
+implement it *to*; `docs/97 - 99 - The Surface Contraction.md` §10.24 and §10.28
+record the discovery, and §5.7 above is the answer. The lesson is the one doc 04
+rule 2 already states: *"None"* is a claim, and a claim in an open-items section is
+the one most likely to be made by not looking.
 
 ---
 

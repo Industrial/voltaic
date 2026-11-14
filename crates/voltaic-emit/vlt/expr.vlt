@@ -232,6 +232,7 @@ emit_expr e indent = case e of
   Expr::Section { section, .. } -> emit_section section indent
   Expr::Record { head, fields, .. } -> emit_record head fields indent
   Expr::Case { scrutinee, arms, .. } -> emit_case scrutinee arms indent
+  Expr::Ladder { rows, .. } -> crate::control::emit_ladder rows indent
   Expr::Block { label, body, .. } -> emit_block label body indent
   Expr::Unit { .. } -> .to_string "()"
   Expr::Try { inner, .. } -> format! \-> "#{receiver inner indent}?"
@@ -552,5 +553,5 @@ wraps_as_receiver e =
   if e is Expr::Call { callee, args, .. }
     return .is_some (missing_arity callee args)
   case e of
-    Expr::Binary { .. } or Expr::Unary { .. } or Expr::Ascribe { .. } or Expr::Lambda { .. } or Expr::Case { .. } or Expr::Record { .. } or Expr::Section { .. } or Expr::MethodRef { .. } or Expr::Comprehension { .. } -> true
+    Expr::Binary { .. } or Expr::Unary { .. } or Expr::Ascribe { .. } or Expr::Lambda { .. } or Expr::Case { .. } or Expr::Ladder { .. } or Expr::Record { .. } or Expr::Section { .. } or Expr::MethodRef { .. } or Expr::Comprehension { .. } -> true
     _ -> false

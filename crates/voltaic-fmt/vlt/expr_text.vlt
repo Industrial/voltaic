@@ -1,6 +1,8 @@
+import crate::item_text::inline_body
 import crate::stmt_text::block_text
 import crate::stmt_text::case_arm_text
 import crate::stmt_text::code_text
+import crate::stmt_text::condition_text
 import crate::stmt_text::indent_text
 import voltaic_ast::BinaryOp
 import voltaic_ast::Expr
@@ -100,6 +102,17 @@ expr_text expr required indent source = case expr of
       |> .map (\arm -> case_arm_text arm (indent + 1) source)
       |> .collect
     format! \-> "case #{(expr_text scrutinee 0 indent source)} of\n#{(.join "\n" printed)}"
+  Expr::Ladder { rows, .. } ->
+    pad = indent_text $ indent + 1
+    printed : Vec<String> = rows
+      |> .iter
+      |> .map (\row ->
+      r#test = case &row.condition of
+        Some condition -> condition_text condition (indent + 1) source
+        None -> String::from "_"
+      format! \-> "#{pad}| #{r#test} = #{(inline_body (&row.body) (indent + 1) source)}")
+      |> .collect
+    .join "\n" printed
   Expr::If { .. } or Expr::Binding _ or Expr::Item { .. } or Expr::Return { .. } or Expr::Draw { .. } or Expr::Await { .. } or Expr::Assign { .. } -> code_text expr indent source
   Expr::Guard { .. } or Expr::While { .. } or Expr::For { .. } or Expr::Loop { .. } or Expr::Break { .. } or Expr::Continue { .. } -> code_text expr indent source
 
@@ -255,7 +268,7 @@ power_of expr = case expr of
   Expr::Tuple { .. } or Expr::List { .. } or Expr::ArrayRepeat { .. } or Expr::Unit { .. } -> Some u8::MAX
   Expr::Paren { inner, .. } -> power_of inner
   Expr::Record { .. } or Expr::Comprehension { .. } or Expr::Section { .. } -> Some u8::MAX
-  Expr::Lambda { .. } or Expr::Ascribe { .. } or Expr::If { .. } or Expr::Block { .. } or Expr::Case { .. } or Expr::AsyncBlock { .. } or Expr::UnsafeBlock { .. } or Expr::TryBlock { .. } or Expr::BindBlock { .. } -> None
+  Expr::Lambda { .. } or Expr::Ascribe { .. } or Expr::If { .. } or Expr::Block { .. } or Expr::Case { .. } or Expr::Ladder { .. } or Expr::AsyncBlock { .. } or Expr::UnsafeBlock { .. } or Expr::TryBlock { .. } or Expr::BindBlock { .. } -> None
   Expr::Binding _ or Expr::Item { .. } or Expr::Return { .. } or Expr::Draw { .. } or Expr::Await { .. } or Expr::Assign { .. } or Expr::Over { .. } -> None
   Expr::Guard { .. } or Expr::While { .. } or Expr::For { .. } or Expr::Loop { .. } or Expr::Break { .. } or Expr::Continue { .. } -> None
 

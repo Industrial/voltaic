@@ -426,8 +426,18 @@ instance (Parser 'a)
     else
       None
     (.expect (&TokenKind::Eq) "expected `=` in a binding" self)?
-    value = (parse_expr self 0)?
+    value = (.value_or_ladder self)?
     Ok $ Some $ Binding { pattern = bound, ty, value, is_mut, span = (start, (.prev_span self).1) }
+  export(crate) value_or_ladder : &mut self -> Result<Expr, ParseError>
+  value_or_ladder self =
+    if !.opens_a_guard_list self
+      return parse_expr self 0
+    start = (.peek_span self).0
+    .advance self
+    .advance self
+    rows = (.guards self)?
+    (.expect (&TokenKind::Dedent) "expected the ladder to end" self)?
+    Ok (Expr::Ladder { rows, span = (start, (.prev_span self).1) })
   looks_like_a_binding : &self -> bool
   looks_like_a_binding self = case &(.peek self).kind of
     TokenKind::Ident _ ->

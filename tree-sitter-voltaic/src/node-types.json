@@ -523,6 +523,10 @@
             "named": true
           },
           {
+            "type": "ladder_expression",
+            "named": true
+          },
+          {
             "type": "lambda",
             "named": true
           },
@@ -3261,6 +3265,21 @@
     "type": "label",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "ladder_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "guard_ladder",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "lambda",

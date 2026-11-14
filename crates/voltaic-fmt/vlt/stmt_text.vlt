@@ -36,6 +36,7 @@ binding_text binding indent source =
     None -> String::new ()
   separator = case &binding.value of
     Expr::Block { label = None, .. } -> "=\n"
+    Expr::Ladder { .. } -> "=\n"
     _ -> "= "
   pattern = pattern_text (&binding.pattern)
   value = expr_text (&binding.value) 0 indent source

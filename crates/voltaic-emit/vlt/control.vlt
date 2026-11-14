@@ -88,6 +88,29 @@ assert_call e indent =
   inner = emit_expr (unparen e) indent
   format! \-> "assert!(#{inner})"
 
+export(crate) emit_ladder : &[Guard] -> usize -> String
+emit_ladder rows indent =
+  if two_armed rows indent is Some one_line
+    return one_line
+  arm_pad = .repeat (indent + RUST_INDENT) " "
+  close_pad = .repeat indent " "
+  mut out = String::new ()
+  for pair in .enumerate (.iter rows)
+    i = pair.0
+    row = pair.1
+    case (&row.condition, i) of
+      (Some cond, 0) -> .push_str (&format! \-> "if #{(emit_condition cond indent)} {\n") out
+      (Some cond, _) -> .push_str (&format! \-> "#{close_pad}} else if #{(emit_condition cond indent)} {\n") out
+      (None, 0) -> .push_str "if true {\n" out
+      (None, _) -> .push_str (&format! \-> "#{close_pad}} else {\n") out
+    .push_str (&arm_pad) out
+    arm_text = sole_expression row (indent + RUST_INDENT) |> .unwrap_or_else (\-> .to_string "()")
+    .push_str (&arm_text) out
+    .push '\n' out
+  .push_str (&close_pad) out
+  .push '}' out
+  out
+
 export(crate) emit_case : &Expr -> &[CaseArm] -> usize -> String
 emit_case scrutinee arms indent =
   arm_pad = .repeat (indent + RUST_INDENT) " "

@@ -34,6 +34,7 @@ export data Expr
   | Unit { span : Span }
   | Section { section : Section, span : Span }
   | Case { scrutinee : Box<Expr>, arms : Vec<CaseArm>, span : Span }
+  | Ladder { rows : Vec<crate::Guard>, span : Span }
   | Num { text : String, span : Span }
   | Bool { value : bool, span : Span }
   | Char { value : char, span : Span }
@@ -59,7 +60,7 @@ export data Expr
 instance Expr
   export span : &self -> Span
   span self = case self of
-    Call { span, .. } or Field { span, .. } or Index { span, .. } or Binary { span, .. } or Unary { span, .. } or Paren { span, .. } or Path { span, .. } or Lambda { span, .. } or MethodRef { span, .. } or AsyncBlock { span, .. } or UnsafeBlock { span, .. } or TryBlock { span, .. } or BindBlock { span, .. } or Ascribe { span, .. } or StrLit { span, .. } or StrInterp { span, .. } or Tuple { span, .. } or ArrayRepeat { span, .. } or RawLit { span, .. } or Case { span, .. } or Record { span, .. } or Expr::Section { span, .. } or Try { span, .. } or Item { span, .. } or If { span, .. } or Block { span, .. } or List { span, .. } or Comprehension { span, .. } or Num { span, .. } or Bool { span, .. } or Char { span, .. } or SelfField { span, .. } or SelfType { span, .. } or Return { span, .. } or Draw { span, .. } or Await { span, .. } or Assign { span, .. } or Guard { span, .. } or While { span, .. } or For { span, .. } or Loop { span, .. } or Break { span, .. } or Continue { span, .. } or MacroCall { span, .. } or RustHatch { span, .. } or UserBinary { span, .. } or Over { span, .. } or Unit { span } -> *span
+    Call { span, .. } or Field { span, .. } or Index { span, .. } or Binary { span, .. } or Unary { span, .. } or Paren { span, .. } or Path { span, .. } or Lambda { span, .. } or MethodRef { span, .. } or AsyncBlock { span, .. } or UnsafeBlock { span, .. } or TryBlock { span, .. } or BindBlock { span, .. } or Ascribe { span, .. } or StrLit { span, .. } or StrInterp { span, .. } or Tuple { span, .. } or ArrayRepeat { span, .. } or RawLit { span, .. } or Case { span, .. } or Ladder { span, .. } or Record { span, .. } or Expr::Section { span, .. } or Try { span, .. } or Item { span, .. } or If { span, .. } or Block { span, .. } or List { span, .. } or Comprehension { span, .. } or Num { span, .. } or Bool { span, .. } or Char { span, .. } or SelfField { span, .. } or SelfType { span, .. } or Return { span, .. } or Draw { span, .. } or Await { span, .. } or Assign { span, .. } or Guard { span, .. } or While { span, .. } or For { span, .. } or Loop { span, .. } or Break { span, .. } or Continue { span, .. } or MacroCall { span, .. } or RustHatch { span, .. } or UserBinary { span, .. } or Over { span, .. } or Unit { span } -> *span
     Ident i -> i.span
     Binding b -> b.span
 
@@ -82,7 +83,7 @@ instance Expr
       None -> [then_block] : Vec<&crate::Block>
     While { body, .. } or For { body, .. } or Loop { body, .. } -> [body] : Vec<&crate::Block>
     Guard { r#otherwise, .. } -> [r#otherwise] : Vec<&crate::Block>
-    Item { .. } or Call { .. } or Field { .. } or Index { .. } or Binary { .. } or Unary { .. } or Paren { .. } or Path { .. } or Lambda { .. } or MethodRef { .. } or AsyncBlock { .. } or UnsafeBlock { .. } or TryBlock { .. } or BindBlock { .. } or Ascribe { .. } or StrLit { .. } or StrInterp { .. } or Tuple { .. } or ArrayRepeat { .. } or RawLit { .. } or Record { .. } or List { .. } or Comprehension { .. } or Block { .. } or Try { .. } or Unit { .. } or Expr::Section { .. } or Case { .. } or Num { .. } or Bool { .. } or Char { .. } or SelfField { .. } or SelfType { .. } or Return { .. } or Draw { .. } or Await { .. } or Assign { .. } or Break { .. } or Continue { .. } or MacroCall { .. } or RustHatch { .. } or UserBinary { .. } or Over { .. } or Ident _ or Binding _ -> Vec::new ()
+    Item { .. } or Call { .. } or Field { .. } or Index { .. } or Binary { .. } or Unary { .. } or Paren { .. } or Path { .. } or Lambda { .. } or MethodRef { .. } or AsyncBlock { .. } or UnsafeBlock { .. } or TryBlock { .. } or BindBlock { .. } or Ascribe { .. } or StrLit { .. } or StrInterp { .. } or Tuple { .. } or ArrayRepeat { .. } or RawLit { .. } or Record { .. } or List { .. } or Comprehension { .. } or Block { .. } or Try { .. } or Unit { .. } or Expr::Section { .. } or Case { .. } or Ladder { .. } or Num { .. } or Bool { .. } or Char { .. } or SelfField { .. } or SelfType { .. } or Return { .. } or Draw { .. } or Await { .. } or Assign { .. } or Break { .. } or Continue { .. } or MacroCall { .. } or RustHatch { .. } or UserBinary { .. } or Over { .. } or Ident _ or Binding _ -> Vec::new ()
 
 export data BinaryOp
   = Add

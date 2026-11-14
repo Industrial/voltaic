@@ -1,0 +1,140 @@
+================================================================
+a ladder in value position
+================================================================
+
+settled : u64 -> u64
+settled n =
+  adjusted =
+    | n > 5 = n - 5
+    | _ = n
+  adjusted * 2
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    name: (identifier)
+    type: (signature_type
+      (identifier)
+      (identifier)))
+  (equation
+    name: (identifier)
+    parameters: (identifier)
+    body: (binding
+      pattern: (pattern_run
+        (identifier))
+      value: (ladder_expression
+        (guard_ladder
+          (guard
+            condition: (condition
+              (identifier)
+              (operator)
+              (number))
+            body: (identifier)
+            body: (operator)
+            body: (number))
+          (guard
+            body: (identifier)))))
+    body: (expression_statement
+      (identifier)
+      (operator)
+      (number))))
+
+================================================================
+a ladder's arms are the clause ladder's arms, pattern rows included
+================================================================
+
+named : Option<u64> -> &'static str
+named held =
+  shown =
+    | held is Some _n = "some"
+    | _ = "none"
+  shown
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    name: (identifier)
+    type: (signature_type
+      (type_identifier)
+      (identifier)
+      (lifetime)
+      (identifier)))
+  (equation
+    name: (identifier)
+    parameters: (identifier)
+    body: (binding
+      pattern: (pattern_run
+        (identifier))
+      value: (ladder_expression
+        (guard_ladder
+          (guard
+            condition: (condition
+              (pattern_test
+                source: (identifier)
+                pattern: (pattern_run
+                  (type_identifier)
+                  (identifier))))
+            body: (string))
+          (guard
+            body: (string)))))
+    body: (expression_statement
+      (identifier))))
+
+================================================================
+ladders nest through a binding, not through an arm
+================================================================
+
+graded : u64 -> u64 -> &'static str
+graded spend floor =
+  inner =
+    | floor > 100 = "high"
+    | _ = "low"
+  outer =
+    | spend > 1_000 = inner
+    | _ = "small"
+  outer
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    name: (identifier)
+    type: (signature_type
+      (identifier)
+      (identifier)
+      (lifetime)
+      (identifier)))
+  (equation
+    name: (identifier)
+    parameters: (identifier)
+    parameters: (identifier)
+    body: (binding
+      pattern: (pattern_run
+        (identifier))
+      value: (ladder_expression
+        (guard_ladder
+          (guard
+            condition: (condition
+              (identifier)
+              (operator)
+              (number))
+            body: (string))
+          (guard
+            body: (string)))))
+    body: (binding
+      pattern: (pattern_run
+        (identifier))
+      value: (ladder_expression
+        (guard_ladder
+          (guard
+            condition: (condition
+              (identifier)
+              (operator)
+              (number))
+            body: (identifier))
+          (guard
+            body: (string)))))
+    body: (expression_statement
+      (identifier))))

@@ -2258,6 +2258,10 @@
               {
                 "type": "SYMBOL",
                 "name": "block_expression"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "ladder_expression"
               }
             ]
           }
@@ -3309,6 +3313,23 @@
         {
           "type": "SYMBOL",
           "name": "bind_block"
+        }
+      ]
+    },
+    "ladder_expression": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_indent"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "guard_ladder"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_dedent"
         }
       ]
     },
