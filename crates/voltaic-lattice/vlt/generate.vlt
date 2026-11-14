@@ -6,12 +6,13 @@ import crate::store::Store
 import crate::ty::Ty
 import voltaic_ast::BinaryOp
 import voltaic_ast::Block
+import voltaic_ast::ClassMember
 import voltaic_ast::ClauseBody
 import voltaic_ast::Expr
 import voltaic_ast::Item
 import voltaic_ast::Program
 
-export data Inferred = Inferred { export name : String, export ty : Ty, export row : crate::row::Row, export written : Option<Ty>, export span : voltaic_ast::Span }
+export data Inferred = Inferred { export name : String, export ty : Ty, export row : crate::row::Row, export modes : Vec<(String, crate::mode::Mode)>, export written : Option<Ty>, export written_modes : Vec<(String, crate::mode::Mode)>, export span : voltaic_ast::Span }
   deriving (Debug, Clone)
 
 export data Report = Report { export store : Store, export definitions : Vec<Inferred> }
@@ -26,22 +27,114 @@ walk program =
   mut store = Store::new ()
   mut definitions = Vec::new ()
   for item in .iter program.items
-    if item is Item::Fn f
-      mut env = Vec::new ()
-      mut params = Vec::new ()
-      for p in .iter f.sig.params
-        hole = .fresh_hole store
-        if .as_ref p.ty is Some written
-          .require (Obligation::Unify { left = .clone hole, right = annotation::read written }) p.span Reason::Ascribed store
-        env |> .push (.clone p.name.text, .clone hole)
-        params |> .push hole
-      body = clause_type (.as_slice f.clauses) (&mut store) (.as_slice env)
-      if .as_ref f.sig.ret is Some written
-        .require (Obligation::Unify { left = .clone body, right = annotation::read written }) f.sig.span Reason::Ascribed store
-      whole = arrow_of (.as_slice params) (&body)
-      written = signature_type (&f.sig)
-      definitions |> .push (Inferred { name = .clone f.name.text, ty = whole, row = row_of (&f.sig) (.as_slice f.clauses), written, span = f.span })
+    case item of
+      Item::Fn f ->
+        definitions |> .push (one f (&mut store))
+      Item::Instance block ->
+        for member in .iter block.members
+          if member is ClassMember::Method f
+            definitions |> .push (one f (&mut store))
+      Item::Class block ->
+        for member in .iter block.members
+          if member is ClassMember::Method f
+            definitions |> .push (one f (&mut store))
+      _ -> ()
+  raise_receivers (.as_mut_slice definitions) program
   Report { store, definitions }
+
+raise_receivers : &mut [Inferred] -> &Program -> ()
+raise_receivers definitions program =
+  calls = call_edges program
+  mut rounds = 0
+  mut changed = true
+  while changed && rounds < 4
+    changed := false
+    rounds += 1
+    for edge in .iter calls
+      if receiver_mode definitions (&edge.0) is Some needed && raise_in definitions (&edge.1) (&edge.2) needed
+        changed := true
+  ()
+
+call_edges : &Program -> Vec<(String, String, String)>
+call_edges program =
+  mut found = Vec::new ()
+  for item in .iter program.items
+    for f in methods_of item
+      for call in crate::infer_mode::calls_on (.as_slice f.clauses)
+        found |> .push (call.0, .clone f.name.text, call.1)
+  found
+
+methods_of : &Item -> Vec<&voltaic_ast::FnDecl>
+methods_of item =
+  mut found = Vec::new ()
+  case item of
+    Item::Fn f -> found |> .push f
+    Item::Instance block ->
+      for member in .iter block.members
+        if member is ClassMember::Method f
+          found |> .push f
+    Item::Class block ->
+      for member in .iter block.members
+        if member is ClassMember::Method f
+          found |> .push f
+    _ -> ()
+  found
+
+receiver_mode : &[Inferred] -> &str -> Option<crate::mode::Mode>
+receiver_mode definitions name =
+  for definition in .iter definitions
+    if definition.name == name
+      for pair in .iter definition.modes
+        if pair.0 == "self"
+          return Some pair.1
+  None
+
+raise_in : &mut [Inferred] -> &str -> &str -> crate::mode::Mode -> bool
+raise_in definitions caller binder needed =
+  mut changed = false
+  for definition in .iter_mut definitions
+    if definition.name == caller
+      for pair in .iter_mut definition.modes
+        if pair.0 == binder && pair.1 < needed
+          pair.1 := needed
+          changed := true
+  changed
+
+one : &voltaic_ast::FnDecl -> &mut Store -> Inferred
+one f store =
+  mut env = Vec::new ()
+  mut params = Vec::new ()
+  for p in .iter f.sig.params
+    hole = .fresh_hole store
+    if .as_ref p.ty is Some written
+      .require (Obligation::Unify { left = .clone hole, right = annotation::read written }) p.span Reason::Ascribed store
+    env |> .push (.clone p.name.text, .clone hole)
+    params |> .push hole
+  body = clause_type (.as_slice f.clauses) store (.as_slice env)
+  if .as_ref f.sig.ret is Some written
+    .require (Obligation::Unify { left = .clone body, right = annotation::read written }) f.sig.span Reason::Ascribed store
+  whole = arrow_of (.as_slice params) (&body)
+  written = signature_type (&f.sig)
+  Inferred { name = .clone f.name.text, ty = whole, row = row_of (&f.sig) (.as_slice f.clauses), modes = modes_of (&f.sig) (.as_slice f.clauses), written, written_modes = written_modes_of (&f.sig), span = f.span }
+
+modes_of : &voltaic_ast::Signature -> &[voltaic_ast::Clause] -> Vec<(String, crate::mode::Mode)>
+modes_of sig clauses =
+  mut found = Vec::new ()
+  for p in .iter sig.params
+    found |> .push (.to_string (crate::infer_mode::binder_of (&p.name.text)), crate::infer_mode::mode_of (&p.name.text) clauses)
+  found
+
+written_modes_of : &voltaic_ast::Signature -> Vec<(String, crate::mode::Mode)>
+written_modes_of sig =
+  mut found = Vec::new ()
+  for p in .iter sig.params
+    binder = .to_string (crate::infer_mode::binder_of (&p.name.text))
+    if crate::mode::Mode::of_receiver (&p.name.text) is Some receiver
+      found |> .push (binder, receiver)
+    else
+      if .as_ref p.ty is Some written
+        found |> .push (binder, crate::mode::Mode::of_written (&annotation::read written))
+  found
 
 row_of : &voltaic_ast::Signature -> &[voltaic_ast::Clause] -> crate::row::Row
 row_of sig clauses =

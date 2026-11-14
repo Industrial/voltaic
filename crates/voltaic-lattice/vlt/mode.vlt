@@ -1,0 +1,116 @@
+import crate::ty::Ty
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export data Mode
+  #[default]
+  = Shared
+  | Unique
+  | Owned
+  deriving (Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)
+
+instance Mode
+  export least : Self
+  least = Mode::Shared
+
+  export greatest : Self
+  greatest = Mode::Owned
+
+  export join : Mode -> self -> Self
+  join other self =
+    if other > self
+      return other
+    self
+
+  export permits : Mode -> self -> bool
+  permits needed self = self >= needed
+
+  export label : self -> &'static str
+  label self = case self of
+    Mode::Shared -> "shared"
+    Mode::Unique -> "unique"
+    Mode::Owned -> "owned"
+
+  export emits : self -> &'static str
+  emits self = case self of
+    Mode::Shared -> "&"
+    Mode::Unique -> "&mut "
+    Mode::Owned -> ""
+
+  export of_receiver : &str -> Option<Self>
+  of_receiver name =
+    trimmed = .trim name
+    if trimmed == "&mut self"
+      return Some Mode::Unique
+    if trimmed == "&self"
+      return Some Mode::Shared
+    if trimmed == "self"
+      return Some Mode::Owned
+    None
+
+  export of_written : &Ty -> Self
+  of_written written = case written of
+    Ty::Con { name, args, .. } ->
+      if name == "&" && .len args == 1
+        return Mode::Shared
+      if name == "&mut" && .len args == 1
+        return Mode::Unique
+      Mode::Owned
+    _ -> Mode::Owned
+
+instance Display Mode
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f = write! \-> f \-> "#{(.label (*self))}"
+
+test "the chain has three elements in cost order"
+  assert! \-> Mode::Shared < Mode::Unique
+  assert! \-> Mode::Unique < Mode::Owned
+  assert_eq! \-> Mode::least () \-> Mode::Shared
+  assert_eq! \-> Mode::greatest () \-> Mode::Owned
+
+test "join is the greater of the two"
+  assert_eq! \-> .join Mode::Unique Mode::Shared \-> Mode::Unique
+  assert_eq! \-> .join Mode::Shared Mode::Unique \-> Mode::Unique
+  assert_eq! \-> .join Mode::Owned Mode::Unique \-> Mode::Owned
+
+test "join is commutative, idempotent and has shared as its identity"
+  every = [Mode::Shared, Mode::Unique, Mode::Owned]
+  for a in every
+    assert_eq! \-> .join a a \-> a
+    assert_eq! \-> .join Mode::Shared a \-> a
+    for b in every
+      assert_eq! \-> .join b a \-> .join a b
+
+test "a mode permits everything at or below it"
+  assert! \-> .permits Mode::Shared Mode::Owned
+  assert! \-> .permits Mode::Unique Mode::Owned
+  assert! \-> .permits Mode::Shared Mode::Unique
+  assert! \-> !.permits Mode::Unique Mode::Shared
+  assert! \-> !.permits Mode::Owned Mode::Unique
+
+test "each mode lowers to the Rust form doc 86 §6.1 names"
+  assert_eq! \-> .emits Mode::Shared \-> "&"
+  assert_eq! \-> .emits Mode::Unique \-> "&mut "
+  assert_eq! \-> .emits Mode::Owned \-> ""
+
+test "a written reference reads back as the mode it is"
+  assert_eq! \-> Mode::of_written (&Ty::applied "&" (vec! \-> Ty::named "str")) \-> Mode::Shared
+  assert_eq! \-> Mode::of_written (&Ty::applied "&mut" (vec! \-> Ty::named "Cursor")) \-> Mode::Unique
+  assert_eq! \-> Mode::of_written (&Ty::named "u64") \-> Mode::Owned
+  assert_eq! \-> Mode::of_written (&Ty::unit ()) \-> Mode::Owned
+
+test "a reference to an applied type is still a reference"
+  assert_eq! \-> Mode::of_written (&Ty::applied "&" (vec! \-> Ty::applied "Vec" (vec! \-> Ty::named "u8"))) \-> Mode::Shared
+
+test "the default mode is the cheapest one"
+  assert_eq! \-> Mode::default () \-> Mode::Shared
+
+test "a receiver's written mode is read off its spelling"
+  assert_eq! \-> Mode::of_receiver "&self" \-> Some Mode::Shared
+  assert_eq! \-> Mode::of_receiver "&mut self" \-> Some Mode::Unique
+  assert_eq! \-> Mode::of_receiver "self" \-> Some Mode::Owned
+
+test "an ordinary parameter is not a receiver"
+  assert_eq! \-> Mode::of_receiver "spend" \-> None
+  assert_eq! \-> Mode::of_receiver "myself" \-> None

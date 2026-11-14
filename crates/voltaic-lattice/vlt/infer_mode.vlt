@@ -1,0 +1,230 @@
+import crate::mode::Mode
+import voltaic_ast::Block
+import voltaic_ast::ClauseBody
+import voltaic_ast::Expr
+
+export data Demand = Demand { export name : String, export mode : Mode, export span : voltaic_ast::Span }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export mode_of : &str -> &[voltaic_ast::Clause] -> Mode
+mode_of name clauses =
+  wanted = binder_of name
+  mut found = Mode::least ()
+  for demand in demands_of clauses
+    if demand.name == wanted
+      found := .join demand.mode found
+  found
+
+export binder_of : &str -> &str
+binder_of name =
+  trimmed = .trim name
+  if .starts_with "&mut " trimmed
+    return .trim trimmed[5 .. .len trimmed]
+  if .starts_with '&' trimmed
+    return .trim trimmed[1 .. .len trimmed]
+  trimmed
+
+export calls_on : &[voltaic_ast::Clause] -> Vec<(String, String)>
+calls_on clauses =
+  mut found = Vec::new ()
+  for clause in .iter clauses
+    case &clause.body of
+      ClauseBody::Plain block ->
+        collect_calls_block block (&mut found)
+        ()
+      ClauseBody::Guarded arms ->
+        for arm in .iter arms
+          collect_calls_block (&arm.body) (&mut found)
+  found
+
+collect_calls_block : &Block -> &mut Vec<(String, String)> -> ()
+collect_calls_block block found =
+  for stmt in .iter block.stmts
+    collect_calls (&stmt.expr) found
+  ()
+
+collect_calls : &Expr -> &mut Vec<(String, String)> -> ()
+collect_calls e found =
+  case e of
+    Expr::Call { callee, args, .. } ->
+      if &**callee is Expr::MethodRef { name, .. } && .last args is Some receiver && root_name receiver is Some binder
+        found |> .push (.clone name.text, binder)
+      collect_calls callee found
+      for a in .iter args
+        collect_calls a found
+    Expr::Paren { inner, .. } -> collect_calls inner found
+    Expr::Ascribe { inner, .. } -> collect_calls inner found
+    Expr::Binary { lhs, rhs, .. } ->
+      collect_calls lhs found
+      collect_calls rhs found
+    Expr::Unary { operand, .. } -> collect_calls operand found
+    Expr::Field { recv, .. } -> collect_calls recv found
+    Expr::Index { recv, index, .. } ->
+      collect_calls recv found
+      collect_calls index found
+    Expr::Assign { target, value, .. } ->
+      collect_calls target found
+      collect_calls value found
+    Expr::Block { body, .. } -> collect_calls_block body found
+    Expr::If { then_block, r#otherwise, .. } ->
+      collect_calls_block then_block found
+      if .as_ref (*r#otherwise) is Some other
+        collect_calls_block other found
+    Expr::Try { inner, .. } -> collect_calls inner found
+    Expr::Await { value, .. } -> collect_calls value found
+    Expr::Draw { value, .. } -> collect_calls value found
+    Expr::Return { value, .. } ->
+      if .as_ref (*value) is Some held
+        collect_calls held found
+    Expr::MacroCall { args, .. } ->
+      for a in .iter args
+        collect_calls a found
+    Expr::Tuple { items, .. } ->
+      for item in .iter items
+        collect_calls item found
+    Expr::List { items, .. } ->
+      for item in .iter items
+        collect_calls item found
+    Expr::While { body, .. } -> collect_calls_block body found
+    Expr::For { source, body, .. } ->
+      collect_calls source found
+      collect_calls_block body found
+    Expr::Loop { body, .. } -> collect_calls_block body found
+    Expr::Case { scrutinee, arms, .. } ->
+      collect_calls scrutinee found
+      for arm in .iter arms
+        collect_calls (&arm.body) found
+    Expr::Lambda { body, .. } -> collect_calls body found
+    Expr::Guard { source, r#otherwise, .. } ->
+      collect_calls source found
+      collect_calls_block r#otherwise found
+    _ -> ()
+  ()
+
+export demands_of : &[voltaic_ast::Clause] -> Vec<Demand>
+demands_of clauses =
+  mut found = Vec::new ()
+  for clause in .iter clauses
+    case &clause.body of
+      ClauseBody::Plain block ->
+        walk_block block (&mut found) true
+        ()
+      ClauseBody::Guarded arms ->
+        for arm in .iter arms
+          if .as_ref arm.condition is Some condition
+            walk_expr condition (&mut found) false
+          walk_block (&arm.body) (&mut found) true
+  found
+
+walk_block : &Block -> &mut Vec<Demand> -> bool -> ()
+walk_block block found escaping =
+  n = .len block.stmts
+  mut index = 0
+  for stmt in .iter block.stmts
+    index += 1
+    tail = escaping && index == n
+    walk_expr (&stmt.expr) found tail
+  ()
+
+walk_expr : &Expr -> &mut Vec<Demand> -> bool -> ()
+walk_expr e found escaping =
+  case e of
+    Expr::Ident name ->
+      mode = if escaping
+        Mode::Owned
+      else
+        Mode::Shared
+      found |> .push (Demand { name = .clone name.text, mode, span = name.span })
+    Expr::Assign { target, value, span, .. } ->
+      if root_name target is Some name
+        found |> .push (Demand { name, mode = Mode::Unique, span = *span })
+      walk_expr value found false
+    Expr::Field { recv, .. } -> walk_expr recv found false
+    Expr::Index { recv, index, .. } ->
+      walk_expr recv found false
+      walk_expr index found false
+    Expr::Paren { inner, .. } -> walk_expr inner found escaping
+    Expr::Ascribe { inner, .. } -> walk_expr inner found escaping
+    Expr::Binary { lhs, rhs, .. } ->
+      walk_expr lhs found false
+      walk_expr rhs found false
+    Expr::Unary { operand, .. } -> walk_expr operand found false
+    Expr::Call { callee, args, .. } ->
+      walk_expr callee found false
+      for a in .iter args
+        walk_expr a found escaping
+    Expr::Record { head, fields, .. } ->
+      walk_expr head found false
+      for f in .iter fields
+        if .as_ref f.value is Some held
+          walk_expr held found true
+    Expr::Tuple { items, .. } ->
+      for item in .iter items
+        walk_expr item found true
+    Expr::List { items, .. } ->
+      for item in .iter items
+        walk_expr item found true
+    Expr::Return { value, .. } ->
+      if .as_ref (*value) is Some held
+        walk_expr held found true
+    Expr::Block { body, .. } -> walk_block body found escaping
+    Expr::If { then_block, r#otherwise, .. } ->
+      walk_block then_block found escaping
+      if .as_ref (*r#otherwise) is Some other
+        walk_block other found escaping
+    Expr::Try { inner, .. } -> walk_expr inner found escaping
+    Expr::Await { value, .. } -> walk_expr value found escaping
+    Expr::Draw { value, .. } -> walk_expr value found false
+    Expr::MacroCall { args, .. } ->
+      for a in .iter args
+        walk_expr a found false
+    Expr::While { body, .. } -> walk_block body found false
+    Expr::For { source, body, .. } ->
+      walk_expr source found false
+      walk_block body found false
+    Expr::Loop { body, .. } -> walk_block body found false
+    Expr::Case { scrutinee, arms, .. } ->
+      walk_expr scrutinee found false
+      for arm in .iter arms
+        walk_expr (&arm.body) found escaping
+    Expr::Lambda { body, .. } -> walk_expr body found false
+    Expr::Guard { source, r#otherwise, .. } ->
+      walk_expr source found false
+      walk_block r#otherwise found escaping
+    _ -> ()
+  ()
+
+root_name : &Expr -> Option<String>
+root_name target = case target of
+  Expr::Ident name -> Some (.clone name.text)
+  Expr::Field { recv, .. } -> root_name recv
+  Expr::Index { recv, .. } -> root_name recv
+  Expr::Paren { inner, .. } -> root_name inner
+  _ -> None
+
+test "a name that is only read wants the cheapest mode"
+  demands = [Demand { name = .to_string "n", mode = Mode::Shared, span = (0, 1) }]
+  assert_eq! \-> demands[0].mode \-> Mode::Shared
+
+test "join over several demands takes the greatest"
+  mut found = Mode::least ()
+  for mode in [Mode::Shared, Mode::Unique, Mode::Shared]
+    found := .join mode found
+  assert_eq! \-> found \-> Mode::Unique
+
+test "a demand for a name nobody asked about does not raise the mode"
+  demands = [Demand { name = .to_string "other", mode = Mode::Owned, span = (0, 1) }]
+  mut found = Mode::least ()
+  for demand in demands
+    if demand.name == "n"
+      found := .join demand.mode found
+  assert_eq! \-> found \-> Mode::Shared
+
+test "a receiver parameter's binder is the name the body uses"
+  assert_eq! \-> binder_of "&mut self" \-> "self"
+  assert_eq! \-> binder_of "&self" \-> "self"
+  assert_eq! \-> binder_of "self" \-> "self"
+
+test "an ordinary parameter is its own binder"
+  assert_eq! \-> binder_of "spend" \-> "spend"
+  assert_eq! \-> binder_of "&mut cursor" \-> "cursor"

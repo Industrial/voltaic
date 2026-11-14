@@ -144,7 +144,26 @@ Two notes for later rows, from doc 93 §10:
   surface. The discharge *mechanism* exists and is already used by the
   `try`/`catch`/`??` arms, so the engine is ready for the spelling before the
   spelling is.
-| 96 | Mode Inference | The three-element chain, use-site constraints, the least-fixed-point solve, lifetime emission, `@` ascription, `VLT0601`. | `planned` | 94, 95 |
+| 96 | Mode Inference | The three-element chain, use-site constraints, the least-fixed-point solve, lifetime emission, `@` ascription, `VLT0601`. | `in-progress` — leaves 1, 2, 3, 6 `done` 2026-11-14 | 94, 95 |
+
+**Criterion 1 is met.** With every annotation deleted from consideration, inference
+reproduces **all fourteen** of `cursor.vlt`'s hand-written receiver modes — four
+`&mut self` and eight `&self`, on a target chosen because its annotations are not
+uniform. Doc 94 §10 has four findings, and two change later rows:
+
+- **A receiver's mode needs the call graph** (§10.3). `eat` is `&mut self` only
+  because it calls `.bump self`; nothing in its own body mutates. That is doc 88 §3's
+  whole-crate-solve claim made real, and the per-file driver carries the fixed point.
+- **The oracle is sharp for receivers and blunt for by-value parameters** (§10.4).
+  Four parameters disagree and inference is right about all four: the type is `Copy`,
+  so the author's choice was free. Separating "free choice" from "forced choice" needs
+  to know whether a type is `Copy` — **the same declaration environment `Member` is
+  waiting on in row 98.**
+
+Leaves 4 and 5 are blocked on the surface, like row 95's leaf 3: `@clone` cannot be
+written until row 99 admits it, and no inferred borrow can be emitted until the
+emitter consumes the judgement. The engine is ahead of the spelling, deliberately —
+measured against the answer key while the answer key still exists.
 | 97 | Refinements | Predicate extraction, the QF_ALIA fragment, the solver interface and pin, the timeout-is-a-diagnostic policy, `tests/refine/`. | `planned` | 94 |
 
 **Milestone test:** `tests/solve/` green with an expectation file for every corpus

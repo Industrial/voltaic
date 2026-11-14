@@ -48,10 +48,16 @@ report input why =
 
   for definition in .iter found.definitions
     resolved = .resolved (&definition.ty) outcome
-    if .is_empty definition.row
-      println! \-> "#{definition.name} : #{resolved}"
+    shown_row = if .is_empty definition.row
+      String::new ()
     else
-      println! \-> "#{definition.name} : #{resolved} ! #{definition.row}"
+      format! \-> " ! #{definition.row}"
+    shown_modes = if .is_empty definition.modes
+      String::new ()
+    else
+      every = definition.modes |> .iter |> .map (\m -> format! \-> "#{m.0} #{m.1}") |> .collect : Vec<String>
+      format! \-> " @ #{(.join ", " (.as_slice every))}"
+    println! \-> "#{definition.name} : #{resolved}#{shown_row}#{shown_modes}"
 
   if why is Some name
     if .find name found is Some definition

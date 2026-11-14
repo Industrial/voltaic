@@ -239,6 +239,101 @@ is the whole reason this project targets Rust instead.
 
 ## 10. Result
 
-*To be filled after execution. In particular: every mode that differs from generation
-1's hand-written annotation, and every `'__vlt_` lifetime the emitter had to invent,
-each with the shape that forced it.*
+In progress. Leaves 1–3 shipped 2026-11-14: the chain, use-site constraints, the
+solve, and the call-graph fixed point. 154 tests in the crate. Clippy clean; gate green
+at 28 tasks.
+
+### 10.1 Criterion 1 is met: all fourteen receivers agree
+
+§3's proof target is `crates/voltaic-lexer/vlt/cursor.vlt` — twelve members plus two
+constructors, every receiver hand-annotated, four `&mut self` and eight `&self`. With
+every annotation deleted from consideration, inference produces:
+
+```
+pos         : self shared     is_eof   : self shared
+peek        : self shared     peek_at  : self shared
+starts_with : self shared     rest     : self shared
+bump        : self unique     eat      : self unique
+eat_while   : self unique     eat_spaces : self unique
+slice       : self shared     reset_to : self unique
+mark        : self shared     new      : src shared
+```
+
+**Fourteen of fourteen.** The target was chosen because its annotations are *not
+uniform*: a pass returning `shared` everywhere scores eight, and `unique` everywhere
+scores four, so neither looks plausible.
+`the_answer_key_is_mixed_rather_than_all_one_mode` asserts the mixture, so if
+`cursor.vlt` ever becomes uniform the main test stops being evidence and says so.
+
+### 10.2 Getting there took four bugs, and each was a different kind
+
+Worth recording separately because they are not variations of one mistake.
+
+**A receiver's name is not its binder.** The parser calls the parameter `&mut self`;
+the body refers to `self`. `mode_of` looked up the parameter's name verbatim, found no
+demands, and returned the least mode — so **every** receiver inferred `shared`,
+including the four the author wrote `&mut self`. `binder_of` strips the sigil.
+
+**A field read in tail position is not an escape.** The first escape analysis
+propagated "this expression's value escapes" through a field access, so
+`pos self = self.pos` wanted `owned` for a receiver that is only read. A field read
+borrows the root; it does not move it.
+
+**A block's last statement is not a tail position unless the block's value is.** The
+walker computed `tail = escaping || index == n`, which marks the final statement of
+*every* block — including a loop body, whose value is `()`. It is `&&`, and a clause
+body starts with `escaping = true` because a function body's value *is* the return
+value. With `||` in place, `eat` inferred `owned`.
+
+**Neither walker recursed into a loop or a `case` body.** `eat`, `eat_spaces` and
+`eat_while` all mutate only *inside* a `for` or `while`, by calling `.bump self` —
+invisible to a walker whose catch-all arm swallowed `While`, `For`, `Loop`, `Case`,
+`Lambda` and `Guard`. This is the one that would have been hardest to find by reading,
+and it was found by the corpus disagreeing on exactly the three members that loop.
+
+### 10.3 A receiver's mode needs the call graph, which is doc 88 §3's claim made real
+
+`eat` is `&mut self` **only** because it calls `.bump self`, and `bump` is `&mut
+self`. Nothing in `eat`'s own body mutates anything. So a receiver's mode is a fixed
+point over the call graph, not a property of one definition — which is exactly why doc
+88 §3 says mode inference forces a whole-crate solve and why the per-file driver has a
+`raise_receivers` loop.
+
+The loop is bounded at four rounds for the reason doc 86 §6.1 gives: the chain has
+three elements, so a mode can rise at most twice, and a fourth round can only confirm.
+
+### 10.4 The oracle is sharp for receivers and blunt for everything else
+
+Four parameters disagree, and **inference is not wrong about any of them**:
+`peek_at`'s `n`, `slice`'s `span`, `reset_to`'s `at` and `eat_while`'s `pred` are
+written by value, so the written mode is `owned`, while inference says `shared`
+because the body only reads them.
+
+Both are correct. `usize` and `Span` are `Copy`, so the author's choice between `Span`
+and `&Span` was *free*, and `shared` is the least mode the uses permit — which is what
+doc 86 §6.1 asks the solve to find. Telling "the author had a free choice" from "the
+author's choice was forced" needs to know whether a type is `Copy`, which needs a
+declaration environment: **the same thing `Member` is waiting on in row 98.**
+
+So the corpus asserts receivers, where the body forces a single right answer, and
+`a_by_value_copy_parameter_may_legitimately_infer_shared` fixes the divergence in
+place with its direction asserted — inference can only ever be *cheaper* than the
+author, never stricter. That direction is the safety property worth having: a mode too
+low is caught by rustc's borrow checker, a mode too high is a silent pessimisation.
+
+### 10.5 Leaves outstanding
+
+| Leaf | Status |
+|---|---|
+| 1 — the chain and the constraint kinds | `done` |
+| 2 — the solve | `done`, including the call-graph fixed point of §10.3 |
+| 3 — escape analysis | `done`, with §10.2's three corrections |
+| 4 — lifetime emission | outstanding — needs the emitter, which is row 99 |
+| 5 — `@` ascription and `VLT0601` | outstanding — `@` is generation 2 surface (row 99); the conflict diagnostic is row 101 |
+| 6 — `mut ρ` in the row | `done` — `bump` and `reset_to` already carry `! mut self`, shipped with row 95 |
+| 7 — corpora | `done` for `tests/modes.rs`; `benchmarks/pairs/` waits on leaf 4, since there is no emitted borrow to compare yet |
+
+Leaves 4 and 5 are blocked on the same thing rows 95 and 94 hit: **the inference is
+ahead of the surface.** Nothing can write `@clone` until row 99 admits it, and nothing
+can emit an inferred borrow until the emitter consumes the judgement. What exists is
+the engine, measured against the answer key while the answer key still exists.

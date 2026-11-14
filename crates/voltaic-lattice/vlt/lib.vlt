@@ -4,7 +4,9 @@ module driver
 module effect
 module explain
 module generate
+module infer_mode
 module infer_row
+module mode
 module provenance
 module reason
 module row
@@ -31,9 +33,13 @@ export import explain::summarise
 export import generate::Inferred
 export import generate::Report
 export import generate::walk
+export import infer_mode::Demand
+export import infer_mode::demands_of
+export import infer_mode::mode_of
 export import infer_row::clause_row
 export import infer_row::expr_row
 export import infer_row::fail_of
+export import mode::Mode
 export import provenance::Provenance
 export import reason::Reason
 export import row::Row
