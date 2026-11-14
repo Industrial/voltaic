@@ -167,7 +167,7 @@ workspace splits along pipeline stages (`docs/02 - Voltaic Update Blueprint.md` 
 - `crates/voltaic-diag/`, `voltaic-driver/`, `voltaic-fmt/` — diagnostics, the incremental
   driver and the canonical formatter, filled by plans 05, 10 and 34. This bullet said
   *"declared empty"* until plan 70; all three have shipped
-- **Every crate under `crates/` is written in Voltaic.** All thirteen, as of plan 83: the
+- **Every crate under `crates/` is written in Voltaic.** All fourteen, as of row 94: the
   `.vlt` under a crate's `vlt/` is the source, and the `.rs` under its `src/` is generated
   from it, **`.gitignore`d, and not in the index**. `seed/GENERATION` is the single list of
   which crate was ported by which plan, and four things read it — `port.rs`,

@@ -1,0 +1,210 @@
+import std::collections::BTreeMap
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export data Class
+  = Auto
+  | Review
+  | Manual
+  deriving (Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)
+
+instance Display Class
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f = case self of
+    Class::Auto -> write! \-> f \-> "auto"
+    Class::Review -> write! \-> f \-> "review"
+    Class::Manual -> write! \-> f \-> "manual"
+
+export data Marker = Marker { export needle : String, export construct : String, export kind : Class, export tail : bool }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export markers : Vec<Marker>
+markers =
+  mut found = Vec::new ()
+  at_end (&mut found) "do" "a `do` block" Class::Manual
+  add (&mut found) "Option<Option<" "a nested optional" Class::Manual
+  add (&mut found) "FieldNames" "`FieldNames` in a derive template" Class::Manual
+  add (&mut found) "Fields" "`Fields` in a derive template" Class::Manual
+  add (&mut found) "__vlt_" "a generated identifier named by hand" Class::Manual
+  add (&mut found) ".and_then" "`.and_then` over a std shape" Class::Review
+  add (&mut found) "where" "a `where` group" Class::Review
+  add (&mut found) "|>" "the `|>` pipeline" Class::Auto
+  add (&mut found) ">>>" "forward composition" Class::Auto
+  add (&mut found) "<<<" "reverse composition" Class::Auto
+  add (&mut found) "otherwise" "`otherwise`" Class::Auto
+  add (&mut found) "newtype " "`newtype`" Class::Auto
+  add (&mut found) "errors " "`errors`" Class::Auto
+  add (&mut found) "deriving " "`deriving`" Class::Auto
+  add (&mut found) "instance " "an `instance` header" Class::Auto
+  add (&mut found) "import " "`import`" Class::Auto
+  add (&mut found) "export " "`export`" Class::Auto
+  add (&mut found) "module " "`module`" Class::Auto
+  add (&mut found) "async " "`async`" Class::Auto
+  add (&mut found) ".await" "`await`" Class::Auto
+  add (&mut found) "catch " "`catch`" Class::Auto
+  add (&mut found) "&mut " "an explicit `&mut`" Class::Auto
+  found
+
+add : &mut Vec<Marker> -> &str -> &str -> Class -> ()
+add into needle construct kind =
+  into |> .push (Marker { needle = .to_string needle, construct = .to_string construct, kind, tail = false })
+  ()
+
+at_end : &mut Vec<Marker> -> &str -> &str -> Class -> ()
+at_end into needle construct kind =
+  into |> .push (Marker { needle = .to_string needle, construct = .to_string construct, kind, tail = true })
+  ()
+
+export data Finding = Finding { export line : usize, export construct : String, export kind : Class }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export data Verdict = Verdict { export kind : Class, export findings : Vec<Finding> }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+instance Verdict
+  export of_class : Class -> &self -> Vec<&Finding>
+  of_class wanted self = self.findings |> .iter |> .filter (\f -> f.kind == wanted) |> .collect
+
+export classify : &str -> Verdict
+classify source =
+  table = markers ()
+  mut findings = Vec::new ()
+  mut worst = Class::Auto
+  for pair in .enumerate (.lines source)
+    text = pair.1
+    if is_comment text
+      continue
+    for marker in .iter table
+      if hits text marker
+        if marker.kind > worst
+          worst := marker.kind
+        findings |> .push (Finding { line = pair.0 + 1, construct = .clone marker.construct, kind = marker.kind })
+  Verdict { kind = worst, findings }
+
+export hits : &str -> &Marker -> bool
+hits text marker =
+  if marker.tail
+    return .ends_with (.as_str marker.needle) (.trim_end text) && mentions text (.as_str marker.needle)
+  mentions text (.as_str marker.needle)
+
+export mentions : &str -> &str -> bool
+mentions text raw =
+  if !is_word raw
+    return .contains raw text
+  needle = .trim raw
+  for hit in .match_indices needle text
+    start = hit.0
+    end = start + .len needle
+    before_ok = start == 0 || !is_word_byte (&text[start - 1 .. start])
+    after_ok = end >= .len text || !is_word_byte (&text[end .. end + 1])
+    if before_ok && after_ok
+      return true
+  false
+
+is_word : &str -> bool
+is_word needle = .all (\c -> c == '_' || char::is_alphanumeric c || c == ' ') (.chars (.trim needle))
+
+is_word_byte : &str -> bool
+is_word_byte held = .any (\c -> c == '_' || char::is_alphanumeric c) (.chars held)
+
+is_comment : &str -> bool
+is_comment text = .starts_with "--" (.trim_start text)
+
+export data Tally = Tally { export files : usize, export by_class : BTreeMap<Class, usize> }
+  deriving (Debug, Clone, Default)
+
+instance Tally
+  export new : Self
+  new = Tally { files = 0, by_class = BTreeMap::new () }
+
+  export record : Class -> &mut self -> ()
+  record kind self =
+    self.files += 1
+    counter = .or_insert 0 (.entry kind self.by_class)
+    *counter += 1
+    ()
+
+  export count : Class -> &self -> usize
+  count kind self = .copied (.get (&kind) self.by_class) |> .unwrap_or 0
+
+  export blocking : &self -> usize
+  blocking self = .count Class::Manual self
+
+test "a tail needle must end the line, because `do` introduces a block"
+  assert_eq! \-> (classify "held = do\n").kind \-> Class::Manual
+  assert_eq! \-> (classify "test \"two names do not conflict\"\n").kind \-> Class::Auto \-> "the English word is not the construct"
+  assert_eq! \-> (classify "    \"do\" -> Some Do\n").kind \-> Class::Auto \-> "a keyword table names `do` without using it"
+
+test "a tail needle still needs its word boundary"
+  assert_eq! \-> (classify "shown = tornado\n").kind \-> Class::Auto \-> "`tornado` ends in `do` and is not a block"
+
+test "a word needle needs a word boundary on both sides"
+  assert! \-> mentions "data Fields = Fields" "Fields"
+  assert! \-> !mentions "ConstructorFields::Record" "Fields" \-> "a longer identifier is not the construct"
+  assert! \-> !mentions "elsewhere = 1" "where" \-> "`elsewhere` is not a `where` group"
+
+test "a punctuation needle cannot have a word boundary, so it matches as a substring"
+  assert! \-> mentions "shown = value |> .to_string" "|>"
+  assert! \-> mentions "held.await" ".await"
+
+test "a needle at the very start or end of a line still matches"
+  assert! \-> mentions "Fields" "Fields"
+  assert! \-> mentions "newtype Meters = Meters f64" "newtype "
+
+test "the classifier does not match its own marker table"
+  found = classify "  at_end (&mut found) \"do\" \"a block\" Class::Manual\n"
+  assert_eq! \-> found.kind \-> Class::Auto \-> "a source file that describes source is the hardest case for text matching, and the tail anchor is what answers it"
+
+test "a file with nothing notable is auto"
+  found = classify "twice : u64 -> u64\ntwice n = n + n\n"
+  assert_eq! \-> found.kind \-> Class::Auto
+
+test "a pipeline is auto, because the rewrite is mechanical"
+  found = classify "shown = value |> .to_string\n"
+  assert_eq! \-> found.kind \-> Class::Auto
+  assert_eq! \-> .len (.of_class Class::Auto found) \-> 1
+
+test "a nested optional is manual, and doc 86 §5.6 is why"
+  found = classify "held : Option<Option<u64>>\n"
+  assert_eq! \-> found.kind \-> Class::Manual
+
+test "the worst class in a file is the file's class"
+  found = classify "shown = value |> .to_string\nheld : Option<Option<u64>>\n"
+  assert_eq! \-> found.kind \-> Class::Manual \-> "one manual construct makes the file manual"
+  assert_eq! \-> .len (.of_class Class::Auto found) \-> 1 \-> "the auto finding is still reported"
+
+test "review sits between auto and manual"
+  assert! \-> Class::Auto < Class::Review
+  assert! \-> Class::Review < Class::Manual
+
+test "a construct inside a comment is not a finding"
+  found = classify "-- this names |> and Option<Option<u64>> and neither counts\ntwice : u64 -> u64\ntwice n = n + n\n"
+  assert_eq! \-> found.kind \-> Class::Auto \-> "a comment is prose, not code"
+  assert! \-> .is_empty found.findings
+
+test "a finding carries its line, counting from one"
+  found = classify "twice : u64 -> u64\ntwice n = n |> .count\n"
+  assert_eq! \-> found.findings[0].line \-> 2
+
+test "a tally counts files per class and names the blocking number"
+  mut tally = Tally::new ()
+  .record Class::Auto tally
+  .record Class::Auto tally
+  .record Class::Manual tally
+  assert_eq! \-> tally.files \-> 3
+  assert_eq! \-> .count Class::Auto tally \-> 2
+  assert_eq! \-> .count Class::Review tally \-> 0
+  assert_eq! \-> .blocking tally \-> 1 \-> "doc 89 milestone 17 asks this to reach zero"
+
+test "every marker names a construct, so a report can be read"
+  for marker in .iter (markers ())
+    assert! \-> !.is_empty marker.needle
+    assert! \-> !.is_empty marker.construct
+
+test "the marker table covers all three classes"
+  mut seen = Vec::new ()
+  for marker in .iter (markers ())
+    if !.contains (&marker.kind) seen
+      seen |> .push marker.kind
+  assert_eq! \-> .len seen \-> 3 \-> "a table missing a class would report that class as absent"

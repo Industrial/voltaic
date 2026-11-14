@@ -1,5 +1,6 @@
 module cache
 module check
+module classify
 module compile_dir
 module annotate
 module judge
@@ -15,6 +16,13 @@ export import annotate::refusals
 export import check::CheckOutcome
 export import check::check
 export import check::diagnose
+export import classify::Class
+export import classify::Finding
+export import classify::Marker
+export import classify::markers
+export import classify::Tally
+export import classify::Verdict
+export import classify::classify
 export import check::rustc_path
 export import compile_dir::Compiled
 export import compile_dir::compile_dir

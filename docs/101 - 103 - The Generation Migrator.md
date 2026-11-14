@@ -96,9 +96,24 @@ program between two surfaces and proves it did not change it.
 
 | | Files | Code lines |
 |---|---:|---:|
-| `crates/*/vlt/**` | 122 | 11,668 |
-| `examples/*.vlt` | 44 | — |
+| `crates/*/vlt/**` | **105** | **15,264** |
+| `examples/*.vlt` | 45 | — |
 | `tests/`, `benchmarks/` fixtures | ~120 | — |
+
+**The first row said 122 files and 11,668 lines, and both were wrong — in
+opposite directions.** Measured 2026-11-14 while building leaf 1:
+
+- **17 fewer files.** Plan 91 replaced one-construct-per-file with
+  one-cohesive-group-per-file and merged 572 files down; the figure here predates
+  that merge.
+- **3,596 more lines.** This generation added `voltaic-lattice`, which did not
+  exist when the figure was taken.
+
+A sizing table that is wrong in both directions is worse than one that is merely
+stale, because the two errors partly cancel in any single-number summary. The
+same pair of figures is repeated in `AGENTS.md` and was repeated again in
+`crates/voltaic-cli/tests/inferred.rs` this session, which is how a number
+survives: each copy is quoted from another copy rather than measured.
 
 The examples and fixtures were migrated by row 99 **by hand**, wave by wave. This row
 migrates the compiler, and the examples are its test corpus: a migrator that cannot
@@ -277,7 +292,122 @@ collected — a migrator that walks files reaches every fixture there is.
 
 ## 10. Result
 
-*To be filled after execution. Required: the `manual` file list and how each was
+In progress. **Leaf 1 is done**, and §2.1's corpus table is corrected.
+
+### 10.1 The classifier, and the number leaf 1 exists to produce
+
+Leaf 1's own sentence is the reason it comes first:
+
+> Run over all 122 files before any migration happens, so the `manual` count is
+> known at the start rather than discovered at file 97.
+
+`crates/voltaic-driver/vlt/classify.vlt` is the classifier and
+`crates/voltaic-cli/tests/classify_corpus.rs` runs it over the whole corpus. The
+count is reported by the gate rather than asserted, because the point is that it
+is *known*, and a test is where this tree reports numbers.
+
+### 10.2 What the classifier is, stated so the number is not over-read
+
+It matches construct **spellings**, line by line, skipping comments. It is not a
+parse. A needle inside a string literal counts.
+
+That is deliberate for this leaf and wrong for row 103's pass 1, which translates
+from the AST. The question leaf 1 answers is *"does a human have to look at this
+file"*, and a `do` inside a string is something a human has to look at in order
+to rule out. So the counts are an **upper bound on the human effort**, and the
+classifier erring towards `manual` is the safe direction.
+
+The opposite error — a file classified `auto` that needs a human — is the one
+that ships a silently wrong migration, and it is why §1.3 says the classes are
+determined "by construct, not by confidence". Two tests pin that the extremes are
+both reachable: a classifier that can never say `manual` makes doc 89's milestone
+17 vacuously true, and one that can never say `auto` makes the count carry no
+information either.
+
+### 10.3 §2.1's table was wrong on both axes
+
+105 files and 15,264 code lines, against the recorded 122 and 11,668. The account
+is in §2.1 and the short version is that the file count predates plan 91's merge
+while the line count predates `voltaic-lattice`. Both numbers were also in
+`AGENTS.md`, and both were quoted into a new test file *this session* before being
+measured — which is the mechanism by which a wrong number survives a rewrite.
+
+### 10.5 The measured classes, and three rounds of getting there
+
+| | Files |
+|---|---:|
+| auto | 88 |
+| review | 14 |
+| **manual** | **3** |
+| | 105 |
+
+The number started at 21 and the two tightenings that moved it are each a
+finding rather than a tuning:
+
+**Substring to word boundary: 21 → 12.** `Fields` matched `ConstructorFields`,
+`where` matched `elsewhere`, and `do` matched inside identifiers. The best of
+them was `classify.vlt` classifying **itself** as `manual`, because its marker
+table holds the needles as string literals. A needle made of identifier
+characters now has to land on a word boundary; one made of punctuation — `|>`,
+`>>>`, `.await` — cannot have one and keeps substring matching, because `|>`
+inside an identifier is not a thing.
+
+**Word boundary to end-of-line anchor for `do`: 12 → 3.** Nine of the twelve were
+the **English word** *do*, in test names:
+
+```
+test "two names that are the same type through an alias do not conflict"
+```
+
+and in the lexer's own keyword table, `"do" -> Some Do`. A `do` block introduces
+a block, so it is the last token on its line. `do` is the only construct in the
+table whose *position* distinguishes it from a word meaning something else, which
+is why the third matching mode exists and why there is not a fourth.
+
+The anchor also removed the self-match, so the exclusion added to hide that is
+deleted. The exclusion list is kept, **empty**, with the note that an exemption is
+a permanent hole with a comment beside it while a rule is a rule.
+
+### 10.6 Every `manual` hit was the compiler talking *about* a construct
+
+This is the finding that matters for leaf 1's method, and it is not a caveat
+arrived at by reasoning — it is 21 for 21, then 12 for 12, then 3 for 3. The three
+that remain:
+
+| File | Hit | What it actually is |
+|---|---|---|
+| `voltaic-driver/vlt/classify.vlt:26` | a nested optional | the marker table's own `"Option<Option<"` literal |
+| `voltaic-emit/vlt/expr.vlt:168` | a generated identifier | the emitter **producing** the `__vlt_` prefix |
+| `voltaic-emit/vlt/pattern.vlt:41` | `FieldNames` | the emitter **implementing** the substitution |
+
+A compiler's source names, tabulates and generates every construct of its
+language, so text matching on it finds the vocabulary rather than the usage. The
+honest reading of **3** is therefore *"at most 3, and all three are known to be
+the classifier reading the compiler's own dictionary"* — which plausibly makes the
+true count **zero** and doc 89's milestone 17 already satisfied for `crates/`,
+though that cannot be asserted from a text classifier and is not asserted here.
+
+Two consequences:
+
+- the classifier is a triage tool for **user** code, which is what `voltaic
+  migrate` will be pointed at, and it is sound there;
+- the trustworthy count for the compiler's own source comes from **pass 1**, which
+  §1.1 already specifies as translating from the AST. Leaf 1's value was never the
+  number alone — it was knowing the number's *shape* before migration starts
+  rather than at file 97, and the shape turns out to be "nearly everything is
+  mechanical".
+
+### 10.4 What remains
+
+Leaves 2–8 need row 99's surface: there is nothing to translate *to* until the
+generation-2 spelling exists. Leaf 3's identity gate is the one that could be
+built next without it — the gate is "generate from the migrated source, diff
+against the generation-1 output, byte-identical or reject" — and an identity
+transform is a valid degenerate case to test it against. It is not built here
+because a gate with nothing to gate invites being weakened later to let the first
+real migration through, which is the opposite of §2.3's first trap.
+
+*Still to fill when leaves 2–8 land: the `manual` file list and how each was
 resolved; the load-bearing-annotation percentage per crate from pass 2; the
 before-and-after test counts; and whether the identity gate ever had to be relaxed,
 with the reason.*

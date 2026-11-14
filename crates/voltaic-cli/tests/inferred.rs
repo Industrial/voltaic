@@ -27,7 +27,7 @@
 //! # Both corpora, because they fail differently
 //!
 //! `examples/` is the surface the language documents, and `crates/*/vlt/` is
-//! 11,668 lines of real program that nobody wrote to be easy to infer. The
+//! 15,264 lines of real program that nobody wrote to be easy to infer. The
 //! examples found both of the defects this gate caught; the compiler's source
 //! found neither, because it happens not to return interpolated strings from
 //! annotated functions. A gate on either corpus alone would have been green
@@ -176,7 +176,7 @@ fn every_written_signature_in_the_examples_is_the_inferred_one() {
   report("examples/", &example_programs());
 }
 
-/// The compiler's own 11,668 lines.
+/// The compiler's own 105 files and 15,264 code lines.
 #[test]
 fn every_written_signature_in_the_compiler_is_the_inferred_one() {
   report("crates/*/vlt/", &compiler_sources());
@@ -236,7 +236,7 @@ fn both_corpora_are_the_size_the_tree_says_they_are() {
   );
   assert!(
     compiler_sources().len() > 100,
-    "the compiler is 122 files; found {}",
+    "the compiler is 105 files; found {}",
     compiler_sources().len()
   );
 }
