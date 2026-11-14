@@ -1,4 +1,5 @@
 import crate::Ident
+import crate::rust_word::rust_word
 import voltaic_lexer::Span
 
 export data Pattern
@@ -32,7 +33,7 @@ instance Pattern
 
   export rust_text : &self -> String
   rust_text self = case self of
-    Binding ident -> .clone ident.text
+    Binding ident -> rust_word (&ident.text)
     Literal { text, .. } -> .clone text
     Wildcard _ -> .to_string "_"
     Range { lo, hi, inclusive, .. } ->

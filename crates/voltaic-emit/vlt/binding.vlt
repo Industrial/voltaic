@@ -175,8 +175,8 @@ is_upper_case name =
 
 export(crate) binding_text : &str -> String
 binding_text name = case BindingScope::kind_of name of
-  Some (BindingKind::Called) -> format! \-> "#{name}()"
-  _ -> .to_string name
+  Some (BindingKind::Called) -> format! \-> "#{(voltaic_ast::rust_word name)}()"
+  _ -> voltaic_ast::rust_word name
 
 export(crate) emit_bind : &Option<Pattern> -> &Expr -> usize -> String
 emit_bind pattern value indent =

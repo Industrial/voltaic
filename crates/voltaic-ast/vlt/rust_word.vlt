@@ -1,0 +1,36 @@
+export const RUST_KEYWORDS : &[&str] = &["abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "do", "dyn", "else", "enum", "extern", "false", "final", "fn", "for", "gen", "if", "impl", "in", "let", "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref", "return", "static", "struct", "trait", "true", "try", "type", "typeof", "union", "unsafe", "unsized", "use", "virtual", "where", "while", "yield"]
+
+export const UNESCAPABLE : &[&str] = &["crate", "self", "Self", "super"]
+
+export rust_word : &str -> String
+rust_word text =
+  if .contains (&text) UNESCAPABLE
+    return .to_string text
+  if !.contains (&text) RUST_KEYWORDS
+    return .to_string text
+  prefix = "r#"
+  format! \-> "#{prefix}#{text}"
+
+test "an ordinary name is unchanged"
+  assert_eq! \-> rust_word "count" \-> "count"
+  assert_eq! \-> rust_word "ref_count" \-> "ref_count"
+  assert_eq! \-> rust_word "reference" \-> "reference"
+
+test "a rust keyword is escaped, because the generated line is rustc's to read"
+  assert_eq! \-> rust_word "ref" \-> "r#ref"
+  assert_eq! \-> rust_word "struct" \-> "r#struct"
+  assert_eq! \-> rust_word "match" \-> "r#match"
+
+test "the four raw-identifier refusals are left alone"
+  for word in UNESCAPABLE
+    assert_eq! \-> rust_word word \-> .to_string word
+
+test "every unescapable word is a rust keyword, or the list is wrong"
+  for word in UNESCAPABLE
+    assert! \-> !.contains (&word) RUST_KEYWORDS
+
+test "the list holds no duplicate"
+  mut seen : Vec<&str> = Vec::new ()
+  for word in RUST_KEYWORDS
+    assert! \-> !.contains (&word) (.as_slice seen) \-> "#{word} is listed twice"
+    seen.push word

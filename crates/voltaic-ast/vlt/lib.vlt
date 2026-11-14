@@ -2,6 +2,7 @@ module block
 module expr
 module item
 module pattern
+module rust_word
 module section
 module where_deps
 
@@ -19,6 +20,7 @@ export import expr::Ident
 export import expr::StrInterpPart
 export import expr::TypeExpr
 export import expr::UnaryOp
+export import rust_word::rust_word
 export import item::ClassDecl
 export import item::ClassMember
 export import item::Clause
