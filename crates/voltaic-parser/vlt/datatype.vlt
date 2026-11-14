@@ -61,6 +61,10 @@ data_decl p leading start visibility =
   is_newtype = .check (&TokenKind::Kw Keyword::Newtype) p
   is_union = .check (&TokenKind::Kw Keyword::Union) p
   .advance p
+  no_copy = .check (&TokenKind::Bang) p && .is_some_and (\t -> t.kind == TokenKind::Ident (.to_string "Copy")) (.peek_at 1 p)
+  if no_copy
+    .advance p
+    .advance p
   name = (.ident "expected a type name after `data`" p)?
   mut constructors = Vec::new ()
   mut derives = Vec::new ()
@@ -96,7 +100,7 @@ data_decl p leading start visibility =
   for _closer in 0 .. depth
     .skip_separators p
     (.expect (&TokenKind::Dedent) "expected the declaration to end" p)?
-  mut decl = DataDecl { name, generics = Vec::new (), constructors, derives, is_newtype, is_union, visibility, span = (start, (.prev_span p).1), leading }
+  mut decl = DataDecl { name, generics = Vec::new (), constructors, derives, no_copy, is_newtype, is_union, visibility, span = (start, (.prev_span p).1), leading }
   generalise_data $ &mut decl
   (newtype_shape (&decl))?
   Ok decl

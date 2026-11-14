@@ -82,7 +82,7 @@ export data ConstructorFields
   | Record Vec<FieldDecl>
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data DataDecl = DataDecl { export name : Ident, export generics : Vec<String>, export constructors : Vec<Constructor>, export derives : Vec<Ident>, export is_newtype : bool, export is_union : bool, export visibility : Visibility, export span : Span, export leading : Vec<Trivia> }
+export data DataDecl = DataDecl { export name : Ident, export generics : Vec<String>, export constructors : Vec<Constructor>, export derives : Vec<Ident>, export no_copy : bool, export is_newtype : bool, export is_union : bool, export visibility : Visibility, export span : Span, export leading : Vec<Trivia> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data DeriveTemplate = DeriveTemplate { export name : Ident, export body : InstanceDecl, export span : Span, export leading : Vec<Trivia> }

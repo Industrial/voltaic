@@ -20,6 +20,7 @@
 // to compile here. Plan 57 §11.4 re-sites the claim onto the new spelling
 // without weakening it: every `&` below is load-bearing, and dropping one is
 // `E0507`.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 struct Tag(String);
 

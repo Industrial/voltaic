@@ -212,7 +212,11 @@ data_text decl indent source =
   else
     "data"
   pad = indent_text $ indent + 1
-  header = format! \-> "#{(visibility_text (&decl.visibility))}#{keyword} #{decl.name.text}"
+  marker = if decl.no_copy
+    "!Copy "
+  else
+    ""
+  header = format! \-> "#{(visibility_text (&decl.visibility))}#{keyword} #{marker}#{decl.name.text}"
   mut out = case .as_slice decl.constructors of
     [only] | same_line source decl.span.0 only.span.0 && only.name.text == decl.name.text && !decl.is_newtype && !decl.is_union && !(only.fields == ConstructorFields::Unit) ->
       format! \-> "#{header} #{(headless_text only indent)}"

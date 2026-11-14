@@ -35,9 +35,11 @@ use Event::*;
 // a keyword with nothing to say, and three further doc comments described the
 // distinction as meaningful while the emitter ignored it. `tests/golden/data.vrs`
 // is where the difference is now visible.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(transparent)]
 struct Meters(f64);
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 struct Celsius(f64);
 
 // The one declaration form that is already Rust.

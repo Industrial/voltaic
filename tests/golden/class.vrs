@@ -8,10 +8,12 @@
 // resolution to copy one from the class — AGENTS.md forbids growing any.
 // Doc 18 §2.5 records the deviation.
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 struct Square {
     side: f64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 struct Circle {
     radius: f64,
 }

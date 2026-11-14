@@ -9,12 +9,14 @@
 // a run catches is the middle rest: `[a, .., z]` and `[a, z]` differ only at
 // run time, and only on an array of more than two elements.
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Point {
     x: i32,
     y: i32,
     label: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Shape {
     Circle { radius: i32 },
     Rect { w: i32, h: i32 },

@@ -15,6 +15,7 @@
 // is the generation-1 spelling of the same type, and both emit the same struct:
 // the constructor takes the type's own name, because that is what the `= Point`
 // form already meant.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 struct Point {
     x: f64,
     y: f64,
@@ -22,11 +23,13 @@ struct Point {
 
 // A single unnamed field is `newtype`'s shape, so the keyword is deleted rather
 // than respelled. `newtype Tag = Tag String` was generation 1's.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Tag(String);
 
 // Payload juxtaposition, which generation 1 already had — `= Circle f64` never
 // wrote a `:`. Worth showing beside the others so the change reads as *one* rule
 // reaching the record form rather than a new rule for records.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 enum Shape {
     Circle(f64),
     Square(f64),
@@ -35,6 +38,7 @@ enum Shape {
 use Shape::*;
 
 // Field punning, kept from generation 1 (§4.2): a bare name is `src: src`.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Cursor {
     src: String,
     pos: usize,

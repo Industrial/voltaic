@@ -1,0 +1,73 @@
+// Doc 86 §4.3: derives are computed.
+//
+// `Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash` are derived for
+// every `data` whose fields all support them, and `deriving (…)` is never
+// written. Generation 1 wrote it on 109 of its 128 declarations, every one of
+// them restating what the fields already imply.
+
+// All eight: `u64` supports every one of them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct Point {
+    x: u64,
+    y: u64,
+}
+
+// Seven. `String` has no `Copy`, so the intersection drops it and keeps the rest.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct Named {
+    label: String,
+}
+
+// Five. An `f64` has no `Eq`, no `Ord` and no `Hash`, so a declaration holding
+// one cannot have them either — which is the intersection doing the work rather
+// than a special case for floats.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+struct Scaled {
+    ratio: f64,
+}
+
+// `!Copy` opts out by name, because move semantics are sometimes the contract.
+// Every field here is `Copy`, so without the marker this would have all eight.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct Token {
+    kind: u64,
+}
+
+// **Nothing**, and that is the conservative direction on purpose. The emitter
+// sees a field's type as text, so it cannot reason about a type it has no table
+// for — `PathBuf` here. Deriving `Eq` for a field with no `Eq` is a compile
+// error, so an unknown type yields the empty set and the author writes
+// `deriving (…)` as generation 1 did. Doc 86 §4.3's clause 2: Lattice derives
+// only what `core` can derive.
+#[derive(Debug, Clone)]
+struct Rooted {
+    at: std::path::PathBuf,
+}
+
+// An explicit `#[derive(…)]` attribute is §4.3's escape hatch for a trait no
+// table could know — a proc-macro derive from a dependency, a user's own trait.
+// A declaration carrying one has said what it derives, so nothing is computed on
+// top: doing that is `E0119`, *conflicting implementations*, and
+// `examples/attributes.vlt` is where the first attempt at this found out.
+#[derive(Debug, Clone)]
+struct Tagged {
+    id: u64,
+}
+
+fn main() {
+    let p = Point { x: 1, y: 2 };
+    let n = Named {
+        label: String::from("ab"),
+    };
+    let s = Scaled { ratio: 0.5 };
+    let t = Token { kind: 7 };
+    let r = Rooted {
+        at: std::path::PathBuf::from("/tmp"),
+    };
+    let g = Tagged { id: 3 };
+    println!("{} {}", p.x, (&p).clone().y);
+    println!("{} {} {}", n.label, s.ratio, t.kind);
+    println!("{} {}", (&r.at).is_absolute(), g.id);
+    println!("{}", p == Point { x: 1, y: 2 });
+    ();
+}

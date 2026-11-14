@@ -51,6 +51,50 @@ emit_class out c indent =
   .push_str "}\n" out
   ()
 
+export(crate) const ALL_DERIVES : &[&str] = &["Debug", "Clone", "Copy", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash"]
+
+export(crate) supported : &str -> Option<&'static [&'static str]>
+supported text = case .trim text of
+  "u8" or "u16" or "u32" or "u64" or "u128" or "usize" or "i8" or "i16" or "i32" or "i64" or "i128" or "isize" or "bool" or "char" or "()" -> Some ALL_DERIVES
+  "&str" or "&'static str" -> Some ALL_DERIVES
+  "f32" or "f64" -> Some (&["Debug", "Clone", "Copy", "PartialEq", "PartialOrd"])
+  "String" -> Some (&["Debug", "Clone", "PartialEq", "Eq", "PartialOrd", "Ord", "Hash"])
+  _ -> None
+
+export(crate) field_types : &DataDecl -> Vec<String>
+field_types d =
+  mut found = Vec::new ()
+  for c in .iter d.constructors
+    case &c.fields of
+      ConstructorFields::Unit -> ()
+      ConstructorFields::Tuple types ->
+        for t in types
+          found |> .push (.clone t.text)
+        ()
+      ConstructorFields::Record fields ->
+        for f in fields
+          found |> .push (.clone f.ty.text)
+        ()
+  found
+
+export(crate) writes_its_own_derives : &DataDecl -> bool
+writes_its_own_derives d = d.leading
+  |> .iter
+  |> .any (\t -> .starts_with "derive(" (.trim (.as_str t.text)))
+
+export(crate) computed_derives : &DataDecl -> Vec<&'static str>
+computed_derives d =
+  if d.is_union || writes_its_own_derives d
+    return Vec::new ()
+  mut kept : Vec<&'static str> = .to_vec ALL_DERIVES
+  for text in field_types d
+    guard supported (.as_str text) is Some allowed else
+      return Vec::new ()
+    .retain (\name -> .contains name allowed) kept
+  if d.no_copy
+    .retain (\name -> *name != "Copy") kept
+  kept
+
 export(crate) emit_data : &mut Sink<'_> -> &DataDecl -> usize -> ()
 emit_data out d indent =
   .mark d.span out
@@ -60,11 +104,15 @@ emit_data out d indent =
     |> .filter (\i -> .is_some (TemplateScope::lookup (.as_str i.text)))
     |> .cloned
     |> .collect
-  builtin : Vec<&str> = d.derives
-    |> .iter
-    |> .filter (\i -> .is_none (TemplateScope::lookup (.as_str i.text)))
-    |> .map (\i -> .as_str i.text)
-    |> .collect
+  computed = computed_derives d
+  builtin : Vec<&str> = if .is_empty d.derives
+    .to_vec (.as_slice computed)
+  else
+    d.derives
+      |> .iter
+      |> .filter (\i -> .is_none (TemplateScope::lookup (.as_str i.text)))
+      |> .map (\i -> .as_str i.text)
+      |> .collect
   if !.is_empty builtin
     joined = .join ", " builtin
     pad out indent

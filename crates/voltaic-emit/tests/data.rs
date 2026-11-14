@@ -81,7 +81,13 @@ fn a_differing_constructor_is_an_enum_of_one() {
 #[test]
 fn a_unit_constructor_is_a_unit_struct() {
   let out = vrs("data Marker = Marker\n");
-  assert_eq!(out, "struct Marker;\n", "{out}");
+  // Doc 86 §4.3's derives are computed, and a unit constructor has no fields —
+  // so every trait is vacuously supported and all eight are derived. Row 99
+  // wave 5; before it this was the bare `struct Marker;`.
+  assert_eq!(
+    out, "#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\nstruct Marker;\n",
+    "{out}"
+  );
 }
 
 /// `newtype` and `data` lower identically for a single-field tuple, because
@@ -90,8 +96,15 @@ fn a_unit_constructor_is_a_unit_struct() {
 fn newtype_and_data_differ_only_by_repr_transparent() {
   let from_newtype = vrs("newtype Meters = Meters f64\n");
   let from_data = vrs("data Meters = Meters f64\n");
-  assert_eq!(from_newtype, "#[repr(transparent)]\nstruct Meters(f64);\n");
-  assert_eq!(from_data, "struct Meters(f64);\n");
+  // Five and not eight: the field is an `f64`, which has no `Eq`, `Ord` or
+  // `Hash`. Both keywords compute the same set, so the invariant this test
+  // exists for is unchanged by doc 86 §4.3.
+  let derives = "#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]\n";
+  assert_eq!(
+    from_newtype,
+    format!("{derives}#[repr(transparent)]\nstruct Meters(f64);\n")
+  );
+  assert_eq!(from_data, format!("{derives}struct Meters(f64);\n"));
   assert_ne!(
     from_newtype, from_data,
     "the two keywords no longer lower identically — plan 53 leaf 3"

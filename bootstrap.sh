@@ -63,6 +63,17 @@ for entry in "${ENTRIES[@]}"; do
             exit 1
             ;;
     esac
+    # The newest blob that reads this generation, which is not always the one the
+    # column names. `voltaic-g1.wasm` is immutable — refreshing it would make its
+    # `built by` and `compiles` both `g1`, which `blob.rs` refuses — so the first
+    # change to the *emitter* after plan 72 froze it makes g1's output differ from
+    # the tree's, permanently. g2 reads generation 1 too, proven byte-for-byte by
+    # `across_the_turn.rs`, so it is what regenerates a `g1` crate once it exists.
+    # g1 stays for doc 100 §3.1's reason: retired last, not when it stops being
+    # needed.
+    if [ -f seed/voltaic-g2.wasm ]; then
+        SEED="seed/voltaic-g2.wasm"
+    fi
     # Named with the crate that wanted it: `wasmtime: no such file` names the
     # blob and not the reason one was asked for.
     if [ ! -f "$SEED" ]; then

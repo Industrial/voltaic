@@ -6,6 +6,7 @@
 // is not parsed yet. That is enough: a section's lowering does not depend on
 // what it is mapped over.
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct User {
     name: &'static str,
     age: u32,

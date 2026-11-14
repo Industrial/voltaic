@@ -236,6 +236,11 @@ module.exports = grammar({
 			seq(
 				optional($.visibility),
 				choice("data", "newtype", "union"),
+				// Doc 86 §4.3's opt-out, between the keyword and the name:
+				// `data !Copy Token { kind u64 }`. Spelled here rather than folded
+				// into a general attribute because it is the only one, and a rule
+				// that admitted `!Anything` would accept what the emitter refuses.
+				optional(seq("!", alias("Copy", $.type_identifier))),
 				field("name", $.type_identifier),
 				choice(
 					seq(
