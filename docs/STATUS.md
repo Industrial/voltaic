@@ -33,21 +33,21 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Crate | `src` | `tests` |
 |---|---:|---:|
-| `voltaic-ast` | 1652 | 0 |
+| `voltaic-ast` | 1653 | 0 |
 | `voltaic-bench` | 355 | 217 |
 | `voltaic-cli` | 1406 | 12814 |
 | `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 3007 | 160 |
-| `voltaic-emit` | 3933 | 4647 |
-| `voltaic-fmt` | 1565 | 1569 |
+| `voltaic-emit` | 3974 | 4647 |
+| `voltaic-fmt` | 1573 | 1569 |
 | `voltaic-fuzz` | 65 | 378 |
 | `voltaic-lattice` | 5875 | 1176 |
 | `voltaic-lexer` | 2222 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 464 | 776 |
-| `voltaic-parser` | 5985 | 787 |
+| `voltaic-parser` | 6000 | 787 |
 | `voltaic-seed` | 146 | 1118 |
-| **total** | **28610** | **25594** |
+| **total** | **28675** | **25594** |
 
 ---
 
@@ -55,8 +55,8 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.vlt` | 52 | the CI-checked source of truth for what works |
-| `tests/golden/*.vrs` | 51 | the generated Rust, as exact text |
+| `examples/*.vlt` | 53 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 52 | the generated Rust, as exact text |
 | `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
 | `crates/voltaic-cli/tests/lint/*.vlt` | 7 | the warning a questionable program gets |
 | `crates/voltaic-cli/tests/run/*.stdout` | 2 | what a program prints |
@@ -65,7 +65,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**52 examples and 51 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "52 examples, all green" would be rounding up by exactly one file.
+**53 examples and 52 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "53 examples, all green" would be rounding up by exactly one file.
 
 ---
 

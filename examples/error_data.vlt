@@ -1,0 +1,40 @@
+-- Doc 86 §4.4: error types are `data`.
+--
+-- Generation 1's `errors` declaration — its only construct emitting more than
+-- one Rust item — is deleted as a *construct* and kept as a *shape*. A `data`
+-- whose variants carry a trailing string literal is an error type, and the
+-- emitter it goes through is the same one `errors` used: enum, `Display`,
+-- `Error`. One construct fewer, identical output.
+--
+-- `examples/errors.vlt` is the generation-1 spelling of this same type, kept so
+-- both forms are exercised until row 99 wave 4 deletes the keyword.
+
+data ConfigError
+  = Missing String "missing key: #{0}"
+  | Invalid String u32 "invalid value #{0} at line #{1}"
+  | Closed "closed"
+
+-- A variant with no payload still carries its message, so the `Display` arm is
+-- a bare `write!` — which is what makes `Closed` cheaper to write here than the
+-- hand-rolled `impl` it replaces.
+shown : &ConfigError -> String
+shown e = format! \-> "#{e}"
+
+-- The `Error` impl is what makes this usable as a `Box<dyn Error>`, and it is
+-- derived from the shape rather than written. Asserted by compiling: a missing
+-- `Error` impl does not coerce.
+boxed : ConfigError -> Box<dyn std::error::Error>
+boxed e = Box::new e
+
+-- What has **no** `data` form, stated so the parity claim is exact: generation
+-- 1's `from std::num::ParseIntError as Parse` variant. §4.4 is explicit that
+-- `From` conversions "are derived from the effect row rather than declared", so
+-- that half is row 95's effect row and not a gap here. A `data` error type
+-- reaches `errors`' parity minus the `from` variants.
+main : ()
+main =
+  println! \-> "#{(shown (&Missing (String::from "root")))}"
+  println! \-> "#{(shown (&Invalid (String::from "x") 12))}"
+  println! \-> "#{(shown (&Closed))}"
+  println! \-> "#{(boxed (Closed))}"
+  ()

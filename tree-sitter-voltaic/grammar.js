@@ -283,6 +283,11 @@ module.exports = grammar({
 			seq(
 				field("name", $.type_identifier),
 				optional(choice($.record_fields, repeat1($.type_expression))),
+				// Doc 86 §4.4: a trailing string literal makes the declaration an
+				// error type, and the emitter it reaches is the one `errors` used —
+				// enum, `Display`, `Error`. The construct is deleted; its output is
+				// not.
+				field("message", optional($.string)),
 			),
 
 		record_fields: ($) =>

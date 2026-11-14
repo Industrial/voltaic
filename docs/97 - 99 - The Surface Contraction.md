@@ -1494,6 +1494,49 @@ g1 stays, unused, for doc 100 §3.1's reason read exactly: *retired last, and no
 when it stops being needed.* It stops being needed here; it is kept anyway, so
 that a defect found in g2 still leaves something able to rebuild the repository.
 
+### 10.42 Wave 5 is complete: `errors` is deleted as a construct and kept as a shape
+
+Doc 86 §4.4. A `data` whose variants carry a trailing string literal **is** an
+error type, and the emitter it reaches is the one `errors` already had — enum,
+`#[derive(Debug)]`, `Display`, `Error`. `examples/error_data.vlt` is the
+generation-2 spelling of `examples/errors.vlt`'s type, and both are kept until
+wave 4 deletes the keyword.
+
+**Delegation, not reimplementation.** `is_error_type` asks whether any
+constructor carries a message and `as_errors` builds an `ErrorsDecl` from the
+`DataDecl`; `emit_errors` does the rest. That matters because `errors` is the one
+Voltaic construct emitting more than one Rust item, and a second copy of it would
+be a second place for the `Display` arms to drift from the variants they
+describe.
+
+**The parity claim is exact, and the gap is §4.4's own decision.** Generation 1's
+`from std::num::ParseIntError as Parse` variant has no `data` form, because §4.4
+says `From` conversions "are derived from the effect row rather than declared" —
+row 95's work, not a hole here. A `data` error type reaches `errors`' parity minus
+the `from` variants, and `examples/error_data.vlt` says so in a comment rather
+than leaving a reader to notice.
+
+### 10.43 The formatter dropped a new AST field three times in one wave
+
+`!Copy`, then the trailing message, and before them the `Ladder`'s arms. Each
+time the parser read a field, the AST carried it, the emitter used it, and **the
+printer silently did not print it** — so `voltaic fmt` deleted the construct from
+the source file.
+
+Three for three is a pattern worth naming: **adding a field to an AST node is
+four edits, not three.** Parser, AST, emitter, *printer* — and the printer is the
+one with no compile error to force it, because a struct field nobody reads is not
+an error in Rust.
+
+`formatting_preserves_meaning` catches it: parse, print, reparse, compare. It
+would have caught all three. What caught them *faster* was running `voltaic fmt`
+on the new example and reading the result before blessing anything — one command,
+and the construct is either still there or it is not.
+
+So: after adding an AST field, `fmt` a file that uses it. §10.37's
+formatter-as-migrator is what makes that unavoidable rather than tidy — a printer
+that drops a field does not merely format badly, it **migrates the field away**.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

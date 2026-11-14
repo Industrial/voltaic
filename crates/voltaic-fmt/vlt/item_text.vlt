@@ -167,7 +167,14 @@ const_text decl source =
   format! \-> "#{vis}#{keyword} #{decl.name.text} : #{decl.ty.text} = #{value}"
 
 export(crate) constructor_text : &Constructor -> usize -> String
-constructor_text constructor indent = case &constructor.fields of
+constructor_text constructor indent =
+  head = constructor_head constructor indent
+  case &constructor.message of
+    Some shown -> format! \-> "#{head} #{shown}"
+    None -> head
+
+export(crate) constructor_head : &Constructor -> usize -> String
+constructor_head constructor indent = case &constructor.fields of
   ConstructorFields::Unit -> .clone constructor.name.text
   ConstructorFields::Tuple types ->
     mut out = .clone constructor.name.text

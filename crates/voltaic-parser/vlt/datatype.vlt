@@ -30,7 +30,16 @@ constructor p leading =
   start = (.peek_span p).0
   name = (.ident "expected a constructor name" p)?
   fields = (constructor_fields p)?
-  Ok (Constructor { name, fields, leading, span = (start, (.prev_span p).1) })
+  message = (trailing_message p)?
+  Ok (Constructor { name, fields, message, leading, span = (start, (.prev_span p).1) })
+
+export(crate) trailing_message : &mut Parser -> Result<Option<String>, ParseError>
+trailing_message p = case &(.peek p).kind of
+  TokenKind::Str { raw, .. } ->
+    owned = .clone raw
+    .advance p
+    Ok (Some owned)
+  _ -> Ok None
 
 export(crate) constructor_fields : &mut Parser -> Result<ConstructorFields, ParseError>
 constructor_fields p =
@@ -81,12 +90,12 @@ data_decl p leading start visibility =
     if .is_empty constructors && starts_a_field_type (&(.peek p).kind)
       row_leading = .peek_leading p
       fields = (constructor_fields p)?
-      .push (Constructor { name = .clone name, fields, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
+      .push (Constructor { name = .clone name, fields, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
       continue
     if .check (&TokenKind::LBrace) p && .is_empty constructors
       row_leading = .peek_leading p
       fields = (constructor_fields p)?
-      .push (Constructor { name = .clone name, fields, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
+      .push (Constructor { name = .clone name, fields, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
       continue
     if .check (&TokenKind::Eq) p || .check (&TokenKind::Or) p
       row_leading = .peek_leading p

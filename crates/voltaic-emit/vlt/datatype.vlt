@@ -12,6 +12,7 @@ import crate::sink::pad
 import crate::template::TemplateScope
 import voltaic_ast::ClassDecl
 import voltaic_ast::ClassMember
+import voltaic_ast::Constructor
 import voltaic_ast::ConstructorFields
 import voltaic_ast::DataDecl
 import voltaic_ast::ErrorsDecl
@@ -20,6 +21,7 @@ import voltaic_ast::FieldInit
 import voltaic_ast::Ident
 import voltaic_ast::InstanceDecl
 import voltaic_ast::TypeApp
+import voltaic_ast::TypeExpr
 
 export(crate) emit_class : &mut Sink<'_> -> &ClassDecl -> usize -> ()
 emit_class out c indent =
@@ -95,8 +97,29 @@ computed_derives d =
     .retain (\name -> *name != "Copy") kept
   kept
 
+export(crate) is_error_type : &DataDecl -> bool
+is_error_type d = .any (\c -> .is_some c.message) (.iter d.constructors)
+
+export(crate) payload_types : &ConstructorFields -> Vec<TypeExpr>
+payload_types fields = case fields of
+  ConstructorFields::Tuple types -> .to_vec (.as_slice types)
+  _ -> Vec::new ()
+
+export(crate) as_variant : &Constructor -> voltaic_ast::ErrorVariant
+as_variant c =
+  shown = .unwrap_or_default (.cloned (.as_ref c.message))
+  voltaic_ast::ErrorVariant { name = .clone c.name, fields = payload_types (&c.fields), from = false, message = shown, span = c.span }
+
+export(crate) as_errors : &DataDecl -> ErrorsDecl
+as_errors d =
+  variants : Vec<voltaic_ast::ErrorVariant> = d.constructors |> .iter |> .map as_variant |> .collect
+  ErrorsDecl { name = .clone d.name, variants, visibility = .clone d.visibility, span = d.span, leading = .clone d.leading }
+
 export(crate) emit_data : &mut Sink<'_> -> &DataDecl -> usize -> ()
 emit_data out d indent =
+  if is_error_type d
+    emit_errors out (&as_errors d) indent
+    return ()
   .mark d.span out
   emit_trivia out (&d.leading) indent
   templated : Vec<Ident> = d.derives

@@ -73,7 +73,7 @@ export data ConstDecl = ConstDecl { export name : Ident, export ty : TypeExpr, e
 export data Constraint = Constraint { export trait_name : Ident, export var : Ident, export span : Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Constructor = Constructor { export name : Ident, export fields : ConstructorFields, export leading : Vec<Trivia>, export span : Span }
+export data Constructor = Constructor { export name : Ident, export fields : ConstructorFields, export message : Option<String>, export leading : Vec<Trivia>, export span : Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data ConstructorFields
