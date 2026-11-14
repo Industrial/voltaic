@@ -108,7 +108,9 @@ fn the_corpus_is_the_size_generation_one_was() {
 
 #[test]
 fn collapsing_every_pipeline_changes_no_program() {
+  let updating = std::env::var("VOLTAIC_UPDATE").is_ok();
   let mut rejected = Vec::new();
+  let mut written = Vec::new();
   let mut touched = 0;
   for path in sources() {
     let text = std::fs::read_to_string(&path).expect("a listed source should be readable");
@@ -120,6 +122,19 @@ fn collapsing_every_pipeline_changes_no_program() {
       continue;
     };
     touched += 1;
+    if after == text {
+      continue;
+    }
+    if updating {
+      // `apply` gates before it writes, so a rejected file stays untouched even
+      // here — leaf 3's "the gate runs before the write, not after".
+      match voltaic_driver::apply(&path, &after) {
+        Ok(verdict) if verdict.passed() => written.push(path.display().to_string()),
+        Ok(verdict) => rejected.push(format!("{}: {}", path.display(), verdict.explain())),
+        Err(e) => rejected.push(format!("{}: {e}", path.display())),
+      }
+      continue;
+    }
     let verdict = gate(&path, &text, &after);
     if !verdict.passed() {
       rejected.push(format!("{}: {}", path.display(), verdict.explain()));
@@ -134,6 +149,13 @@ fn collapsing_every_pipeline_changes_no_program() {
     rejected.is_empty(),
     "collapsing `|>` to `.` changed what these files lower to, so the rewrite is \
      not a respelling: {rejected:#?}"
+  );
+  assert!(
+    written.is_empty(),
+    "migrated {} files. The generated Rust is byte-identical by construction — \
+     `apply` gated each one before writing it — so review the `.vlt` diff and \
+     re-run without VOLTAIC_UPDATE:\n{written:#?}",
+    written.len()
   );
 }
 

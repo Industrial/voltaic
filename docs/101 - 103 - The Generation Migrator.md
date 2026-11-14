@@ -536,6 +536,41 @@ pays: a semantically-null text difference in the migrated output is still a
 difference a reviewer would have to account for, and the gate found the one file
 in 105 where the formatter introduced one.
 
+### 10.11 The pass is applied and then reverted, and the number is why
+
+`VOLTAIC_UPDATE=1` on `collapsing_every_pipeline_changes_no_program` applies the
+migration through `apply`, which gates each file before writing it. It ran, it
+wrote **71 files**, every one gated — and the diff was then reverted.
+
+The number that decides it, measured over the 61 files holding a `|>`:
+
+| | Stages |
+|---|---:|
+| no arguments | **450** |
+| with arguments | 23 |
+| | 473 |
+
+**The pass reaches 5% of the stages, and mid-chain it reads worse than what it
+replaces.** A chain is `self.args |> .iter |> .map (…)`, and only the `.map`
+stage carries arguments, so collapsing it alone yields
+`(self.args |> .iter).map (…)` — a parenthesised pipeline inside a receiver-first
+call, where the original was three aligned lines. Two spellings of application in
+one expression is exactly what doc 87 §1.2 deletes `|>` to stop.
+
+So the migration waits for the no-argument half, when a whole chain collapses at
+once. That is doc 97 §10.36's `std` boundary, and §10.8 is where it is recorded.
+
+**What is kept is the part that keeps its value with no source change**: the
+visitor, the transform, and the assertion that the rewrite *would* be safe across
+all 105 files. When `std` reaches the declaration environment the pass widens by
+one condition — `if .is_empty found` goes — and the gate is already there to
+prove the result.
+
+**And the revert needed `git checkout HEAD --`, not `git checkout --`.**
+`AGENTS.md` records why: the latter restores from the *index*, and `git add -A`
+had already staged part of this session. The 71 files came back from HEAD, which
+is what was wanted; from the index they would have come back migrated.
+
 ### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
 
 Leaf 2's largest `auto` construct is doc 87 §1.2's inversion of `.`:
