@@ -27,10 +27,10 @@ test "the four raw-identifier refusals are left alone"
 
 test "every unescapable word is a rust keyword, or the list is wrong"
   for word in UNESCAPABLE
-    assert! \-> !.contains (&word) RUST_KEYWORDS
+    assert! \-> !.contains word RUST_KEYWORDS
 
 test "the list holds no duplicate"
   mut seen : Vec<&str> = Vec::new ()
   for word in RUST_KEYWORDS
-    assert! \-> !.contains (&word) (.as_slice seen) \-> "#{word} is listed twice"
+    assert! \-> !.contains word (.as_slice seen) \-> "#{word} is listed twice"
     seen.push word

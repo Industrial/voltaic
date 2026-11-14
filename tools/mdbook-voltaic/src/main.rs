@@ -228,10 +228,10 @@ fn classify(source: &str) -> Vec<(String, Option<&'static str>)> {
     if let Some(class) = token_class(&token.kind) {
       spans.push((token.span.0, token.span.1, class));
     }
-    if let Some(trivium) = &token.trailing {
-      if let Some(class) = trivia_class(&trivium.kind) {
-        spans.push((trivium.span.0, trivium.span.1, class));
-      }
+    if let Some(trivium) = &token.trailing
+      && let Some(class) = trivia_class(&trivium.kind)
+    {
+      spans.push((trivium.span.0, trivium.span.1, class));
     }
   }
   spans.sort_by_key(|(start, end, _)| (*start, *end));
