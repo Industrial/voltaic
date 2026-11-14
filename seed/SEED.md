@@ -85,11 +85,11 @@ compiler and has to be looked at rather than absorbed into a green build.
 
 | | |
 |---|---|
-| built from commit | the commit that adds this table — row 102 step 3 |
+| built from commit | **refreshed** by row 103 leaf 6's first commit; originally row 102 step 3 |
 | compiles | g2 |
 | built by | the generation-1-written front end in the tree, which is what doc 100 §1.2 requires |
-| size | 1114592 bytes |
-| blake3 | `b9122932d1252e3e29fb69a89454a8d3d3d2bb90368739b378dde6d72d98f355` |
+| size | 1114501 bytes |
+| blake3 | `056a1b3d682a875e7b3cedb0318b565663768b31c033183b054d0a91d1e47d8a` |
 
 This is the invariant's **ordinary** case, where g1's was the base case. The
 compiler in the tree reads generation 2 — doc 87 §5.6's `else` tail and §5.7's
@@ -100,9 +100,43 @@ written in generation 1. So it can produce generation 2's seed *before* generati
 `blob.rs` asserts the pair: `built by` names `g1` and `compiles` names `g2`, and a
 blob whose `built by` named its own generation is refused.
 
-It is **79,301 bytes larger** than `voltaic-g1.wasm`, which is the two surface
+It is **109,331 bytes larger** than `voltaic-g1.wasm`, which is the surface
 additions and their tree-sitter-free plumbing rather than anything surprising;
 both blobs are the same crate at different commits.
+
+### Why it was refreshed once, before the migration rather than during it
+
+The version-skew rule below says to refresh when the seed can no longer parse
+this repository's own `.vlt`. That trigger had not fired yet when this refresh
+was done — **and doing it early was the point**, because of §1.2's invariant:
+
+> A generation's seed must be built by the previous generation's compiler, before
+> the previous generation's source is replaced.
+
+g2's `built by` is *"the generation-1-written front end in the tree"*. That
+description is true exactly while every crate's `.vlt` is still generation 1.
+Row 103 leaf 6 migrates them one at a time, so from its first commit onward the
+tree is mixed and then generation 2 — and a g2 blob rebuilt from a generation-2
+tree is `built by: g2`, which `blob.rs` refuses and §1.2 forbids.
+
+So the window for refreshing g2 is **before the migration starts, and only
+then**, and it closes for good. The refresh picked up row 99's zero-argument
+chain fix — `postfix` declining every postfix on a unit literal, and
+`application` continuing its own postfix chain — which a migrated `.vlt` needs
+the blob to understand, since a migrated chain is spelled `self.cur.peek
+().expect "…"`. Without it `the_g2_blob_and_the_tree_agree_on_every_ported_crate`
+would go red on the first migrated crate and the blob could not legitimately be
+rebuilt to fix it.
+
+Two things were checked rather than assumed, both because `AGENTS.md` records
+that the refresh task's stdout is cached and can report a previous run's number:
+the blob changed, by `stat` and `git status seed/` (1114592 → 1114501 bytes); and
+it is **deterministic**, by building it twice and comparing sha256 — identical.
+
+**If the seed must be refreshed again during the migration, that is a problem to
+stop and think about, not a command to run.** It would mean generation 2's seed
+being built by generation 2, which is the one ordering this directory exists to
+prevent.
 
 ## How to rebuild them
 
