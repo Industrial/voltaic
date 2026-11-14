@@ -15,6 +15,14 @@ instance Mismatch
   export is_cycle : &self -> bool
   is_cycle self = self.occurs
 
+  export is_ground_conflict : &self -> bool
+  is_ground_conflict self =
+    if self.occurs
+      return false
+    if &self.left is Ty::Con { name = left_name, args = left_args, .. } && &self.right is Ty::Con { name = right_name, args = right_args, .. }
+      return .is_empty left_args && .is_empty right_args && left_name != right_name
+    false
+
 export unify : &Ty -> &Ty -> &mut Substitution -> Result<(), Mismatch>
 unify left right subst =
   l = .resolve left subst
@@ -51,6 +59,23 @@ unify_all left right subst =
   for pair in .zip (.iter right) (.iter left)
     (unify pair.0 pair.1 subst)?
   Ok ()
+
+test "two distinct ground names are a ground conflict"
+  m = Mismatch::between (&Ty::named "bool") (&Ty::named "u64")
+  assert! \-> .is_ground_conflict m
+
+test "a conflict involving an applied type is not ground"
+  m = Mismatch::between (&Ty::applied "&" (vec! \-> Ty::named "u64")) (&Ty::named "u64")
+  assert! \-> !.is_ground_conflict m \-> "a wrapper may be Lattice's own modelling gap"
+
+test "an arrow against a trait object is not a ground conflict"
+  arrow = Ty::arrow (Ty::named "i32") (Ty::named "i32")
+  m = Mismatch::between (&arrow) (&Ty::applied "&" (vec! \-> Ty::named "dyn Fn(i32) -> i32"))
+  assert! \-> !.is_ground_conflict m \-> "Rust's callable types are not arrows in this model"
+
+test "a cycle is never a ground conflict"
+  m = Mismatch::cycle (Variable::new 0) (&Ty::named "u64")
+  assert! \-> !.is_ground_conflict m
 
 test "two identical concrete types unify with no binding"
   mut s = Substitution::new ()

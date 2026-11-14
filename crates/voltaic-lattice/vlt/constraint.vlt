@@ -8,6 +8,12 @@ export data Obligation
   | Callable { callee : Ty, args : Vec<Ty>, result : Ty }
   deriving (Debug, Clone, PartialEq, Eq)
 
+instance Obligation
+  export is_written : &self -> bool
+  is_written self = case self of
+    Obligation::Unify { .. } -> true
+    _ -> false
+
 export data Constraint = Constraint { export obligation : Obligation, export provenance : Provenance }
   deriving (Debug, Clone, PartialEq, Eq)
 

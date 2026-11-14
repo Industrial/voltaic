@@ -20,6 +20,9 @@ instance Outcome
   export resolved : &Ty -> &self -> Ty
   resolved t self = .resolve t self.substitution
 
+  export contradictions : &Store -> &self -> Vec<&Failure>
+  contradictions store self = .collect (.filter (\f -> is_contradiction store f) (.iter self.failures))
+
 export solve : &Store -> Outcome
 solve store = solve_with store (&crate::declarations::Declarations::empty ())
 
@@ -46,11 +49,11 @@ apply : usize -> &crate::constraint::Constraint -> &crate::declarations::Declara
 apply at c known subst failures deferred =
   case &c.obligation of
     Obligation::Unify { left, right, .. } ->
-      if unify left right subst is Err m
+      if unify (&.expand left known) (&.expand right known) subst is Err m
         failures |> .push (Failure { at, mismatch = m })
     Obligation::Callable { callee, args, result, .. } ->
-      expected = arrow_of (.as_slice args) result
-      if unify callee (&expected) subst is Err m
+      expected = .expand (&arrow_of (.as_slice args) result) known
+      if unify (&.expand callee known) (&expected) subst is Err m
         failures |> .push (Failure { at, mismatch = m })
     Obligation::Member { recv, name, result, .. } ->
       resolved = .resolve recv subst
@@ -70,6 +73,14 @@ owner_of resolved = case resolved of
       return owner_of (&args[0])
     Some (.clone name)
   _ -> None
+
+export is_contradiction : &Store -> &Failure -> bool
+is_contradiction store failure =
+  if !.is_ground_conflict failure.mismatch
+    return false
+  if .at failure.at store is Some held
+    return .is_written held.obligation
+  false
 
 export arrow_of : &[Ty] -> &Ty -> Ty
 arrow_of args result =
@@ -155,6 +166,41 @@ test "a field read through a reference resolves to the owner's field"
   known = crate::declarations::collect (&program)
   outcome = solve_with (&s) (&known)
   assert_eq! \-> .resolved (&slot) outcome \-> Ty::named "f64"
+
+test "a callable obligation on a type Lattice cannot model reports nothing"
+  mut s = Store::new ()
+  callee = .fresh_hole s
+  .require (Obligation::Unify { left = .clone callee, right = Ty::applied "&" (vec! \-> Ty::named "dyn Fn(i32) -> i32") }) (0, 5) crate::reason::Reason::Ascribed s
+  .require (Obligation::Callable { callee = .clone callee, args = vec! \-> Ty::named "i32", result = Ty::named "i32" }) (6, 9) crate::reason::Reason::CallCallee s
+  outcome = solve (&s)
+  assert! \-> !.is_solved outcome \-> "the callable obligation cannot discharge"
+  assert! \-> .is_empty (.contradictions (&s) outcome) \-> "a modelling gap is not a contradiction"
+
+test "a callable obligation whose nested comparison is ground still reports nothing"
+  mut s = Store::new ()
+  callee = .fresh_hole s
+  written = Ty::arrow (Ty::named "impl Fn(u64)") (Ty::named "Tally")
+  .require (Obligation::Unify { left = .clone callee, right = written }) (0, 5) crate::reason::Reason::Ascribed s
+  .require (Obligation::Callable { callee = .clone callee, args = vec! \-> Ty::named "u64", result = Ty::named "Tally" }) (6, 9) crate::reason::Reason::CallCallee s
+  outcome = solve (&s)
+  assert! \-> !.is_solved outcome \-> "impl Fn(u64) is not u64 to this model"
+  assert! \-> .is_empty (.contradictions (&s) outcome) \-> "the ground pair is inside Lattice's own derivation"
+
+test "two names that are the same type through an alias do not conflict"
+  mut s = Store::new ()
+  .require (Obligation::Unify { left = Ty::named "Depth", right = Ty::named "f64" }) (0, 5) crate::reason::Reason::Ascribed s
+  program = .expect "should parse" (voltaic_parser::parse_source "type Depth = f64\n")
+  known = crate::declarations::collect (&program)
+  outcome = solve_with (&s) (&known)
+  assert! \-> .is_solved outcome \-> "an alias is transparent, as it is to rustc"
+
+test "a genuine ground conflict is reported as a contradiction"
+  mut s = Store::new ()
+  hole = .fresh_hole s
+  .require (Obligation::Unify { left = .clone hole, right = Ty::named "u64" }) (0, 3) crate::reason::Reason::Ascribed s
+  .require (Obligation::Unify { left = .clone hole, right = Ty::named "bool" }) (9, 13) crate::reason::Reason::EquationBody s
+  outcome = solve (&s)
+  assert_eq! \-> .len (.contradictions (&s) outcome) \-> 1
 
 test "the driver never exceeds its round bound"
   mut s = Store::new ()

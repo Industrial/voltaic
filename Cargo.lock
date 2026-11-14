@@ -1443,6 +1443,7 @@ dependencies = [
  "voltaic-ast",
  "voltaic-diag",
  "voltaic-emit",
+ "voltaic-lattice",
  "voltaic-lexer",
  "voltaic-parser",
 ]

@@ -26,6 +26,8 @@ blake3 = "1"
 voltaic-ast.workspace = true
 voltaic-diag.workspace = true
 voltaic-emit.workspace = true
+# Plan 99 wave 1: the pipeline's SOLVE stage (doc 88 §1).
+voltaic-lattice.workspace = true
 # Plan 38: `VLT1001` is a lexical lint — a `.` then the name — so the driver
 # scans tokens rather than walking an AST that could silently miss a variant.
 voltaic-lexer.workspace = true

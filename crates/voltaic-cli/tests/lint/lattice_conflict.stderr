@@ -1,0 +1,6 @@
+warning[VLT1004]: bool cannot also be u64
+  --> lattice_conflict.vlt:19:1
+   |
+19 | wrong = true
+   | ^^^^^
+  = help: pinned by an ascription. Run `voltaic sig --why` for the constraint chain.

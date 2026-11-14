@@ -1,0 +1,73 @@
+import voltaic_ast::Program
+import voltaic_lattice::Obligation
+import voltaic_diag::Code
+import voltaic_diag::Diagnostic
+import voltaic_diag::DiagnosticCode
+import voltaic_diag::Severity
+import std::path::Path
+
+export judge : &Path -> &str -> &Program -> Vec<Diagnostic>
+judge path source program =
+  shown = path |> .display |> .to_string
+  found = voltaic_lattice::walk program
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+
+  mut diagnostics = Vec::new ()
+  for failure in .contradictions (&found.store) outcome
+    if .at failure.at found.store is Some held
+      diagnostics |> .push (Diagnostic {
+        code = DiagnosticCode::from Code::LatticeConflict,
+        severity = Severity::Warning,
+        message = stated (&held.obligation) (&outcome),
+        span = held.provenance.span,
+        help = Some (format! \-> "#{(.label held.provenance.reason)}. Run `voltaic sig --why` for the constraint chain."),
+        path = .clone shown,
+        source = .to_string source })
+  diagnostics
+
+stated : &Obligation -> &voltaic_lattice::Outcome -> String
+stated obligation outcome = case obligation of
+  Obligation::Unify { left, right, .. } ->
+    format! \-> "#{(.resolved left outcome)} cannot also be #{(.resolved right outcome)}"
+  _ -> voltaic_lattice::summarise obligation
+
+export judgements : &Program -> Vec<(String, String)>
+judgements program =
+  found = voltaic_lattice::walk program
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+  mut shown = Vec::new ()
+  for definition in .iter found.definitions
+    resolved = .resolved (&definition.ty) outcome
+    row = if .is_empty definition.row
+      String::new ()
+    else
+      format! \-> " ! #{definition.row}"
+    shown |> .push (.clone definition.name, format! \-> "#{resolved}#{row}")
+  shown
+
+test "a program with no contradiction gets no judgement diagnostic"
+  source = "twice : u64 -> u64\ntwice n = n + n\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  assert! \-> .is_empty (judge (Path::new "probe.vlt") source (&program))
+
+test "a body contradicting its signature is reported as a warning, not an error"
+  source = "wrong : u64\nwrong = true\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = judge (Path::new "probe.vlt") source (&program)
+  assert_eq! \-> .len found \-> 1
+  assert_eq! \-> found[0].severity \-> Severity::Warning \-> "rustc is the authority; Lattice advises"
+
+test "a judgement diagnostic carries a span and names the constraint's reason"
+  source = "wrong : u64\nwrong = true\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = judge (Path::new "probe.vlt") source (&program)
+  assert! \-> found[0].span.1 >= found[0].span.0
+  assert! \-> .is_some found[0].help
+
+test "judgements are reported per definition"
+  source = "twice : u64 -> u64\ntwice n = n + n\nthrice : u64 -> u64\nthrice n = n + n + n\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  named = judgements (&program)
+  assert_eq! \-> .len named \-> 2
+  assert_eq! \-> named[0].0 \-> "twice"
+  assert_eq! \-> named[0].1 \-> "u64 -> u64"

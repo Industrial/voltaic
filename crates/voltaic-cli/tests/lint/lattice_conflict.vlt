@@ -1,0 +1,19 @@
+-- Plan 99 wave 1. The SOLVE stage doc 88 §1 adds to the pipeline, reporting
+-- against the `.vlt` the author wrote rather than against generated Rust.
+--
+-- The body says `bool` and the signature says `u64`, so Lattice's constraint
+-- store becomes unsatisfiable. `VLT1004` names the conflicting types and the
+-- reason that created the constraint, and points at `voltaic sig --why` for the
+-- chain behind it.
+--
+-- It is a **warning in the lint band**, not an error, and that is doc 86 §2's
+-- first corollary rather than timidity: rustc is the authority on types, so
+-- Lattice advises and rustc decides. Row 101 owns the `VLT07xx` ranges and will
+-- re-site it there.
+--
+-- This is a lint case rather than a UI case because it has to *build*:
+-- `code_coverage.rs` records that the two corpora assert opposite things, and a
+-- warning has no home in the one that requires rejection.
+
+wrong : u64
+wrong = true

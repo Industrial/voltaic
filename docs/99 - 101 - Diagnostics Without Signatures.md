@@ -234,5 +234,115 @@ store** rather than in this one, for exactly Emerald's reason.
 
 ## 10. Result
 
-*To be filled after execution. Required: the three anchor diagnostics' final text, and
-any fixture where §5.4's rule had to be broken, with the reason.*
+Partial. The **SOLVE stage reaches diagnostics**, which every leaf below assumes and
+none of them lists: before this, `voltaic-lattice` was a library with no caller in the
+pipeline, and §5's criteria are all unreachable from a solver nothing invokes. Leaves
+1 and 3–6 remain, and §10.4 is why leaf 1 has to come before any of them.
+
+### 10.1 What shipped
+
+`crates/voltaic-driver/vlt/judge.vlt` runs `walk` then `solve_with` over a parsed
+program and turns each reported contradiction into a `Diagnostic`. It is called from
+`lint`, not `check` — `code_coverage.rs` records that a UI case must fail to build and
+a lint case must succeed, and a judgement is a **warning**, so it has no home in
+`tests/ui`. `check` still reaches it, because `check` calls `lint`.
+
+The severity is not a detail. Doc 86 §2's first corollary makes rustc the authority on
+types, so Lattice **advises**: a judgement that turned out to be wrong must not be able
+to stop a build that rustc would have accepted.
+
+`crates/voltaic-cli/tests/lint/lattice_conflict.vlt` is the anchor fixture, blessed to:
+
+```
+warning[VLT1004]: bool cannot also be u64
+  --> lattice_conflict.vlt:19:1
+19 | wrong = true
+   | ^^^^^
+  = help: pinned by an ascription. Run `voltaic sig --why` for the constraint chain.
+```
+
+### 10.2 The rule that made the stage shippable: silence where Lattice cannot model
+
+The first wiring reported **every** entry in `Outcome.failures`, and that broke six
+tests across `examples`, `run`, `phase1` and `currying` — all of them on programs that
+are correct, and two of them in the corpus that exists to prove the compiler works.
+
+The diagnostics were not noise in the sense of being badly worded. They were *wrong*,
+and each one was Lattice reporting its own incompleteness as though it were the
+programmer's mistake:
+
+| Program | Reported | Actually |
+|---|---|---|
+| `apply : &dyn Fn(i32) -> i32 -> i32 -> i32` | `?0 must be callable with 1 argument(s)` | a `dyn Fn` is callable in Rust and is not an arrow in this model |
+| `and_then : self -> impl Fn(u64) -> Tally -> Tally` | `?8 must be callable with 1 argument(s)` | the same, through `impl Fn` |
+| `depth : Meters -> Depth`, `depth m = m.0` | `f64 cannot also be Depth` | `type Depth = f64`, so they are one type |
+
+So the stage needed a rule for **when Lattice is entitled to speak**, and finding it
+took three attempts. The two that failed are worth keeping, because each looked
+sufficient and was not:
+
+1. **"Report only a mismatch between two ground names."** `bool` against `u64` has no
+   structure left to have modelled wrongly, so it cannot be a modelling gap. Correct as
+   far as it goes, and insufficient: `unify_constructors` **recurses**, so a `Callable`
+   obligation on `impl Fn(u64) -> Tally` compares arrow against arrow, descends, and the
+   *inner* comparison is `impl Fn(u64)` against `u64` — two ground names. The mismatch
+   that surfaces is ground while the thing that went wrong is three levels up.
+2. **"Report only `Unify` obligations."** A `Unify` comes from a type the programmer
+   wrote; `Callable` and `Member` are Lattice's own derivations. This is the right
+   *line* and still not enough on its own, because a `Unify` between a written alias and
+   a written primitive is ground, is the programmer's, and is correct code.
+
+The rule that holds is **both**, and it is `is_contradiction` in `driver.vlt`:
+
+> A failure is a contradiction when its mismatch is between two distinct nullary names
+> **and** the obligation it came from is a `Unify` — that is, when the programmer wrote
+> both sides and there is no structure left for Lattice to have misunderstood.
+
+`Obligation::is_written` is the second half, and it lives on the obligation rather than
+in the driver because it is the obligation's own answer to *"did the programmer write
+both sides of this?"*.
+
+Everything else stays in `Outcome.failures`, where `voltaic sig --why` can still show
+it. The distinction is between what Lattice *knows* and what Lattice *says*.
+
+### 10.3 Type aliases are transparent, because they are transparent to rustc
+
+The third row of the table above is the one case that was a plain defect rather than a
+boundary question. `type Depth = f64` makes `Depth` and `f64` one type and rustc expands
+it before comparing anything; Lattice compared the names. `Declarations` now carries
+`aliases` from `Item::Type`, `expand` rewrites a type through them, and `apply` expands
+both sides of every obligation before unifying — so an alias is transparent everywhere
+rather than at the one call site that noticed.
+
+Expansion terminates by refusing to expand a name twice, which means a cyclic alias
+reaches a fixed point instead of looping. rustc rejects the cycle itself (`E0391`), so
+terminating is the whole obligation: the test asserting it says so.
+
+`newtype` is deliberately **not** an alias — it is a distinct type with a field 0, and
+there is a test for that beside the alias tests, because the two declarations look alike
+and mean opposite things.
+
+### 10.4 The code is `VLT1004`, in the lint band, and leaf 1 has to move it
+
+Leaf 1 renumbers into doc 87 §17, where a type conflict is `04xx`. That renumbering has
+not happened, so this shipped as `VLT1004` in the 1000+ lint band — which is also
+*correct* for what it currently is, a warning rather than an error. When leaf 1 lands it
+has to decide whether a Lattice judgement is a `04xx` error or stays a lint, and §10.1's
+argument says the answer depends on whether the engines have become trustworthy enough
+to block a build. They have not yet.
+
+### 10.5 Measured: the stage is silent on the whole corpus
+
+44 examples, 0 unsolved judgements. The full workspace suite is **1,140 / 1,140** with
+the stage live. That number is the criterion the rule in §10.2 was built to meet, and
+it is a weaker claim than it looks: the stage is quiet because it is *restricted*, not
+because inference is complete. Widening what Lattice is entitled to say is leaves 1–6
+and rows 95–97, and each widening has to re-measure this.
+
+### 10.6 Registration, again
+
+The driver taking `voltaic-lattice` propagated into the **transitive** closure of four
+other crates — `voltaic-bench`, `voltaic-lsp`, `voltaic-mcp`, `voltaic-seed` — and
+`moon_project_graph.rs` named all four. `dependency_sources` is a transitive list and a
+new edge anywhere above a crate changes it, which is exactly the hole AGENTS.md records
+`deps` not closing.

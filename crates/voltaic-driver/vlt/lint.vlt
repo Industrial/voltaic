@@ -46,6 +46,7 @@ lint path source program =
       name = pair.1
       warning (DiagnosticCode::from Code::ShadowedBinding) (shadow_message (&name)) span (.to_string SHADOW_HELP))
     .extend shadows found
+    .extend (crate::judge::judge path source tree) found
 
   .sort_by_key (\d -> d.span) found
   found

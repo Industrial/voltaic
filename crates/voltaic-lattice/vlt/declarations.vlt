@@ -11,18 +11,33 @@ export data Member = Member { export owner : String, export name : String, expor
 export data Requirement = Requirement { export class_name : String, export name : String }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Declarations = Declarations { export members : Vec<Member>, export requirements : Vec<Requirement>, export types : Vec<String> }
+export data Alias = Alias { export name : String, export ty : Ty }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export data Declarations = Declarations { export members : Vec<Member>, export requirements : Vec<Requirement>, export types : Vec<String>, export aliases : Vec<Alias> }
   deriving (Debug, Clone, Default)
 
 instance Declarations
   export empty : Self
-  empty = Declarations { members = Vec::new (), requirements = Vec::new (), types = Vec::new () }
+  empty = Declarations { members = Vec::new (), requirements = Vec::new (), types = Vec::new (), aliases = Vec::new () }
 
   export len : &self -> usize
   len self = .len self.members
 
   export is_empty : &self -> bool
   is_empty self = .is_empty self.members
+
+  export alias : &str -> &self -> Option<&Ty>
+  alias name self =
+    for held in .iter self.aliases
+      if held.name == name
+        return Some (&held.ty)
+    None
+
+  export expand : &Ty -> &self -> Ty
+  expand t self =
+    mut seen = Vec::new ()
+    expand_within t self (&mut seen)
 
   export knows : &str -> &self -> bool
   knows name self = .any (\t -> t == name) (.iter self.types)
@@ -49,6 +64,15 @@ instance Declarations
       if .is_none (.member owner (&requirement.name) self)
         return false
     true
+
+expand_within : &Ty -> &Declarations -> &mut Vec<String> -> Ty
+expand_within t known seen = case t of
+  Ty::Con { name, args, .. } ->
+    if .is_empty args && !.contains name seen && .alias name known is Some defined
+      seen |> .push (.clone name)
+      return expand_within defined known seen
+    Ty::applied name (.collect (.map (\a -> expand_within a known seen) (.iter args)))
+  _ -> .clone t
 
 export collect : &Program -> Declarations
 collect program =
@@ -87,8 +111,48 @@ collect program =
           if member is ClassMember::Method f && .as_ref f.sig.ret is Some written
             found.members |> .push (Member { owner = .clone owner, name = .clone f.name.text, ty = annotation::read written })
         ()
+      Item::Type a ->
+        found.aliases |> .push (Alias { name = .clone a.name.text, ty = annotation::read (&a.ty) })
+        ()
       _ -> ()
   found
+
+test "a type alias is recorded and expands to its definition"
+  source = "type Depth = f64\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  assert_eq! \-> .alias "Depth" found \-> Some (&Ty::named "f64")
+  assert_eq! \-> .expand (&Ty::named "Depth") found \-> Ty::named "f64"
+
+test "a name with no alias expands to itself"
+  found = Declarations::empty ()
+  assert_eq! \-> .expand (&Ty::named "u64") found \-> Ty::named "u64"
+
+test "an alias inside an applied type is expanded too"
+  source = "type Depth = f64\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  written = Ty::applied "Vec" (vec! \-> Ty::named "Depth")
+  assert_eq! \-> .to_string (.expand (&written) found) \-> "Vec<f64>"
+
+test "a chain of aliases expands all the way down"
+  source = "type Depth = Fathoms\ntype Fathoms = f64\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  assert_eq! \-> .expand (&Ty::named "Depth") found \-> Ty::named "f64"
+
+test "a cyclic alias stops rather than looping"
+  source = "type Loop = Loop\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  assert_eq! \-> .expand (&Ty::named "Loop") found \-> Ty::named "Loop" \-> "rustc rejects the cycle; Lattice only has to terminate"
+
+test "a newtype is not an alias, because it is a distinct type"
+  source = "newtype Meters = Meters f64\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  assert_eq! \-> .alias "Meters" found \-> None
+  assert_eq! \-> .member "Meters" "0" found \-> Some (&Ty::named "f64")
 
 test "a record's fields become members of its type"
   source = "data Point = Point { x : f64, y : f64 }\n"

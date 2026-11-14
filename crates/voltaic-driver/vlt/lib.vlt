@@ -1,6 +1,7 @@
 module cache
 module check
 module compile_dir
+module judge
 module lint
 module remap
 
@@ -14,6 +15,8 @@ export import check::rustc_path
 export import compile_dir::Compiled
 export import compile_dir::compile_dir
 export import compile_dir::compile_dir_with
+export import judge::judge
+export import judge::judgements
 export import lint::lint
 export import remap::RustcMessage
 export import remap::remap
