@@ -35,42 +35,28 @@ item_text item indent source =
     Item::Errors decl -> errors_text decl indent
     Item::Test decl -> format! \-> "test #{decl.description}\n#{(block_text (&decl.body) (indent + 1) source)}"
     Item::Import decl ->
-      alias = decl.alias
-        |> .as_ref
-        |> .map_or (String::new ()) (\name -> format! \-> " as #{name.text}")
+      alias = decl.alias.as_ref ().map_or (String::new ()) (\name -> format! \-> " as #{name.text}")
       format! \-> "#{(visibility_text (&decl.visibility))}import #{decl.path}#{alias}"
     Item::Module decl ->
       header = format! \-> "#{(visibility_text (&decl.visibility))}module #{decl.name.text}"
       case &decl.items of
         None -> header
         Some items ->
-          printed : Vec<String> = items
-            |> .iter
-            |> .map (\inner -> item_text inner (indent + 1) source)
-            |> .collect
+          printed : Vec<String> = (items.iter ().map (\inner -> item_text inner (indent + 1) source)).collect ()
           format! \-> "#{header}\n#{(.join "\n" printed)}"
     Item::Const decl -> const_text decl source
     Item::InlineRust decl ->
-      body : String = decl.code
-        |> .lines
-        |> .map (\line ->
+      body : String = (decl.code.lines ().map (\line ->
         if .is_empty (.trim line)
           String::from "\n"
         else
-          format! \-> "#{(indent_text (indent + 1))}#{line}\n")
-        |> .collect
+          format! \-> "#{(indent_text (indent + 1))}#{line}\n")).collect ()
       format! \-> "rust \"\"\"\n#{body}#{(indent_text indent)}\"\"\""
     Item::Extern decl ->
-      body : String = decl.decls
-        |> .iter
-        |> .map (\d -> format! \-> "#{(indent_text (indent + 1))}#{(.trim source[d.span.0..d.span.1])}\n")
-        |> .collect
+      body : String = (decl.decls.iter ().map (\d -> format! \-> "#{(indent_text (indent + 1))}#{(.trim source[d.span.0..d.span.1])}\n")).collect ()
       format! \-> "extern #{decl.abi}\n#{(.trim_end body)}"
     Item::PatternSynonym decl ->
-      params : Vec<String> = decl.params
-        |> .iter
-        |> .map (\i -> .clone i.text)
-        |> .collect
+      params : Vec<String> = (decl.params.iter ().map (\i -> .clone i.text)).collect ()
       spelled = if .is_empty params
         .clone decl.name.text
       else
@@ -81,7 +67,7 @@ item_text item indent source =
       format! \-> "deriving template #{decl.name.text}\n#{(indent_text (indent + 1))}#{inner}"
     Item::OperatorDecl decl ->
       format! \-> "#{(.keyword decl.fixity)} #{decl.precedence} #{decl.spelling.text} = #{decl.target}"
-  out |> .push_str (&body)
+  out.push_str (&body)
   out
 
 export(crate) class_text : &ClassDecl -> usize -> &str -> String
@@ -89,23 +75,14 @@ class_text decl indent source =
   supers = if .is_empty decl.supers
     String::new ()
   else
-    names : Vec<&str> = decl.supers
-      |> .iter
-      |> .map (\s -> .as_str s.text)
-      |> .collect
+    names : Vec<&str> = (decl.supers.iter ().map (\s -> .as_str s.text)).collect ()
     format! \-> "#{(.join ", " names)} => "
-  params : String = decl.params
-    |> .iter
-    |> .map (\p -> format! \-> " #{p.text}")
-    |> .collect
+  params : String = (decl.params.iter ().map (\p -> format! \-> " #{p.text}")).collect ()
   vis = visibility_text (&decl.visibility)
   header = format! \-> "#{vis}class #{supers}#{decl.name.text}#{params}"
   if .is_empty decl.members
     return header
-  printed : Vec<String> = decl.members
-    |> .iter
-    |> .map (\member -> member_text member (indent + 1) source)
-    |> .collect
+  printed : Vec<String> = (decl.members.iter ().map (\member -> member_text member (indent + 1) source)).collect ()
   format! \-> "#{header}\n#{(.join "\n" printed)}"
 
 export(crate) clause_text : &Clause -> &str -> usize -> &str -> String
@@ -117,9 +94,7 @@ clause_text clause name indent source =
   body = case &clause.body of
     ClauseBody::Guarded guards ->
       pad = indent_text $ indent + 1
-      printed : Vec<String> = guards
-        |> .iter
-        |> .map (\r#guard ->
+      printed : Vec<String> = (guards.iter ().map (\r#guard ->
         r#test = case &r#guard.condition of
           Some condition -> condition_text condition (indent + 1) source
           None -> String::from "_"
@@ -127,8 +102,7 @@ clause_text clause name indent source =
           format! \-> " = #{(inline_body (&r#guard.body) (indent + 1) source)}"
         else
           format! \-> " =\n#{(block_text (&r#guard.body) (indent + 2) source)}"
-        format! \-> "#{pad}| #{r#test}#{arm}")
-        |> .collect
+        format! \-> "#{pad}| #{r#test}#{arm}")).collect ()
       format! \-> "\n#{(.join "\n" printed)}"
     ClauseBody::Plain block ->
       if same_line source clause.span.0 block.span.0
@@ -138,22 +112,16 @@ clause_text clause name indent source =
   wheres = if .is_empty clause.wheres
     String::new ()
   else
-    printed : Vec<String> = clause.wheres
-      |> .iter
-      |> .map (\stmt -> stmt_text stmt (indent + 2) source)
-      |> .collect
+    printed : Vec<String> = (clause.wheres.iter ().map (\stmt -> stmt_text stmt (indent + 2) source)).collect ()
     format! \-> "\n#{(indent_text (indent + 1))}where\n#{(.join "\n" printed)}"
   format! \-> "#{head}#{body}#{wheres}"
 
 export(crate) inline_body : &Block -> usize -> &str -> String
 inline_body block indent source =
   pad = indent_text indent
-  parts : Vec<String> = block.stmts
-    |> .iter
-    |> .map (\stmt ->
+  parts : Vec<String> = (block.stmts.iter ().map (\stmt ->
     text = stmt_text stmt indent source
-    .to_string (.unwrap_or (&text) (.strip_prefix (&pad) text)))
-    |> .collect
+    .to_string (.unwrap_or (&text) (.strip_prefix (&pad) text)))).collect ()
   .join "\n" parts
 
 export(crate) const_text : &ConstDecl -> &str -> String
@@ -183,17 +151,12 @@ constructor_head constructor indent = case &constructor.fields of
       .push_str (&ty.text) out
     out
   ConstructorFields::Record fields ->
-    printed : Vec<String> = fields
-      |> .iter
-      |> .map (\field ->
+    printed : Vec<String> = (fields.iter ().map (\field ->
       vis = visibility_text (&field.visibility)
-      format! \-> "#{vis}#{field.name.text} #{field.ty.text}")
-      |> .collect
+      format! \-> "#{vis}#{field.name.text} #{field.ty.text}")).collect ()
     if .is_empty printed
       return format! \-> "#{constructor.name.text} {}"
-    documented = fields
-      |> .iter
-      |> .any (\field -> !.is_empty field.leading)
+    documented = fields.iter ().any (\field -> !.is_empty field.leading)
     if !documented
       return format! \-> "#{constructor.name.text} { #{(.join ", " printed)} }"
     pad = indent_text $ indent + 1
@@ -230,10 +193,7 @@ data_text decl indent source =
     [only] | same_line source decl.span.0 only.span.0 ->
       format! \-> "#{header} = #{(constructor_text only indent)}"
     many ->
-      printed : Vec<String> = many
-        |> .iter
-        |> .enumerate
-        |> .map (\pair ->
+      printed : Vec<String> = (many.iter ().enumerate ().map (\pair ->
         i = pair.0
         constructor = pair.1
         lead = if i == 0
@@ -242,19 +202,13 @@ data_text decl indent source =
           '|'
         mut head = String::new ()
         for trivium in &constructor.leading
-          head
-            |> .push_str (&trivia_text trivium (indent + 1))
-          head |> .push '\n'
-        format! \-> "#{head}#{pad}#{lead} #{(constructor_text constructor (indent + 1))}")
-        |> .collect
+          head.push_str (&trivia_text trivium (indent + 1))
+          head.push '\n'
+        format! \-> "#{head}#{pad}#{lead} #{(constructor_text constructor (indent + 1))}")).collect ()
       format! \-> "#{header}\n#{(.join "\n" printed)}"
   if !.is_empty decl.derives
-    names : Vec<&str> = decl.derives
-      |> .iter
-      |> .map (\d -> .as_str d.text)
-      |> .collect
-    out
-      |> .push_str (&format! \-> "\n#{pad}deriving (#{(.join ", " names)})")
+    names : Vec<&str> = (decl.derives.iter ().map (\d -> .as_str d.text)).collect ()
+    out.push_str (&format! \-> "\n#{pad}deriving (#{(.join ", " names)})")
   out
 
 export(crate) errors_text : &ErrorsDecl -> usize -> String
@@ -263,13 +217,9 @@ errors_text decl indent =
   header = format! \-> "#{(visibility_text (&decl.visibility))}errors #{decl.name.text}"
   if .is_empty decl.variants
     return header
-  heads : Vec<String> = decl.variants
-    |> .iter
-    |> .map (\variant ->
+  heads : Vec<String> = (decl.variants.iter ().map (\variant ->
     mut head = if variant.from
-      path = variant.fields
-        |> .first
-        |> .map_or (String::new ()) (\ty -> .clone ty.text)
+      path = variant.fields.first ().map_or (String::new ()) (\ty -> .clone ty.text)
       format! \-> "from #{path} as #{variant.name.text}"
     else
       .clone variant.name.text
@@ -277,18 +227,13 @@ errors_text decl indent =
       for ty in &variant.fields
         .push ' ' head
         .push_str (&ty.text) head
-    head)
-    |> .collect
-  width = heads |> .iter |> .map String::len |> .max |> .unwrap_or 0
-  rows : Vec<String> = heads
-    |> .iter
-    |> .zip (&decl.variants)
-    |> .map (\row ->
+    head)).collect ()
+  width = (heads.iter ().map String::len).max ().unwrap_or 0
+  rows : Vec<String> = ((heads.iter ().zip (&decl.variants)).map (\row ->
     head = row.0
     variant = row.1
     gap = .repeat (width - .len head) " "
-    format! \-> "#{pad}#{head}#{gap}  #{variant.message}")
-    |> .collect
+    format! \-> "#{pad}#{head}#{gap}  #{variant.message}")).collect ()
   format! \-> "#{header}\n#{(.join "\n" rows)}"
 
 export(crate) fn_text : &FnDecl -> usize -> &str -> String
@@ -306,10 +251,7 @@ instance_text decl indent source =
   constraints = if .is_empty decl.constraints
     String::new ()
   else
-    printed : Vec<String> = decl.constraints
-      |> .iter
-      |> .map (\c -> format! \-> "#{c.trait_name.text} #{c.var.text}")
-      |> .collect
+    printed : Vec<String> = (decl.constraints.iter ().map (\c -> format! \-> "#{c.trait_name.text} #{c.var.text}")).collect ()
     format! \-> "#{(.join ", " printed)} => "
   r#class = case &decl.r#class of
     Some r#class -> format! \-> "#{(target_text r#class)} "
@@ -324,10 +266,7 @@ instance_text decl indent source =
   header = format! \-> "instance #{binder}#{constraints}#{r#class}#{target}"
   if .is_empty decl.members
     return header
-  printed : Vec<String> = decl.members
-    |> .iter
-    |> .map (\member -> member_text member (indent + 1) source)
-    |> .collect
+  printed : Vec<String> = (decl.members.iter ().map (\member -> member_text member (indent + 1) source)).collect ()
   format! \-> "#{header}\n#{(.join "\n" printed)}"
 
 export(crate) target_text : &TypeApp -> String
@@ -374,9 +313,7 @@ export(crate) signature_line : &FnDecl -> &str -> Option<String>
 signature_line decl source =
   start = decl.span.0
   n = .len source
-  end = source[start .. n]
-    |> .find '\n'
-    |> .map_or n (\at -> start + at)
+  end = (source[start .. n].find '\n').map_or n (\at -> start + at)
   line = .to_string (.trim_end source[start .. end])
   guard .first decl.clauses is Some clause else
     return Some line

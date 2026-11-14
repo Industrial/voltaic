@@ -24,10 +24,7 @@ expr_text expr required indent source = case expr of
   Expr::MethodRef { name, .. } -> format! \-> ".#{name.text}"
   Expr::Dot { recv, name, args, .. } ->
     head = receiver recv indent source
-    printed : Vec<String> = args
-      |> .iter
-      |> .map (\arg -> argument arg indent source)
-      |> .collect
+    printed : Vec<String> = (args.iter ().map (\arg -> argument arg indent source)).collect ()
     if no_real_arguments args
       format! \-> "#{head}.#{name.text} ()"
     else
@@ -44,10 +41,7 @@ expr_text expr required indent source = case expr of
   Expr::Binary { op = BinaryOp::Pipeline, lhs, rhs, .. } ->
     pipeline_text lhs rhs indent source
   Expr::Over { selector, function, place, .. } ->
-    path : Vec<String> = selector
-      |> .iter
-      |> .map (\i -> .clone i.text)
-      |> .collect
+    path : Vec<String> = (selector.iter ().map (\i -> .clone i.text)).collect ()
     spelled = .join "." path
     format! \-> "over (.#{spelled}) #{(operand function u8::MAX indent source)} #{(operand place u8::MAX indent source)}"
   Expr::UserBinary { spelling, fixity, precedence, lhs, rhs, .. } ->
@@ -111,21 +105,15 @@ expr_text expr required indent source = case expr of
   Expr::BindBlock { method, body, .. } ->
     format! \-> "do .#{method.text}\n#{(block_text body (indent + 1) source)}"
   Expr::Case { scrutinee, arms, .. } ->
-    printed : Vec<String> = arms
-      |> .iter
-      |> .map (\arm -> case_arm_text arm (indent + 1) source)
-      |> .collect
+    printed : Vec<String> = (arms.iter ().map (\arm -> case_arm_text arm (indent + 1) source)).collect ()
     format! \-> "case #{(expr_text scrutinee 0 indent source)} of\n#{(.join "\n" printed)}"
   Expr::Ladder { rows, .. } ->
     pad = indent_text $ indent + 1
-    printed : Vec<String> = rows
-      |> .iter
-      |> .map (\row ->
+    printed : Vec<String> = (rows.iter ().map (\row ->
       r#test = case &row.condition of
         Some condition -> condition_text condition (indent + 1) source
         None -> String::from "_"
-      format! \-> "#{pad}| #{r#test} = #{(inline_body (&row.body) (indent + 1) source)}")
-      |> .collect
+      format! \-> "#{pad}| #{r#test} = #{(inline_body (&row.body) (indent + 1) source)}")).collect ()
     .join "\n" printed
   Expr::If { .. } or Expr::Binding _ or Expr::Item { .. } or Expr::Return { .. } or Expr::Draw { .. } or Expr::Await { .. } or Expr::Assign { .. } -> code_text expr indent source
   Expr::Guard { .. } or Expr::While { .. } or Expr::For { .. } or Expr::Loop { .. } or Expr::Break { .. } or Expr::Continue { .. } -> code_text expr indent source
@@ -154,21 +142,15 @@ can_drop_paren inner required =
 
 export(crate) comma_list : &[Expr] -> usize -> &str -> String
 comma_list items indent source =
-  parts : Vec<String> = items
-    |> .iter
-    |> .map (\item -> expr_text item 0 indent source)
-    |> .collect
+  parts : Vec<String> = (items.iter ().map (\item -> expr_text item 0 indent source)).collect ()
   .join ", " parts
 
 export(crate) comprehension_text : &Expr -> &[Qualifier] -> usize -> &str -> String
 comprehension_text element qualifiers indent source =
-  printed : Vec<String> = qualifiers
-    |> .iter
-    |> .map (\qualifier -> case qualifier of
+  printed : Vec<String> = (qualifiers.iter ().map (\qualifier -> case qualifier of
     Qualifier::Draw { name, source = from } ->
       format! \-> "#{name.text} in #{(expr_text from 0 indent source)}"
-    Qualifier::Guard r#guard -> expr_text r#guard 0 indent source)
-    |> .collect
+    Qualifier::Guard r#guard -> expr_text r#guard 0 indent source)).collect ()
   format! \-> "[ #{(expr_text element 0 indent source)} | #{(.join ", " printed)} ]"
 
 export(crate) dollar_text : &Expr -> &Expr -> usize -> &str -> String
@@ -194,7 +176,7 @@ lambda_text params body is_move indent source =
     _ -> "-> "
   if !.is_empty params
     .push ' ' out
-  out |> .push_str separator
+  out.push_str separator
   .push_str (&expr_text body 0 indent source) out
   out
 
@@ -328,12 +310,9 @@ export(crate) record_text : &Expr -> &[FieldInit] -> usize -> &str -> String
 record_text head fields indent source =
   if .is_empty fields
     return format! \-> "#{(receiver head indent source)} {}"
-  printed : Vec<String> = fields
-    |> .iter
-    |> .map (\field -> case &field.value of
+  printed : Vec<String> = (fields.iter ().map (\field -> case &field.value of
     Some value -> format! \-> "#{field.name.text} = #{(expr_text value 0 indent source)}"
-    None -> .clone field.name.text)
-    |> .collect
+    None -> .clone field.name.text)).collect ()
   format! \-> "#{(receiver head indent source)} { #{(.join ", " printed)} }"
 
 export(crate) rust_hatch_text : &str -> usize -> String
@@ -354,5 +333,5 @@ section_text section indent source = case section of
   Section::Left { op, operand } ->
     format! \-> "(#{(expr_text operand 0 indent source)} #{(.voltaic_text (*op))})"
   Section::Field path ->
-    joined : Vec<&str> = path |> .iter |> .map (\n -> .as_str n.text) |> .collect
+    joined : Vec<&str> = (path.iter ().map (\n -> .as_str n.text)).collect ()
     format! \-> "(.#{(.join "." joined)})"

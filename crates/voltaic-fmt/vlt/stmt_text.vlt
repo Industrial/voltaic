@@ -49,10 +49,7 @@ binding_text binding indent source =
 
 export(crate) block_text : &Block -> usize -> &str -> String
 block_text block indent source =
-  parts : Vec<String> = block.stmts
-    |> .iter
-    |> .map (\stmt -> stmt_text stmt indent source)
-    |> .collect
+  parts : Vec<String> = (block.stmts.iter ().map (\stmt -> stmt_text stmt indent source)).collect ()
   .join "\n" parts
 
 export(crate) case_arm_text : &CaseArm -> usize -> &str -> String
@@ -87,7 +84,7 @@ code_text expr indent source =
         format! \-> "#{(pattern_text pattern)} <- #{(expr_text value 0 indent source)}"
       None -> format! \-> "<- #{(expr_text value 0 indent source)}"
     Expr::Assign { target, op, value, .. } ->
-      sigil = op |> .map_or ":" (\o -> .voltaic_text o)
+      sigil = op.map_or ":" (\o -> .voltaic_text o)
       format! \-> "#{(expr_text target 0 indent source)} #{sigil}= #{(expr_text value 0 indent source)}"
     Expr::Guard { pattern, source = r#from, r#otherwise, .. } ->
       format! \-> "guard #{(expr_text r#from 0 indent source)} is #{(pattern_text pattern)} else\n#{(block_text r#otherwise inner source)}"
@@ -118,13 +115,10 @@ condition_text condition indent source =
     0
   else
     10
-  parts : Vec<String> = condition.operands
-    |> .iter
-    |> .map (\operand -> case operand of
+  parts : Vec<String> = (condition.operands.iter ().map (\operand -> case operand of
     ConditionOperand::Expr expr -> expr_text expr required indent source
     ConditionOperand::Pattern { pattern, source = from } ->
-      format! \-> "#{(expr_text from required indent source)} is #{(pattern_text pattern)}")
-    |> .collect
+      format! \-> "#{(expr_text from required indent source)} is #{(pattern_text pattern)}")).collect ()
   .join " && " parts
 
 export(crate) else_text : &Option<Block> -> usize -> &str -> String
