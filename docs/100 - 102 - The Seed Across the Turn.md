@@ -416,15 +416,38 @@ emitting 43 files where g2 emits 47. So the comparison is not vacuous, g1 cannot
 read generation 2, g2 can, and the four-file gap names precisely what the turn has
 added so far.
 
-### 10.6 What remains
+### 10.6 Step 6's first half: `fixpoint` on g2, green twice from a clean tree
 
-Steps 5 and 6. Step 5 is row 103's — migrating the tree's source to generation 2,
-crate by crate, flipping each `GENERATION` line to `g2`. Step 6 is `fixpoint` on
-g2 twice on a clean clone, and only then is `voltaic-g1.wasm` deleted and
-`GENERATION` reduced to one generation.
+`fixpoint.rs` now runs against `seed/voltaic-g2.wasm`, and it is green twice over
+a tree whose every generated `src/` was deleted and rebuilt by `./bootstrap.sh`
+in between.
 
-`fixpoint.rs` still runs against g1, which is correct while every crate is `g1`:
-it asks whether the compiler reproduces itself through the blob that actually
-bootstraps the tree. It moves to g2 when the last crate does, not before — §3.1's
-reason, which is that g1 stays until there is something proven able to replace
-it.
+**§3 orders step 6 after row 103's migration, and that ordering turns out to be
+about something else.** It is about the *source* becoming generation 2. Fixpoint
+does not ask that: it asks whether the compiler reproduces itself through the
+blob, and g2 reads the generation-1 source the tree still has —
+`across_the_turn.rs` proves it byte-for-byte over all fourteen crates. So the
+first half of step 6 was available as soon as g2 became the bootstrapping blob.
+
+**And it had to move, not merely could.** Doc 97 §10.41 made `bootstrap.sh` prefer
+the newest blob that reads a crate's generation, because `voltaic-g1.wasm` is
+immutable and an emitter change made its output diverge from the tree's
+permanently. g2 is therefore what a clean clone runs. Leaving `fixpoint.rs`
+pointed at g1 would have asserted stage1 == stage2 for a blob nothing runs any
+more — a green test about nothing, which is worse than a red one.
+
+An earlier version of this subsection said *"`fixpoint.rs` still runs against g1,
+which is correct while every crate is `g1`"*. That was right when it was written
+and stopped being right the moment the dispatch changed, which is the ordinary
+way a correct sentence goes stale: the fact it rested on was somewhere else.
+
+### 10.7 What remains
+
+- **Step 5**, which is row 103's: migrating the tree's source to generation 2,
+  crate by crate, flipping each `GENERATION` line to `g2`.
+- **Step 6's second half**: running `fixpoint` on a genuinely clean *clone* rather
+  than a clean tree. The difference is the one `AGENTS.md` records about `.tmp/` —
+  a check whose answer depends on git status answers a different question inside a
+  working tree than it does on a fresh checkout.
+- **Then** `voltaic-g1.wasm` is deleted and `GENERATION` reduced to one
+  generation, which is §3.1's retirement step and still last.

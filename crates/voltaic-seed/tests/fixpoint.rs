@@ -111,7 +111,18 @@ fn stage1_equals_stage2() {
   let root = workspace_root();
   let vlt = root.join("crates/voltaic-ast/vlt");
   let committed = root.join("crates/voltaic-ast/src");
-  let blob = root.join("seed/voltaic-g1.wasm");
+  // Row 102 §3 step 6, and **g2** rather than g1: the blob under test is the one
+  // that actually bootstraps the tree, which since doc 97 §10.41 is
+  // `voltaic-g2.wasm` — `bootstrap.sh` prefers the newest blob that reads a
+  // crate's generation. Pointing this at g1 would assert stage1 == stage2 for a
+  // blob no clean clone runs any more, which is a green test about nothing.
+  //
+  // §3 orders step 6 after row 103's migration, and that ordering is about the
+  // *source* becoming generation 2. Fixpoint does not need it: the question is
+  // whether the compiler reproduces itself through the blob, and g2 reads the
+  // generation-1 source the tree still has — proven byte-for-byte over all
+  // fourteen crates by `across_the_turn.rs`.
+  let blob = root.join("seed/voltaic-g2.wasm");
 
   // ---------------------------------------------------------------- stage0
   let from_seed = generate("voltaic-fixpoint-stage0", &vlt, |vlt, out| {

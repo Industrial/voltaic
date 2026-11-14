@@ -46,8 +46,8 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 464 | 776 |
 | `voltaic-parser` | 6000 | 787 |
-| `voltaic-seed` | 146 | 1118 |
-| **total** | **28675** | **25594** |
+| `voltaic-seed` | 146 | 1129 |
+| **total** | **28675** | **25605** |
 
 ---
 
