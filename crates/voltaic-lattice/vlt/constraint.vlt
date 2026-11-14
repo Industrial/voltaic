@@ -3,9 +3,9 @@ import crate::ty::Ty
 import crate::variable::Variable
 
 export data Obligation
-  = Unify { left : Ty, right : Ty }
-  | Member { recv : Ty, name : String, result : Ty }
-  | Callable { callee : Ty, args : Vec<Ty>, result : Ty }
+  = Unify { left Ty, right Ty }
+  | Member { recv Ty, name String, result Ty }
+  | Callable { callee Ty, args Vec<Ty>, result Ty }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Obligation
@@ -14,7 +14,7 @@ instance Obligation
     Obligation::Unify { .. } -> true
     _ -> false
 
-export data Constraint = Constraint { export obligation : Obligation, export provenance : Provenance }
+export data Constraint { export obligation Obligation, export provenance Provenance }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Constraint
@@ -27,7 +27,7 @@ instance Constraint
     for t in .types self
       for v in .holes t
         if !.contains (&v) found
-          found |> .push v
+          found.push v
     found
 
   export types : &self -> Vec<&Ty>
@@ -37,8 +37,8 @@ instance Constraint
     Obligation::Callable { callee, args, result, .. } ->
       mut all = vec! \-> callee
       for a in .iter args
-        all |> .push a
-      all |> .push result
+        all.push a
+      all.push result
       all
 
 test "a constraint always carries its provenance"

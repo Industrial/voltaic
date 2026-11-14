@@ -13,8 +13,7 @@ import voltaic_ast::Item
 import voltaic_ast::Program
 import voltaic_ast::Visibility
 
-export data Inferred = Inferred { export name : String, export ty : Ty, export row : crate::row::Row, export modes : Vec<(String, crate::mode::Mode)>, export written : Option<Ty>, export written_modes : Vec<(String, crate::mode::Mode)>, export published : bool, export owner : Option<String>, export span : voltaic_ast::Span }
-
+export data Inferred { export name String, export ty Ty, export row crate::row::Row, export modes Vec<(String, crate::mode::Mode)>, export written Option<Ty>, export written_modes Vec<(String, crate::mode::Mode)>, export published bool, export owner Option<String>, export span voltaic_ast::Span }
   deriving (Debug, Clone)
 
 instance Inferred
@@ -32,7 +31,7 @@ self_free t definition =
     return annotation::with_owner t target
   .clone t
 
-export data Report = Report { export store : Store, export definitions : Vec<Inferred>, export known : crate::declarations::Declarations }
+export data Report { export store Store, export definitions Vec<Inferred>, export known crate::declarations::Declarations }
   deriving (Debug, Clone)
 
 instance Report
@@ -68,16 +67,16 @@ infer_all program globals =
   for item in .iter program.items
     case item of
       Item::Fn f ->
-        definitions |> .push (one f None (&mut store) globals)
+        definitions.push (one f None (&mut store) globals)
       Item::Instance block ->
         owner = .clone block.target.head.text
         for member in .iter block.members
           if member is ClassMember::Method f
-            definitions |> .push (one f (Some (&owner)) (&mut store) globals)
+            definitions.push (one f (Some (&owner)) (&mut store) globals)
       Item::Class block ->
         for member in .iter block.members
           if member is ClassMember::Method f
-            definitions |> .push (one f None (&mut store) globals)
+            definitions.push (one f None (&mut store) globals)
       _ -> ()
   (store, definitions)
 
@@ -91,7 +90,7 @@ grown_globals definitions outcome globals =
       continue
     resolved = .judged outcome definition
     if .is_empty (.holes resolved)
-      found |> .push (.clone definition.name, resolved)
+      found.push (.clone definition.name, resolved)
   found
 
 raise_receivers : &mut [Inferred] -> &Program -> ()
@@ -112,7 +111,7 @@ written_globals program =
   mut found = Vec::new ()
   for item in .iter program.items
     if item is Item::Fn f && signature_type (&f.sig) None is Some written
-      found |> .push (.clone f.name.text, written)
+      found.push (.clone f.name.text, written)
   found
 
 raise_rows : &mut [Inferred] -> &Program -> ()
@@ -136,7 +135,7 @@ row_table : &[Inferred] -> Vec<(String, crate::row::Row)>
 row_table definitions =
   mut found = Vec::new ()
   for definition in .iter definitions
-    found |> .push (.clone definition.name, .clone definition.row)
+    found.push (.clone definition.name, .clone definition.row)
   found
 
 join_into : &mut [Inferred] -> &str -> &crate::row::Row -> bool
@@ -154,22 +153,22 @@ call_edges program =
   for item in .iter program.items
     for f in methods_of item
       for call in crate::infer_mode::calls_on (.as_slice f.clauses)
-        found |> .push (call.0, .clone f.name.text, call.1)
+        found.push (call.0, .clone f.name.text, call.1)
   found
 
 methods_of : &Item -> Vec<&voltaic_ast::FnDecl>
 methods_of item =
   mut found = Vec::new ()
   case item of
-    Item::Fn f -> found |> .push f
+    Item::Fn f -> found.push f
     Item::Instance block ->
       for member in .iter block.members
         if member is ClassMember::Method f
-          found |> .push f
+          found.push f
     Item::Class block ->
       for member in .iter block.members
         if member is ClassMember::Method f
-          found |> .push f
+          found.push f
     _ -> ()
   found
 
@@ -203,8 +202,8 @@ one f owner store globals =
       .require (Obligation::Unify { left = .clone hole, right = annotation::read written }) p.span Reason::Ascribed store
     if crate::infer_mode::binder_of (&p.name.text) == "self" && owner is Some target
       .require (Obligation::Unify { left = .clone hole, right = Ty::named target }) p.span Reason::ClassRequirement store
-    env |> .push (.clone p.name.text, .clone hole)
-    params |> .push hole
+    env.push (.clone p.name.text, .clone hole)
+    params.push hole
   body = clause_type (.as_slice f.clauses) store (.as_slice env)
   if .as_ref f.sig.ret is Some written
     .require (Obligation::Unify { left = .clone body, right = annotation::read written }) f.sig.span Reason::Ascribed store
@@ -221,7 +220,7 @@ modes_of : &voltaic_ast::Signature -> &[voltaic_ast::Clause] -> Vec<(String, cra
 modes_of sig clauses =
   mut found = Vec::new ()
   for p in .iter sig.params
-    found |> .push (.to_string (crate::infer_mode::binder_of (&p.name.text)), crate::infer_mode::mode_of (&p.name.text) clauses)
+    found.push (.to_string (crate::infer_mode::binder_of (&p.name.text)), crate::infer_mode::mode_of (&p.name.text) clauses)
   found
 
 written_modes_of : &voltaic_ast::Signature -> Vec<(String, crate::mode::Mode)>
@@ -230,10 +229,9 @@ written_modes_of sig =
   for p in .iter sig.params
     binder = .to_string (crate::infer_mode::binder_of (&p.name.text))
     if crate::mode::Mode::of_receiver (&p.name.text) is Some receiver
-      found |> .push (binder, receiver)
-    else
-      if .as_ref p.ty is Some written
-        found |> .push (binder, crate::mode::Mode::of_written (&annotation::read written))
+      found.push (binder, receiver)
+    else if .as_ref p.ty is Some written
+      found.push (binder, crate::mode::Mode::of_written (&annotation::read written))
   found
 
 row_of : &voltaic_ast::Signature -> &[voltaic_ast::Clause] -> crate::row::Row
@@ -251,12 +249,11 @@ signature_type sig owner =
   mut params = Vec::new ()
   for p in .iter sig.params
     if .as_ref p.ty is Some written
-      params |> .push (annotation::read written)
+      params.push (annotation::read written)
+    else if crate::infer_mode::binder_of (&p.name.text) == "self" && owner is Some target
+      params.push (Ty::named target)
     else
-      if crate::infer_mode::binder_of (&p.name.text) == "self" && owner is Some target
-        params |> .push (Ty::named target)
-      else
-        return None
+      return None
   ret = annotation::read declared
   whole = arrow_of (.as_slice params) (&ret)
   if owner is Some target
@@ -319,7 +316,7 @@ expr_type e store env = case e of
     head = expr_type callee store env
     mut seen = Vec::new ()
     for a in .iter args
-      seen |> .push (expr_type a store env)
+      seen.push (expr_type a store env)
     result = .fresh_hole store
     .require (Obligation::Callable { callee = head, args = seen, result = .clone result }) (*span) Reason::CallCallee store
     result

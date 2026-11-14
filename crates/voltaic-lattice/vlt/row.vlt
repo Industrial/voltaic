@@ -1,11 +1,10 @@
-
 import crate::effect::Effect
 import std::collections::BTreeSet
 import std::fmt::Display
 import std::fmt::Formatter
 import std::fmt::Result
 
-export data Row = Row { effects : BTreeSet<Effect> }
+export data Row { effects BTreeSet<Effect> }
   deriving (Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)
 
 instance Row
@@ -35,7 +34,7 @@ instance Row
   holds effect self = .contains effect self.effects
 
   export effects : &self -> Vec<&Effect>
-  effects self = self.effects |> .iter |> .collect
+  effects self = self.effects.iter ().collect ()
 
   export join : &Row -> &self -> Row
   join other self =
@@ -62,14 +61,14 @@ instance Row
     Row { effects }
 
   export fallible : &self -> Vec<&Effect>
-  fallible self = self.effects |> .iter |> .filter (\e -> .is_fallible e) |> .collect
+  fallible self = (self.effects.iter ().filter (\e -> .is_fallible e)).collect ()
 
 instance Display Row
   fmt : &self -> &mut Formatter<'_> -> Result
   fmt self f =
     if .is_empty self
       return write! \-> f \-> "pure"
-    shown = self.effects |> .iter |> .map (\e -> .to_string e) |> .collect : Vec<String>
+    shown = (self.effects.iter ().map (\e -> .to_string e)).collect () : Vec<String>
     write! \-> f \-> "#{(.join " + " (.as_slice shown))}"
 
 test "the pure row holds nothing"

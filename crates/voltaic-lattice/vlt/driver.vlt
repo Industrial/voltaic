@@ -8,10 +8,10 @@ import crate::unify::unify
 
 export const MAX_ROUNDS : u32 = 16
 
-export data Failure = Failure { export at : usize, export mismatch : Mismatch }
+export data Failure { export at usize, export mismatch Mismatch }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Outcome = Outcome { export substitution : Substitution, export failures : Vec<Failure>, export rounds : u32, export deferred : Vec<usize> }
+export data Outcome { export substitution Substitution, export failures Vec<Failure>, export rounds u32, export deferred Vec<usize> }
   deriving (Debug, Clone)
 
 instance Outcome
@@ -51,18 +51,18 @@ apply at c known subst failures deferred =
   case &c.obligation of
     Obligation::Unify { left, right, .. } ->
       if unify (&.expand left known) (&.expand right known) subst is Err m
-        failures |> .push (Failure { at, mismatch = m })
+        failures.push (Failure { at, mismatch = m })
     Obligation::Callable { callee, args, result, .. } ->
       expected = .expand (&arrow_of (.as_slice args) result) known
       if unify (&.expand callee known) (&expected) subst is Err m
-        failures |> .push (Failure { at, mismatch = m })
+        failures.push (Failure { at, mismatch = m })
     Obligation::Member { recv, name, result, .. } ->
       resolved = .resolve recv subst
       if owner_of (&resolved) is Some owner && .member (&owner) name known is Some declared
         if unify result declared subst is Err m
-          failures |> .push (Failure { at, mismatch = m })
+          failures.push (Failure { at, mismatch = m })
       else
-        deferred |> .push at
+        deferred.push at
   ()
 
 export receiver_owner : &Store -> &Outcome -> Span -> Option<String>

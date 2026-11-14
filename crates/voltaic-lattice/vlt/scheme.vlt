@@ -3,7 +3,7 @@ import crate::substitution::Substitution
 import crate::ty::Ty
 import crate::variable::Variable
 
-export data Scheme = Scheme { export quantified : Vec<Variable>, export body : Ty }
+export data Scheme { export quantified Vec<Variable>, export body Ty }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Scheme
@@ -18,7 +18,7 @@ instance Scheme
 
 export generalise : &Ty -> &[Variable] -> Scheme
 generalise t bound_outside =
-  quantified = t |> .holes |> .into_iter |> .filter (\v -> !.contains v bound_outside) |> .collect
+  quantified = (t.holes ().into_iter ().filter (\v -> !.contains v bound_outside)).collect ()
   Scheme { quantified, body = .clone t }
 
 export instantiate : &Scheme -> &mut Store -> Ty

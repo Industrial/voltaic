@@ -19,7 +19,7 @@ write_type t = case t of
       return Some (format! \-> "#{name}#{separator}#{inner}")
     mut shown = Vec::new ()
     for a in .iter args
-      shown |> .push ((write_type a)?)
+      shown.push (write_type a)?
     Some (format! \-> "#{name}<#{(.join ", " (.as_slice shown))}>")
 
 export with_owner : &Ty -> &str -> Ty
@@ -95,11 +95,11 @@ split_arguments body =
     if byte == b'>' || byte == b')' || byte == b']'
       depth -= 1
     if depth == 0 && byte == b','
-      parts |> .push (from_text (.trim body[start .. index]))
+      parts.push (from_text (.trim body[start .. index]))
       start := index + 1
     index += 1
   if start < .len bytes
-    parts |> .push (from_text (.trim body[start .. .len bytes]))
+    parts.push (from_text (.trim body[start .. .len bytes]))
   parts
 
 test "a nullary constructor writes as its name"

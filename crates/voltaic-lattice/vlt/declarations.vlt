@@ -10,16 +10,16 @@ export data MemberKind
   | Method
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
-export data Member = Member { export owner : String, export name : String, export ty : Ty, export kind : MemberKind }
+export data Member { export owner String, export name String, export ty Ty, export kind MemberKind }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Requirement = Requirement { export class_name : String, export name : String }
+export data Requirement { export class_name String, export name String }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Alias = Alias { export name : String, export ty : Ty }
+export data Alias { export name String, export ty Ty }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Declarations = Declarations { export members : Vec<Member>, export requirements : Vec<Requirement>, export types : Vec<String>, export aliases : Vec<Alias> }
+export data Declarations { export members Vec<Member>, export requirements Vec<Requirement>, export types Vec<String>, export aliases Vec<Alias> }
   deriving (Debug, Clone, Default)
 
 instance Declarations
@@ -53,10 +53,7 @@ instance Declarations
     None
 
   export kind_of : &str -> &str -> &self -> Option<MemberKind>
-  kind_of owner name self = self.members
-    |> .iter
-    |> .find (\m -> m.owner == owner && m.name == name)
-    |> .map (\m -> m.kind)
+  kind_of owner name self = (self.members.iter ().find (\m -> m.owner == owner && m.name == name)).map (\m -> m.kind)
 
   export is_field : &str -> &str -> &self -> bool
   is_field owner name self = .kind_of owner name self == Some MemberKind::Field
@@ -65,10 +62,10 @@ instance Declarations
   is_method owner name self = .kind_of owner name self == Some MemberKind::Method
 
   export members_of : &str -> &self -> Vec<&Member>
-  members_of owner self = self.members |> .iter |> .filter (\m -> m.owner == owner) |> .collect
+  members_of owner self = (self.members.iter ().filter (\m -> m.owner == owner)).collect ()
 
   export requires : &str -> &self -> Vec<&Requirement>
-  requires class_name self = self.requirements |> .iter |> .filter (\r -> r.class_name == class_name) |> .collect
+  requires class_name self = (self.requirements.iter ().filter (\r -> r.class_name == class_name)).collect ()
 
   export satisfies : &str -> &str -> &self -> bool
   satisfies owner class_name self =
@@ -85,7 +82,7 @@ expand_within t known seen = case t of
   Ty::Con { name, args, .. } ->
     if .is_empty args && !.contains name seen && .alias name known is Some defined
       mut deeper = .clone seen
-      deeper |> .push (.clone name)
+      deeper.push (.clone name)
       return expand_within defined known deeper
     Ty::applied name (.collect (.map (\a -> expand_within a known (.clone seen)) (.iter args)))
   _ -> .clone t
@@ -96,28 +93,28 @@ collect program =
   for item in .iter program.items
     case item of
       Item::Data d ->
-        found.types |> .push (.clone d.name.text)
+        found.types.push (.clone d.name.text)
         for constructor in .iter d.constructors
           case &constructor.fields of
             ConstructorFields::Record fields ->
               for field in .iter fields
-                found.members |> .push (Member { owner = .clone d.name.text, name = .clone field.name.text, ty = annotation::read (&field.ty), kind = MemberKind::Field })
+                found.members.push (Member { owner = .clone d.name.text, name = .clone field.name.text, ty = annotation::read (&field.ty), kind = MemberKind::Field })
               ()
             ConstructorFields::Tuple every ->
               for pair in .enumerate (.iter every)
-                found.members |> .push (Member { owner = .clone d.name.text, name = .to_string (format! \-> "#{pair.0}"), ty = annotation::read pair.1, kind = MemberKind::Field })
+                found.members.push (Member { owner = .clone d.name.text, name = .to_string (format! \-> "#{pair.0}"), ty = annotation::read pair.1, kind = MemberKind::Field })
               ()
             ConstructorFields::Unit -> ()
         ()
       Item::Class c ->
-        found.types |> .push (.clone c.name.text)
+        found.types.push (.clone c.name.text)
         for member in .iter c.members
           case member of
             ClassMember::Method f ->
-              found.requirements |> .push (Requirement { class_name = .clone c.name.text, name = .clone f.name.text })
+              found.requirements.push (Requirement { class_name = .clone c.name.text, name = .clone f.name.text })
               ()
             ClassMember::AssocConst { name, .. } ->
-              found.requirements |> .push (Requirement { class_name = .clone c.name.text, name = .clone name.text })
+              found.requirements.push (Requirement { class_name = .clone c.name.text, name = .clone name.text })
               ()
             ClassMember::AssocType _ -> ()
         ()
@@ -125,10 +122,10 @@ collect program =
         owner = .clone block.target.head.text
         for member in .iter block.members
           if member is ClassMember::Method f && .as_ref f.sig.ret is Some written
-            found.members |> .push (Member { owner = .clone owner, name = .clone f.name.text, ty = annotation::read written, kind = MemberKind::Method })
+            found.members.push (Member { owner = .clone owner, name = .clone f.name.text, ty = annotation::read written, kind = MemberKind::Method })
         ()
       Item::Type a ->
-        found.aliases |> .push (Alias { name = .clone a.name.text, ty = annotation::read (&a.ty) })
+        found.aliases.push (Alias { name = .clone a.name.text, ty = annotation::read (&a.ty) })
         ()
       _ -> ()
   found

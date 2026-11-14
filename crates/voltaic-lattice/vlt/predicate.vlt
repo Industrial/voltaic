@@ -5,7 +5,7 @@ import std::fmt::Result
 
 export const LEN : &str = "len "
 
-export data Term = Term { export weights : BTreeMap<String, i64>, export constant : i64 }
+export data Term { export weights BTreeMap<String, i64>, export constant i64 }
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 instance Term
@@ -51,7 +51,7 @@ instance Term
   minus other self = .plus (&.scaled (-1) other) self
 
   export mentions : &self -> Vec<&String>
-  mentions self = self.weights |> .keys |> .collect
+  mentions self = self.weights.keys ().collect ()
 
 instance Display Term
   fmt : &self -> &mut Formatter<'_> -> Result
@@ -61,11 +61,11 @@ instance Display Term
     mut parts = Vec::new ()
     for pair in .iter self.weights
       if *pair.1 == 1
-        parts |> .push (.clone pair.0)
+        parts.push (.clone pair.0)
       else
-        parts |> .push (format! \-> "#{pair.1}*#{pair.0}")
+        parts.push (format! \-> "#{pair.1}*#{pair.0}")
     if self.constant != 0
-      parts |> .push (format! \-> "#{self.constant}")
+      parts.push (format! \-> "#{self.constant}")
     write! \-> f \-> "#{(.join " + " (.as_slice parts))}"
 
 export data Comparison
@@ -97,7 +97,7 @@ instance Comparison
     Comparison::Above -> Comparison::AtMost
 
 export data Predicate
-  = Compare { left : Term, op : Comparison, right : Term }
+  = Compare { left Term, op Comparison, right Term }
   | All Vec<Predicate>
   | Any Vec<Predicate>
   deriving (Debug, Clone, PartialEq, Eq)
@@ -124,10 +124,10 @@ instance Predicate
       Predicate::Compare { left, right, .. } ->
         for name in .mentions left
           if !.contains name out
-            out |> .push (.clone name)
+            out.push (.clone name)
         for name in .mentions right
           if !.contains name out
-            out |> .push (.clone name)
+            out.push (.clone name)
       Predicate::All every ->
         for p in .iter every
           .collect_mentions out p
@@ -143,12 +143,12 @@ instance Display Predicate
     Predicate::All every ->
       if .is_empty every
         return write! \-> f \-> "true"
-      shown = every |> .iter |> .map (\p -> .to_string p) |> .collect : Vec<String>
+      shown = (every.iter ().map (\p -> .to_string p)).collect () : Vec<String>
       write! \-> f \-> "#{(.join " and " (.as_slice shown))}"
     Predicate::Any every ->
       if .is_empty every
         return write! \-> f \-> "false"
-      shown = every |> .iter |> .map (\p -> .to_string p) |> .collect : Vec<String>
+      shown = (every.iter ().map (\p -> .to_string p)).collect () : Vec<String>
       write! \-> f \-> "#{(.join " or " (.as_slice shown))}"
 
 test "a literal term is constant and prints as itself"
@@ -186,7 +186,7 @@ test "scaling by zero collapses to zero"
 
 test "scaling distributes over a sum"
   sum = .plus (&Term::literal 1) (Term::variable "i")
-  assert_eq! \-> .scaled 2 sum \-> .plus (&Term::literal 2) (Term::variable "i" |> .scaled 2)
+  assert_eq! \-> .scaled 2 sum \-> .plus (&Term::literal 2) ((Term::variable "i").scaled 2)
 
 test "every comparison has a label and a negation that is its own inverse"
   every = [Comparison::Below, Comparison::AtMost, Comparison::Same, Comparison::Different, Comparison::AtLeast, Comparison::Above]

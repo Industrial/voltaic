@@ -1,7 +1,7 @@
 import crate::constraint::Obligation
 import crate::store::Store
 
-export data Step = Step { export depth : usize, export phrasing : String, export summary : String, export span : voltaic_ast::Span }
+export data Step { export depth usize, export phrasing String, export summary String, export span voltaic_ast::Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export steps : usize -> &Store -> Vec<Step>
@@ -11,11 +11,7 @@ steps index store =
   total = .len walked
   for pair in .enumerate (.copied (.iter walked))
     if .at pair.1 store is Some held
-      found |> .push (Step {
-        depth = total - pair.0,
-        phrasing = .phrasing held.provenance.reason,
-        summary = summarise (&held.obligation),
-        span = held.provenance.span })
+      found.push (Step { depth = total - pair.0, phrasing = .phrasing held.provenance.reason, summary = summarise (&held.obligation), span = held.provenance.span })
   found
 
 export explain : usize -> &Store -> String
@@ -25,7 +21,7 @@ explain index store =
     return .to_string "no constraint at that index"
   mut out = String::new ()
   for step in .iter walked
-    out |> .push_str (&format! \-> "#{step.phrasing} at #{step.span.0}..#{step.span.1}\n")
+    out.push_str (&format! \-> "#{step.phrasing} at #{step.span.0}..#{step.span.1}\n")
   out
 
 export rendered : usize -> &Store -> &str -> String
@@ -36,7 +32,7 @@ rendered index store source =
   mut out = String::new ()
   for step in .iter walked
     at = voltaic_diag::line_col source step.span.0
-    out |> .push_str (&format! \-> "#{step.depth}. #{step.phrasing}\n   #{at.0}:#{at.1}  #{step.summary}\n")
+    out.push_str (&format! \-> "#{step.depth}. #{step.phrasing}\n   #{at.0}:#{at.1}  #{step.summary}\n")
   out
 
 export summarise : &Obligation -> String
@@ -58,7 +54,7 @@ test "an explanation names one line per step, newest first"
   root = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
   leaf = .require_from root (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (9, 12) crate::reason::Reason::ReturnPosition s
   shown = explain leaf (&s)
-  lines = shown |> .lines |> .collect : Vec<&str>
+  lines = shown.lines ().collect () : Vec<&str>
   assert_eq! \-> .len lines \-> 2
   assert! \-> .contains "returned from here" lines[0] \-> "#{shown}"
   assert! \-> .contains "literal" lines[1] \-> "#{shown}"
@@ -86,7 +82,7 @@ test "a rendered step carries its phrasing and its obligation on separate lines"
   mut s = Store::new ()
   at = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "bool" }) (0, 3) crate::reason::Reason::Ascribed s
   shown = rendered at (&s) "ab\n"
-  lines = shown |> .lines |> .collect : Vec<&str>
+  lines = shown.lines ().collect () : Vec<&str>
   assert_eq! \-> .len lines \-> 2
   assert_eq! \-> lines[0] \-> "1. pinned by an ascription"
   assert! \-> .contains "must equal" lines[1] \-> "#{shown}"

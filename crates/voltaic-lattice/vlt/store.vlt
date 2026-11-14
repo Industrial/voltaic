@@ -6,7 +6,7 @@ import crate::ty::Ty
 import crate::variable::Variable
 import voltaic_ast::Span
 
-export data Store = Store { constraints : Vec<Constraint>, next : u32 }
+export data Store { constraints Vec<Constraint>, next u32 }
   deriving (Debug, Clone, Default)
 
 instance Store
@@ -25,7 +25,7 @@ instance Store
   export push : Obligation -> Provenance -> &mut self -> usize
   push obligation provenance self =
     at = .len self.constraints
-    self.constraints |> .push (Constraint::new obligation provenance)
+    self.constraints.push (Constraint::new obligation provenance)
     at
 
   export require : Obligation -> Span -> Reason -> &mut self -> usize
@@ -54,7 +54,7 @@ instance Store
     mut walked = Vec::new ()
     for i in .chain_indices index self
       if .get i self.constraints is Some c
-        walked |> .push c.provenance
+        walked.push c.provenance
     walked
 
   export chain_indices : usize -> &self -> Vec<usize>
@@ -63,7 +63,7 @@ instance Store
     mut cursor = Some index
     while cursor is Some i
       if .get i self.constraints is Some c
-        walked |> .push i
+        walked.push i
         cursor := c.provenance.derived_from
       else
         cursor := None

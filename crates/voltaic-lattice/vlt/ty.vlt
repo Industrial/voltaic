@@ -7,7 +7,7 @@ export const ARROW : &str = "->"
 
 export data Ty
   = Hole Variable
-  | Con { name : String, args : Vec<Ty> }
+  | Con { name String, args Vec<Ty> }
   | Nil
   deriving (Debug, Clone, PartialEq, Eq, PartialOrd, Ord)
 
@@ -49,7 +49,7 @@ instance Ty
     case self of
       Ty::Hole v ->
         if !.contains v out
-          out |> .push (*v)
+          out.push (*v)
       Ty::Con { args, .. } ->
         for a in .iter args
           .collect_holes out a
@@ -93,7 +93,7 @@ instance Display Ty
         return write! \-> f \-> "#{name}#{separator}#{args[0]}"
       if .is_empty args
         return write! \-> f \-> "#{name}"
-      shown = args |> .iter |> .map (\a -> .to_string a) |> .collect : Vec<String>
+      shown = (args.iter ().map (\a -> .to_string a)).collect () : Vec<String>
       write! \-> f \-> "#{name}<#{(.join ", " (.as_slice shown))}>"
 
 test "a shared reference prints the way Rust writes it"
