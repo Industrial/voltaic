@@ -39,6 +39,8 @@ use std::path::{Path, PathBuf};
 
 use voltaic_driver::{Gate, Pass, gate, rewrite_program};
 
+mod support;
+
 fn repo_root() -> PathBuf {
   Path::new(env!("CARGO_MANIFEST_DIR"))
     .parent()
@@ -199,9 +201,13 @@ fn collapsing_every_pipeline_changes_no_program() {
 /// surface already admitted that spelling: `recv.name ()` parses as a
 /// zero-argument `Dot` and lowers to `recv.name()`.
 ///
-/// This is the whole of the fix. No `std` catalogue, no inference, no
-/// classification — `crates/voltaic-driver/tests/std_receivers.rs` measures why
-/// none of those would have worked.
+/// It is **half** of what the migration needs, and doc 101 §10.14 is careful
+/// about which half. The parentheses are mandatory — `h.s.len ().count_ones ()`
+/// parses as `h.s.len((), .count_ones, ())`, not as a chain — so a migrated
+/// chain nests one parenthesis per zero-argument link and reads worse than the
+/// `|>` it replaced. What removes them is the field-vs-method classification,
+/// which works for declared methods and not for `std` receivers; that is why
+/// the transform is gated and correct here and still **not applied**.
 #[test]
 fn a_collapsed_no_argument_stage_prints_as_a_call() {
   let after = migrated("f : &str -> usize\nf s = s |> .len\n").expect("should parse");
@@ -213,6 +219,56 @@ fn a_collapsed_no_argument_stage_prints_as_a_call() {
   assert!(
     !after.contains("|>"),
     "and the pipeline must be gone, not merely rewritten alongside: {after}"
+  );
+}
+
+/// Why the parentheses in a migrated chain are mandatory, pinned so nobody
+/// removes them as noise.
+///
+/// Juxtaposition application cannot tell a zero-argument call's `()` from a unit
+/// first argument, so an unparenthesised chain is not a chain: the `()`, the
+/// next `.name` and *its* `()` all become arguments to the first call. This is
+/// the measurement doc 101 §10.14 rests on, and it is the reason
+/// `takes_a_postfix` returns `false` for a `Dot`.
+#[test]
+fn an_unparenthesised_chain_is_not_a_chain() {
+  let chained = voltaic_parser::parse_source("f : &str -> usize\nf s = s.len ().count_ones ()\n")
+    .expect("it parses — wrongly, which is the point");
+  let shown = format!("{chained:?}");
+  assert!(
+    shown.matches("Dot").count() == 1,
+    "`s.len ().count_ones ()` should be ONE call taking the rest as arguments, \
+     not a two-link chain; if this ever becomes two the surface has changed and \
+     the migrated parentheses can go: {shown}"
+  );
+}
+
+/// The other half, pinned: a declared method classifies and a `std` one does
+/// not, which is what makes the migration read worse than `|>` today.
+///
+/// Doc 101 §10.14's demonstration, as a gate. It fails if `std` receivers ever
+/// start classifying — which would be good news, and would mean the parentheses
+/// above can be dropped and leaf 6 can run.
+#[test]
+fn a_declared_method_classifies_and_a_std_method_does_not() {
+  let source = "data H = H { n : u64 }\n\ninstance H\n  export twice : &self -> u64\n  \
+                twice self = self.n * 2\n\nexport chained : &H -> String\nchained h = \
+                h.twice.to_string\n";
+  let rust = support::transpile_source("pipeline_classified_chain", source);
+  assert!(
+    rust.contains("h.twice().to_string"),
+    "`twice` is declared on `H`, so it should classify and emit a call with no \
+     parentheses in the source: {rust}"
+  );
+  // Asserted as an absence, because the presence above is satisfied by
+  // `h.twice().to_string()` too — and that is the outcome this gate exists to
+  // notice. It going red is good news: it means `std` receivers classify, the
+  // migrated chain needs no parentheses, and leaf 6 can run.
+  assert!(
+    !rust.contains("to_string()"),
+    "`to_string` is `std`'s and nothing declares it, so it should still be a \
+     field read. If it now classifies, doc 101 §10.14's declination is lifted: \
+     {rust}"
   );
 }
 

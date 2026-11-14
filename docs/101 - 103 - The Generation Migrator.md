@@ -650,52 +650,88 @@ Two reverts of one rule is worth a sentence of its own: the first blamed the
 missing sidecars, and fixing those was correct and necessary work. It was not
 what made the rule sound, and the second attempt is what established that.
 
-### 10.14 It was one line in the printer, and five sessions of looking at the wrong layer
+### 10.14 The printer was half of it; the other half is why deletion 3 cannot be written as specified
 
-**The pipeline pass now collapses every `|>` in the compiler's source — 64 of the
-74 files that hold one, with the identity gate green on all 74.** §10.11 reverted
-this pass at **5%** of stages. The whole difference is one line:
+**§10.14 first claimed the blocker was the printer and that §10.8 and §10.12 had
+been asking the wrong question. That was wrong in its central claim, and the
+correction is the finding.** The printer fix is real and necessary. It is not
+sufficient, and what makes up the difference is exactly the classification §10.8
+asked for.
+
+#### What the printer fix is, and that part stands
+
+`collapse_pipeline` built the right node and then had to *decline* it —
+`if .is_empty found: return ()` — because the printer wrote a zero-argument `Dot`
+as `head.name`, which **reparses as `Expr::Field`**. A field read is not a method
+call, so the rewrite was not a respelling and the gate was right to refuse it.
+450 of the corpus's 473 stages carry no arguments, which is where §10.11's **5%**
+came from. One line:
 
 ```diff
 -      format! \-> "#{head}.#{name.text}"
 +      format! \-> "#{head}.#{name.text} ()"
 ```
 
-`collapse_pipeline` already built the right node. What it then had to do was
-*decline* it — `if .is_empty found: return ()` — because the printer wrote a
-zero-argument `Dot` as `head.name`, which **reparses as `Expr::Field`**. A field
-read is not a method call, so the rewrite was not a respelling and the gate was
-right to say so. 450 of the corpus's 473 stages carry no arguments, which is
-where the 5% came from.
+With it, the pass rewrites **73 of the 74** files that hold a `|>`, each gated to
+byte-identical generated Rust before writing, and the ten files that still hold
+one hold it as data — the AST's `Pipeline -> "|>"`, the lexer's
+`OPERATOR_TABLE`, the classifier's grading row, two diagnostics' help text, the
+formatter's own pipeline printer, two fixtures. The gate asserts that rather
+than counting it: a `|>` surviving on a line with no string literal on it fails.
 
-The surface already had the spelling. `h.items.len ()` parses as a zero-argument
-`Dot` and lowers to `h.items.len()` — verified against the compiler before the
-change, not recalled:
+`takes_a_postfix` and `stands_alone` lost their `| !.is_empty args` guards with
+it, and **that is not over-caution — it is forced.** Measured against the
+compiler:
 
 ```
-count_a h = .len h.items        ->  h.items.len()
-count_b h = h.items.len ()      ->  h.items.len()
+a h = (h.s.len ()).count_ones ()   ->  h.s.len().count_ones()
+b h = h.s.len ().count_ones ()     ->  h.s.len(().count_ones, ())
 ```
 
-So `takes_a_postfix` and `stands_alone` lost their `| !.is_empty args` guards
-too: with the parentheses printed, a zero-argument `Dot` is call-shaped in every
-position, exactly like one with arguments.
+An unparenthesised chain is not a chain. Juxtaposition application cannot tell a
+zero-argument call's `()` from a unit first argument, so the `()`, the
+`.count_ones` and the second `()` all become arguments to `len`. Every
+zero-argument link in a `.` chain therefore needs a parenthesis.
 
-**The ten files that still hold a `|>` after migration hold it as data**, and the
-gate now asserts that rather than counting: the AST's `Pipeline -> "|>"`, the
-lexer's `OPERATOR_TABLE`, the classifier's grading row, two diagnostics' help
-text, the formatter's own pipeline printer, and two test fixtures. Every one is
-a component whose job *is* `|>`. `a_collapsed_no_argument_stage_prints_as_a_call`
-pins the fix itself, and the survivor assertion fails if a `|>` ever survives on
-a line with no string literal on it.
+#### Which is why the migration is still declined, and now for a measured reason
 
-#### What this retires, and the mistake worth keeping
+§10.11 reverted the application because the pass reached 5% and a half-migrated
+chain read worse. At 73 files that reason is gone and a sharper one replaces it.
+This is what the corpus becomes:
 
-§10.8 said the blocker was that *"the solver could not answer its question"* —
-whether `xs.len` on a `Vec` is a method — and §10.12 then relocated that question
-to the `std` boundary. Both were **answering the wrong question**, and
-`crates/voltaic-driver/tests/std_receivers.rs` is kept in the tree because its
-numbers are what retire them:
+```
+-    ch = self.cur |> .peek |> .expect "step checked for eof"
++    ch = (self.cur.peek ()).expect "step checked for eof"
+
+-      text = self.cur
+-        |> .slice (body_start, .pos self.cur - 1)
+-        |> .to_string
++      text = (self.cur.slice (body_start, .pos self.cur - 1)).to_string ()
+```
+
+A three-stage chain nests two levels of parentheses, and the multi-line form
+collapses onto one long line because the formatter breaks `|>` chains and has no
+multi-line `.`-chain printer. **Doc 97 §1.3's deletion 3 — *"`|>` … replaced by
+`.` chains that break across lines"* — describes something the surface does not
+currently admit.**
+
+#### §10.8 is not retired; it is the route
+
+What removes every one of those parentheses is deciding whether `a.f` is a field
+or a method, because a classified chain needs none at all. Demonstrated, not
+argued — a project type with a declared method and a `std` method in one chain:
+
+```
+chained h = h.twice.to_string   ->  h.twice().to_string
+```
+
+`twice` is declared on `H`, so it classified and emitted a call with no
+parentheses in the source. `to_string` did not, because nothing declares it. That
+is the whole migration in one line: the half that works needs no `|>` and no
+parentheses, and the half that does not is `std`.
+
+And §10.12's boundary is where it fails, with the number from
+`crates/voltaic-driver/tests/std_receivers.rs`:
 
 | Measured over the 110-file corpus | |
 |---|---:|
@@ -704,40 +740,52 @@ numbers are what retire them:
 | …of those, naming a `std` type | **0** |
 
 Every one of the 29 is a project type — `Span`, `DataDecl`, `FnDecl`, `Stmt`,
-`Parser`, `TypeExpr`. **A `std` catalogue would have fired zero times.** Two
-further measurements in the same file say why, and they are the useful half:
+`Parser`, `TypeExpr` — while the corpus's stages are `.iter`, `.map`, `.collect`,
+`.push`, `.to_string`. Two further measurements in that file say why a catalogue
+would not close it:
 
 - a written `&Vec<u64>` *does* resolve, so the catalogue was not unbuildable;
 - **one `let` between the signature and the use loses the type** — `held = xs`
   then `held.len` resolves to `None`;
 - **a receiver-first stage raises no member obligation at all.** `.count (.iter
-  xs)` produces an empty store. There was never a question for a catalogue to
-  answer, because the construct the pass needed to classify is an *application*
-  in the source it was reading.
+  xs)` leaves an empty store, so in the *pre*-migration source there is no
+  question to ask — the question only exists after the rewrite that depends on
+  its answer.
 
-A sidecar wildcard — `Vec.* method`, with exact lines winning so `Range.start`
-stays a field — was built and tested against both `Sidecar::member` and
-`Declarations::kind_of`, and then **reverted**, because the measurement above
-left it with no consumer. Cataloguing `std`'s *fields* instead of its methods is
-still the right shape for that problem if it ever returns; it is recorded here
-rather than carried as unused machinery.
+A sidecar wildcard — `Vec.* method`, exact lines winning so `Range.start` stays a
+field — was built against both `Sidecar::member` and `Declarations::kind_of`, and
+reverted: cataloguing `std`'s *fields* instead of its methods is the right shape,
+and it would still have to resolve the receiver to fire. The shape is recorded
+here rather than carried as unused machinery.
 
-The pattern across §10.12, §10.13 and this section is one pattern: three
-sessions reached for **more inference** — a guess, then sidecars, then a
-catalogue — when the defect was that the *printer* could not write down a node
-the AST already held. The sidecars were worth building on their own terms and
-`cross_crate.rs` uses them. They were not what this needed. **When a rewrite's
-output does not reparse to its input, suspect the printer before the solver** —
-the solver is where the interesting answers are, which is exactly why it is the
-tempting place to look.
+#### The state this leaves row 103 leaf 2 in
+
+The transform is **built, gated and correct, and deliberately not applied.**
+Three things must land before applying it is an improvement rather than a
+regression, and none is a defect in the pass:
+
+1. a multi-line `.`-chain printer, so a long chain does not become one long line;
+2. a decision on `std` receivers — doc 86 §4.3 clause 2 keeps `std` outside
+   Lattice's environment, and that clause is what makes the parentheses
+   permanent;
+3. only then leaf 6, crate by crate.
+
+**The mistake worth keeping is the order I looked in.** §10.14's first draft
+concluded that three sessions had reached for more inference when the defect was
+in the printer. The printer *was* a defect, and finding it was worth the session;
+the error was inferring from one true finding that the earlier sessions had been
+wrong, when the probe that would have checked it — does a classified chain need
+the parentheses? — takes a minute and says they had been right. **A newly found
+cause is not evidence that a previously suspected cause was innocent.**
 
 ### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
 
-> **Retired by §10.14.** The question in this section's title is not the one the
-> pass needed answered. The blocker was the printer, not the solver, and
-> `std_receivers.rs` measures that a `std` catalogue would have fired zero times
-> on this corpus. Read §10.14 first; this section records how the wrong layer
-> looked like the right one.
+> **Confirmed by §10.14, after a draft of that section wrongly retired it.** The
+> question here — is `a.f` a field or a method? — is the one that decides whether
+> the `|>` migration reads better or worse than what it replaces, and §10.14
+> demonstrates it: `h.twice.to_string` emits `h.twice().to_string`, the declared
+> method classified and the `std` one not. What §10.14 adds is that the printer
+> was *also* blocking, and that `std` is where the classification runs out.
 
 Leaf 2's largest `auto` construct is doc 87 §1.2's inversion of `.`:
 
