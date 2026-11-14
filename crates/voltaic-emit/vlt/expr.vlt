@@ -41,23 +41,38 @@ import voltaic_diag::SourceMap
 import std::cell::RefCell
 import std::collections::BTreeMap
 
+export(crate) fill_holes : &[Expr] -> &[String] -> Vec<Expr>
+fill_holes args params =
+  mut filled : Vec<Expr> = Vec::new ()
+  mut taken = 0
+  for arg in args
+    is_hole = case arg of
+      Expr::Ident i -> i.text == "_"
+      _ -> false
+    if is_hole
+      .push (Expr::Ident (Ident { text = .clone params[taken], span = .span arg })) filled
+      taken += 1
+    else
+      .push (.clone arg) filled
+  filled
+
+export(crate) emit_dot : &Expr -> &Ident -> &[Expr] -> usize -> String
+emit_dot recv name args indent =
+  at = holes args
+  if !.is_empty at
+    params : Vec<String> = 0 .. .len at |> .map closure_param |> .collect
+    body = emit_dot recv name (&fill_holes args (&params)) indent
+    return closure (&params) (&body)
+  head = receiver recv indent
+  listed = expr_list args indent
+  format! \-> "#{head}.#{name.text}(#{listed})"
+
 export(crate) emit_application : &Expr -> &[Expr] -> usize -> String
 emit_application callee args indent =
   at = holes args
   if !.is_empty at
     params : Vec<String> = 0 .. .len at |> .map closure_param |> .collect
-    mut filled : Vec<Expr> = Vec::new ()
-    mut taken = 0
-    for arg in args
-      is_hole = case arg of
-        Expr::Ident i -> i.text == "_"
-        _ -> false
-      if is_hole
-        .push (Expr::Ident (Ident { text = .clone params[taken], span = .span arg })) filled
-        taken += 1
-      else
-        .push (.clone arg) filled
-    body = emit_application callee (&filled) indent
+    body = emit_application callee (&fill_holes args (&params)) indent
     return closure (&params) (&body)
   if unparen callee is Expr::Call { callee = inner, args = inner_args, .. }
     inner_is_method_ref = case unparen inner of
@@ -293,6 +308,7 @@ emit_expr e indent = case e of
       format! \-> "#{left} #{text} #{right}"
     None -> format! \-> "compile_error!(\"`#{op:?}` is parsed but not yet lowered\")"
   Expr::Field { recv, name, .. } -> format! \-> "#{receiver recv indent}.#{name.text}"
+  Expr::Dot { recv, name, args, .. } -> emit_dot recv name args indent
   Expr::Index { recv, index, .. } ->
     head = receiver recv indent
     at = emit_expr index indent

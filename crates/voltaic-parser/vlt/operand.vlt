@@ -178,7 +178,7 @@ macro_call p =
 
 export(crate) method_call_syntax : &str -> Span -> ParseError
 method_call_syntax name span =
-  help = format! \-> "a method is a function whose last argument is its receiver, so write `.#{name} args recv` or `recv |> .#{name} args`. `.` is field access and nothing else (plan 57 §1.1)"
+  help = format! \-> "application is juxtaposition, so write `recv.#{name} args` with no parentheses and no commas. Doc 87 §1.2: `x.f y` is `f(x, y)`, the receiver first — row 99 wave 3 inverted the `.` that plan 57 §1.1 had made field-access-only, and the parenthesised form is the one spelling it did not take"
   ParseError::with_help Code::MethodCallSyntax "method-call syntax is retired" help span
 
 export(crate) data MethodContext = MethodContext { export vars : Vec<(String, String)>, export recording : Option<String>, export implementing : Option<String> }

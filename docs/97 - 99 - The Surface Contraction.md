@@ -1165,6 +1165,81 @@ reads, and a gate nobody reads is how `:check-docs` ended up in the push gate wi
 of this does not re-derive them.** What does hold is the habit: a `§` is a claim,
 so check it the way §10.30 and §10.31 say to check the others — by looking.
 
+### 10.33 Wave 3's argument half: `x.f y` is `f(x, y)`
+
+Doc 87 §1.2's inversion, in the half that needs no solver. `Expr::Dot
+{ recv, name, args }`; `application` builds it where it used to return
+`VLT0115`; the emitter writes `recv.name(args)`; the formatter prints
+`recv.name args`. `examples/receiver_first.vlt` witnesses one argument, two
+arguments, a parenthesised argument, a chain and a hole.
+
+**Arguments settle field-versus-method without types, which is why this half
+could land first.** A field access takes no arguments, so `n.max 3` can only be
+a call — the solver is needed only for the *no-argument* case, where `"ab".len`
+could be either. That half is still open; doc 101 §10.8 has what it needs, and
+`MemberKind` is the query it will ask.
+
+**`VLT0115` shrank from four spellings to one, and its help text was a lie.**
+`s.len (1)`, `s.len ()` and `s.find "h"` are now the surface; only `s.len(1)` —
+Rust's own, no space before the `(` — stays refused, because application here is
+juxtaposition and a parenthesised argument list would make `.` mean two things
+depending on whitespace. The help still said *"write `.len args recv` or
+`recv |> .len args`"*, which is generation 1's receiver-last form that this wave
+deletes: a diagnostic telling the author to write the retired spelling.
+
+**Three defects, each caught by a different gate, and none by the one before it.**
+
+- **rustc caught two missing match arms.** Adding an AST variant is exhaustively
+  checked, so `voltaic-emit` and `voltaic-fmt` both failed to compile until they
+  handled `Dot`. That is the charter paying for itself: the compiler's own source
+  is Rust, so rustc audits a surface change to the compiler.
+- **`formatting_preserves_meaning` caught a printer that produced plausible
+  text.** `(n.max 3).min 8` printed as `n.max 3.min 8`, which reparses as
+  `n.max (3.min) 8` — a different program. The cause was passing `u8::MAX` as the
+  argument context instead of using `argument`, the helper `Call` uses. **Nothing
+  but a round-trip could have caught it**: the text is well-formed, it compiles,
+  and it is wrong.
+- **`takes_a_postfix` and `stands_alone` needed the shape split, not widened.** A
+  `Dot` with arguments is an application and needs its parentheses as a receiver
+  or an argument; a `Dot` with none is a postfix access like `Field`. One arm for
+  both is what dropped them. Two arms, with the args case first.
+
+**The seed had to be refreshed in the same commit, and the gate that said so was
+this session's own.** `across_the_turn.rs`'s
+`the_g2_blob_and_the_tree_agree_on_the_examples` went red the moment
+`receiver_first.vlt` existed, because the blob predated the inversion.
+`AGENTS.md`'s rule — *a surface row the seed cannot parse must refresh the seed
+in the same commit* — was enforced rather than remembered.
+
+### 10.34 Adding an AST variant makes the workspace unbuildable, and the port cannot fix it
+
+Worth its own subsection because the recovery is not the obvious one.
+
+`Expr::Dot` lands in `voltaic-ast`, and every crate matching exhaustively on
+`Expr` stops compiling until it is regenerated too. The port regenerates in
+dependency order and stages each crate, compiling before it writes — so it is
+built for exactly this. But `cargo test -p voltaic-cli --test port` has to **build
+`voltaic-cli` first**, and `voltaic-cli` depends on the half-regenerated tree. So
+the port cannot run, and the tool that exists to move the tree forward is locked
+out by the state it exists to resolve.
+
+**`./bootstrap.sh` is the way through**, because it needs no working workspace:
+`seed/voltaic-g1.wasm` under `wasmtime` regenerates all fourteen crates in one
+pass from the `.vlt`, and the seed parses generation-1 source regardless of what
+the tree's Rust currently looks like. That is the seed earning its keep for a
+reason plan 72 did not list — not a clean clone, but a mid-change tree.
+
+So the loop for an AST change is **edit `.vlt` → `./bootstrap.sh` → `cargo build`**,
+and `VOLTAIC_UPDATE=1 cargo test --test port` only once the workspace compiles
+again.
+
+**And the silence that hid it was a filtered grep.** `cargo build 2>&1 | grep -E
+"^error"` reported nothing while the build was failing, because cargo colourises
+`error` and the line starts with an ANSI escape. `AGENTS.md` records that trap
+verbatim — *"do not grep compiler output for `^error` — it reads as green when it
+is not"* — and it was walked into anyway, twice in one session, because a filter
+written to keep output short is invisible once it is written. **Check exit codes.**
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

@@ -1,28 +1,7 @@
 error[VLT0115]: method-call syntax is retired
-  --> retired_method_call.vlt:19:7
+  --> retired_method_call.vlt:23:7
    |
-19 |   a = s.len (1)
+23 |   d = s.len(1)
    |       ^^^^^
-  = help: a method is a function whose last argument is its receiver, so write `.len args recv` or `recv |> .len args`. `.` is field access and nothing else (plan 57 §1.1)
-
-error[VLT0115]: method-call syntax is retired
-  --> retired_method_call.vlt:20:7
-   |
-20 |   b = s.len ()
-   |       ^^^^^
-  = help: a method is a function whose last argument is its receiver, so write `.len args recv` or `recv |> .len args`. `.` is field access and nothing else (plan 57 §1.1)
-
-error[VLT0115]: method-call syntax is retired
-  --> retired_method_call.vlt:21:7
-   |
-21 |   c = s.find "h"
-   |       ^^^^^^
-  = help: a method is a function whose last argument is its receiver, so write `.find args recv` or `recv |> .find args`. `.` is field access and nothing else (plan 57 §1.1)
-
-error[VLT0115]: method-call syntax is retired
-  --> retired_method_call.vlt:22:7
-   |
-22 |   d = s.len(1)
-   |       ^^^^^
-  = help: a method is a function whose last argument is its receiver, so write `.len args recv` or `recv |> .len args`. `.` is field access and nothing else (plan 57 §1.1)
+  = help: application is juxtaposition, so write `recv.len args` with no parentheses and no commas. Doc 87 §1.2: `x.f y` is `f(x, y)`, the receiver first — row 99 wave 3 inverted the `.` that plan 57 §1.1 had made field-access-only, and the parenthesised form is the one spelling it did not take
 

@@ -22,6 +22,16 @@ expr_text expr required indent source = case expr of
       .push_str (&argument arg indent source) out
     out
   Expr::MethodRef { name, .. } -> format! \-> ".#{name.text}"
+  Expr::Dot { recv, name, args, .. } ->
+    head = receiver recv indent source
+    printed : Vec<String> = args
+      |> .iter
+      |> .map (\arg -> argument arg indent source)
+      |> .collect
+    if .is_empty printed
+      format! \-> "#{head}.#{name.text}"
+    else
+      format! \-> "#{head}.#{name.text} #{(.join " " printed)}"
   Expr::Field { recv, name, .. } ->
     head = receiver recv indent source
     gap = if .ends_with '?' head
@@ -128,7 +138,8 @@ stands_alone expr = case expr of
   Expr::Ident _ or Expr::Path { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } -> true
   Expr::Unit { .. } or Expr::Tuple { .. } or Expr::Section { .. } -> true
   Expr::Paren { .. } -> true
-  Expr::Field { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
+  Expr::Dot { args, .. } | !.is_empty args -> false
+  Expr::Field { .. } or Expr::Dot { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
   Expr::MethodRef { .. } -> true
   Expr::List { .. } or Expr::ArrayRepeat { .. } -> false
   _ -> false
@@ -269,6 +280,7 @@ power_of expr = case expr of
   Expr::Paren { inner, .. } -> power_of inner
   Expr::Record { .. } or Expr::Comprehension { .. } or Expr::Section { .. } -> Some u8::MAX
   Expr::Lambda { .. } or Expr::Ascribe { .. } or Expr::If { .. } or Expr::Block { .. } or Expr::Case { .. } or Expr::Ladder { .. } or Expr::AsyncBlock { .. } or Expr::UnsafeBlock { .. } or Expr::TryBlock { .. } or Expr::BindBlock { .. } -> None
+  Expr::Dot { .. } -> Some u8::MAX
   Expr::Binding _ or Expr::Item { .. } or Expr::Return { .. } or Expr::Draw { .. } or Expr::Await { .. } or Expr::Assign { .. } or Expr::Over { .. } -> None
   Expr::Guard { .. } or Expr::While { .. } or Expr::For { .. } or Expr::Loop { .. } or Expr::Break { .. } or Expr::Continue { .. } -> None
 
@@ -282,7 +294,8 @@ receiver expr indent source =
 export(crate) takes_a_postfix : &Expr -> bool
 takes_a_postfix expr = case expr of
   Expr::Ident _ or Expr::Path { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } or Expr::Unit { .. } or Expr::Tuple { .. } or Expr::List { .. } or Expr::ArrayRepeat { .. } or Expr::Record { .. } or Expr::Section { .. } or Expr::Comprehension { .. } or Expr::SelfField { .. } or Expr::SelfType { .. } -> true
-  Expr::Field { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
+  Expr::Dot { args, .. } | !.is_empty args -> false
+  Expr::Field { .. } or Expr::Dot { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
   Expr::MethodRef { .. } -> true
   Expr::Paren { inner, .. } -> takes_a_postfix inner
   Expr::Call { .. } -> false

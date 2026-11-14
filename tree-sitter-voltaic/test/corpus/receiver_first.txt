@@ -1,0 +1,46 @@
+================================================================
+a receiver-first call is an application run, like every other
+================================================================
+
+raised : u64 -> u64
+raised n = n.max 3
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    name: (identifier)
+    type: (signature_type
+      (identifier)
+      (identifier)))
+  (equation
+    name: (identifier)
+    parameters: (identifier)
+    body: (identifier)
+    body: (operator)
+    body: (identifier)
+    body: (number)))
+
+================================================================
+two arguments, still one run
+================================================================
+
+clamped : u64 -> u64
+clamped n = n.clamp 2 8
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    name: (identifier)
+    type: (signature_type
+      (identifier)
+      (identifier)))
+  (equation
+    name: (identifier)
+    parameters: (identifier)
+    body: (identifier)
+    body: (operator)
+    body: (identifier)
+    body: (number)
+    body: (number)))

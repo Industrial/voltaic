@@ -1,0 +1,73 @@
+-- Doc 87 §1.2: one application order, not three.
+--
+-- Generation 1 had `f x` = `f(x)`, `.f x` = `x.f()` with the receiver **last**,
+-- and `x |> .f` = `x.f()` with the receiver first — so `.len self.src` read
+-- right-to-left in a language whose pipelines read left-to-right, and the same
+-- idea had two spellings that disagreed about direction.
+--
+-- Generation 2 has two spellings that agree:
+--
+--   f x    = f(x)      -- a free function
+--   x.f y  = f(x, y)   -- the same function, receiver first
+--
+-- Generation 1 chose receiver-last because it was the only way to make partial
+-- application and pipelines share a spelling *without types* — doc 03 §2 clause 1
+-- forbade UFCS for exactly that reason. Lattice has types, so the constraint is
+-- gone and `.` is inverted.
+--
+-- Row 99 wave 3 landed the half shown here: a `.name` followed by arguments is a
+-- receiver-first call. The no-argument half — `"ab".to_uppercase` meaning
+-- `"ab".to_uppercase()` — needs the solver to say whether `to_uppercase` is a
+-- field or a method, and doc 101 §10.8 records what that still needs.
+
+-- One argument, juxtaposed. No parentheses and no commas, which is what makes
+-- this the *same* spelling as `f x` rather than a second one.
+raised : u64 -> u64
+raised n = n.max 3
+
+-- Two arguments, so the receiver is the first of three and the call reads in the
+-- order it executes.
+clamped : u64 -> u64
+clamped n = n.clamp 2 8
+
+-- A parenthesised argument, which is ordinary grouping and not a call's
+-- parameter list. `s.find ("h")` and `s.find "h"` are the same program.
+located : &str -> Option<usize>
+located s = s.find "h"
+
+-- A chain: each `.name` takes the expression to its left as its receiver, so a
+-- chain reads left to right and needs none of `|>`, `>>>`, `<<<` or `$` — which
+-- is §5.3's argument for deleting all four.
+--
+-- Every step here carries an argument, deliberately. A no-argument step is still
+-- a field access, so `(s.trim).len` is `E0615` today rather than a chain — that
+-- is the half of the inversion the solver has to settle, and doc 101 §10.8 is
+-- where it is recorded rather than quietly worked around.
+narrowed : u64 -> u64
+narrowed n = (n.max 3).min 8
+
+-- A hole in an argument makes a closure, with the receiver still first. §2.2's
+-- `m.insert k _` is `|v| m.insert(k, v)`.
+--
+-- **Bound, then applied.** A hole closure in *callee* position loses its
+-- parentheses and miscompiles — in both orders and differently, which is what
+-- makes it a pre-existing defect rather than the inversion's. Receiver-first
+-- `(base.wrapping_add _) 5` emits `|__vlt_1| base.wrapping_add(__vlt_1)(5)`, and
+-- receiver-last `(.wrapping_add _ base) 5` emits
+-- `|__vlt_1| 5.wrapping_add(__vlt_1, base)`, taking the outer argument as the
+-- receiver. Doc 101 §10.9 records it; naming the closure stays out of that
+-- corner and is what the construct is for anyway.
+bumped : u64
+bumped =
+  base : u64 = 10
+  add = base.wrapping_add _
+  add 5
+
+main : ()
+main =
+  println! \-> "#{(raised 1)} #{(raised 9)}"
+  println! \-> "#{(clamped 1)} #{(clamped 5)} #{(clamped 99)}"
+  println! \-> "#{(.unwrap_or 99 (located "high"))} #{(.unwrap_or 99 (located "zzz"))}"
+  println! \-> "#{(narrowed 1)} #{(narrowed 5)} #{(narrowed 99)}"
+  println! \-> "#{bumped}"
+  ()

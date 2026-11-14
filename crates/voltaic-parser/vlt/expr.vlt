@@ -37,12 +37,12 @@ application p =
   head = (atom p)?
   if .just_dedented p || !starts_argument (&(.peek p).kind)
     return Ok head
-  if &head is Expr::Field { name, .. }
-    return Err (method_call_syntax (&name.text) (.span head))
   mut args = Vec::new ()
   while starts_argument (&(.peek p).kind)
     .push (atom p)? args
   span = ((.span head).0, (.prev_span p).1)
+  if head is Expr::Field { recv, name, .. }
+    return Ok (Expr::Dot { recv, name, args, span })
   Ok (Expr::Call { callee = Box::new head, args, is_dollar = false, span })
 
 export(crate) atom : &mut Parser -> Result<Expr, ParseError>
