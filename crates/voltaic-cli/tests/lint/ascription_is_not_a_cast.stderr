@@ -1,0 +1,14 @@
+warning[VLT1004]: `narrow_by_ascription` cannot be both i32 and u8
+  --> ascription_is_not_a_cast.vlt:27:1
+   |
+27 | narrow_by_ascription : i32 -> u8
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> ascription_is_not_a_cast.vlt:28:26
+   |
+28 | narrow_by_ascription n = n : u8
+   |                          ^^^^^^ required u8 here
+  --> ascription_is_not_a_cast.vlt:28:22
+   |
+28 | narrow_by_ascription n = n : u8
+   |                      ^ inferred i32 here, pinned by an ascription
+  = help: pinned by an ascription. Run `voltaic sig --why narrow_by_ascription` for the constraint chain.

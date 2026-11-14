@@ -71,7 +71,7 @@ A generation with no seed has been **retired**, which row 102 §3.1 permits only
 | `examples/*.vlt` | 53 | the CI-checked source of truth for what works |
 | `tests/golden/*.vrs` | 52 | the generated Rust, as exact text |
 | `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
-| `crates/voltaic-cli/tests/lint/*.vlt` | 7 | the warning a questionable program gets |
+| `crates/voltaic-cli/tests/lint/*.vlt` | 8 | the warning a questionable program gets |
 | `crates/voltaic-cli/tests/run/*.stdout` | 2 | what a program prints |
 | `crates/voltaic-cli/tests/explain/*.why` | 6 | the constraint chain behind an inference |
 | `crates/voltaic-cli/tests/sidecar/*.sig` | 2 | the published signature, as exact text |

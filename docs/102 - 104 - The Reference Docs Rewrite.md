@@ -588,6 +588,33 @@ re-derivation once waves 4–9 have moved the accepted surface. §1.1's ordering
 argument holds and now has a measured shape: there is no point re-deriving 125
 rows that generation 2 has not yet touched.
 
+#### Leaf 1's gap rows need a generation, not just a wave
+
+§10.9's table has each gap row waiting on a wave. That is right and incomplete:
+**wave 9 itself is now blocked**, because it is the only additive wave and row
+103's migration ran first.
+
+Attempted and reverted: the `as` cast, implemented end to end as a contextual
+postfix costing no keyword — `n as u8` and `(n as u8) as u64` emitting correctly,
+`44` against `300` proving the parentheses load-bearing. The only gate it broke
+was `the_g2_blob_and_the_tree_agree_on_the_examples`, and that gate is right. An
+addition the seed cannot parse demands a seed refresh, and after the migration
+there is no legal refresh: rebuilding `voltaic-g2.wasm` from a generation-2 tree
+is `built by: g2`, which doc 100 §1.2 forbids. The conforming route is a
+generation 3.
+
+Doc 97 wave 9 carries the full note. What it means here is that **leaf 1's three
+`UNREACHABLE` rows cannot be regraded in this generation at all** — not for want
+of a wave, but because closing them is an addition and the surface is frozen
+against additions until a generation is opened. Deletions are unaffected, so
+waves 4, 6, 7 and 8 can still run and the other ~125 rows can still be
+re-derived after them.
+
+That makes the three rows' grades *stable* rather than pending, which is a
+better answer for a reference document than "pending": they are `UNREACHABLE`
+in generation 2, and the row that closes them belongs to generation 3's
+register.
+
 One thing this pass did **not** do and should be done with the re-derivation:
 check every row's citation the way this one's was checked. The gate resolves that
 a cited path *exists* and `construct_coverage` checks that a construct appears

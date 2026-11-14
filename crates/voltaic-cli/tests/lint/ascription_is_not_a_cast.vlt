@@ -1,0 +1,28 @@
+-- An ascription pins a type; it does not insert a conversion.
+--
+-- Doc 86 §10 predicted `as` casts would close in generation 2 *through* the
+-- ascription — "`x : u8` is an ascription and the solver knows whether it is a
+-- coercion or a cast". Doc 86 §10.1 records that as false, and this is where it
+-- stays false: Lattice **refuses** the narrowing rather than performing it.
+--
+-- That is the right behaviour. A truncating conversion conjured out of an
+-- ascription would be a silent lossy one, which is the sibling of the implicit
+-- clone doc 01 §25.1 declines: when no reading satisfies every use, the answer
+-- is a diagnostic.
+--
+-- §10.1 was argued from a probe in a scratch directory. This is the same
+-- measurement with a gate on it, which is the difference doc 102 §1.1 is about:
+-- an evidence-carrying document beats a predicted one, and a prose finding with
+-- no fixture is a prediction about the compiler's behaviour however carefully it
+-- was measured once.
+--
+-- `VLT1004` already has a case in `lattice_conflict.vlt`. This is a second one
+-- deliberately, because the *shape* is what matters: the conflict is between a
+-- signature and an **ascription** rather than between a signature and a body,
+-- and it is the shape a reader reaching for a cast will write.
+--
+-- The cast itself stays `UNREACHABLE` — `tests/unreachable/as_cast.vlt` — and
+-- doc 97 §10.11 has what it waits on.
+
+narrow_by_ascription : i32 -> u8
+narrow_by_ascription n = n : u8

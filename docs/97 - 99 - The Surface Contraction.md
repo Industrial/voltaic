@@ -278,6 +278,37 @@ fixtures leave `tests/unreachable/`, which **breaks the test that asserts they s
 fail** — deliberately, and that is how a closed gap is recorded. `docs/GRAMMAR.md` is
 regraded by row 104, not here.
 
+> **Wave 9 is now blocked by row 103 having run first, and this is the ordering
+> §4 meant by "nine waves in dependency order".** Recorded 2026-11-14, after
+> attempting the `as` cast out of order and reverting it.
+>
+> Wave 9 is the only **additive** wave — three constructs *become reachable*. An
+> addition the seed cannot parse triggers `AGENTS.md`'s version-skew rule, *"a
+> surface row that the seed cannot parse must refresh the seed in the same
+> commit"*. After row 103's migration there is no legal refresh: the tree is
+> written in generation 2, so rebuilding `voltaic-g2.wasm` from it is
+> `built by: g2`, which `blob.rs` refuses and doc 100 §1.2 forbids. The only
+> conforming route is a **generation 3** — a `voltaic-g3.wasm` built by the
+> generation-2 tree, with crates migrating again.
+>
+> So the two rules conflict for an addition, and the conflict is created by the
+> ordering rather than by either rule. Row 103 *depends on* row 99 in the
+> register, and this is what that dependency was protecting.
+>
+> **Waves 4, 6, 7 and 8 are unaffected**, because they are *deletions*. A frozen
+> blob that accepts a superset still parses a `.vlt` using less of it, so the
+> compiler's source can shed constructs without the seed knowing.
+>
+> Measured rather than reasoned: the `as` cast was implemented end to end — a
+> contextual postfix costing no keyword, `n as u8` and `(n as u8) as u64`
+> emitting correctly, `examples/cast.stdout` showing 44 against 300 — and the
+> only thing that broke was `the_g2_blob_and_the_tree_agree_on_the_examples`.
+> The bootstrap itself stayed sound: `every_ported_crate`, `stage1_equals_stage2`
+> and `a_clone_without_the_generated_rust_bootstraps_from_the_seed` all passed,
+> because the seed only has to read `crates/*/vlt/`. It was reverted anyway,
+> because shipping it meant either weakening that gate or violating §1.2 — and
+> the gate is right.
+
 ---
 
 ## 5. Acceptance criteria
