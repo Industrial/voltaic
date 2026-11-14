@@ -112,6 +112,8 @@ fn collapsing_every_pipeline_changes_no_program() {
   let mut rejected = Vec::new();
   let mut written = Vec::new();
   let mut touched = 0;
+  let mut stages = 0;
+  let mut survived = Vec::new();
   for path in sources() {
     let text = std::fs::read_to_string(&path).expect("a listed source should be readable");
     if !text.contains("|>") {
@@ -122,6 +124,20 @@ fn collapsing_every_pipeline_changes_no_program() {
       continue;
     };
     touched += 1;
+    if after.contains("|>") {
+      let line = after
+        .lines()
+        .find(|l| l.contains("|>"))
+        .unwrap_or_default()
+        .trim();
+      survived.push(format!(
+        "{}: {}",
+        path.display(),
+        &line[..line.len().min(90)]
+      ));
+    } else {
+      stages += 1;
+    }
     if after == text {
       continue;
     }
@@ -145,6 +161,21 @@ fn collapsing_every_pipeline_changes_no_program() {
     "only {touched} files hold a `|>`, which is too few to mean anything — the \
      compiler's own source is written in pipelines"
   );
+  // The reach, reported rather than assumed. Until the formatter printed a
+  // zero-argument `Dot` as `recv.name ()` the pass had to *decline* every
+  // no-argument stage — 450 of 473 of them — because `recv.name` reparses as a
+  // field access, so the rewrite was not a respelling. The count is here
+  // because "the gate passes" is equally true of a pass that rewrites nothing.
+  println!("collapsed every `|>` in {stages} of {touched} files that hold one");
+  let quoted: Vec<_> = survived.iter().filter(|s| !s.contains('"')).collect();
+  assert!(
+    quoted.is_empty(),
+    "every `|>` left in a migrated file should be the operator written as data \
+     — the AST's spelling, the lexer's table, a diagnostic's help text, a test \
+     fixture — and these are on lines with no string literal at all, so they \
+     are pipeline *expressions* the pass declined: {quoted:#?}\n\nSurvivors in \
+     full:\n{survived:#?}"
+  );
   assert!(
     rejected.is_empty(),
     "collapsing `|>` to `.` changed what these files lower to, so the rewrite is \
@@ -156,6 +187,32 @@ fn collapsing_every_pipeline_changes_no_program() {
      `apply` gated each one before writing it — so review the `.vlt` diff and \
      re-run without VOLTAIC_UPDATE:\n{written:#?}",
     written.len()
+  );
+}
+
+/// The one line that unblocked the no-argument half, pinned where it can be
+/// read: a collapsed stage with no arguments must print as a **call**.
+///
+/// `s.len` reparses as `Expr::Field`, and a field read is not a method call, so
+/// the pass had to decline every such stage — 450 of the corpus's 473. Printing
+/// `s.len ()` makes the rewritten source say what the AST means, and the
+/// surface already admitted that spelling: `recv.name ()` parses as a
+/// zero-argument `Dot` and lowers to `recv.name()`.
+///
+/// This is the whole of the fix. No `std` catalogue, no inference, no
+/// classification — `crates/voltaic-driver/tests/std_receivers.rs` measures why
+/// none of those would have worked.
+#[test]
+fn a_collapsed_no_argument_stage_prints_as_a_call() {
+  let after = migrated("f : &str -> usize\nf s = s |> .len\n").expect("should parse");
+  assert!(
+    after.contains("s.len ()"),
+    "a no-argument stage must print its parentheses or it reparses as a field \
+     access: {after}"
+  );
+  assert!(
+    !after.contains("|>"),
+    "and the pipeline must be gone, not merely rewritten alongside: {after}"
   );
 }
 

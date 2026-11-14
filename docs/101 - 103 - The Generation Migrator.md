@@ -650,7 +650,94 @@ Two reverts of one rule is worth a sentence of its own: the first blamed the
 missing sidecars, and fixing those was correct and necessary work. It was not
 what made the rule sound, and the second attempt is what established that.
 
+### 10.14 It was one line in the printer, and five sessions of looking at the wrong layer
+
+**The pipeline pass now collapses every `|>` in the compiler's source — 64 of the
+74 files that hold one, with the identity gate green on all 74.** §10.11 reverted
+this pass at **5%** of stages. The whole difference is one line:
+
+```diff
+-      format! \-> "#{head}.#{name.text}"
++      format! \-> "#{head}.#{name.text} ()"
+```
+
+`collapse_pipeline` already built the right node. What it then had to do was
+*decline* it — `if .is_empty found: return ()` — because the printer wrote a
+zero-argument `Dot` as `head.name`, which **reparses as `Expr::Field`**. A field
+read is not a method call, so the rewrite was not a respelling and the gate was
+right to say so. 450 of the corpus's 473 stages carry no arguments, which is
+where the 5% came from.
+
+The surface already had the spelling. `h.items.len ()` parses as a zero-argument
+`Dot` and lowers to `h.items.len()` — verified against the compiler before the
+change, not recalled:
+
+```
+count_a h = .len h.items        ->  h.items.len()
+count_b h = h.items.len ()      ->  h.items.len()
+```
+
+So `takes_a_postfix` and `stands_alone` lost their `| !.is_empty args` guards
+too: with the parentheses printed, a zero-argument `Dot` is call-shaped in every
+position, exactly like one with arguments.
+
+**The ten files that still hold a `|>` after migration hold it as data**, and the
+gate now asserts that rather than counting: the AST's `Pipeline -> "|>"`, the
+lexer's `OPERATOR_TABLE`, the classifier's grading row, two diagnostics' help
+text, the formatter's own pipeline printer, and two test fixtures. Every one is
+a component whose job *is* `|>`. `a_collapsed_no_argument_stage_prints_as_a_call`
+pins the fix itself, and the survivor assertion fails if a `|>` ever survives on
+a line with no string literal on it.
+
+#### What this retires, and the mistake worth keeping
+
+§10.8 said the blocker was that *"the solver could not answer its question"* —
+whether `xs.len` on a `Vec` is a method — and §10.12 then relocated that question
+to the `std` boundary. Both were **answering the wrong question**, and
+`crates/voltaic-driver/tests/std_receivers.rs` is kept in the tree because its
+numbers are what retire them:
+
+| Measured over the 110-file corpus | |
+|---|---:|
+| member obligations | 170 |
+| resolving to a named owner | 29 |
+| …of those, naming a `std` type | **0** |
+
+Every one of the 29 is a project type — `Span`, `DataDecl`, `FnDecl`, `Stmt`,
+`Parser`, `TypeExpr`. **A `std` catalogue would have fired zero times.** Two
+further measurements in the same file say why, and they are the useful half:
+
+- a written `&Vec<u64>` *does* resolve, so the catalogue was not unbuildable;
+- **one `let` between the signature and the use loses the type** — `held = xs`
+  then `held.len` resolves to `None`;
+- **a receiver-first stage raises no member obligation at all.** `.count (.iter
+  xs)` produces an empty store. There was never a question for a catalogue to
+  answer, because the construct the pass needed to classify is an *application*
+  in the source it was reading.
+
+A sidecar wildcard — `Vec.* method`, with exact lines winning so `Range.start`
+stays a field — was built and tested against both `Sidecar::member` and
+`Declarations::kind_of`, and then **reverted**, because the measurement above
+left it with no consumer. Cataloguing `std`'s *fields* instead of its methods is
+still the right shape for that problem if it ever returns; it is recorded here
+rather than carried as unused machinery.
+
+The pattern across §10.12, §10.13 and this section is one pattern: three
+sessions reached for **more inference** — a guess, then sidecars, then a
+catalogue — when the defect was that the *printer* could not write down a node
+the AST already held. The sidecars were worth building on their own terms and
+`cross_crate.rs` uses them. They were not what this needed. **When a rewrite's
+output does not reparse to its input, suspect the printer before the solver** —
+the solver is where the interesting answers are, which is exactly why it is the
+tempting place to look.
+
 ### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
+
+> **Retired by §10.14.** The question in this section's title is not the one the
+> pass needed answered. The blocker was the printer, not the solver, and
+> `std_receivers.rs` measures that a `std` catalogue would have fired zero times
+> on this corpus. Read §10.14 first; this section records how the wrong layer
+> looked like the right one.
 
 Leaf 2's largest `auto` construct is doc 87 §1.2's inversion of `.`:
 

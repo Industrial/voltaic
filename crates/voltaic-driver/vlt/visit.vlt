@@ -254,8 +254,6 @@ collapse_pipeline e =
     found := .to_vec (.as_slice args)
   guard named is Some name else
     return ()
-  if .is_empty found
-    return ()
   *e := Expr::Dot { recv = .clone lhs, name, args = found, span = *span }
   ()
 
@@ -291,13 +289,13 @@ test "a numeral the traversal cannot reach would survive, which is what this pin
   after = format! \-> "#{program:?}"
   assert! \-> !.contains "\"7\"" (.as_str after)
 
-test "a pipeline with no arguments is declined, because `x.f` reparses as a field"
+test "a pipeline with no arguments collapses, now that the printer writes the parentheses"
   source = "f : &str -> usize\nf s = s |> .len\n"
   mut program = .expect "should parse" (voltaic_parser::parse_source source)
   rewrite_program (&mut program) Pass::Pipelines
   shown = format! \-> "#{program:?}"
-  assert! \-> .contains "Pipeline" (.as_str shown)
-  assert! \-> !.contains "Dot" (.as_str shown)
+  assert! \-> !.contains "Pipeline" (.as_str shown)
+  assert! \-> .contains "Dot" (.as_str shown)
 
 test "a pipeline with arguments keeps them, receiver first"
   source = "f : u64 -> u64\nf n = n |> .max 3\n"
@@ -308,20 +306,20 @@ test "a pipeline with arguments keeps them, receiver first"
   assert! \-> .contains "\"max\"" (.as_str shown)
   assert! \-> .contains "\"3\"" (.as_str shown)
 
-test "a chain collapses every stage that carries arguments, and only those"
+test "a chain collapses every stage, arguments or not"
   source = "f : u64 -> u64\nf n = n |> .max 3 |> .min 8\n"
   mut program = .expect "should parse" (voltaic_parser::parse_source source)
   rewrite_program (&mut program) Pass::Pipelines
   shown = format! \-> "#{program:?}"
   assert! \-> !.contains "Pipeline" (.as_str shown)
 
-test "a mixed chain collapses the argument-carrying stage and leaves the other"
+test "a mixed chain collapses both stages, the one with arguments and the one without"
   source = "f : &str -> usize\nf s = s |> .replacen \"a\" \"b\" 1 |> .len\n"
   mut program = .expect "should parse" (voltaic_parser::parse_source source)
   rewrite_program (&mut program) Pass::Pipelines
   shown = format! \-> "#{program:?}"
   assert! \-> .contains "Dot" (.as_str shown)
-  assert! \-> .contains "Pipeline" (.as_str shown)
+  assert! \-> !.contains "Pipeline" (.as_str shown)
 
 test "a binary that is not a pipeline is left alone"
   source = "f : u64 -> u64\nf n = n + 1\n"

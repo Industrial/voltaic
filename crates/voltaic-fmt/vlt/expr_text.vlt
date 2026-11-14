@@ -29,7 +29,7 @@ expr_text expr required indent source = case expr of
       |> .map (\arg -> argument arg indent source)
       |> .collect
     if .is_empty printed
-      format! \-> "#{head}.#{name.text}"
+      format! \-> "#{head}.#{name.text} ()"
     else
       format! \-> "#{head}.#{name.text} #{(.join " " printed)}"
   Expr::Field { recv, name, .. } ->
@@ -142,8 +142,8 @@ stands_alone expr = case expr of
   Expr::Ident _ or Expr::Path { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } -> true
   Expr::Unit { .. } or Expr::Tuple { .. } or Expr::Section { .. } -> true
   Expr::Paren { .. } -> true
-  Expr::Dot { args, .. } | !.is_empty args -> false
-  Expr::Field { .. } or Expr::Dot { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
+  Expr::Dot { .. } -> false
+  Expr::Field { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
   Expr::MethodRef { .. } -> true
   Expr::List { .. } or Expr::ArrayRepeat { .. } -> false
   _ -> false
@@ -303,8 +303,8 @@ receiver expr indent source =
 export(crate) takes_a_postfix : &Expr -> bool
 takes_a_postfix expr = case expr of
   Expr::Ident _ or Expr::Path { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } or Expr::Unit { .. } or Expr::Tuple { .. } or Expr::List { .. } or Expr::ArrayRepeat { .. } or Expr::Record { .. } or Expr::Section { .. } or Expr::Comprehension { .. } or Expr::SelfField { .. } or Expr::SelfType { .. } -> true
-  Expr::Dot { args, .. } | !.is_empty args -> false
-  Expr::Field { .. } or Expr::Dot { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
+  Expr::Dot { .. } -> false
+  Expr::Field { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
   Expr::MethodRef { .. } -> true
   Expr::Paren { inner, .. } -> takes_a_postfix inner
   Expr::Call { .. } -> false
