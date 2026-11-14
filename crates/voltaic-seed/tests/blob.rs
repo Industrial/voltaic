@@ -209,8 +209,9 @@ fn seed_md_records_a_provenance_the_invariant_allows() {
 
   for table in &found {
     assert!(
-      table.compiles == "g1" || table.compiles == "g2",
-      "seed/SEED.md records `compiles: {}`; expected g1 or g2",
+      table.compiles == "g2",
+      "seed/SEED.md records `compiles: {}`; expected g2 — g1 was retired by row \
+       102 §3.1, so a table naming it is a stale record rather than a blob",
       table.compiles
     );
     assert!(

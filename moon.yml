@@ -145,25 +145,11 @@ tasks:
   # `cache: false` because the output is a tracked file, not a build artifact
   # under `target/`: a cached no-op would leave a stale blob committed and
   # report success.
-  seed-refresh:
-    description: 'Rebuild seed/voltaic-g1.wasm from crates/voltaic-seed'
-    command: 'bash'
-    args:
-      - '-c'
-      - |
-        set -e
-        cargo build --release -p voltaic-seed --target wasm32-wasip1
-        wasm-opt -Oz --enable-bulk-memory \
-          -o seed/voltaic-g1.wasm \
-          target/wasm32-wasip1/release/voltaic-seed.wasm
-        stat -c "seed/voltaic-g1.wasm is %s bytes" seed/voltaic-g1.wasm
-        echo "now: VOLTAIC_UPDATE=1 cargo test -p voltaic-seed --test blob"
-    inputs:
-      - 'crates/voltaic-seed/src/**/*'
-      - 'crates/voltaic-seed/Cargo.toml'
-    options:
-      cache: false
-      outputStyle: buffer-only-failure
+  # `seed-refresh` rebuilt `voltaic-g1.wasm` and is gone with it — row 102 §3.1's
+  # retirement step. `seed-refresh-g2` is kept under its own name rather than
+  # renamed to `seed-refresh`, because `SEED.md` records why there were two: what
+  # they build is not the same thing, and a single task would make refreshing the
+  # wrong one a typo away. A third generation adds `seed-refresh-g3`.
   seed-refresh-g2:
     description: 'Rebuild seed/voltaic-g2.wasm from crates/voltaic-seed'
     command: 'bash'

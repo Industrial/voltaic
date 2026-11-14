@@ -82,8 +82,10 @@ pub fn generations() -> Vec<(String, u32, String)> {
         })
         .to_string();
       assert!(
-        generation == "g1" || generation == "g2",
-        "seed/GENERATION: `{l}` marks the generation `{generation}`; expected g1 or g2"
+        generation == "g2",
+        "seed/GENERATION: `{l}` marks the generation `{generation}`; expected g2 — \
+         `g1` was retired with its blob by row 102 §3.1, so a line naming it \
+         would send `bootstrap.sh` at a file that is not there"
       );
       assert!(
         parts.next().is_none(),

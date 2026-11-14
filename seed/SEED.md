@@ -3,23 +3,39 @@
 Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 3, with a second generation
 added by row 102 (`docs/100 - 102 - The Seed Across the Turn.md`) step 3.
 
-This directory holds the **only binaries this repository tracks**. Each is
+This directory holds the **only binary this repository tracks**. It is
 `crates/voltaic-seed` compiled to `wasm32-wasip1`: `.vlt` in, `.rs` out, and
 nothing else — no `check`, no `fmt`, no `watch`, no colour.
 
-There are two for the duration of the turn, and `seed/GENERATION`'s third column
-is what picks between them per crate:
-
 | | compiles | built by | why it exists |
 |---|---|---|---|
-| `voltaic-g1.wasm` | g1 | the pre-Voltaic Rust implementation | every crate's `.vlt` is generation 1 today |
-| `voltaic-g2.wasm` | g2 | the generation-1-written front end in the tree | row 103 migrates crates to generation 2 one at a time |
+| `voltaic-g2.wasm` | g2 | the generation-1-written front end in the tree | every crate's `.vlt` is generation 2 |
 
-Two, rather than one replaced in place, because row 102 §3.1 keeps g1 until
-`fixpoint` is green on g2 twice: retiring it when it stops being *used* would mean
-a defect found in g2 leaves nothing able to rebuild the repository, and that
-defect would be found on a clean clone, where the generated trees are absent. The
-cost of keeping it is one megabyte for the duration of the turn.
+### `voltaic-g1.wasm` was here, and row 102 §3.1 retired it
+
+There were two for the duration of the turn. `voltaic-g1.wasm` compiled
+generation 1, was built by the pre-Voltaic Rust implementation that plan 72 then
+deleted, and was **1,005,170 bytes**.
+
+Keeping it was deliberate and the reason is worth preserving, because it is the
+reason the retirement had preconditions rather than being a tidy-up: retiring a
+seed when it stops being *used* would mean a defect found in its successor leaves
+nothing able to rebuild the repository — and that defect would be found on a
+clean clone, where the generated trees are absent and there is nothing to fall
+back to.
+
+So §3.1 set two conditions, and both were met before the file was deleted:
+
+1. **`seed/GENERATION` holds no `g1` line.** Row 103 leaf 6 took all fourteen
+   crates across, one reviewable commit each.
+2. **`fixpoint` green on g2 from a clean clone, twice.** Verified on the
+   pre-migration tree (doc 100 §10.8) and again on the fully migrated tree — two
+   independent `git clone`s each time, because two runs in one clone would be a
+   cached pass and would not notice a non-deterministic blob.
+
+What this buys is one megabyte of history that does not delta-compress, and one
+fewer thing that can go stale. What it costs is the fallback above, which is why
+the conditions are written down here rather than only in the plan.
 
 ## What it is for
 
@@ -40,15 +56,7 @@ verified by a compiler the seed is supposed to underwrite.
 
 `docs/64 - 70 - The Source Beside the Crate.md` §1 is the full survey.
 
-## Identity — g1
-
-| | |
-|---|---|
-| built from commit | `667e727` **plus plan 93's rename**, which lands in the same commit as this row |
-| compiles | g1 |
-| built by | the pre-Voltaic Rust implementation, deleted by plan 72 |
-| size | 1005170 bytes |
-| blake3 | `0cbf2b3fab61987ae909388209cd4e5b7f53eca130c104447d40af212dd9fc2d` |
+## The invariant, which outlives both blobs
 
 `compiles` and `built by` are row 102 leaf 8, and they exist so that §1.2's
 invariant is *checkable* rather than only stated:
@@ -59,15 +67,19 @@ invariant is *checkable* rather than only stated:
 
 A blob built by itself is exactly what that forbids, so
 `crates/voltaic-seed/tests/blob.rs` asserts `built by` never names the generation
-in `compiles`. For this blob it names no generation at all, which is the base
-case: the compiler that produced it was the committed Rust one, and plan 72
-deleted it afterwards — the same shape, and the same order, as Zig's C++ compiler
-producing the first `zig1.wasm`.
+in `compiles`.
 
-`voltaic-g2.wasm` will record `compiles: g2` and `built by: g1`, because doc 100
+For the retired g1 it named no generation at all, which was the base case: the
+compiler that produced it was the committed Rust one, and plan 72 deleted it
+afterwards — the same shape, and the same order, as Zig's C++ compiler producing
+the first `zig1.wasm`.
+
+`voltaic-g2.wasm` records `compiles: g2` and `built by: g1`, because doc 100
 §1.3's ordering writes generation 2's front end **in generation 1**. That is the
 one ordering that satisfies the invariant, and the table is where a future reader
-can check that it was followed rather than take it on trust.
+can check that it was followed rather than take it on trust. **It stays `g1` now
+that g1's blob is gone**, because it is a record of how this blob came to be and
+not a pointer to a file.
 
 `crates/voltaic-seed/tests/blob.rs` recomputes the hash and fails if it does not
 match this table, so a hand-edited blob and a stale row are the same failure.
@@ -141,25 +153,26 @@ prevent.
 ## How to rebuild them
 
 ```bash
-moon run :seed-refresh      # seed/voltaic-g1.wasm
 moon run :seed-refresh-g2   # seed/voltaic-g2.wasm
 ```
 
-which are exactly:
+which is exactly:
 
 ```bash
 cargo build --release -p voltaic-seed --target wasm32-wasip1
 wasm-opt -Oz --enable-bulk-memory \
-  -o seed/voltaic-g1.wasm \
+  -o seed/voltaic-g2.wasm \
   target/wasm32-wasip1/release/voltaic-seed.wasm
 ```
 
-with `-o seed/voltaic-g2.wasm` for the other. **Two tasks and not one with an
-argument**, because what they build is not the same thing: g1's blob is frozen at
-its own provenance for the duration of the turn and g2's tracks the tree. A single
-task would make refreshing the wrong one a typo away, and refreshing g1 from a
-generation-2 tree is precisely the invariant violation `blob.rs` exists to catch —
-except that it would catch it only *after* the bytes had been replaced.
+There was a `seed-refresh` beside it, which built g1, and it is gone with the
+blob. **The remaining task keeps its `-g2` suffix rather than taking the shorter
+name**, for the reason there were two in the first place: what a generation's
+task builds is not the same thing as another's, and one task with an argument
+would make refreshing the wrong one a typo away. Refreshing g1 from a
+generation-2 tree was precisely the invariant violation `blob.rs` exists to
+catch — and it would have caught it only *after* the bytes were replaced. A third
+generation adds `seed-refresh-g3`.
 
 `wasm-opt` is not optional and not cosmetic: the release build is 1,351,423
 bytes and `-Oz` takes it to 913,549, so a blob built without it is a third
@@ -186,7 +199,7 @@ that does not delta-compress, so the rule is a trigger and not a cadence.
 ## Running them
 
 ```bash
-wasmtime run --dir . seed/voltaic-g1.wasm crates/voltaic-ast/vlt <out-dir>
+wasmtime run --dir . seed/voltaic-g2.wasm crates/voltaic-ast/vlt <out-dir>
 ```
 
 `--dir .` is required — WASI grants no filesystem access by default, so without

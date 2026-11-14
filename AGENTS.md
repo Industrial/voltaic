@@ -194,10 +194,15 @@ workspace splits along pipeline stages (`docs/02 - Voltaic Update Blueprint.md` 
   `src/` untouched rather than broken.
 
   **A clean clone has no `src/` at all, and `./bootstrap.sh` is what fixes that.** It runs
-  `seed/voltaic-g1.wasm` under `wasmtime` over every crate in `seed/GENERATION`, then rustfmt, and
+  `seed/voltaic-g2.wasm` under `wasmtime` over every crate in `seed/GENERATION`, then rustfmt, and
   `cargo build` works afterwards. `seed/SEED.md` is the blob's provenance;
-  `moon run :seed-refresh` rebuilds it and `VOLTAIC_UPDATE=1 cargo test -p voltaic-seed --test
-  blob` records the new hash. Order is **build → update → seed-refresh**.
+  `moon run :seed-refresh-g2` rebuilds it and `VOLTAIC_UPDATE=1 cargo test -p voltaic-seed
+  --test blob` records the new hash. Order is **build → update → seed-refresh**.
+
+  **There is one blob, `seed/voltaic-g2.wasm`, and one `GENERATION` value, `g2`.**
+  `voltaic-g1.wasm` and the `:seed-refresh` task that rebuilt it were retired by
+  row 102 §3.1, once row 103 leaf 6 had taken all fourteen crates to generation 2
+  and `fixpoint` was green on two clean clones of the migrated tree.
 
   **This bullet used to say the opposite, and the correction is worth keeping.** Until
   plan 72 it read *"the `.rs` … is committed"* and *"the committed `.rs` is load-bearing
@@ -289,7 +294,7 @@ see the first bullet under *Conventions that are load-bearing* and
   repository stops bootstrapping — on a clean clone, not here, because the files stay on
   disk locally.
 
-  The fix is `moon run :seed-refresh` and
+  The fix is `moon run :seed-refresh-g2` and
   `VOLTAIC_UPDATE=1 cargo test -p voltaic-seed --test blob`, in the same commit as the surface
   change. rustc answers the same problem with `cfg(bootstrap)` double implementations and
   Go with a version chain bumped about once a year; both are expensive because their seeds
@@ -542,7 +547,7 @@ result, which is why they are written down rather than rediscovered.
   `tree-sitter-voltaic/test/corpus/`, which `tree_sitter.rs` runs, over leaning on the
   examples sweep: the sweep cannot see a construct the grammar never knew it was missing.
 
-- **`moon run :seed-refresh` replays a cached size, so the number it prints can be a
+- **`moon run :seed-refresh-g2` replays a cached size, so the number it prints can be a
   previous run's.** The task ends in `echo "... is $(stat -c %s seed/voltaic-g1.wasm) bytes"`,
   which is correct when it runs — but moon caches the task's stdout, so a cache hit prints
   the *old* size while the blob on disk is the new one. Measured 2026-11-12: it reported

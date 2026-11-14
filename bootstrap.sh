@@ -31,8 +31,8 @@ cd "$(dirname "$0")"
 # `crates/voltaic-seed/tests/bootstrap.rs` read the same file.
 #
 # Row 102 leaf 7: each line carries the generation its `.vlt` is written in, and
-# the blob is chosen per crate. That is what lets row 103 move crates across the
-# turn one at a time instead of in one commit.
+# the blob is picked from it. That is what let row 103 move crates across the
+# turn one at a time instead of in one commit; every line now reads `g2`.
 mapfile -t ENTRIES < <(sed -e 's/#.*//' seed/GENERATION | awk 'NF { print $1 " " $3 }')
 if [ "${#ENTRIES[@]}" -eq 0 ]; then
     echo "error: seed/GENERATION names no crates." >&2
@@ -56,24 +56,18 @@ for entry in "${ENTRIES[@]}"; do
         exit 1
     fi
 
+    # One generation, one blob, named by the column. The `g1 | g2` arm and the
+    # "newest blob present" override that used to follow it are gone with
+    # `voltaic-g1.wasm` — row 102 §3.1's retirement step, taken once
+    # `seed/GENERATION` held no `g1` line and `fixpoint` was green on g2 from two
+    # clean clones of the migrated tree.
     case "$generation" in
-        g1 | g2) SEED="seed/voltaic-$generation.wasm" ;;
+        g2) SEED="seed/voltaic-$generation.wasm" ;;
         *)
-            echo "error: seed/GENERATION marks $crate as '$generation'; expected g1 or g2." >&2
+            echo "error: seed/GENERATION marks $crate as '$generation'; expected g2." >&2
             exit 1
             ;;
     esac
-    # The newest blob that reads this generation, which is not always the one the
-    # column names. `voltaic-g1.wasm` is immutable — refreshing it would make its
-    # `built by` and `compiles` both `g1`, which `blob.rs` refuses — so the first
-    # change to the *emitter* after plan 72 froze it makes g1's output differ from
-    # the tree's, permanently. g2 reads generation 1 too, proven byte-for-byte by
-    # `across_the_turn.rs`, so it is what regenerates a `g1` crate once it exists.
-    # g1 stays for doc 100 §3.1's reason: retired last, not when it stops being
-    # needed.
-    if [ -f seed/voltaic-g2.wasm ]; then
-        SEED="seed/voltaic-g2.wasm"
-    fi
     # Named with the crate that wanted it: `wasmtime: no such file` names the
     # blob and not the reason one was asked for.
     if [ ! -f "$SEED" ]; then

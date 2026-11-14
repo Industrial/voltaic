@@ -16,25 +16,24 @@
 # with a reviewable state after each; a migration that had to land fourteen
 # crates atomically would have no reviewable intermediate state at all.
 #
-# **It is validated, not dispatched on, and this comment used to say otherwise.**
-# It read *"`bootstrap.sh` runs `voltaic-g1.wasm` for a crate marked `g1` and
-# `voltaic-g2.wasm` for one marked `g2`"*, and that is not what happens:
-# `bootstrap.sh` rejects any value that is not `g1` or `g2`, and then uses the
-# **newest blob present** for every crate. g1 is immutable — refreshing it would
-# make its `built by` and `compiles` both `g1`, which `blob.rs` refuses — so the
-# first change to the emitter after plan 72 froze it makes g1's output differ
-# from the tree's, permanently. g2 reads generation 1 too, byte-for-byte, which
-# `across_the_turn.rs` proves.
+# **It is validated, not dispatched on**, and `bootstrap.sh` rejects any value
+# the blob set does not cover. An earlier version of this comment claimed a
+# per-crate dispatch — *"`bootstrap.sh` runs `voltaic-g1.wasm` for a crate marked
+# `g1`"* — which was never what happened: the script took the newest blob present
+# for every crate, because g1 was immutable and its output diverged from the
+# tree's the moment the emitter moved past plan 72.
 #
-# So the column's three live jobs are: telling a reader which surface a given
-# `.vlt` may use, keeping the blob set honest through
+# So the column's live jobs are: telling a reader which surface a given `.vlt`
+# may use, keeping the blob set honest through
 # `every_generation_named_in_the_list_has_its_blob`, and carrying `blob.rs`'s
 # invariant that a blob's `built by` may not name its own `compiles`. The
-# per-crate *reviewability* comes from the migration commits, not from which
-# blob ran — and it survives the simplification intact.
+# per-crate *reviewability* came from the migration commits, not from which blob
+# ran.
 #
-# Every crate is `g1` today. The first `g2` line is row 103's first commit, and
-# the last `g1` line leaving is row 102 §3.1's retirement step.
+# **Every crate is `g2`, and `g2` is the only generation named.** Row 103 leaf 6
+# took them across one commit at a time; row 102 §3.1's retirement step then
+# deleted `voltaic-g1.wasm`, which is why no line reads `g1` and no blob answers
+# to it. A third generation would add its own blob and its own column value.
 voltaic-diag 73 g2
 voltaic-lexer 74 g2
 voltaic-ast 68 g2
