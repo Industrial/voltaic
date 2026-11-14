@@ -1118,6 +1118,53 @@ same reading, and both were wrong about the construct they introduced. What
 separated them was not care — it was `examples/ladder.vlt` and
 `examples/else_tail.vlt`.
 
+### 10.32 Doc 87 cited a section of itself that does not exist, twice
+
+§5.6's and §5.7's text attributed the eleven surviving keywords to *"§1.4"* of doc
+87. **Doc 87 has no §1.4** — §1 runs §1.1, §1.2, then §2. The eleven are **doc 86
+§9.1**, which is normative, and §1.4 of *this* document repeats them with the count
+correction. Both citations are repointed.
+
+Three things make this worth a subsection rather than a quiet fix.
+
+**It is the same error as §5.6's and §5.7's examples, in a third form.** Those two
+described constructs the parser rejects; this cites a section that is not there.
+All three were written in one sitting, all three were written from recollection of
+where a thing lives rather than from looking, and all three read as authoritative.
+A citation is the cheapest claim in a document to make and the most expensive to
+check, which is exactly the combination that produces this.
+
+**The conclusion it was used to support is still right.** §10.27 withdrew §10.23
+on the strength of *"§1.4's eleven surviving keywords exclude `if` and `case`"*,
+and that is true — of doc 86 §9.1 and of §1.4 of this document, both of which list
+the same eleven. So the repointing changes no conclusion, which is the trap: a
+wrong citation supporting a right conclusion has nothing downstream to fail, and
+survives indefinitely.
+
+**A gate for this was measured and declined.** The obvious response is a test that
+resolves every `§N.M` in docs 86+ against a heading. Three rounds of probe said
+not to build it:
+
+| | Dangling reported |
+|---|---:|
+| first probe | 92 distinct / 150 occurrences |
+| case-insensitive, `plan`/`row` attribution added | 61 / 104 |
+| inspected by hand | **1 real** (this one, ×2) |
+
+The residue is not tunable away, because the false positives are *contextual*
+references that are correct English and unresolvable text: `doc 87 §22.4 lists in
+the §22 table` — the second `§22` is bare and means doc 87's; `Doc 86 §4.2–§4.4` —
+the far end of a range inherits the attribution; `97 §10.13 records` — a document
+named by bare number. And doc 89's headings are `## Milestone 13 —`, unnumbered, so
+the probe reported every reference in it as dangling, which is the probe being
+wrong about a document rather than the document being wrong.
+
+A gate at that precision is worse than none: 60 false positives is a gate nobody
+reads, and a gate nobody reads is how `:check-docs` ended up in the push gate with
+514 errors in it (`AGENTS.md`). **Declined, with the numbers, so the next reading
+of this does not re-derive them.** What does hold is the habit: a `§` is a claim,
+so check it the way §10.30 and §10.31 say to check the others — by looking.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

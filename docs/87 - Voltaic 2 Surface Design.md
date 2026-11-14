@@ -489,8 +489,8 @@ output.
 
 **`guard … else` is deleted too, and §5.6 already shows its replacement**:
 `ch = self.peek else break` is a binding with an `else` tail. `else` is one of
-§1.4's eleven surviving keywords for exactly this, and it is why `else` survives
-while `if` does not.
+**doc 86 §9.1's** eleven surviving keywords for exactly this, and it is why `else`
+survives while `if` does not.
 
 ---
 
@@ -772,8 +772,8 @@ its own plan rather than settled here, and that is named in `docs/89 - Voltaic 2
 of Plans.md` row 100 rather than left implicit.
 
 **One item was open and is now closed, which this section claimed was impossible.**
-§5 had no subsection on conditionals while §1.4's surviving eleven keywords deleted
-`if` and `case` — so the surface deleted a construct and did not say what replaced
+§5 had no subsection on conditionals while **doc 86 §9.1's** surviving eleven
+keywords deleted `if` and `case` — so the surface deleted a construct and did not say what replaced
 it. Found by row 99 wave 2 trying to implement the deletion and having nothing to
 implement it *to*; `docs/97 - 99 - The Surface Contraction.md` §10.24 and §10.28
 record the discovery, and §5.7 above is the answer. The lesson is the one doc 04
