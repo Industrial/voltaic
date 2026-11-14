@@ -23,10 +23,10 @@
 newtype Tag = Tag String
 
 data Profile
-  = Profile { name : String, tag : Tag, nickname : Option<String> }
+  = Profile { name String, tag Tag, nickname Option<String> }
 
 data User
-  = User { profile : Option<Profile> }
+  = User { profile Option<Profile> }
 
 -- The fallible operation everything below uses. `::` ascribes the parse's
 -- type, because `parse` is generic over its target and nothing else here says

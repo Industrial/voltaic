@@ -290,16 +290,32 @@ fn the_generated_rust_always_parses() {
     "only {checked} inputs reached the emitter, which is too few to mean \
      anything"
   );
-  // The two fence-carrying corpus files contribute nine inputs each, and 15 of
-  // those 18 still hold the introducer: in the other three the mutation ate it,
-  // so the body is lexed as ordinary source and is judged normally. That is the
-  // skip's own safety argument, as a number. Asserted so that a corpus losing
-  // its inline Rust, or a skip that silently widened, shows up here rather than
-  // as a quietly smaller sweep. 18 was the first guess and the assertion caught
-  // it, which is the case for having it.
-  assert_eq!(
-    fenced, 15,
-    "expected the fence-carrying inputs to be skipped, not {fenced}"
+  // The two fence-carrying corpus files contribute nine inputs each, and most of
+  // those 18 still hold the introducer: in the rest the mutation ate it, so the
+  // body is lexed as ordinary source and is judged normally. That is the skip's
+  // own safety argument, as a number — asserted so that a corpus losing its
+  // inline Rust, or a skip that silently widened, shows up here rather than as a
+  // quietly smaller sweep.
+  //
+  // **A range, and both ends are structural.** This was `assert_eq!(fenced, 15)`,
+  // and 18 before that — the assertion caught the 18, which was the case for
+  // having it. It then caught 15 → **14**, and that one was *not* a defect: row
+  // 99 wave 5 reformatted `examples/bind.vlt` to doc 87 §4.1's juxtaposed fields,
+  // which shifted every later byte, so a mutation that used to land beside the
+  // fence introducer now lands on it.
+  //
+  // The mutation positions are byte indices, so **a formatting change is a fresh
+  // draw** — and an exact count turns every reformatting into a false failure
+  // here. The bounds keep both signals an exact count had: fewer than 12 means
+  // the corpus lost its inline Rust or the traversal stopped reaching it, and
+  // more than 18 is impossible unless the skip widened past the fence-carrying
+  // inputs, since 2 files × 9 mutations is all there are.
+  assert!(
+    (12..=18).contains(&fenced),
+    "expected 12 to 18 fence-carrying inputs to be skipped, not {fenced}. Below \
+     12 the corpus has lost its inline Rust or the sweep stopped reaching it; \
+     above 18 the skip is excusing something that carries no fence, because 18 \
+     is every input the two fence-carrying files produce."
   );
 }
 

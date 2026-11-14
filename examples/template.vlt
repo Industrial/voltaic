@@ -39,10 +39,10 @@ deriving template Labelled
     labelled : &self -> String
     labelled self = zip_pairs (&[FieldNames]) (&[Fields])
 
-data Point = Point { export x : u32, export y : u32 }
+data Point { export x u32, export y u32 }
   deriving (Debug, Clone, Labelled)
 
-data Triple = Triple { export a : u32, export b : u32, export c : u32 }
+data Triple { export a u32, export b u32, export c u32 }
   deriving (Debug, Clone, Labelled)
 
 -- The class the template implements, and the helper its body calls. Both are

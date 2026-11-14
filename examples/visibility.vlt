@@ -16,7 +16,7 @@
 
 -- Per-field visibility, which is the half doc 01 §22 could not express at
 -- all.
-export data Point = Point { export x : f64, y : f64 }
+export data Point { export x f64, y f64 }
   deriving (Debug)
 
 export(crate) type Depth = f64

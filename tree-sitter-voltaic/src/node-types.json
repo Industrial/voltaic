@@ -1849,6 +1849,14 @@
           "named": true
         },
         {
+          "type": "record_fields",
+          "named": true
+        },
+        {
+          "type": "type_expression",
+          "named": true
+        },
+        {
           "type": "visibility",
           "named": true
         }

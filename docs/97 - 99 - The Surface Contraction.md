@@ -1349,6 +1349,87 @@ bodies.** A method call's receiver auto-borrows, so `.is_empty (&table)` emits
 because it is a *Voltaic* surface fact with a *Rust* lint attached: the
 receiver-last spelling makes the `&` look necessary, and it is not.
 
+### 10.37 Wave 5's juxtaposition, and the formatter is what migrated the examples
+
+Doc 87 §4.1: `name Type` rather than `name : Type`, the headless record
+`data Point { x f64, y f64 }`, and the newtype shape `data Tag String`. The `:`
+form still parses, because the compiler's own 105 `.vlt` files are written in it
+and row 103 is what migrates them.
+
+**The canonical form is generation 2's, so `voltaic fmt` is the migrator.** That
+is the finding worth the subsection. Doc 101 §2.1 says *"the examples and
+fixtures were migrated by row 99 **by hand**, wave by wave"* — and for this wave
+no hand was needed: making the printer emit §4.1's form and running `voltaic fmt`
+over `examples/` migrated **fourteen files** in one pass, and
+`tests/golden/` did not change by a byte.
+
+That last clause is the whole proof. A spelling change that leaves every
+generated `.vrs` identical is exactly doc 101 §1.1's identity gate, satisfied
+over the examples corpus without the migrator existing yet. Wave 5 is the wave
+where the formatter *is* leaf 2, for the one construct whose two spellings parse
+to the same AST.
+
+It does not generalise. The formatter can migrate a construct whose spelling the
+AST does not record — a field's `:` is punctuation, so printing it or not is the
+printer's choice. It cannot migrate `if` into a ladder, because those are
+different nodes.
+
+**Two restrictions found by the round-trip.**
+
+`newtype` keeps its `=`. The headless form is `data`'s only: §4.1 *deletes* the
+`newtype` keyword, so `newtype Meters f64` is not a generation-2 spelling of
+anything and printing it produced a file that did not round-trip.
+
+A constructor named something other than its type keeps its `=` too.
+`data Shape = Circle f64` is one constructor whose name is load-bearing, so the
+condition is on the *name* rather than on the count — and `data Point = Point {…}`
+drops the head because `Point` there carries no information.
+
+### 10.38 `formatting_preserves_meaning` was wrong about its own normaliser, again
+
+The round-trip reported that formatting **changed the program** in
+`examples/data.vlt`, naming a `CaseArm` sixty lines from anything this wave
+touched. It had not changed. `Pattern::Wildcard(Span)` carries its span
+*positionally*, so it prints as `Wildcard((2132, 2133))` and the normaliser's scan
+for `span: (` walks straight past it — and shortening
+`data Celsius = Celsius f64` to `data Celsius f64` shifted every later byte offset
+by ten.
+
+The test's own doc comment already records this, for the *first* version:
+
+> The first version of this test failed for that reason and not because any
+> program had changed, which is worth recording: a property test whose
+> normaliser is wrong reports a defect in the subject.
+
+Same test, same class, second occurrence. The normaliser now blanks a labelled
+span **and** any bare `(integer, integer)` — safe because a span is the only
+two-integer tuple this AST prints; every other tuple holds nodes, which print as
+`Name {` or `Name(`.
+
+### 10.39 A formatting change is a fresh draw for a byte-indexed fuzzer
+
+`voltaic-fuzz`'s sweep mutates a byte and requires that the parser's acceptance
+imply the emitter's output parses. Reformatting fourteen examples moved every
+later byte, so the sweep explored a different set — and immediately found a hole
+that had been there all along.
+
+**`import std::iter8:once` was accepted and emitted `use std::iter8:once;`**,
+which is not Rust. `import_path` concatenates every token until a newline, so
+anything on the line reached the generated `use` verbatim. A lone `:` is
+unambiguously wrong there — `::` lexes as `ColonColon` — so it is now a
+diagnostic. One deleted character in `std::iter::once` is what found it.
+
+The sweep's own `assert_eq!(fenced, 15)` then failed at **14**, and that one was
+not a defect either: the mutation positions are byte indices, so a mutation that
+used to land beside a fence introducer now lands on it. The assertion is a range,
+`12..=18`, and both ends are structural — below 12 the corpus has lost its inline
+Rust or the sweep stopped reaching it, and above 18 the skip is excusing something
+with no fence, because 2 files × 9 mutations is every input there is.
+
+An exact count there turned every reformatting into a false failure. Its comment
+argued for exactness because catching 18 was the case for having it; catching 14
+is the case against, and the range keeps both signals the count had.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

@@ -252,6 +252,16 @@ module.exports = grammar({
 						),
 					),
 					seq($._indent, $._alternatives, $._dedent),
+					// Doc 87 §4.1: the headless forms. `data Point { x f64, y f64 }`
+					// and `data Tag String` — a single constructor named after the
+					// type, so `= Point` would be a word carrying no information.
+					seq(
+						choice($.record_fields, repeat1($.type_expression)),
+						choice(
+							seq(optional($.deriving), $._newline),
+							seq($._indent, $.deriving, $._dedent),
+						),
+					),
 				),
 			),
 
@@ -273,14 +283,20 @@ module.exports = grammar({
 		record_fields: ($) =>
 			seq("{", optional(sep1($.field_declaration, ",")), "}"),
 
-		// Plan 52: `:` declares the type and `=` supplies the value, which makes
+		// Plan 52 made `:` declare the type and `=` supply the value, which made
 		// `data Point = Point { x : f64, y : f64 }` Rust's struct syntax with the
 		// token unchanged.
+		//
+		// Doc 87 §4.1 takes the `:` back out: `name Type` removes one token per
+		// field — the largest repeated-token class after signature lines — and
+		// frees `:` for ascription. The `:` form stays admitted because the
+		// compiler's own 105 `.vlt` files are written in it and row 103 is what
+		// migrates them, so both spell a field for the duration of the turn.
 		field_declaration: ($) =>
 			seq(
 				optional($.visibility),
 				field("name", $.identifier),
-				":",
+				optional(":"),
 				field("type", $.type_expression),
 			),
 

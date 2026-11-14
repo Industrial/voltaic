@@ -34,7 +34,7 @@ data Event
 -- is where the difference is now visible.
 newtype Meters = Meters f64
 
-data Celsius = Celsius f64
+data Celsius f64
 
 -- The one declaration form that is already Rust.
 type Depth = f64

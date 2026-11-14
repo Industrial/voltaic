@@ -128,6 +128,8 @@ import_path p =
       TokenKind::LBrace -> depth += 1
       TokenKind::RBrace -> depth -= 1
       _ -> ()
+    if kind == &TokenKind::Colon
+      return Err (ParseError::with_help Code::ExpectedName "`:` is not a path separator" "an import path is separated by `::` — `import std::iter::once`. A single `:` reaches the generated `use` verbatim and is not Rust" (.peek_span p))
     renames = case kind of
       TokenKind::Kw (Keyword::As) -> true
       _ -> false

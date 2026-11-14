@@ -11,7 +11,7 @@ import std::fmt::Debug
 
 newtype Meters = Meters f64
 
-data Counter = Counter { value : u32 }
+data Counter { value u32 }
   deriving (Debug)
 
 -- A superclass survives the class losing its variable: `=>` before the name,

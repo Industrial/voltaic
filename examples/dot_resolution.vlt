@@ -8,7 +8,7 @@
 -- and nothing else and `docs/DECLINED.md` recorded UFCS as "requires type
 -- knowledge to choose a shape". Lattice has the type knowledge.
 
-data Cursor = Cursor { pos : usize }
+data Cursor { pos usize }
 
 instance Cursor
   export depth : &self -> usize

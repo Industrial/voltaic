@@ -1,0 +1,54 @@
+-- Doc 87 §4.1: `name Type` rather than `name : Type`.
+--
+-- Two reasons, and the second is the one that pays. It removes one token per
+-- field — measured over generation 1's corpus, field and payload `:` tokens are
+-- the largest single repeated-token class after signature lines. And it frees `:`
+-- for **ascription**, which generation 2 needs everywhere a type is stated
+-- against an expression rather than declared beside a name.
+--
+-- The `:` form still parses, because the compiler's own 105 `.vlt` files are
+-- written in it and row 103 is what migrates them. The accepted surface widens
+-- first and narrows when the tree catches up — doc 97 §10.22's switch is what
+-- sequences that.
+
+-- A record with no constructor head. `data Point = Point { x : f64, y : f64 }`
+-- is the generation-1 spelling of the same type, and both emit the same struct:
+-- the constructor takes the type's own name, because that is what the `= Point`
+-- form already meant.
+data Point { x f64, y f64 }
+
+-- A single unnamed field is `newtype`'s shape, so the keyword is deleted rather
+-- than respelled. `newtype Tag = Tag String` was generation 1's.
+data Tag String
+
+-- Payload juxtaposition, which generation 1 already had — `= Circle f64` never
+-- wrote a `:`. Worth showing beside the others so the change reads as *one* rule
+-- reaching the record form rather than a new rule for records.
+data Shape
+  = Circle f64
+  | Square f64
+
+-- Field punning, kept from generation 1 (§4.2): a bare name is `src: src`.
+data Cursor { src String, pos usize }
+
+opened : String -> Cursor
+opened src = Cursor { src, pos = 0 }
+
+area : &Shape -> f64
+area s = case s of
+  Shape::Circle r -> 3.0 * r * r
+  Shape::Square w -> w * w
+
+labelled : &Tag -> usize
+labelled t = .len (&t.0)
+
+main : ()
+main =
+  p = Point { x = 1.5, y = 2.5 }
+  c = opened (String::from "ab")
+  t = Tag (String::from "xyz")
+  println! \-> "#{p.x} #{p.y}"
+  println! \-> "#{c.src} #{c.pos}"
+  println! \-> "#{(labelled (&t))}"
+  println! \-> "#{(area (&Shape::Circle 2.0))} #{(area (&Shape::Square 3.0))}"
+  ()

@@ -21,13 +21,13 @@
 -- was the whole of the construct and nothing said so — milestone 9's worst
 -- class, found by writing the second dot.
 
-data Zip = Zip { code : u32 }
+data Zip { code u32 }
   deriving (Debug, Clone, Copy)
 
-data Address = Address { zip : Zip }
+data Address { zip Zip }
   deriving (Debug, Clone, Copy)
 
-data Person = Person { age : u32, addr : Address }
+data Person { age u32, addr Address }
   deriving (Debug, Clone, Copy)
 
 -- Depth **one**, which is what `(.name)` always did. Here as the control: it

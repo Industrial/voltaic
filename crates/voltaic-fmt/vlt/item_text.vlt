@@ -180,7 +180,7 @@ constructor_text constructor indent = case &constructor.fields of
       |> .iter
       |> .map (\field ->
       vis = visibility_text (&field.visibility)
-      format! \-> "#{vis}#{field.name.text} : #{field.ty.text}")
+      format! \-> "#{vis}#{field.name.text} #{field.ty.text}")
       |> .collect
     if .is_empty printed
       return format! \-> "#{constructor.name.text} {}"
@@ -195,8 +195,13 @@ constructor_text constructor indent = case &constructor.fields of
       for trivium in &field.leading
         .push (trivia_text trivium (indent + 1)) lines
       vis = visibility_text (&field.visibility)
-      .push (format! \-> "#{pad}#{vis}#{field.name.text} : #{field.ty.text},") lines
+      .push (format! \-> "#{pad}#{vis}#{field.name.text} #{field.ty.text},") lines
     format! \-> "#{constructor.name.text} {\n#{(.join "\n" lines)}\n#{(indent_text indent)}}"
+
+export(crate) headless_text : &Constructor -> usize -> String
+headless_text constructor indent =
+  whole = constructor_text constructor indent
+  .to_string (.trim_start (.unwrap_or (&whole) (.strip_prefix (.as_str constructor.name.text) whole)))
 
 export(crate) data_text : &DataDecl -> usize -> &str -> String
 data_text decl indent source =
@@ -209,6 +214,8 @@ data_text decl indent source =
   pad = indent_text $ indent + 1
   header = format! \-> "#{(visibility_text (&decl.visibility))}#{keyword} #{decl.name.text}"
   mut out = case .as_slice decl.constructors of
+    [only] | same_line source decl.span.0 only.span.0 && only.name.text == decl.name.text && !decl.is_newtype && !decl.is_union && !(only.fields == ConstructorFields::Unit) ->
+      format! \-> "#{header} #{(headless_text only indent)}"
     [only] | same_line source decl.span.0 only.span.0 ->
       format! \-> "#{header} = #{(constructor_text only indent)}"
     many ->

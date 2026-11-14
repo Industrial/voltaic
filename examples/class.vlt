@@ -8,9 +8,9 @@
 -- resolution to copy one from the class — AGENTS.md forbids growing any.
 -- Doc 18 §2.5 records the deviation.
 
-data Square = Square { side : f64 }
+data Square { side f64 }
 
-data Circle = Circle { radius : f64 }
+data Circle { radius f64 }
 
 -- `class` is Rust's `trait`. The superclass becomes a supertrait bound, and
 -- `self` in a type marks the receiver — doc 18 §2.5, plan 67. The class

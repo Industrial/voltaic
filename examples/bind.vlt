@@ -47,7 +47,7 @@ grid = pairs |> .collect
 
 -- A **user type with its own `and_then`**, which is what proves the construct
 -- is not a `Try` special case in disguise: nothing in `std` is involved.
-data Tally = Tally { value : u64 }
+data Tally { value u64 }
   deriving (Debug, Clone, Copy)
 
 instance Tally

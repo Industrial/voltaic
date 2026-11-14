@@ -39,15 +39,15 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 3006 | 160 |
 | `voltaic-emit` | 3854 | 4634 |
-| `voltaic-fmt` | 1545 | 1497 |
-| `voltaic-fuzz` | 65 | 362 |
+| `voltaic-fmt` | 1563 | 1569 |
+| `voltaic-fuzz` | 65 | 378 |
 | `voltaic-lattice` | 5875 | 1176 |
 | `voltaic-lexer` | 2222 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 464 | 776 |
-| `voltaic-parser` | 5936 | 787 |
+| `voltaic-parser` | 5976 | 787 |
 | `voltaic-seed` | 146 | 1118 |
-| **total** | **28460** | **25493** |
+| **total** | **28518** | **25581** |
 
 ---
 
@@ -55,8 +55,8 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.vlt` | 50 | the CI-checked source of truth for what works |
-| `tests/golden/*.vrs` | 49 | the generated Rust, as exact text |
+| `examples/*.vlt` | 51 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 50 | the generated Rust, as exact text |
 | `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
 | `crates/voltaic-cli/tests/lint/*.vlt` | 7 | the warning a questionable program gets |
 | `crates/voltaic-cli/tests/run/*.stdout` | 2 | what a program prints |
@@ -65,7 +65,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**50 examples and 49 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "50 examples, all green" would be rounding up by exactly one file.
+**51 examples and 50 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "51 examples, all green" would be rounding up by exactly one file.
 
 ---
 

@@ -134,10 +134,32 @@ fn formatting_preserves_meaning() {
 /// comparison still saw them. The first version of this test failed for that
 /// reason and not because any program had changed, which is worth recording:
 /// a property test whose normaliser is wrong reports a defect in the subject.
+///
+/// # And it was wrong a second time, the same way
+///
+/// **Not every span is behind a `span:` label.** `Pattern::Wildcard(Span)`
+/// carries one *positionally*, so it prints as `Wildcard((2132, 2133))` and a
+/// scan for `span: (` walks straight past it. Row 99 wave 5 changed
+/// `data Celsius = Celsius f64` to `data Celsius f64`, which shifted every
+/// later byte offset in `examples/data.vlt` by ten — and this test reported that
+/// the formatting *changed the program*, naming a `CaseArm` sixty lines away.
+///
+/// So the normaliser blanks two things: a labelled span, and **any bare
+/// `(integer, integer)`**. The second is safe because a span is the only
+/// two-integer tuple this AST prints — every other tuple holds nodes, which
+/// print as `Name {` or `Name(`.
+///
+/// The lesson is the one the paragraph above already states, and it took landing
+/// twice to stick: when a property test reports that the subject changed, check
+/// the normaliser before believing it.
 fn without_spans(program: &voltaic_ast::Program) -> String {
-  let text = format!("{program:?}");
+  blank_bare_spans(&blank_labelled_spans(&format!("{program:?}")))
+}
+
+/// `span: (613, 640)` becomes `span: _`.
+fn blank_labelled_spans(text: &str) -> String {
   let mut out = String::with_capacity(text.len());
-  let mut rest = text.as_str();
+  let mut rest = text;
   while let Some(at) = rest.find("span: (") {
     out.push_str(&rest[..at]);
     out.push_str("span: _");
@@ -151,6 +173,56 @@ fn without_spans(program: &voltaic_ast::Program) -> String {
   }
   out.push_str(rest);
   out
+}
+
+/// `Wildcard((2132, 2133))` becomes `Wildcard(_)` — a span carried positionally.
+fn blank_bare_spans(text: &str) -> String {
+  let bytes = text.as_bytes();
+  let mut out = String::with_capacity(text.len());
+  let mut i = 0;
+  while i < bytes.len() {
+    if bytes[i] == b'('
+      && let Some(end) = two_integers(&bytes[i + 1..])
+    {
+      out.push('_');
+      i += 1 + end + 1;
+      continue;
+    }
+    out.push(bytes[i] as char);
+    i += 1;
+  }
+  out
+}
+
+/// The offset of the `)` closing `digits, digits`, if that is what follows.
+fn two_integers(rest: &[u8]) -> Option<usize> {
+  let mut i = 0;
+  let digits = |at: usize| -> usize {
+    let mut n = at;
+    while n < rest.len() && rest[n].is_ascii_digit() {
+      n += 1;
+    }
+    n
+  };
+  let first = digits(i);
+  if first == i {
+    return None;
+  }
+  i = first;
+  if !rest[i..].starts_with(b", ") {
+    return None;
+  }
+  i += 2;
+  let second = digits(i);
+  if second == i {
+    return None;
+  }
+  i = second;
+  if rest.get(i) == Some(&b')') {
+    Some(i)
+  } else {
+    None
+  }
 }
 
 #[test]
