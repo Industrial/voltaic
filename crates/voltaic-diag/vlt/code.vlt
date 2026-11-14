@@ -151,22 +151,13 @@ instance Lint
   allow_comment self = format! \-> "voltaic: allow #{(.name self)}"
 
   export from_allow_attribute : &str -> Option<Self>
-  from_allow_attribute text = Lint::all ()
-    |> .iter
-    |> .copied
-    |> .find (\lint -> text == .allow_attribute lint)
+  from_allow_attribute text = (Lint::all ()).iter ().copied ().find (\lint -> text == .allow_attribute lint)
 
   export from_allow_comment : &str -> Option<Self>
-  from_allow_comment text = Lint::all ()
-    |> .iter
-    |> .copied
-    |> .find (\lint -> text == .allow_comment lint)
+  from_allow_comment text = (Lint::all ()).iter ().copied ().find (\lint -> text == .allow_comment lint)
 
 test "every code is unique"
-  numbers : std::collections::BTreeSet<u16> = Code::all ()
-    |> .iter
-    |> .map (\c -> .number c)
-    |> .collect
+  numbers : std::collections::BTreeSet<u16> = ((Code::all ()).iter ().map (\c -> .number c)).collect ()
   assert_eq! \-> .len numbers \-> .len (Code::all ()) \-> "two codes share a number; a code must never have two meanings"
 
 test "every code is in its declared range"
@@ -214,7 +205,7 @@ test "every lint round trips through both spellings"
     assert_eq! \-> Lint::from_allow_comment (&.allow_comment lint) \-> Some (*lint)
 
 test "every name is unique"
-  mut names : Vec<&str> = Lint::all () |> .iter |> .map (\l -> .name l) |> .collect
+  mut names : Vec<&str> = ((Lint::all ()).iter ().map (\l -> .name l)).collect ()
   .sort_unstable names
   before = .len names
   .dedup names

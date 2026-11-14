@@ -108,9 +108,21 @@ fn the_corpus_is_the_size_generation_one_was() {
   );
 }
 
+/// Leaf 6 migrates crate by crate, so the **apply** path can be scoped to one
+/// crate with `VOLTAIC_MIGRATE_CRATE=voltaic-diag`.
+///
+/// Only the apply path. The gate path always covers the whole corpus, because a
+/// scoped gate is a weaker gate and nothing should be able to narrow it by
+/// setting an environment variable — the scoping exists to make a *commit*
+/// reviewable, not to make the check smaller.
+fn scoped_to() -> Option<String> {
+  std::env::var("VOLTAIC_MIGRATE_CRATE").ok()
+}
+
 #[test]
 fn collapsing_every_pipeline_changes_no_program() {
   let updating = std::env::var("VOLTAIC_UPDATE").is_ok();
+  let only = scoped_to();
   let mut rejected = Vec::new();
   let mut written = Vec::new();
   let mut touched = 0;
@@ -144,6 +156,11 @@ fn collapsing_every_pipeline_changes_no_program() {
       continue;
     }
     if updating {
+      if let Some(wanted) = &only
+        && !path.components().any(|c| c.as_os_str() == wanted.as_str())
+      {
+        continue;
+      }
       // `apply` gates before it writes, so a rejected file stays untouched even
       // here — leaf 3's "the gate runs before the write, not after".
       match voltaic_driver::apply(&path, &after) {

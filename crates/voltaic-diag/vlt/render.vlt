@@ -12,9 +12,9 @@ import std::fmt::Write
 export render : &[Diagnostic] -> bool -> String
 render diagnostics plain =
   parts : Vec<String> = if plain
-    diagnostics |> .iter |> .map plain_one |> .collect
+    (diagnostics.iter ().map plain_one).collect ()
   else
-    diagnostics |> .iter |> .map graphical_one |> .collect
+    (diagnostics.iter ().map graphical_one).collect ()
   .join "\n" parts
 
 anchor_span : &str -> Span -> Span
@@ -43,30 +43,25 @@ clamped_width source span column =
   wanted
 
 caret_width : &str -> Span -> usize
-caret_width source span = source
-  |> .get (span.0 .. span.1)
-  |> .map_or 1 (\text -> .max 1 (.count (.chars text)))
+caret_width source span = (source.get (span.0 .. span.1)).map_or 1 (\text -> .max 1 (.count (.chars text)))
 
 export line_col : &str -> usize -> (usize, usize)
 line_col source offset =
   clamped = .min (.len source) offset
   before = &source[0 .. clamped]
   line = .count (.matches '\n' before) + 1
-  col = before
-    |> .rsplit '\n'
-    |> .next
-    |> .map_or 1 (\l -> .count (.chars l) + 1)
+  col = (before.rsplit '\n').next ().map_or 1 (\l -> .count (.chars l) + 1)
   (line, col)
 
 snippet_line : &str -> usize -> usize -> Option<(usize, &str, usize)>
 snippet_line source line col =
-  text = source |> .lines |> .nth (line - 1) |> .unwrap_or ""
+  text = (source.lines ().nth (line - 1)).unwrap_or ""
   if !.is_empty text
     return Some (line, text, col)
   mut n = line
   while n > 1
     n -= 1
-    above = (source |> .lines |> .nth (n - 1))?
+    above = (source.lines ().nth (n - 1))?
     if !.is_empty above
       return Some (n, above, .count (.chars above) + 1)
   None
@@ -112,7 +107,7 @@ plain_one d =
 graphical_one : &Diagnostic -> String
 graphical_one d = format! \-> "#{(miette::Report::new (Reportable::new d)):?}"
 
-data Reportable = Reportable { message : String, code : String, help : Option<String>, span : (usize, usize), source : miette::NamedSource<String>, severity : Severity }
+data Reportable { message String, code String, help Option<String>, span (usize, usize), source miette::NamedSource<String>, severity Severity }
 
 instance Reportable
   new : &Diagnostic -> Self
@@ -134,14 +129,12 @@ instance MietteDiagnostic Reportable
   severity : &self -> Option<miette::Severity>
   severity self = Some $ .to_miette self.severity
   help : &self -> Option<Box<dyn Display + '_>>
-  help self = self.help
-    |> .as_ref
-    |> .map (\h -> Box::new h : Box<dyn Display>)
+  help self = self.help.as_ref ().map (\h -> Box::new h : Box<dyn Display>)
   source_code : &self -> Option<&dyn miette::SourceCode>
   source_code self = Some (&self.source)
   labels : &self -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>>
   labels self =
-    len = self.span.1 |> .saturating_sub self.span.0 |> .max 1
+    len = (self.span.1.saturating_sub self.span.0).max 1
     Some $ Box::new $ std::iter::once $ miette::LabeledSpan::new (Some (.to_string "here")) self.span.0 len
 
 test "leaves a span inside the text alone"

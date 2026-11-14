@@ -466,12 +466,30 @@ fn build(source: &Path, tag: &str) -> Case {
 /// as each crate crosses. That is a real loss of coverage for the duration, and
 /// it is the loss §2.2 already accepted.
 ///
+/// # It was never needed, and row 103 leaf 6 measured that
+///
+/// §2.2 predicted that a mixed-generation corpus would break the gates below.
+/// **It does not.** Leaf 6 migrated `voltaic-diag` to generation 2, leaving
+/// `ACCEPTS` at `"g1"`, and ran the whole suite against a corpus of one
+/// generation-2 crate and thirteen generation-1 ones: all five gates passed,
+/// and so did the other 1,369 tests.
+///
+/// The reason is that the generation-2 spelling is **additive**. The lexer and
+/// parser accept both — `x.f ()` and `x |> .f` are both live, `name Type` and
+/// `name : Type` are both live — so a gate that parses the compiler's own source
+/// has nothing to object to. §2.2's accepted cost is a cost that did not come
+/// due, and the whole migration runs with the full gate armed.
+///
+/// This is kept rather than deleted because it costs one branch and it is the
+/// escape hatch if some later surface change is *not* additive. The skips are
+/// inert, and a flip of `ACCEPTS` is still a reviewed act.
+///
 /// # Why this is safe today
 ///
 /// It returns `false` until someone changes `ACCEPTS` in
 /// `crates/voltaic-lexer/vlt/generation.vlt`, and
 /// [`the_surface_has_not_moved_yet`] asserts that it is `"g1"` — so flipping it
-/// turns a test red and demands the review, rather than silently switching eight
+/// turns a test red and demands the review, rather than silently switching five
 /// gates off. Every skip below it is inert until that one constant changes.
 pub fn mid_turn() -> bool {
   voltaic_lexer::ACCEPTS != "g1" && generations().iter().any(|(_, _, g)| g == "g1")
@@ -481,16 +499,27 @@ pub fn mid_turn() -> bool {
 ///
 /// This is not a prediction that the surface will not move. It is the thing that
 /// makes moving it a *reviewed* act: the diff that changes `ACCEPTS` also turns
-/// this red, and whoever is looking at it has to decide that deferring eight
+/// this red, and whoever is looking at it has to decide that deferring five
 /// gates is what they meant.
+///
+/// **Five, not eight.** This comment and the message below both said eight, and
+/// there are five `mid_turn()` guards in the tree:
+/// `classify_corpus::{the_whole_corpus_classifies, every_file_is_counted_exactly_once,
+/// no_file_holding_control_flow_classifies_auto}` and
+/// `inferred::{every_written_signature_in_the_compiler_is_the_inferred_one,
+/// the_compared_set_has_not_shrunk}`. Counted while row 103 leaf 6 was deciding
+/// whether flipping `ACCEPTS` was worth it — and the answer turned out to be
+/// that it is not needed at all, per [`mid_turn`].
 #[test]
 fn the_surface_has_not_moved_yet() {
   assert_eq!(
     voltaic_lexer::ACCEPTS,
     "g1",
-    "`ACCEPTS` changed, so `mid_turn()` is now true and eight gates that parse the \
-     compiler's own source have begun deferring. That is doc 97 §2.2's accepted cost \
-     and row 103 re-arms them crate by crate — update this test when you mean it."
+    "`ACCEPTS` changed, so `mid_turn()` is now true and five gates that parse the \
+     compiler's own source have begun deferring. Row 103 leaf 6 measured that a \
+     mixed corpus does **not** need this — the generation-2 spelling is additive \
+     and all five pass without it — so flipping this is probably not what you \
+     want. See `support::mid_turn`."
   );
   assert!(!mid_turn(), "the turn has started; see the message above");
 }
