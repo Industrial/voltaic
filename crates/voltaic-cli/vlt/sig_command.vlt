@@ -1,6 +1,5 @@
 import crate::run::usage
 import voltaic_lattice::explain
-import voltaic_lattice::solve
 import voltaic_lattice::walk
 import voltaic_parser::parse_source
 import std::path::PathBuf
@@ -44,7 +43,7 @@ report input why =
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
   program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
   found = walk (&program)
-  outcome = solve (&found.store)
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
 
   for definition in .iter found.definitions
     resolved = .resolved (&definition.ty) outcome

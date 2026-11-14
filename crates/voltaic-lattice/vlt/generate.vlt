@@ -15,7 +15,7 @@ import voltaic_ast::Program
 export data Inferred = Inferred { export name : String, export ty : Ty, export row : crate::row::Row, export modes : Vec<(String, crate::mode::Mode)>, export written : Option<Ty>, export written_modes : Vec<(String, crate::mode::Mode)>, export span : voltaic_ast::Span }
   deriving (Debug, Clone)
 
-export data Report = Report { export store : Store, export definitions : Vec<Inferred> }
+export data Report = Report { export store : Store, export definitions : Vec<Inferred>, export known : crate::declarations::Declarations }
   deriving (Debug, Clone)
 
 instance Report
@@ -29,18 +29,19 @@ walk program =
   for item in .iter program.items
     case item of
       Item::Fn f ->
-        definitions |> .push (one f (&mut store))
+        definitions |> .push (one f None (&mut store))
       Item::Instance block ->
+        owner = .clone block.target.head.text
         for member in .iter block.members
           if member is ClassMember::Method f
-            definitions |> .push (one f (&mut store))
+            definitions |> .push (one f (Some (&owner)) (&mut store))
       Item::Class block ->
         for member in .iter block.members
           if member is ClassMember::Method f
-            definitions |> .push (one f (&mut store))
+            definitions |> .push (one f None (&mut store))
       _ -> ()
   raise_receivers (.as_mut_slice definitions) program
-  Report { store, definitions }
+  Report { store, definitions, known = crate::declarations::collect program }
 
 raise_receivers : &mut [Inferred] -> &Program -> ()
 raise_receivers definitions program =
@@ -100,14 +101,16 @@ raise_in definitions caller binder needed =
           changed := true
   changed
 
-one : &voltaic_ast::FnDecl -> &mut Store -> Inferred
-one f store =
+one : &voltaic_ast::FnDecl -> Option<&str> -> &mut Store -> Inferred
+one f owner store =
   mut env = Vec::new ()
   mut params = Vec::new ()
   for p in .iter f.sig.params
     hole = .fresh_hole store
     if .as_ref p.ty is Some written
       .require (Obligation::Unify { left = .clone hole, right = annotation::read written }) p.span Reason::Ascribed store
+    if crate::infer_mode::binder_of (&p.name.text) == "self" && owner is Some target
+      .require (Obligation::Unify { left = .clone hole, right = Ty::named target }) p.span Reason::ClassRequirement store
     env |> .push (.clone p.name.text, .clone hole)
     params |> .push hole
   body = clause_type (.as_slice f.clauses) store (.as_slice env)
@@ -188,6 +191,11 @@ expr_type e store env = case e of
   Expr::StrLit { .. } -> str_ref ()
   Expr::StrInterp { .. } -> str_ref ()
   Expr::Unit { .. } -> Ty::unit ()
+  Expr::Field { recv, name, span, .. } ->
+    owner = expr_type recv store env
+    result = .fresh_hole store
+    .require (Obligation::Member { recv = owner, name = .clone name.text, result = .clone result }) (*span) Reason::FieldAccess store
+    result
   Expr::Paren { inner, .. } -> expr_type inner store env
   Expr::Ident name -> lookup (&name.text) store env
   Expr::Path { text, .. } -> lookup text store env

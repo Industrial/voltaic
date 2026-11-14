@@ -149,10 +149,16 @@ fn a_contradiction_between_body_and_signature_is_reported_not_absorbed() {
   );
 }
 
+/// A field access with **no declarations** is still deferred, and that is now the
+/// whole of the limitation.
+///
+/// Plan 94 §10.9 asserted this as "an unconstrained hole until row 98", and row
+/// 98 closed it: with a declaration environment, a field resolves — see
+/// `tests/declarations.rs`. What survives is the *absent*-environment case, which
+/// must stay a deferral rather than a guess: a missing declaration is not a
+/// licence to invent a type.
 #[test]
-fn a_member_access_is_an_unconstrained_hole_until_row_98() {
-  // Deliberately asserting the *limitation*, so that closing it breaks this
-  // test rather than silently changing behaviour.
+fn a_member_access_with_no_declarations_is_deferred_rather_than_guessed() {
   let source = "width : u64\nwidth = shape.side\n";
   let program = parse_source(source).expect("should parse");
   let report = walk(&program);

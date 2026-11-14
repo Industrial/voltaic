@@ -21,7 +21,10 @@ instance Outcome
   resolved t self = .resolve t self.substitution
 
 export solve : &Store -> Outcome
-solve store =
+solve store = solve_with store (&crate::declarations::Declarations::empty ())
+
+export solve_with : &Store -> &crate::declarations::Declarations -> Outcome
+solve_with store known =
   mut subst = Substitution::new ()
   mut failures = Vec::new ()
   mut deferred = Vec::new ()
@@ -34,13 +37,13 @@ solve store =
     failures := Vec::new ()
     deferred := Vec::new ()
     for pair in .enumerate (.iter (.all store))
-      apply pair.0 pair.1 (&mut subst) (&mut failures) (&mut deferred)
+      apply pair.0 pair.1 known (&mut subst) (&mut failures) (&mut deferred)
     if .len subst != before
       changed := true
   Outcome { substitution = subst, failures, rounds, deferred }
 
-apply : usize -> &crate::constraint::Constraint -> &mut Substitution -> &mut Vec<Failure> -> &mut Vec<usize> -> ()
-apply at c subst failures deferred =
+apply : usize -> &crate::constraint::Constraint -> &crate::declarations::Declarations -> &mut Substitution -> &mut Vec<Failure> -> &mut Vec<usize> -> ()
+apply at c known subst failures deferred =
   case &c.obligation of
     Obligation::Unify { left, right, .. } ->
       if unify left right subst is Err m
@@ -49,8 +52,24 @@ apply at c subst failures deferred =
       expected = arrow_of (.as_slice args) result
       if unify callee (&expected) subst is Err m
         failures |> .push (Failure { at, mismatch = m })
-    Obligation::Member { .. } -> deferred |> .push at
+    Obligation::Member { recv, name, result, .. } ->
+      resolved = .resolve recv subst
+      if owner_of (&resolved) is Some owner && .member (&owner) name known is Some declared
+        if unify result declared subst is Err m
+          failures |> .push (Failure { at, mismatch = m })
+      else
+        deferred |> .push at
   ()
+
+owner_of : &Ty -> Option<String>
+owner_of resolved = case resolved of
+  Ty::Con { name, args, .. } ->
+    if name == "&" && .len args == 1
+      return owner_of (&args[0])
+    if name == "&mut" && .len args == 1
+      return owner_of (&args[0])
+    Some (.clone name)
+  _ -> None
 
 export arrow_of : &[Ty] -> &Ty -> Ty
 arrow_of args result =
@@ -101,12 +120,41 @@ test "a callable constraint unifies the callee against the arrow its use implies
   assert! \-> .is_solved outcome
   assert_eq! \-> .to_string (.resolved (&callee) outcome) \-> "u64 -> bool"
 
-test "a member constraint is deferred rather than guessed at"
+test "a member constraint with no declarations is deferred rather than guessed at"
   mut s = Store::new ()
   at = .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (0, 7) crate::reason::Reason::FieldAccess s
   outcome = solve (&s)
   assert! \-> .is_solved outcome
   assert_eq! \-> outcome.deferred \-> vec! \-> at
+
+test "a member constraint is discharged once the declarations are known"
+  mut s = Store::new ()
+  slot = .fresh_hole s
+  .require (Obligation::Member { recv = Ty::named "Point", name = .to_string "x", result = .clone slot }) (0, 7) crate::reason::Reason::FieldAccess s
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64, y : f64 }\n")
+  known = crate::declarations::collect (&program)
+  outcome = solve_with (&s) (&known)
+  assert! \-> .is_solved outcome
+  assert! \-> .is_empty outcome.deferred \-> "a known field must not be deferred"
+  assert_eq! \-> .resolved (&slot) outcome \-> Ty::named "f64"
+
+test "a member a type does not have is a reported mismatch, not a silence"
+  mut s = Store::new ()
+  .require (Obligation::Member { recv = Ty::named "Point", name = .to_string "x", result = Ty::named "String" }) (0, 7) crate::reason::Reason::FieldAccess s
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64, y : f64 }\n")
+  known = crate::declarations::collect (&program)
+  outcome = solve_with (&s) (&known)
+  assert! \-> !.is_solved outcome \-> "f64 is not String"
+
+test "a field read through a reference resolves to the owner's field"
+  mut s = Store::new ()
+  slot = .fresh_hole s
+  recv = Ty::applied "&" (vec! \-> Ty::named "Point")
+  .require (Obligation::Member { recv, name = .to_string "y", result = .clone slot }) (0, 7) crate::reason::Reason::FieldAccess s
+  program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64, y : f64 }\n")
+  known = crate::declarations::collect (&program)
+  outcome = solve_with (&s) (&known)
+  assert_eq! \-> .resolved (&slot) outcome \-> Ty::named "f64"
 
 test "the driver never exceeds its round bound"
   mut s = Store::new ()

@@ -227,5 +227,78 @@ is the consequence of not being either.
 
 ## 10. Result
 
-*To be filled after execution. Including: whether `examples/template.sdx` used
-`Fields`, and therefore which way §5.6 resolved.*
+In progress. Leaf 3 shipped 2026-11-14, and it closed a limitation two rows back.
+171 tests in the crate. Clippy clean; gate green at 28 tasks.
+
+### 10.1 The declaration environment is the thing three rows were waiting on
+
+`declarations.vlt` collects, from one program: every `data`'s fields as members of
+their type (records by name, tuples by index), every `class`'s methods and associated
+constants as *requirements*, and every `instance` member as a member of its target.
+
+That one structure unblocks three separately-recorded deferrals:
+
+- **Plan 94 §10.9's `Obligation::Member`.** It was deferred rather than guessed
+  because a field access needs to know a type's fields. With declarations in hand it
+  resolves, and `tests/solve.rs`'s limitation test is the one that had to change. The
+  deferral survives for the *absent*-environment case, which is the right default: a
+  missing declaration is not a licence to invent a type.
+- **Plan 96 §10.4's `Copy` question.** Not closed, but now reachable: the environment
+  is where a type's derive list lives, so "was the author's by-value choice free or
+  forced" becomes answerable rather than unanswerable.
+- **This row's leaf 3.** `satisfies` is literally "has every member the class
+  requires", which is doc 87 §3.2's whole claim: no `instance` header is needed to say
+  so.
+
+### 10.2 Satisfaction of an unknown class is false, not vacuously true
+
+An empty requirement list would make every type satisfy every class nobody declared,
+because "for all zero requirements, the type has it" is true. That would let a
+constraint on a *misspelled* class name pass silently, which is the worst possible
+failure for a structural system — the whole point is that the check is on the members
+rather than on a name, so a wrong name must not become a wrong pass.
+
+`satisfies` returns false when the class has no requirements, and the test says why.
+
+### 10.3 An instance member's receiver has a known type, and binding it cascades
+
+Before this row an instance member's receiver was an unconstrained hole:
+
+```
+area : ?0 -> f64 @ self shared
+```
+
+The instance's target *is* the receiver's type, so binding it gives
+
+```
+area : Square -> f64 @ self shared
+pos  : Cursor -> usize @ self shared
+peek : Cursor -> Option<char> ! none @ self shared
+```
+
+and — this is the cascade — a field access through the receiver can only resolve once
+the receiver has a constructor name for `owner_of` to look up. Without the binding,
+`self.side` stays a hole no matter how complete the declaration environment is. The
+two changes are one change.
+
+A `class` declaration's own requirement signatures correctly keep their hole: there
+`Self` has no concrete type, and `area : ?0 -> f64` is the honest answer.
+
+### 10.4 Leaves outstanding
+
+| Leaf | Status |
+|---|---|
+| 1 — `class` as a requirement list | `done`, as far as *reading* one goes; the surface is row 99's |
+| 2 — receiver patterns | outstanding — `(s Square)` is generation 2 surface (row 99) |
+| 3 — satisfaction | `done` |
+| 4 — class constraints as receiver patterns | outstanding — same surface dependency |
+| 5 — remove `class_heads` from the parser | outstanding — needs row 99's parser work |
+| 6 — supertraits | outstanding — defers to row 99's constraint-list spelling, as §9 says |
+
+§6's open question — whether `examples/template.vlt` uses `Fields`/`FieldNames`, and
+so whether declaration reflection becomes a graded `UNREACHABLE` — is **not yet
+answered**, because it only matters once `deriving template` is removed, and that
+removal is row 99's. The question stands exactly as §6 poses it.
+
+As with rows 95 and 96: what shipped is the part that does not need the new surface,
+measured against generation 1's own source while that source still states the answers.

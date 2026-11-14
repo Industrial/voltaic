@@ -1,5 +1,6 @@
 module annotation
 module constraint
+module declarations
 module driver
 module effect
 module explain
@@ -21,11 +22,14 @@ export import annotation::from_text
 export import annotation::read
 export import constraint::Constraint
 export import constraint::Obligation
+export import declarations::Declarations
+export import declarations::collect
 export import driver::Failure
 export import driver::MAX_ROUNDS
 export import driver::Outcome
 export import driver::arrow_of
 export import driver::solve
+export import driver::solve_with
 export import effect::ALPHABET
 export import effect::Effect
 export import explain::explain

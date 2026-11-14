@@ -179,7 +179,24 @@ Three rows. This is where the language the author types actually changes.
 
 | # | Plan | Scope | Status | Depends on |
 |---|---|---|---|---|
-| 98 | Structural Classes | `class` as a requirement list; equations attached by receiver pattern; the `instance` header deleted; the one-file trap deleted; `deriving template` deleted. | `planned` | 94 |
+| 98 | Structural Classes | `class` as a requirement list; equations attached by receiver pattern; the `instance` header deleted; the one-file trap deleted; `deriving template` deleted. | `in-progress` — leaf 3 `done` 2026-11-14 | 94 |
+
+Leaf 3 — structural satisfaction — shipped, and with it the declaration environment
+that **three separately-recorded deferrals were waiting on** (doc 96 §10.1): plan 94
+§10.9's `Obligation::Member`, plan 96 §10.4's `Copy` question, and this row's own
+leaf 3. A field access now resolves, and an instance member's receiver is bound to its
+target, so `area : Square -> f64` where it was `area : ?0 -> f64`.
+
+Two notes:
+
+- **Satisfaction of an unknown class is false, not vacuously true** (doc 96 §10.2).
+  An empty requirement list would make every type satisfy every class nobody
+  declared, which would let a *misspelled* class name pass silently — the worst
+  failure for a structural system, since the point is that the check is on members
+  rather than on a name.
+- **§6's open question is still open.** Whether `examples/template.vlt` uses
+  `Fields`/`FieldNames` — and so whether declaration reflection becomes a graded
+  `UNREACHABLE` — only matters once `deriving template` is removed, which is row 99's.
 | 99 | The Surface Contraction | 74 keywords to 11. Signature lines deleted. `\|>`/`>>>`/`<<<`/`$` deleted. Receiver-first dots. Juxtaposed fields. Computed derives. `errors`→`data`. Imports deleted. Or-patterns, `as`, `ref` reachable. | `planned` | 95, 96, 98 |
 | 100 | The Signature Sidecar | `.vlt.sig` generation, the published-API rule, `voltaic sig`, `--why`, `--semver`, `--require-signatures`. | `planned` | 94, 99 |
 
