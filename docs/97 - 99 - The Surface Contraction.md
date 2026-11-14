@@ -1240,6 +1240,53 @@ verbatim — *"do not grep compiler output for `^error` — it reads as green wh
 is not"* — and it was walked into anyway, twice in one session, because a filter
 written to keep output short is invisible once it is written. **Check exit codes.**
 
+### 10.35 The no-argument half's missing primitive, and the two routes left
+
+`voltaic_lattice::receiver_owner (&store) (&outcome) span` answers the one
+question wave 3's remaining half needs: *at this span, what type is the
+receiver?* With `MemberKind` from doc 101 §10.8 beside it, the pair is
+`is_field (receiver_owner …) name` — which is doc 87 §2.2's *"resolved by the
+solver, which knows whether `name` is a field or a method"*, now actually
+answerable.
+
+**Keyed by span**, because that is the only thing an `Expr::Field` node and a
+`Member` obligation have in common: the obligation carries the provenance of the
+access it came from, so the AST and the constraint store meet there and nowhere
+else.
+
+**Three ignorances collapse into one `None`, and that is the design.** No
+obligation at the span; a receiver that never resolved past a hole; a resolved
+type with no owner. All three mean *do not claim it is a field* — an authority
+that guesses where it does not know is worse than one that declines, and the
+caller's correct response to all three is to leave the node as it was. Two of
+the four tests exist only to pin that: a span with no obligation, and a receiver
+that is still a hole.
+
+`owner_of` was exported rather than copied, because seeing through `&` and
+`&mut` to the owning type is the kind of two-line rule that drifts the moment it
+exists twice.
+
+**What remains, and the two routes are not equal.** The rewrite needs to reach
+every `Expr::Field` with no arguments and turn it into a `Dot`. Either:
+
+- **a `&mut Expr` walker in the driver**, run after `annotate`'s solve — which
+  means a match over all ~50 `Expr` variants, none of which exists today
+  (`annotate` walks items and methods, never into expressions); or
+- **thread the resolution into the emitter**, which already walks every
+  expression — `emit_expr`'s `Field` arm is where the decision belongs, and
+  `indent` is already threaded through that whole call graph, so one more
+  parameter follows the same path.
+
+The second is smaller and the first is more honest: an AST that still says
+`Field` where the program means a method call is an AST that lies to every other
+consumer — the formatter, the LSP, `voltaic sig`. §10.33's own lesson argues for
+the walker, since the formatter is what caught the last defect and it reads the
+AST rather than the emitter.
+
+Not decided here, because it is a structural choice and this subsection exists to
+record that the primitive is in place and the choice is the next thing, not to
+make it in passing.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

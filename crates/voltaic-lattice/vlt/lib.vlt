@@ -36,6 +36,8 @@ export import driver::MAX_ROUNDS
 export import driver::Outcome
 export import driver::arrow_of
 export import driver::solve
+export import driver::owner_of
+export import driver::receiver_owner
 export import driver::solve_with
 export import effect::ALPHABET
 export import effect::Effect

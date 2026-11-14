@@ -1,4 +1,5 @@
 import crate::constraint::Obligation
+import voltaic_ast::Span
 import crate::store::Store
 import crate::substitution::Substitution
 import crate::ty::Ty
@@ -64,7 +65,15 @@ apply at c known subst failures deferred =
         deferred |> .push at
   ()
 
-owner_of : &Ty -> Option<String>
+export receiver_owner : &Store -> &Outcome -> Span -> Option<String>
+receiver_owner store outcome at =
+  for c in .all store
+    if c.provenance.span == at
+      if &c.obligation is Obligation::Member { recv, .. }
+        return owner_of (&.resolved recv outcome)
+  None
+
+export owner_of : &Ty -> Option<String>
 owner_of resolved = case resolved of
   Ty::Con { name, args, .. } ->
     if name == "&" && .len args == 1
@@ -156,6 +165,33 @@ test "a member a type does not have is a reported mismatch, not a silence"
   known = crate::declarations::collect (&program)
   outcome = solve_with (&s) (&known)
   assert! \-> !.is_solved outcome \-> "f64 is not String"
+
+test "the receiver's owner is readable at the access's span"
+  mut s = Store::new ()
+  at = .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  _ = at
+  outcome = solve (&s)
+  assert_eq! \-> receiver_owner (&s) (&outcome) (4, 11) \-> Some (.to_string "Cursor")
+
+test "a span with no member obligation has no owner"
+  mut s = Store::new ()
+  _ = .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  outcome = solve (&s)
+  assert_eq! \-> receiver_owner (&s) (&outcome) (99, 100) \-> None
+
+test "a receiver that never resolved has no owner, rather than a guess"
+  mut s = Store::new ()
+  hole = .fresh_hole (&mut s)
+  _ = .require (Obligation::Member { recv = .clone hole, name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  outcome = solve (&s)
+  assert_eq! \-> receiver_owner (&s) (&outcome) (4, 11) \-> None
+
+test "the owner is seen through a reference, which is what owner_of is for"
+  mut s = Store::new ()
+  borrowed = Ty::Con { name = .to_string "&", args = vec! \-> Ty::named "Cursor" }
+  _ = .require (Obligation::Member { recv = borrowed, name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  outcome = solve (&s)
+  assert_eq! \-> receiver_owner (&s) (&outcome) (4, 11) \-> Some (.to_string "Cursor")
 
 test "a field read through a reference resolves to the owner's field"
   mut s = Store::new ()
