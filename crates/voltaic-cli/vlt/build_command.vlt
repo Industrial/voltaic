@@ -11,7 +11,7 @@ build_command args =
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string (&parsed.input)))?
 
   mut program = (.map_err (\failure -> voltaic_diag::render (&diagnose (&parsed.input) (&source) (&failure)) parsed.plain) (voltaic_parser::parse_source (&source)))?
-  analysis = voltaic_driver::analyse (&mut program)
+  analysis = voltaic_driver::analyse_at (&mut program) (&parsed.input)
   if !.is_empty analysis.open
     return Err (voltaic_diag::render (&voltaic_driver::refusals (&parsed.input) (&source) (.as_slice analysis.open)) parsed.plain)
   warnings = voltaic_driver::lint (&parsed.input) (&source) (Some (&program))

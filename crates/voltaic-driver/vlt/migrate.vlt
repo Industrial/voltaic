@@ -5,7 +5,7 @@ import std::path::Path
 export transpile : &Path -> &str -> Result<String, Vec<Diagnostic>>
 transpile path text =
   mut program = (.map_err (\failure -> diagnose path text (&failure)) (voltaic_parser::parse_source text))?
-  analysis = crate::annotate::analyse (&mut program)
+  analysis = crate::annotate::analyse_at (&mut program) path
   if !.is_empty analysis.open
     return Err (crate::annotate::refusals path text (.as_slice analysis.open))
   shown = path |> .display |> .to_string

@@ -16,7 +16,7 @@ build request =
         |> .map diagnostic_from_voltaic
         |> .collect })
 
-  analysis = voltaic_driver::analyse (&mut program)
+  analysis = voltaic_driver::analyse_at (&mut program) (std::path::Path::new (&request.path))
   open = analysis.open
   if !.is_empty open
     return Ok (BuildResponse { ok = false, output = None, map = None, diagnostics = voltaic_driver::refusals path (&source) (.as_slice open)

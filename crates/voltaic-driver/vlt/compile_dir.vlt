@@ -24,7 +24,7 @@ compile_file source out store fingerprint =
     return Ok (Outcome { written = cached, was_cached = true })
 
   mut program = (.map_err (\failure -> diagnose source (&text) (&failure)) (voltaic_parser::parse_source (&text)))?
-  analysis = crate::annotate::analyse (&mut program)
+  analysis = crate::annotate::analyse_at (&mut program) source
   if !.is_empty analysis.open
     return Err (crate::annotate::refusals source (&text) (.as_slice analysis.open))
   scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))

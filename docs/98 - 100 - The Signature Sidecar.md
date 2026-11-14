@@ -442,3 +442,48 @@ resolution, and therefore wave 3's no-argument half, leaf 2's receiver-order
 transform, leaf 6's crate-by-crate run, row 102 step 5, and `.vlt.sig` in
 `dependency_sources` (doc 102 leaf 5). One file's worth of emission and one
 resolver, with five consumers.
+
+### 10.7 Leaf 2: cross-crate resolution, and the chain closes
+
+`crates/voltaic-driver/vlt/resolve.vlt`. For each `import` naming a crate, it
+finds that crate's `vlt/` directory under the workspace and merges every
+`*.vlt.sig`'s members into the local environment. `analyse_at` takes the file
+being analysed so the workspace can be found above it; `annotate` and `analyse`
+keep their shapes by passing a path that resolves nothing.
+
+**Verified both ways, which is the half that matters.** A two-crate scratch
+workspace under `target/`: `upcrate` declares `Point` with a field `x` and a
+method `depth`, `downcrate` imports it and writes `p.depth` and `p.x`.
+
+| | `p.depth` | `p.x` |
+|---|---|---|
+| sidecar published | `p.depth()` | `p.x` |
+| sidecar absent | `p.depth` | `p.x` |
+
+The second row is doc 97 §10.36's restriction, pinned: with nothing published the
+solver cannot know `depth` is a method and leaves it a field. That test passing
+while the first fails is what a silent regression in resolution would look like,
+which is why both are asserted rather than just the one that works.
+
+**The crate-name rule is the filesystem's, not a prefix.** The first version
+required a `voltaic_` head, which hardcodes *this* project's crate names into the
+resolver — a user's crates are not called `voltaic_anything`. It now excludes
+Rust's own roots (`crate`, `super`, `self`) and the three `core`/`alloc`/`std`
+that doc 86 §7.4 allows a generated file to name, and treats anything else as a
+candidate whose reality is decided by whether a `vlt/` directory exists for it.
+One fact, in one place.
+
+**And the path had to be threaded to four call sites, which is the third time.**
+`analyse` with no path resolves no upstream, so `voltaic build` showed `p.depth`
+while the driver's own tests were green — `build_command`, `check`, `migrate` and
+the MCP tool each have their own. Doc 97 §10.36 hit this with `MethodScope` and
+doc 101 §10.10 with the emit sites; the shape is always a safe default that makes
+a missing wire invisible.
+
+### 10.8 What remains
+
+`.vlt.sig` in `dependency_sources` (row 104 leaf 5) now has what it was waiting
+for, and so does wave 3's no-argument half — but **this repository's own crates
+have no committed sidecars yet**. `voltaic fmt` writes them; committing 105 of
+them is a tracked-file addition with its own review, and it is the next step
+rather than a part of this one.

@@ -16,7 +16,7 @@ check path source =
     Err failure ->
       return Ok (CheckOutcome { diagnostics = diagnose path source (&failure), failed = true })
 
-  analysis = crate::annotate::analyse (&mut program)
+  analysis = crate::annotate::analyse_at (&mut program) path
   if !.is_empty analysis.open
     return Ok (CheckOutcome { diagnostics = crate::annotate::refusals path source (.as_slice analysis.open), failed = true })
 

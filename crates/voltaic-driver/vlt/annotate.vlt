@@ -22,11 +22,19 @@ export data Analysis = Analysis { export open : Vec<Unresolved>, export methods 
   deriving (Debug, Clone)
 
 export annotate : &mut Program -> Vec<Unresolved>
-annotate program = (analyse program).open
+annotate program = (analyse_at program (Path::new "")).open
 
 export analyse : &mut Program -> Analysis
-analyse program =
-  found = voltaic_lattice::walk program
+analyse program = analyse_at program (Path::new "")
+
+export analyse_at : &mut Program -> &Path -> Analysis
+analyse_at program from =
+  mut found = voltaic_lattice::walk program
+  published = crate::resolve::upstream program from
+  for m in .iter published.members
+    found.known.members |> .push (.clone m)
+  for t in .iter published.types
+    found.known.types |> .push (.clone t)
   outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
   methods = method_spans (&found.store) (&outcome) (&found.known)
   mut filled = Vec::new ()

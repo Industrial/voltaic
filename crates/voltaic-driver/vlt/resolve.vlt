@@ -1,0 +1,99 @@
+import voltaic_ast::Item
+import voltaic_ast::Program
+import voltaic_lattice::Declarations
+import voltaic_lattice::MemberKind
+import std::path::Path
+import std::path::PathBuf
+
+export const FOREIGN : &[&str] = &["std", "core", "alloc", "crate", "super", "self"]
+
+export crate_of : &str -> Option<String>
+crate_of path =
+  pair = .unwrap_or (path, "") (.split_once "::" path)
+  head = pair.0
+  if .is_empty head || .contains (&head) FOREIGN
+    return None
+  Some (.replace "_" "-" head)
+
+export workspace_above : &Path -> Option<PathBuf>
+workspace_above from =
+  mut here = .unwrap_or_else (\_ -> .to_path_buf from) (.canonicalize from)
+  mut climbed = 0
+  while climbed < 8
+    if .is_dir (.join "crates" here) && .is_file (.join "Cargo.toml" here)
+      return Some here
+    here := .to_path_buf (.parent here)?
+    climbed += 1
+  None
+
+export sidecars_of : &Path -> &str -> Vec<PathBuf>
+sidecars_of root named =
+  mut found = Vec::new ()
+  dir = root |> .join "crates" |> .join named |> .join "vlt"
+  gather (&dir) (&mut found)
+  .sort found
+  found
+
+gather : &Path -> &mut Vec<PathBuf> -> ()
+gather dir into =
+  guard std::fs::read_dir dir is Ok entries else
+    return ()
+  for found in .flatten entries
+    path = .path found
+    if .is_dir path
+      gather (&path) into
+      continue
+    if .ends_with ".vlt.sig" (.to_string_lossy path)
+      into |> .push path
+  ()
+
+export upstream : &Program -> &Path -> Declarations
+upstream program from =
+  mut known = Declarations::empty ()
+  guard workspace_above from is Some root else
+    return known
+  mut seen : Vec<String> = Vec::new ()
+  for item in .iter program.items
+    guard item is Item::Import decl else
+      continue
+    guard crate_of (.as_str decl.path) is Some named else
+      continue
+    if .contains (&named) (.as_slice seen)
+      continue
+    seen |> .push (.clone named)
+    for path in sidecars_of (&root) (.as_str named)
+      guard std::fs::read_to_string (&path) is Ok text else
+        continue
+      published = voltaic_lattice::read_sidecar (&text)
+      for m in .iter published.members
+        kind = if m.is_field
+          MemberKind::Field
+        else
+          MemberKind::Method
+        known.members |> .push (voltaic_lattice::Member { owner = .clone m.owner, name = .clone m.name, ty = voltaic_lattice::Ty::Nil, kind })
+        if !.contains (&.clone m.owner) (.as_slice known.types)
+          known.types |> .push (.clone m.owner)
+  known
+
+test "an import names a candidate crate unless its head is one of Rust's own roots"
+  assert_eq! \-> crate_of "voltaic_ast::TypeExpr" \-> Some (.to_string "voltaic-ast")
+  assert_eq! \-> crate_of "voltaic_lattice::Ty" \-> Some (.to_string "voltaic-lattice")
+  assert_eq! \-> crate_of "anything_else::Thing" \-> Some (.to_string "anything-else")
+  for root in FOREIGN
+    assert_eq! \-> crate_of (&format! \-> "#{root}::Thing") \-> None
+
+test "the workspace is found by climbing to the directory holding crates/"
+  here = .expect "a test runs somewhere" (std::env::current_dir ())
+  assert! \-> .is_some (workspace_above (&here))
+
+test "a relative path that does not exist cannot climb, and says so"
+  assert_eq! \-> workspace_above (Path::new "no/such/place") \-> None
+
+test "a path outside any workspace finds none rather than climbing forever"
+  assert_eq! \-> workspace_above (Path::new "/") \-> None
+
+test "a program with no crate-qualified import resolves nothing"
+  source = "import std::path::Path\n\nf : u64 -> u64\nf n = n\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  known = upstream (&program) (Path::new "crates/voltaic-driver/vlt/resolve.vlt")
+  assert! \-> .is_empty (&known)

@@ -7,6 +7,7 @@ module judge
 module lint
 module migrate
 module remap
+module resolve
 module visit
 
 export import cache::CacheReporter
@@ -15,6 +16,7 @@ export import cache::Silent
 export import annotate::Analysis
 export import annotate::Unresolved
 export import annotate::analyse
+export import annotate::analyse_at
 export import annotate::annotate
 export import annotate::refusals
 export import check::CheckOutcome
@@ -42,6 +44,7 @@ export import migrate::gate
 export import migrate::transpile
 export import remap::RustcMessage
 export import remap::remap
+export import resolve::upstream
 export import visit::Pass
 export import visit::apply_pass
 export import visit::descend
