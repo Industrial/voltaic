@@ -245,13 +245,31 @@ fn render(root: &Path) -> String {
      ```\n\n\
      Plan 48 (`docs/42 - 48 - Conformance and Self-Hosting.md`) built it, and\n\
      plan 64 changed its answer.\n\n\
-     ---\n\n## The answer\n\n**Almost — and what is left is the `as` cast.**\n\n",
+     ---\n\n## The answer\n\n",
   );
 
   let total_hits: usize = totals.iter().sum();
+  // **The headline is derived, and used not to be.** It was the literal
+  // `"Almost — and what is left is the `as` cast."` while the table beneath it
+  // read 0 for every blocker, so the document contradicted its own measurement
+  // — the exact failure a generated document exists to prevent. Row 104 leaf 3.
+  let worst = totals
+    .iter()
+    .enumerate()
+    .max_by_key(|(_, n)| **n)
+    .filter(|(_, n)| **n > 0)
+    .map(|(i, _)| BLOCKERS[i].name);
   let _ = writeln!(
     out,
-    "**{total_hits} blocking occurrences**, down from 964 — and the construct that was 952 \
+    "{}\n",
+    match worst {
+      Some(name) => format!("**Almost — and what is left is the {name}.**"),
+      None => "**Yes — no blocking occurrence is left.**".to_string(),
+    }
+  );
+  let _ = writeln!(
+    out,
+    "**{total_hits} blocking {occurrence}**, down from 964 — and the construct that was 952 \
      of them is gone. Plan 48 measured macro invocation at 99% of the obstacle and wrote \
      *\"spell it, and what remains is the `as` casts below\"*; plan 64 spelled it, as \
      `name! \\-> e`, and this is what remained.\n\n\
@@ -259,10 +277,18 @@ fn render(root: &Path) -> String {
      and declined to spell it because it needed a surface decision in doc 03; plan 48 \
      **priced** it, which is what made the decision worth taking; plan 64 **took** it. A \
      count is what turned an unreachability note into a priority.\n\n\
-     The figure is not zero and will not be: it is read off `docs/GRAMMAR.md`'s \
-     `UNREACHABLE` rows and moves on any commit that adds Rust, which is why it is \
-     generated rather than written down.\n\n---\n\n## Blockers\n\nEach is graded \
-     `UNREACHABLE` in `docs/GRAMMAR.md`.\n"
+     **The figure is zero, and this document said it never would be.** It read *\"the \
+     figure is not zero and will not be\"* while the table beneath it was zeroes, which \
+     is what a generated number is for and what a written-down prediction is worth. It \
+     can still move: it is read off `docs/GRAMMAR.md`'s `UNREACHABLE` rows and counted \
+     over the compiler's own `.vlt`, so any commit introducing one of those constructs \
+     raises it.\n\n---\n\n## Blockers\n\nEach is graded \
+     `UNREACHABLE` in `docs/GRAMMAR.md`.\n",
+    occurrence = if total_hits == 1 {
+      "occurrence"
+    } else {
+      "occurrences"
+    },
   );
   let _ = writeln!(out, "| Blocker | Occurrences |\n|---|---:|");
   for (i, blocker) in BLOCKERS.iter().enumerate() {
@@ -270,10 +296,12 @@ fn render(root: &Path) -> String {
   }
   let _ = writeln!(out, "| `\\|` or-pattern | *not counted* |");
   out.push_str(
-    "\n**Four of the five remaining gaps are zero**, which is the result doc 02 §4.8 did \
-     not expect: `unsafe trait`, `unsafe impl`, `extern \"C\" fn` and `macro_rules!` are \
-     real gaps and were never *this* obstacle. Only a count could say so — and the same \
-     count is what identified the one that was.\n\n\
+    "\n**All five remaining gaps are zero**, which is the result doc 02 §4.8 did \
+     not expect: `as` casts, `unsafe trait`, `unsafe impl`, `extern \"C\" fn` and \
+     `macro_rules!` are real gaps and were never *this* obstacle. Only a count could \
+     say so — and the same count is what identified the one that was. This sentence \
+     said *four* of five, naming the `as` cast as the exception, which stopped being \
+     true when the compiler's own source lost its last cast.\n\n\
      `\\|` or-patterns are **not counted** rather than estimated. The counter is line-based, \
      and no line-based pattern separates a pattern alternative from a bitwise or; a wrong \
      number would be worse than an empty cell.\n\n---\n\n## By crate\n\n",
@@ -335,11 +363,21 @@ fn render(root: &Path) -> String {
      defects, and plan 73 four more in the toolchain that writes the port.\n\n\
      ---\n\n## The Rust implementation is permanent\n\n\
      Doc 02 §4.8 corrects doc 01 §34's own wording: keep the Rust implementation \
-     *\"permanently rather than as a 'fallback'\"*. {remainder} The {lower} that \
-     are ported keep their generated Rust **committed**, which is what doc 02 §4.8 means \
-     by *\"commit the generated `.vrs` so the bootstrap never breaks\"* — the committed \
-     output is the previous-version compiler every self-hosting language needs, stored as \
-     reviewable source rather than as a binary.\n",
+     *\"permanently rather than as a 'fallback'\"*. {remainder}\n\n\
+     **The generated Rust is not committed, and this section said it was.** It read \
+     *\"the {lower} that are ported keep their generated Rust **committed**\"*, citing \
+     doc 02 §4.8's *\"commit the generated `.vrs` so the bootstrap never breaks\"*. Plan \
+     72 reversed that: each crate's `src/` is `.gitignore`d, and \
+     `voltaic-seed/tests/bootstrap.rs`'s `the_generated_trees_are_ignored` now asserts \
+     the opposite of what it once did.\n\n\
+     The *reason* §4.8 gave was sound and is what the reversal had to answer: a \
+     self-hosting language needs its previous-version compiler present on a clean \
+     clone, and untracking thirteen generated trees left nothing able to build the \
+     compiler that would regenerate them — plan 68 proved it by breaking the bootstrap \
+     within the hour. `seed/voltaic-g2.wasm` is that compiler, stored **once** instead \
+     of fourteen times, and row 102 §3.1 retired its predecessor only after `fixpoint` \
+     was green on it from clean clones. So the requirement held and the mechanism \
+     changed.\n",
     heading = word(n),
     lower = word(n).to_lowercase(),
     list = and_list(&names),

@@ -19,13 +19,13 @@ plan 64 changed its answer.
 
 ## The answer
 
-**Almost — and what is left is the `as` cast.**
+**Yes — no blocking occurrence is left.**
 
 **0 blocking occurrences**, down from 964 — and the construct that was 952 of them is gone. Plan 48 measured macro invocation at 99% of the obstacle and wrote *"spell it, and what remains is the `as` casts below"*; plan 64 spelled it, as `name! \-> e`, and this is what remained.
 
 That is the whole arc of the measurement in three rows: plan 45 §1.5 **found** the gap and declined to spell it because it needed a surface decision in doc 03; plan 48 **priced** it, which is what made the decision worth taking; plan 64 **took** it. A count is what turned an unreachability note into a priority.
 
-The figure is not zero and will not be: it is read off `docs/GRAMMAR.md`'s `UNREACHABLE` rows and moves on any commit that adds Rust, which is why it is generated rather than written down.
+**The figure is zero, and this document said it never would be.** It read *"the figure is not zero and will not be"* while the table beneath it was zeroes, which is what a generated number is for and what a written-down prediction is worth. It can still move: it is read off `docs/GRAMMAR.md`'s `UNREACHABLE` rows and counted over the compiler's own `.vlt`, so any commit introducing one of those constructs raises it.
 
 ---
 
@@ -42,7 +42,7 @@ Each is graded `UNREACHABLE` in `docs/GRAMMAR.md`.
 | Macro definition | 0 |
 | `\|` or-pattern | *not counted* |
 
-**Four of the five remaining gaps are zero**, which is the result doc 02 §4.8 did not expect: `unsafe trait`, `unsafe impl`, `extern "C" fn` and `macro_rules!` are real gaps and were never *this* obstacle. Only a count could say so — and the same count is what identified the one that was.
+**All five remaining gaps are zero**, which is the result doc 02 §4.8 did not expect: `as` casts, `unsafe trait`, `unsafe impl`, `extern "C" fn` and `macro_rules!` are real gaps and were never *this* obstacle. Only a count could say so — and the same count is what identified the one that was. This sentence said *four* of five, naming the `as` cast as the exception, which stopped being true when the compiler's own source lost its last cast.
 
 `\|` or-patterns are **not counted** rather than estimated. The counter is line-based, and no line-based pattern separates a pattern alternative from a bitwise or; a wrong number would be worse than an empty cell.
 
@@ -84,4 +84,8 @@ What it found still stands, and is the reason doc 02 §4.8 expected a port to be
 
 ## The Rust implementation is permanent
 
-Doc 02 §4.8 corrects doc 01 §34's own wording: keep the Rust implementation *"permanently rather than as a 'fallback'"*. **No crate's `src/` is hand-written Rust any more.** What stays Rust is what             plan 72 §6 named: the integration tests, which `AGENTS.md` requires to be             Rust asserting over Voltaic-generated code, and `crates/voltaic-driver/build.rs`,             which cargo runs on the host before anything exists. The fourteen that are ported keep their generated Rust **committed**, which is what doc 02 §4.8 means by *"commit the generated `.vrs` so the bootstrap never breaks"* — the committed output is the previous-version compiler every self-hosting language needs, stored as reviewable source rather than as a binary.
+Doc 02 §4.8 corrects doc 01 §34's own wording: keep the Rust implementation *"permanently rather than as a 'fallback'"*. **No crate's `src/` is hand-written Rust any more.** What stays Rust is what             plan 72 §6 named: the integration tests, which `AGENTS.md` requires to be             Rust asserting over Voltaic-generated code, and `crates/voltaic-driver/build.rs`,             which cargo runs on the host before anything exists.
+
+**The generated Rust is not committed, and this section said it was.** It read *"the fourteen that are ported keep their generated Rust **committed**"*, citing doc 02 §4.8's *"commit the generated `.vrs` so the bootstrap never breaks"*. Plan 72 reversed that: each crate's `src/` is `.gitignore`d, and `voltaic-seed/tests/bootstrap.rs`'s `the_generated_trees_are_ignored` now asserts the opposite of what it once did.
+
+The *reason* §4.8 gave was sound and is what the reversal had to answer: a self-hosting language needs its previous-version compiler present on a clean clone, and untracking thirteen generated trees left nothing able to build the compiler that would regenerate them — plan 68 proved it by breaking the bootstrap within the hour. `seed/voltaic-g2.wasm` is that compiler, stored **once** instead of fourteen times, and row 102 §3.1 retired its predecessor only after `fixpoint` was green on it from clean clones. So the requirement held and the mechanism changed.
