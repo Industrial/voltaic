@@ -618,6 +618,38 @@ previous generation while the mistake was diagnosed from
 workspace unbuildable, which doc 97 §10.34 records as the state the port cannot
 rescue itself from.
 
+### 10.13 The sidecars closed it; the guess never would have
+
+Doc 98 §10.7's resolver and the 110 committed sidecars close §10.12's dependency.
+`is_method` now succeeds across crates: `cross_crate.rs` shows an upstream method
+emitting as a call and an upstream field staying a field.
+
+**The `!knows` guess was retried and reverted a second time, and that is the
+finding.** §10.12 withdrew *"a type not declared here has no fields we know, so
+`x.name` is a method"* because cross-crate project types broke it. With those
+types published the confound was gone, so the rule was tried again — and the port
+refused `voltaic-lattice` again, on **one** site out of three:
+
+```
+-      f.sig.span,
++      f.sig().span,
+```
+
+`FnDecl.sig field` *is* published, and two of the three `f.sig` sites in
+`generate.vlt` resolved correctly. The third did not, because the solver did not
+resolve that `f` to `FnDecl` — it resolved it to something no sidecar names, and
+the guess turned a field read into a call.
+
+So the guess adds nothing and risks everything: **every case it gets right,
+`is_method` already gets right now that the sidecars exist**, and the cases it
+differs on are exactly the ones where the solver was imprecise. Doc 97 §10.36's
+restriction — speak only where sure — is the rule, and "sure" now means
+*published*, locally or upstream, rather than *locally declared*.
+
+Two reverts of one rule is worth a sentence of its own: the first blamed the
+missing sidecars, and fixing those was correct and necessary work. It was not
+what made the rule sound, and the second attempt is what established that.
+
 ### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
 
 Leaf 2's largest `auto` construct is doc 87 §1.2's inversion of `.`:
