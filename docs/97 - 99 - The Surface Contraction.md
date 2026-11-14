@@ -865,6 +865,70 @@ should be measured against doc 87 §20 and §5 before it is sized**, because two
 the three things wave 2 looked like turned out not to be there: six constructs did
 not exist, and two were never scheduled for deletion.
 
+### 10.26 Wave 3 measured against doc 87: it is specified, and it inverts `.`
+
+Unlike wave 2, wave 3 **is** doc 87's. §5.3 deletes four operators with named
+replacements, and §1 specifies the application form that replaces them:
+
+| Spelling | Means |
+|---|---|
+| `f x` | `f(x)` — a free function |
+| `x.f y` | `f(x, y)` — the same function, **receiver first** |
+
+What §4's phrase "receiver-first dots" does not say is that this **inverts the
+meaning of `.`**. Generation 1's own diagnostic says so in as many words —
+`VLT0115`, raised on `xs.iter.map(f)`:
+
+> method-call syntax is retired […] a method is a function whose last argument is
+> its receiver, so write `.f args recv` or `recv |> .f args`. **`.` is field
+> access and nothing else** (plan 57 §1.1)
+
+So `x.f y` today is a *field access* `x.f` applied to `y`, and under doc 87 §1 it
+is a *method call* `f(x, y)`. The token is not being extended; its meaning is
+being replaced. `AGENTS.md` already records the near-miss version of this —
+*"`(.f)` is a field section, not a method reference"* — which is the same
+distinction seen from generation 1's side.
+
+Two consequences this row should not discover at wave 3 leaf 4:
+
+- **Doc 87 §5.1's chain example is not generation 1 syntax.** It reads
+  `self.src.get(self.pos .. self.src.len).unwrap_or("")`, which is exactly the
+  parenthesised method call `VLT0115` refuses. The chain form is new syntax to be
+  *built*, not an existing form to be preferred.
+- **Doc 87 §5.3's `>>>` replacement does not reach the position that matters
+  yet.** `shout = (.trim.to_uppercase)` against `shout : &str -> String` is
+  `VLT0103`, an arity disagreement, because the signature's spine takes one
+  parameter and the equation binds none. A point-free *definition* needs either
+  wave 1's optional signature or a rule that a chain section saturates the spine;
+  neither is written down.
+
+#### The size, measured
+
+| Corpus | `.`-calls | Operator uses |
+|---|---:|---:|
+| `examples/` | 357 | 43 — `\|>` 32, `>>>` 9, `<<<` 2, `$` 0 |
+| `crates/*/vlt/` | **8,479** | `\|>` in 79 of 105 files |
+
+The second row is row 103's to migrate, not this one's — but it is the number
+that makes the ordering matter. §10.22's deferral mechanism is what makes wave 3
+*possible*: with `ACCEPTS = g2` the eight gates that read the compiler's own
+generation-1 source stand down, and the tree keeps building because `bootstrap.sh`
+runs the generation-1 seed. Without that, inverting `.` would break the build and
+every gate at once.
+
+`$` appears **zero** times in `examples/`, which is worth noting against §5.3's
+paragraph justifying it at length: the operator it takes most care to explain is
+the one the corpus does not use.
+
+#### Why this row stops here
+
+Wave 3 is one coherent change — the application rule — and §4 already calls it
+*"the largest reader-facing change in the generation and the one most likely to
+surface parser ambiguities"*. Landing half of it would leave the parser accepting
+two incompatible readings of `.`, which is strictly worse than either. The two
+gaps above are doc 87's to close first: the chain form has to be built before the
+operators it replaces can go, and the point-free definition needs a stated rule.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines
