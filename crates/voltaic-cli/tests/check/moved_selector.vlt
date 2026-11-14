@@ -19,7 +19,7 @@
 newtype Tag = Tag String
 
 data Profile
-  = Profile { tag : Tag }
+  = Profile { tag Tag }
 
 tags : &Vec<Profile> -> Vec<Tag>
 tags ps = ps |> .iter |> .map (.tag) |> .collect

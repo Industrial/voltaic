@@ -3,14 +3,14 @@ import std::collections::BTreeSet
 import voltaic_ast::Span
 
 rust """
-thread_local! {
-    /// The spans the solver resolved to **method** calls, empty outside a
-    /// [`MethodScope`].
-    static IN_SCOPE: RefCell<MethodTable> = RefCell::new(MethodTable::default());
-}
+  thread_local! {
+      /// The spans the solver resolved to **method** calls, empty outside a
+      /// [`MethodScope`].
+      static IN_SCOPE: RefCell<MethodTable> = RefCell::new(MethodTable::default());
+  }
 """
 
-export data MethodScope = MethodScope { previous : MethodTable }
+export data MethodScope { previous MethodTable }
 
 instance MethodScope
   export enter : MethodTable -> Self
@@ -28,7 +28,7 @@ instance Drop MethodScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export data MethodTable = MethodTable { spans : BTreeSet<Span> }
+export data MethodTable { spans BTreeSet<Span> }
   deriving (Debug, Clone, Default)
 
 instance MethodTable

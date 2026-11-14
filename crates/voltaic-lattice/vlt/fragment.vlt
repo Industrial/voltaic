@@ -5,7 +5,7 @@ import voltaic_ast::BinaryOp
 import voltaic_ast::UnaryOp
 import voltaic_ast::Expr
 
-export data Refusal = Refusal { export subterm : String, export rule : &'static str, export span : voltaic_ast::Span }
+export data Refusal { export subterm String, export rule &'static str, export span voltaic_ast::Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export const RULE_PRODUCT : &str = "two variables may not be multiplied: the fragment is linear"
@@ -51,7 +51,7 @@ term_of e = case e of
     Ok (Term::variable (&format! \-> "#{root}.#{name.text}"))
   Expr::Unary { op, operand, .. } ->
     if *op == UnaryOp::Neg
-      return Ok (.scaled (-1) ((term_of operand)?))
+      return Ok (.scaled (-1) (term_of operand)?)
     Err (Refusal { subterm = shown e, rule = RULE_SHAPE, span = .span e })
   Expr::Binary { op, lhs, rhs, span, .. } ->
     left = (term_of lhs)?

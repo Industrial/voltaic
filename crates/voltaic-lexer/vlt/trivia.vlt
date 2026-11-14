@@ -1,6 +1,6 @@
 import crate::Span
 
-export data Trivia = Trivia { export kind : TriviaKind, export text : String, export span : Span }
+export data Trivia { export kind TriviaKind, export text String, export span Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Trivia

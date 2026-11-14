@@ -1,7 +1,7 @@
 import crate::reason::Reason
 import voltaic_ast::Span
 
-export data Provenance = Provenance { export span : Span, export reason : Reason, export derived_from : Option<usize> }
+export data Provenance { export span Span, export reason Reason, export derived_from Option<usize> }
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
 instance Provenance

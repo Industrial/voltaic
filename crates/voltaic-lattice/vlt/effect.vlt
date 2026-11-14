@@ -57,17 +57,17 @@ test "every effect in the alphabet has a label"
 
 test "only fail and none are fallible"
   assert! \-> .is_fallible (Effect::Fails (Ty::named "String"))
-  assert! \-> .is_fallible (Effect::Absent)
-  assert! \-> !.is_fallible (Effect::Suspends)
-  assert! \-> !.is_fallible (Effect::Performs)
+  assert! \-> .is_fallible Effect::Absent
+  assert! \-> !.is_fallible Effect::Suspends
+  assert! \-> !.is_fallible Effect::Performs
 
 test "fail carries its error type and nothing else does"
   assert_eq! \-> .error_type (Effect::Fails (Ty::named "String")) \-> Some (&Ty::named "String")
-  assert_eq! \-> .error_type (Effect::Absent) \-> None
+  assert_eq! \-> .error_type Effect::Absent \-> None
 
 test "mut names the region it mutates"
   assert_eq! \-> .region (Effect::Mutates (.to_string "self")) \-> Some "self"
-  assert_eq! \-> .region (Effect::Panics) \-> None
+  assert_eq! \-> .region Effect::Panics \-> None
 
 test "fail prints with its error type"
   assert_eq! \-> .to_string (Effect::Fails (Ty::named "String")) \-> "fail String"

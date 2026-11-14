@@ -2,7 +2,7 @@ import crate::substitution::Substitution
 import crate::ty::Ty
 import crate::variable::Variable
 
-export data Mismatch = Mismatch { export left : Ty, export right : Ty, export occurs : bool }
+export data Mismatch { export left Ty, export right Ty, export occurs bool }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Mismatch

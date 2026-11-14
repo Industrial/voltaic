@@ -2,7 +2,7 @@ import std::fmt::Display
 import std::fmt::Formatter
 import std::fmt::Result
 
-export data Variable = Variable u32
+export data Variable u32
   deriving (Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)
 
 instance Variable

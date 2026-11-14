@@ -165,4 +165,3 @@ test "an unrelated name in the table is not picked up"
   mentioned = Expr::Ident (voltaic_ast::Ident { text = .to_string "quiet", span = (0, 5) })
   known = vec! \-> (.to_string "announce", Row::single Effect::Performs)
   assert! \-> .is_empty (expr_row_with (&mentioned) (.as_slice known))
-

@@ -14,7 +14,7 @@
 -- the finding for: a field access moves, so this is the one place the
 -- deletion costs the author anything.
 
-data Point = Point { x : i32, y : i32 }
+data Point { x i32, y i32 }
 
 borrowed_chain : &Option<Point> -> Option<&i32>
 borrowed_chain p = try

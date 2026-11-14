@@ -8,7 +8,7 @@ import voltaic_lexer::LexError
 import voltaic_lexer::Token
 import voltaic_lexer::TokenKind
 
-export data ParseError = ParseError { export code : Code, export message : String, export span : Span, export help : Option<String> }
+export data ParseError { export code Code, export message String, export span Span, export help Option<String> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance ParseError

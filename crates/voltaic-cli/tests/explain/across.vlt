@@ -1,4 +1,4 @@
-data Point = Point { x : f64, y : f64 }
+data Point { x f64, y f64 }
 
 across : &Point -> f64
 across p = p.x

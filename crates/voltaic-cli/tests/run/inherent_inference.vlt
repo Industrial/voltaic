@@ -32,7 +32,7 @@
 -- and rejected by rustc as `E0507`. It is caught rather than miscompiled,
 -- which is why this file does not contain one.
 
-data Counter = Counter { value : u32 }
+data Counter { value u32 }
 
 instance Counter
   current self = self.value
