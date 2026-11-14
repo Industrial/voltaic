@@ -4,7 +4,7 @@ name: CI
 #
 # `crates/*/src/` is `.gitignore`d and not in the index — every crate under
 # `crates/` is written in Voltaic, and its `.rs` is generated from its `.vlt` by
-# `seed/voltaic1.wasm` (see `seed/SEED.md` and `AGENTS.md`). So `cargo` cannot
+# `seed/voltaic-g1.wasm` (see `seed/SEED.md` and `AGENTS.md`). So `cargo` cannot
 # build anything here until `./bootstrap.sh` has run, which is why the bootstrap
 # step comes before every gate rather than after checkout as a formality. A CI
 # that skipped it would fail with hundreds of "file not found for module"
@@ -168,9 +168,9 @@ jobs:
               echo "::error::crates/$crate/src exists in a fresh checkout — the ignore flip has been reverted"
               exit 1
             fi
-          done < <(sed -e 's/#.*//' seed/PORTED | awk 'NF { print $1 }')
+          done < <(sed -e 's/#.*//' seed/GENERATION | awk 'NF { print $1 }')
           echo "no generated Rust in the checkout, as expected"
-      - name: Bootstrap the generated Rust from seed/voltaic1.wasm
+      - name: Bootstrap the generated Rust from seed/voltaic-g1.wasm
         run: ./bootstrap.sh
       - name: moon sync
         run: moon sync

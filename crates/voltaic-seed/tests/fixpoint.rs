@@ -7,7 +7,7 @@
 //! While each ported crate's generated Rust is **committed**, a reviewer can
 //! read the stage0 — it is 6,397 lines of ordinary Rust, and `tests/port.rs`
 //! grades it against the `.vlt`. Once that tree is untracked and the stage0 is
-//! `seed/voltaic1.wasm`, nobody can read it. `tests/blob.rs` then says the blob
+//! `seed/voltaic-g1.wasm`, nobody can read it. `tests/blob.rs` then says the blob
 //! is the one `SEED.md` claims, which is provenance and not behaviour.
 //!
 //! What is left is the oldest check in self-hosting: run the compiler, build
@@ -20,7 +20,7 @@
 //!
 //! Three artifacts go in:
 //!
-//! 1. `seed/voltaic1.wasm`, the committed stage0, run under `wasmtime`;
+//! 1. `seed/voltaic-g1.wasm`, the committed stage0, run under `wasmtime`;
 //! 2. the **native** `voltaic-seed`, which cargo compiled from
 //!    `crates/voltaic-ast/src` and `crates/voltaic-fmt/src`;
 //! 3. those same committed trees.
@@ -111,7 +111,7 @@ fn stage1_equals_stage2() {
   let root = workspace_root();
   let vlt = root.join("crates/voltaic-ast/vlt");
   let committed = root.join("crates/voltaic-ast/src");
-  let blob = root.join("seed/voltaic1.wasm");
+  let blob = root.join("seed/voltaic-g1.wasm");
 
   // ---------------------------------------------------------------- stage0
   let from_seed = generate("voltaic-fixpoint-stage0", &vlt, |vlt, out| {

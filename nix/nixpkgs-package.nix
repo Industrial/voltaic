@@ -80,7 +80,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   # .rs under its src/ is generated and untracked. So the GitHub tarball
   # contains zero files under any crate's src/, and the derivation has to do
   # what a developer does before their first build: run the seed compiler over
-  # every .vlt. `seed/voltaic1.wasm` is tracked for exactly this, and
+  # every .vlt. `seed/voltaic-g1.wasm` is tracked for exactly this, and
   # `seed/SEED.md` is its provenance.
   #
   # HOME is /homeless-shelter in the sandbox and wasmtime wants a writable cache

@@ -120,7 +120,7 @@ fn every_name_in_the_list_is_a_ported_crate() {
     .collect();
   assert!(
     unknown.is_empty(),
-    "these names are in REWRITTEN but are not crates in seed/PORTED: {unknown:?}"
+    "these names are in REWRITTEN but are not crates in seed/GENERATION: {unknown:?}"
   );
 }
 

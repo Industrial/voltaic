@@ -8,7 +8,7 @@
 # generated and **not tracked**. So a clean clone has no `voltaic-ast` crate at
 # all, and nothing that could build the compiler which would generate it.
 #
-# `seed/voltaic1.wasm` breaks that cycle. Run this before the first build:
+# `seed/voltaic-g1.wasm` breaks that cycle. Run this before the first build:
 #
 #     ./bootstrap.sh
 #     cargo build
@@ -23,21 +23,19 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-SEED="seed/voltaic1.wasm"
-# The crates whose `src/` this regenerates, from `seed/PORTED` — the single
+# The crates whose `src/` this regenerates, from `seed/GENERATION` — the single
 # copy of that list. The array that used to be here named two crates when three
 # were ported, so a clean clone silently left the third's `src/` empty, and the
 # test that proves every generated tree is ignored read an equally stale list of
 # its own. `crates/voltaic-cli/tests/support.rs` and
 # `crates/voltaic-seed/tests/bootstrap.rs` read the same file.
-mapfile -t PORTED < <(sed -e 's/#.*//' seed/PORTED | awk 'NF { print $1 }')
-if [ "${#PORTED[@]}" -eq 0 ]; then
-    echo "error: seed/PORTED names no crates." >&2
-    exit 1
-fi
-
-if [ ! -f "$SEED" ]; then
-    echo "error: $SEED is missing. It is tracked; see seed/SEED.md." >&2
+#
+# Row 102 leaf 7: each line carries the generation its `.vlt` is written in, and
+# the blob is chosen per crate. That is what lets row 103 move crates across the
+# turn one at a time instead of in one commit.
+mapfile -t ENTRIES < <(sed -e 's/#.*//' seed/GENERATION | awk 'NF { print $1 " " $3 }')
+if [ "${#ENTRIES[@]}" -eq 0 ]; then
+    echo "error: seed/GENERATION names no crates." >&2
     exit 1
 fi
 
@@ -48,11 +46,27 @@ for tool in wasmtime rustfmt; do
     fi
 done
 
-for crate in "${PORTED[@]}"; do
+for entry in "${ENTRIES[@]}"; do
+    crate="${entry% *}"
+    generation="${entry#* }"
     src="crates/$crate/vlt"
     out="crates/$crate/src"
     if [ ! -d "$src" ]; then
         echo "error: $src is missing, so $crate has no source to generate from." >&2
+        exit 1
+    fi
+
+    case "$generation" in
+        g1 | g2) SEED="seed/voltaic-$generation.wasm" ;;
+        *)
+            echo "error: seed/GENERATION marks $crate as '$generation'; expected g1 or g2." >&2
+            exit 1
+            ;;
+    esac
+    # Named with the crate that wanted it: `wasmtime: no such file` names the
+    # blob and not the reason one was asked for.
+    if [ ! -f "$SEED" ]; then
+        echo "error: $SEED is missing, and $crate is marked $generation. It is tracked; see seed/SEED.md." >&2
         exit 1
     fi
 
@@ -66,7 +80,7 @@ for crate in "${PORTED[@]}"; do
     # still being written cannot fail the run.
     find "$out" -name '*.rs' -exec rustfmt --edition 2024 --config skip_children=true {} +
 
-    echo "bootstrap: $crate regenerated from $src"
+    echo "bootstrap: $crate regenerated from $src with $SEED"
 done
 
 echo "bootstrap: done. 'cargo build' will now work."

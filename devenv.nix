@@ -39,7 +39,7 @@
 
   # Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 2 — the bootstrap
   # seed's target. `crates/voltaic-seed` is compiled to `wasm32-wasip1` and
-  # checked in as `voltaic1.wasm`, so a crate written in Voltaic need not also
+  # checked in as `voltaic-g1.wasm`, so a crate written in Voltaic need not also
   # commit the Rust it generates.
   #
   # Set **here** and not in `.cursor/nix/features/languages-rust.nix`, which

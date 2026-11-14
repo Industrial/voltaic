@@ -8,7 +8,7 @@
 //! `crate::Stmt`, so its oracle had to be `syn::parse_file` rather than rustc.
 //!
 //! **The generated `.rs` is no longer committed** — plan 72 leaf 5 untracked
-//! it, and `./bootstrap.sh` regenerates it from `seed/voltaic1.wasm` on a clean
+//! it, and `./bootstrap.sh` regenerates it from `seed/voltaic-g1.wasm` on a clean
 //! clone. This test is unaffected in mechanism and *more* load-bearing in
 //! consequence: see the regeneration note below.
 //!
@@ -17,7 +17,7 @@
 //! Plan 69 leaf 0. This file hard-coded `voltaic-ast` in five places, and a
 //! second copy of its four assertions for `voltaic-fmt` would be the
 //! one-predicate-two-positions defect plan 34 §10.31 found five times and plan
-//! 61 found again. `seed/PORTED` is the list; everything below iterates it.
+//! 61 found again. `seed/GENERATION` is the list; everything below iterates it.
 //!
 //! # Why a test and not a `build.rs`
 //!
@@ -63,7 +63,7 @@ fn workspace_root() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// The ported crates, from `seed/PORTED` via [`support`]. `bootstrap.sh`,
+/// The ported crates, from `seed/GENERATION` via [`support`]. `bootstrap.sh`,
 /// `bootstrap.rs` and `docs/CONFORMANCE.md` read the same file, which is why
 /// the list is not declared here — it was declared in four places, and three
 /// of them were stale when `voltaic-diag` landed.
@@ -283,7 +283,7 @@ fn the_port_regenerates_the_committed_rust() {
   // the bootstrap exactly as it was.
   if updating {
     let root = workspace_root();
-    // **Crate by crate, in `seed/PORTED` order**, which is dependency order: a
+    // **Crate by crate, in `seed/GENERATION` order**, which is dependency order: a
     // staged check of `voltaic-fmt` reads `voltaic-ast`'s types, so the first has
     // to be live before the second is checked. Writing them all and then
     // checking once would also work and would lose which crate broke.
@@ -454,7 +454,7 @@ fn every_hatch_allowance_is_used() {
 /// generated Rust is *not* tracked, and until plan 75 nothing asserted the
 /// source *is*.
 ///
-/// Plan 75 added `voltaic-fuzz` to `seed/PORTED`, regenerated it, and got a green
+/// Plan 75 added `voltaic-fuzz` to `seed/GENERATION`, regenerated it, and got a green
 /// clippy and a green port suite with the whole `.vlt` tree untracked. The
 /// failure surfaced in the clean-clone test — *"crates/voltaic-fuzz/vlt is
 /// missing, so voltaic-fuzz has no source to generate from"* — which is late,

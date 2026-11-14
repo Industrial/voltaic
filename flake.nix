@@ -59,7 +59,7 @@
         #
         # So the derivation has to do what `AGENTS.md` tells a human to do
         # before the first build: run the seed over every `.vlt`. `wasmtime`
-        # runs `seed/voltaic1.wasm` and `rustfmt` formats what it writes; both
+        # runs `seed/voltaic-g1.wasm` and `rustfmt` formats what it writes; both
         # are `bootstrap.sh`'s own declared tool requirements.
         #
         # This ran locally for a year without being noticed because

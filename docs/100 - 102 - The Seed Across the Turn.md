@@ -262,5 +262,100 @@ survey is `docs/64 - 70 - The Source Beside the Crate.md` §1.
 
 ## 10. Result
 
-*To be filled after execution. Required: step 2's baseline, g2's full provenance, and
+In progress. **§1.4's renames and leaves 7 and 8 are done**, and they are done
+*before* row 99 rather than after it — which is a reordering of this register,
+with a reason.
+
+### 10.1 This row's infrastructure is a prerequisite for row 99, not a consequence
+
+§2 lists `Row 99 done` as this row's first precondition, and for the *seed
+generation* step that is right: there is no generation-2 front end to build a
+generation-2 blob with until row 99 ships.
+
+But the **two-generation plumbing** has the dependency the other way round. Doc
+97 §10.13 records what row 99 wave 1 found: the moment the accepted surface
+changes, every gate that parses the compiler's own source with the freshly built
+compiler breaks — `inferred.rs`, `no_comments.rs`, `port.rs`,
+`directory_structure.rs`, `line_cap.rs`, `construct_coverage.rs`,
+`grammar_inventory.rs`. The tree keeps *building*, because `bootstrap.sh`
+generates `src/` with the generation-1 seed. The gates are what break.
+
+Resolving that needs a per-crate notion of which generation a crate is written
+in, and that is exactly leaf 7. So leaf 7 ships now and the blob it will one day
+dispatch to does not exist yet — which is the correct order, and
+`every_generation_named_in_the_list_has_its_blob` is what keeps it honest.
+
+### 10.2 The renames
+
+| | From | To |
+|---|---|---|
+| the blob | `seed/voltaic1.wasm` | `seed/voltaic-g1.wasm` |
+| the crate list | `seed/PORTED` | `seed/GENERATION` |
+
+`voltaic1.wasm` encoded *version 1 of the seed*, which was right with one
+generation and ambiguous with two. Nine code and config files cited the old
+paths; `docs/01`–`docs/85` still cite them and are left alone, because they are
+the record of what those plans did and row 104 owns reference-doc regrading.
+
+### 10.3 Leaf 7: `bootstrap.sh` dispatches per crate
+
+`GENERATION` carries `crate plan generation`, and the script reads the third
+column:
+
+```
+bootstrap: voltaic-seed regenerated from crates/voltaic-seed/vlt with seed/voltaic-g1.wasm
+```
+
+Every crate is `g1` today. The first `g2` line is row 103's first commit; the
+last `g1` line leaving is §3.1's retirement step. **This is what makes row 103 a
+migration rather than one commit** — fourteen crates landing atomically would
+have no reviewable intermediate state at all.
+
+Three refusals, each naming the thing a bare failure would not:
+
+- a generation that is neither `g1` nor `g2` is refused by name, rather than
+  producing `seed/voltaic-.wasm`;
+- a missing blob is reported **with the crate that wanted it**, because
+  `wasmtime: no such file` names the blob and not the reason one was asked for;
+- `generations()` refuses a line with no third column, because a line without one
+  would otherwise silently pick a blob. It also refuses a *fourth* column, since
+  nothing reads one.
+
+`ported()` keeps its name and shape, so the thirteen call sites that want
+`(crate, plan)` are untouched. `generations()` is a separate function rather than
+a widened tuple for that reason: this row adds a column, not a new contract for
+every existing reader.
+
+### 10.4 Leaf 8: the invariant is checked, not merely stated
+
+`SEED.md` gained two rows:
+
+| | |
+|---|---|
+| compiles | g1 |
+| built by | the pre-Voltaic Rust implementation, deleted by plan 72 |
+
+§1.2's invariant — *at no point is the only compiler for a language written in
+that language* — is now a test. `blob.rs` refuses a blob whose `built by` names
+the generation in its `compiles`, and refuses a table missing either row.
+
+For `voltaic-g1.wasm`, `built by` names no generation at all. That is the base
+case and the same shape as Zig's: the compiler that produced it was the committed
+Rust one, which plan 72 deleted afterwards. `voltaic-g2.wasm` will record
+`compiles: g2` and `built by: g1`, because §1.3's ordering writes generation 2's
+front end **in generation 1**.
+
+Worth being exact about what this checks. Nothing in the repository can recompute
+which compiler built a committed binary, so this asserts a *recorded* fact. What
+it can do is refuse a provenance table that states the forbidden thing, and refuse
+one that states nothing — and the second is the failure that matters, because an
+absent row reads as fine while a present wrong one reads as verified.
+
+### 10.5 What remains
+
+Leaves 1–6 — building the generation-2 front end's blob, `fixpoint` on g2, and
+retiring g1 — all need row 99's surface to exist. Nothing in this row's remaining
+scope can precede it, which is what §2's precondition was about and still is.
+
+*Still to fill when leaves 1–6 land: step 2's baseline, g2's full provenance, and
 whether step 4's byte-identity held on the first attempt.*

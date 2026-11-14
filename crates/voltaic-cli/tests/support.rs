@@ -30,40 +30,71 @@ static RUSTC: LazyLock<String> = LazyLock::new(|| {
 });
 
 /// Every crate whose `src/` is generated from Voltaic, with the plan that ported
-/// it, read from `seed/PORTED`.
+/// it, read from `seed/GENERATION`.
 ///
 /// **A file rather than a constant, because the list was in four places and
 /// three had drifted.** `conformance.rs` said *"Two crates"* with three
 /// ported; `bootstrap.rs` and `bootstrap.sh` both named two, so a clean clone
 /// did not rebuild the third and the test that would have caught it read the
-/// same stale list. `seed/PORTED` is now the only copy, and `bootstrap.sh`
+/// same stale list. `seed/GENERATION` is now the only copy, and `bootstrap.sh`
 /// reads the same file.
 ///
 /// The order is the order they were ported, which is also dependency order:
 /// `voltaic-fmt` reads `voltaic-ast`'s types, so a staged check of the second
 /// needs the first already in place.
 pub fn ported() -> Vec<(String, u32)> {
-  let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../seed/PORTED");
+  generations()
+    .into_iter()
+    .map(|(name, plan, _)| (name, plan))
+    .collect()
+}
+
+/// The same list with row 102's third column: the generation each crate's
+/// `.vlt` is written in, `g1` or `g2`.
+///
+/// `bootstrap.sh` reads the same file and chooses the blob per crate, which is
+/// what makes row 103 a migration rather than one commit — crates cross the turn
+/// one at a time, with a reviewable state after each.
+pub fn generations() -> Vec<(String, u32, String)> {
+  let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../seed/GENERATION");
   let text = std::fs::read_to_string(&path)
     .unwrap_or_else(|e| panic!("should read {}: {e}", path.display()));
-  let out: Vec<(String, u32)> = text
+  let out: Vec<(String, u32, String)> = text
     .lines()
     .map(str::trim)
     .filter(|l| !l.is_empty() && !l.starts_with('#'))
     .map(|l| {
-      let (name, plan) = l
-        .split_once(char::is_whitespace)
-        .unwrap_or_else(|| panic!("seed/PORTED: `{l}` is not `crate plan`"));
-      let plan = plan
-        .trim()
+      let mut parts = l.split_whitespace();
+      let name = parts
+        .next()
+        .unwrap_or_else(|| panic!("seed/GENERATION: `{l}` is not `crate plan generation`"));
+      let plan: u32 = parts
+        .next()
+        .unwrap_or_else(|| panic!("seed/GENERATION: `{l}` has no plan number"))
         .parse()
-        .unwrap_or_else(|e| panic!("seed/PORTED: `{l}` has no plan number: {e}"));
-      (name.to_string(), plan)
+        .unwrap_or_else(|e| panic!("seed/GENERATION: `{l}` has no plan number: {e}"));
+      let generation = parts
+        .next()
+        .unwrap_or_else(|| {
+          panic!(
+            "seed/GENERATION: `{l}` has no generation column. Row 102 added it; a line              without one would silently pick a blob."
+          )
+        })
+        .to_string();
+      assert!(
+        generation == "g1" || generation == "g2",
+        "seed/GENERATION: `{l}` marks the generation `{generation}`; expected g1 or g2"
+      );
+      assert!(
+        parts.next().is_none(),
+        "seed/GENERATION: `{l}` has a fourth column, which nothing reads"
+      );
+      (name.to_string(), plan, generation)
     })
     .collect();
   assert!(
     !out.is_empty(),
-    "seed/PORTED should name at least one crate"
+    "seed/GENERATION should name at least one crate"
   );
   out
 }

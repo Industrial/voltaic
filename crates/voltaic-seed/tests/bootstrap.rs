@@ -41,7 +41,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-/// The crates whose `src/` is generated, read from `seed/PORTED`.
+/// The crates whose `src/` is generated, read from `seed/GENERATION`.
 ///
 /// **Not a constant, because this copy was one of the stale ones.** The list
 /// lived in four places — here, `bootstrap.sh`, `port.rs` and a sentence in
@@ -51,7 +51,7 @@ use std::process::Command;
 /// missing from the list is simply not asserted about. The check and the thing
 /// it checks drifted together, which is what a duplicated list does.
 fn ported() -> Vec<String> {
-  let path = workspace_root().join("seed/PORTED");
+  let path = workspace_root().join("seed/GENERATION");
   std::fs::read_to_string(&path)
     .unwrap_or_else(|e| panic!("should read {}: {e}", path.display()))
     .lines()

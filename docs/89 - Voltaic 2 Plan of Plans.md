@@ -230,7 +230,7 @@ can lose work if they are got wrong.
 | # | Plan | Scope | Status | Depends on |
 |---|---|---|---|---|
 | 101 | Diagnostics Without Signatures | The four new code ranges, constraint-provenance rendering, definition-boundary reporting, `tests/explain/`, UI fixtures per range. | `in-progress` — the SOLVE stage and leaves 2, 3, 4 `done` 2026-11-14; leaves 1, 5, 6 open | 94–97 |
-| 102 | The Seed Across the Turn | Generation-tagged seeds. Build generation 2's front end **in generation 1**. `seed/GENERATION`, two-generation bootstrap, `fixpoint` on g2, retire g1. | `planned` | 99 |
+| 102 | The Seed Across the Turn | Generation-tagged seeds. Build generation 2's front end **in generation 1**. `seed/GENERATION`, two-generation bootstrap, `fixpoint` on g2, retire g1. | `in-progress` — §1.4's renames and leaves 7, 8 `done` 2026-11-14, **ahead of row 99** because the two-generation plumbing is what unblocks wave 2 (doc 100 §10.1); leaves 1–6 still need row 99's surface | 99 |
 | 103 | The Generation Migrator | `voltaic migrate`: mechanical `.sdx`→`.vlt` rewriting, classified auto/review/manual, gated on **byte-identical generated Rust**. Then the simplification pass. **Also the `.sdx` deprecation note row 93 could not ship** (doc 91 §10.10), because it names this subcommand. | `planned` | 99, 102 |
 | 104 | The Reference Docs Rewrite | Regrade `GRAMMAR.md`; rewrite `DECLINED.md` against doc 87 §22 and re-point `declined.rs`; rewrite `CONFORMANCE.md`; regenerate `STATUS.md`; add `.vlt.sig` to `dependency_sources`. | `planned` | 103 |
 

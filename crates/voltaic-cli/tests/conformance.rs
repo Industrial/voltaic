@@ -293,7 +293,7 @@ fn render(root: &Path) -> String {
     files.len()
   );
 
-  // **Every number here is derived from `seed/PORTED`.** This section was
+  // **Every number here is derived from `seed/GENERATION`.** This section was
   // prose, and said "Two crates" and "110 files" with three crates ported —
   // because the list was in `port.rs` and the sentence was here. A generated
   // document that contradicts its generator reads as measured.

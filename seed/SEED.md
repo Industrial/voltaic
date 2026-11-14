@@ -1,4 +1,4 @@
-# `voltaic1.wasm` — the bootstrap seed
+# `voltaic-g1.wasm` — the bootstrap seed
 
 Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 3.
 
@@ -30,8 +30,29 @@ verified by a compiler the seed is supposed to underwrite.
 | | |
 |---|---|
 | built from commit | `667e727` **plus plan 93's rename**, which lands in the same commit as this row |
+| compiles | g1 |
+| built by | the pre-Voltaic Rust implementation, deleted by plan 72 |
 | size | 1005170 bytes |
 | blake3 | `0cbf2b3fab61987ae909388209cd4e5b7f53eca130c104447d40af212dd9fc2d` |
+
+`compiles` and `built by` are row 102 leaf 8, and they exist so that §1.2's
+invariant is *checkable* rather than only stated:
+
+> A generation's seed must be built by the previous generation's compiler, before
+> the previous generation's source is replaced. Equivalently: at no point is the
+> only compiler for a language written in that language.
+
+A blob built by itself is exactly what that forbids, so
+`crates/voltaic-seed/tests/blob.rs` asserts `built by` never names the generation
+in `compiles`. For this blob it names no generation at all, which is the base
+case: the compiler that produced it was the committed Rust one, and plan 72
+deleted it afterwards — the same shape, and the same order, as Zig's C++ compiler
+producing the first `zig1.wasm`.
+
+`voltaic-g2.wasm` will record `compiles: g2` and `built by: g1`, because doc 100
+§1.3's ordering writes generation 2's front end **in generation 1**. That is the
+one ordering that satisfies the invariant, and the table is where a future reader
+can check that it was followed rather than take it on trust.
 
 `crates/voltaic-seed/tests/blob.rs` recomputes the hash and fails if it does not
 match this table, so a hand-edited blob and a stale row are the same failure.
