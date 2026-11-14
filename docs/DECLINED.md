@@ -116,6 +116,15 @@ a feature of the compiler rather than of the language.
 | Symbol literals and `%i[...]` | Ruby | Rust has no symbol type (doc 03 §10.4) |
 | Two-binder `and` patterns | C# | no Rust pattern form binds from both sides (doc 03 §6.2) |
 | Transpile-time evaluation (`comptime`) | Zig, Emerald | requires an interpreter in the compiler (doc 03 §13.3) |
+| An executor | — | generation 2 would need a runtime; doc 86 §7.4 and doc 87 §22.3 |
+| A standard library beyond `say` / `ask` / `die` | — | doc 86 §7.4 closes the set at three, for the reason `AGENTS.md` records as Emerald's 112 plans |
+
+> **The last two are generation 2's, and they are the same refusal doc 01 §2 made
+> about a runtime, restated now that effect rows make `async` inferable.** A row
+> that says `async` is not a promise to run it: the row *tracks* the effect and
+> the executor stays the program's choice, which is `tokio` or `smol` or
+> `futures::executor` as it is in Rust. Doc 87 §22.3's table and doc 93 §6 are
+> the full statement.
 
 ## Declined because it duplicates something Voltaic already has
 
@@ -131,13 +140,56 @@ a feature of the compiler rather than of the language.
 > The verdict is unchanged, because it was never about the keyword: both forms are
 > method-chaining sugar, and neither has a Rust lowering of its own.
 
+## Declined because it needs more than a decidable fragment
+
+Generation 2 added a refinement solver, and with it a boundary that generation 1 did not
+have to draw. Doc 86 §7.3 fixes the fragment at **QF_ALIA** — quantifier-free arrays,
+linear integer arithmetic — and doc 90's clause 5 makes staying inside it a condition of
+admitting a construct at all, not a quality to aim for.
+
+| Construct | From | Reason |
+|---|---|---|
+| Dependent types | Idris, F* | the fragment is QF_ALIA and clause 5 makes the bound a condition of admission |
+| Quantified refinements (`forall i. …`) | Liquid Haskell | outside the fragment. **Venue: a later generation, if and only if a bounded instantiation strategy is measured** |
+| User function calls in a predicate | Liquid Haskell | needs inlining with a termination proof, or an uninterpreted-function encoding; both leave the fragment |
+| Const-generic arithmetic | Rust, Zig | rustc owns it, and a Voltaic surface would be a second solver over the same facts |
+
+> **The fragment is not checked, it is *represented*.** `crates/voltaic-lattice`'s
+> predicate term is a map from variable to coefficient plus a constant, so a variable
+> *product* has nowhere to go — the undecidable case cannot be built rather than being
+> built and rejected. Doc 95 §10.1 is the account; it is the strongest form this
+> boundary could take.
+
+## Declined because it would need a higher-rank or higher-kinded system
+
+| Construct | From | Reason |
+|---|---|---|
+| Higher-kinded abstraction (`Monad m`) | Haskell | rank-1 HM is what makes doc 86 §3's inference complete; rank-N breaks it, and clause 1's printability with it |
+| General monadic comprehension over user types | Haskell, **generation 1's own `do`** | the effect alphabet is closed at seven (doc 86 §5.1). **Venue: a `with M` block modifier naming the type**, sketched in doc 93 §6 |
+| Effect handlers (resumable) | Koka, Eff | the row is for *tracking*, not delimited control; resumption needs a runtime representation, which clause 2 forbids |
+
+> **The second row is a regression, not a refusal.** It is the only entry in this
+> document that takes away something generation 1 had — `do` over a user type — and doc
+> 86 §5.6 states it in those words. Read it as a debt.
+
 ## Declined because it would fabricate names or API
 
 | Construct | From | Reason |
 |---|---|---|
 | `RecordWildCards` | Haskell | introduces names absent from the source (doc 03 §9.2) |
 | A **functional** optic setter — `set`, `over` returning a new value | Haskell's `lens` | **inserts a clone**, which doc 03 §2 clause 3 forbids in as many words — *"never inserts a clone (doc 01 §25.1)"*. Plan 88 measured the alternatives and there are only three: clone the value and mutate the clone (clause 3); clone only when `T: Clone` and otherwise move, which is a choice made from a *type* (clause 1); or `..base` struct-update syntax, which reaches one level and is already doc 03 §9.1's spread. So this is an **admission failure rather than a scope decision**, and no later row can take it without relaxing a clause. What plan 88 shipped instead is the composed *getter*, `(.a.b.c)`, which inserts nothing, and — **since 2026-11-11** — the *mutating* `over`, which is the same ergonomics with none of the cost: `over (.addr.zip.code) doubled target` says the path once and lowers to an assignment through the place, so nothing is moved and nothing is cloned. The distinction this row turns on is therefore **functional versus mutating**, not *optic versus no optic*: `set`/`over`-returning-a-new-value stays refused on clause 3, and the in-place form is `docs/GRAMMAR.md`'s *Functional update through a path*. Plan 54's `:=` is still the general assignment, reaching a name, a field, an index and a deref target |
-| Default arguments | C#, Ruby, Python | fabricates API surface (doc 03 §8.7) |
+| Default arguments | C#, Ruby, Python | fabricates API surface (doc 03 §8.7); and breaks trait impls, rustdoc and go-to-definition (doc 87 §22.4) |
+| Implicit cloning | — | non-negotiable: doc 01 §25.1 and doc 86 §6.5. Mode inference chooses `&`, `&mut` or by-value and **never** inserts a `.clone()` to make a program compile |
+| Inheritance / `extends` | Java | Rust has no inheritance, so there is nothing to lower to; classes plus composition are the answer (doc 87 §22.4) |
+| Declaration reflection (`Fields`, `FieldNames` beyond a derive template) | — | a construct that enumerates a declaration's shape is a macro system with no `macro` keyword. **Venue: the `macro` construct, which is `UNREACHABLE` rather than declined** — the `rust` block reaches it, and a Voltaic surface for macro definition is a generation of its own (doc 87 §22.4, row 98 §6) |
+
+> **`Implicit cloning` survived the charter reversal, and that is worth saying
+> plainly.** Generation 2 infers modes — it decides `&`, `&mut` or by-value from
+> the use sites — so it is the first generation with the *machinery* to insert a
+> clone and make a borrow error disappear. It does not. Doc 86 §6.5 keeps the
+> refusal and doc 90's clause 3 is the clause: a lowering never inserts a clone.
+> The thing inference buys is that the mode is *printed*, not that the compiler
+> gets to choose a copy on the programmer's behalf.
 
 > **Second reason added 2026-11-11, and it is independent of the first.** Default arguments were
 > re-proposed with the condition *"only if that works with currying"*. **They do not**, and the
@@ -188,6 +240,18 @@ until plan 86 lifted the second, which is what a venue is for:
 ---
 
 ## Not declined — merely absent
+
+A decline is a decision with a reason. An absence is a gap nobody has closed yet, and
+conflating the two is how a project loses track of what it chose. `docs/GRAMMAR.md` grades
+reachability; this section names the constructs a reader would otherwise look for *here* and
+not find.
+
+| Construct | Status | Where it stands |
+|---|---|---|
+| `macro` definitions | `UNREACHABLE` | **Not declined.** Doc 87 §22.4 lists it in the §22 table and then says so in as many words: the `rust` block already reaches macro *use*, and a Voltaic surface for macro *definition* is a generation of its own. It is the named venue for declaration reflection, so declining it would close that venue by implication |
+| Or-pattern `\|` | `UNREACHABLE` | **The capability is not absent — the punctuation is.** `13 or 14 or 15 -> "young"` works today and lowers to Rust's `13 \| 14 \| 15 =>`; `examples/case.vlt:12` is the witness. `\|` in a `case` arm currently introduces a **guard**, so freeing it needs row 99 wave 2. Recorded here because `tests/unreachable/or_pattern.vlt` claimed the capability was missing for four plans and nothing went red, since the fixture fails either way |
+| `as` casts | `UNREACHABLE` | `as` is reserved for `import … as`, and row 99 wave 6 deletes imports. Not declined; blocked on a keyword |
+| `ref` / `ref mut` patterns | `UNREACHABLE` | `ref` is not a reserved word, and reserving it costs every program using it as an identifier — a reference, a bibliography entry, a git ref. Row 99 wave 4 decides the keyword set. Match ergonomics cover the common case, which is why nobody noticed |
 
 ## Declined on a compiled measurement
 

@@ -1,10 +1,24 @@
-//! `docs/DECLINED.md` against doc 03 §22.
+//! `docs/DECLINED.md` against doc 03 §22 **and** doc 87 §22.
 //!
-//! Plan 47 (`docs/41 - 47 - Status and Declines.md`) leaf 2. §22 is the source
-//! and will gain rows; `DECLINED.md` restates them for a reader who has not
-//! read a 2,000-line surface document. A decline recorded in only one of the
-//! two is a decline nobody can find, so this asserts every §22 construct
-//! appears in the document.
+//! Plan 47 leaf 2 built this against doc 03 §22; row 104 re-points it, and doc
+//! 87 §22 names that as this row's job in its own opening paragraph. §22 is the
+//! source and will gain rows; `DECLINED.md` restates them for a reader who has
+//! not read a 2,000-line surface document. A decline recorded in only one of the
+//! two is a decline nobody can find, so this asserts every §22 construct appears
+//! in the document.
+//!
+//! # Both sections, not the newer one
+//!
+//! Doc 87 §22.3 and §22.4 carry generation 1's reasons forward *"in substance"*
+//! rather than verbatim, and §22.5 **lifts two rows** — `UFCS` and
+//! *a Voltaic type checker* — by the charter reversal. So doc 03 §22 is still the
+//! only place several of generation 1's declines are stated in full, and
+//! re-pointing *away* from it would silently stop asserting them. Checking both
+//! is the only reading under which no decline loses its gate.
+//!
+//! [`LIFTED`] names the two rows §22.5 lifted. It is **not** a parser exception:
+//! §22.5 states both as prose blockquotes rather than table rows, so nothing has
+//! to be excused — and [`the_lifted_rows_are_stated_as_prose`] keeps it that way.
 //!
 //! It checks **inclusion, not equality**. `DECLINED.md` deliberately says more
 //! than §22 does — it groups the declines by the admission test each one fails,
@@ -18,18 +32,45 @@ fn workspace_root() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// The construct named by each row of doc 03 §22's table.
+/// Rows doc 87 §22.5 **lifted**, which are therefore no longer declined.
+///
+/// Both were lifted by the charter reversal rather than by new machinery, which
+/// is §22.5's own point: `UFCS` was declined because it *"requires type knowledge
+/// to choose a shape"* and the reversal supplies the type knowledge; a Voltaic
+/// type checker was declined as the project's load-bearing constraint, and what
+/// ships is a solver that infers and prints rather than a checker that
+/// second-guesses rustc.
+///
+/// This list is **not** an exception the parser applies. §22.5 states both as
+/// prose blockquotes rather than table rows, so the table parser never sees them
+/// and nothing has to be removed — the document's own structure draws the line.
+/// [`the_lifted_rows_are_stated_as_prose`] is what keeps it drawn.
+const LIFTED: &[&str] = &["UFCS", "A Voltaic type checker"];
+
+/// Every declined construct from both generations' §22.
 fn declines_in_the_specification() -> Vec<String> {
-  let text = std::fs::read_to_string(workspace_root().join("docs/03 - Voltaic Surface Design.md"))
-    .expect("should read doc 03");
+  let mut all = declines_in("docs/03 - Voltaic Surface Design.md", "## 22. Declines");
+  all.extend(declines_in(
+    "docs/87 - Voltaic 2 Surface Design.md",
+    "## 22. Declined",
+  ));
+  all.sort();
+  all.dedup();
+  all
+}
+
+/// The construct named by each row of a `## 22.` section's tables.
+fn declines_in(doc: &str, heading: &str) -> Vec<String> {
+  let text =
+    std::fs::read_to_string(workspace_root().join(doc)).unwrap_or_else(|e| panic!("{doc}: {e}"));
 
   let section = text
-    .split("## 22. Declines")
+    .split(heading)
     .nth(1)
-    .expect("doc 03 should have a §22")
+    .unwrap_or_else(|| panic!("{doc} should have a section headed `{heading}`"))
     .split("\n## ")
     .next()
-    .expect("§22 should end");
+    .expect("the section should end");
 
   section
     .lines()
@@ -41,14 +82,64 @@ fn declines_in_the_specification() -> Vec<String> {
     .collect()
 }
 
+/// The two sections together, as a floor.
+///
+/// It was 15 when only doc 03 §22 was read. Row 104 added doc 87 §22, and a
+/// floor that did not move with it would have let the newer section parse as
+/// *empty* while the gate stayed green on generation 1's rows alone — which is
+/// the same narrowing [`crate`]'s sibling gates keep catching.
 #[test]
 fn the_specification_still_has_declines_to_check() {
   let declines = declines_in_the_specification();
   assert!(
-    declines.len() >= 15,
-    "doc 03 §22 should hold the declines; parsed only {}: {declines:?}",
+    declines.len() >= 24,
+    "the two §22 sections should hold the declines; parsed only {}: {declines:?}",
     declines.len()
   );
+}
+
+/// Each section carries rows on its own, so neither can go dark behind the
+/// other's count.
+#[test]
+fn each_specification_contributes_declines() {
+  let first = declines_in("docs/03 - Voltaic Surface Design.md", "## 22. Declines");
+  let second = declines_in("docs/87 - Voltaic 2 Surface Design.md", "## 22. Declined");
+  assert!(
+    first.len() >= 15,
+    "doc 03 §22 parsed only {}: {first:?}",
+    first.len()
+  );
+  assert!(
+    second.len() >= 14,
+    "doc 87 §22 parsed only {}: {second:?}",
+    second.len()
+  );
+}
+
+/// A lifted row must stay prose, because a table row reads as a decline.
+///
+/// If a later edit moves §22.5's two blockquotes into a table, this gate would
+/// start demanding that `DECLINED.md` list `UFCS` and a Voltaic type checker —
+/// two things that **ship**. The failure would read as a missing document entry
+/// rather than as a mis-filed row, so it is worth catching at the structure.
+#[test]
+fn the_lifted_rows_are_stated_as_prose() {
+  let text =
+    std::fs::read_to_string(workspace_root().join("docs/87 - Voltaic 2 Surface Design.md"))
+      .expect("should read doc 87");
+  let tabled = declines_in("docs/87 - Voltaic 2 Surface Design.md", "## 22. Declined");
+  for lifted in LIFTED {
+    assert!(
+      text.contains(lifted),
+      "doc 87 §22.5 should still record `{lifted}` as lifted, with its evidence"
+    );
+    assert!(
+      !tabled.iter().any(|c| c == lifted),
+      "`{lifted}` is lifted and now appears as a §22 **table row**, which reads as a \
+       decline. The gate would start requiring docs/DECLINED.md to list a construct \
+       that ships. Keep §22.5's rows as prose."
+    );
+  }
 }
 
 #[test]
@@ -93,23 +184,26 @@ const RETIRED: &[&str] = &["no type checker", "has no checker of its own"];
 
 /// Where a retired phrasing is still correct to find.
 ///
-/// Three classes, and the third is a knowing inconsistency rather than an
-/// oversight — doc 90 §6 discloses it:
+/// Two classes, and there used to be three:
 ///
 /// - **`docs/01`–`docs/85`** are generation 1's record. Doc 04 rule 3 keeps a
 ///   superseded row rather than deleting it, and the same applies to a
 ///   superseded document: rewriting them would falsify what generation 1 did.
 /// - **`docs/90 - 92`** is the reversal, which has to quote what it reverses,
 ///   and this file, which holds the phrasings as data.
-/// - **`docs/DECLINED.md`** still carries the decline. It is gated by this
-///   file's other two tests against doc 03 §22, and a gated reference document
-///   cannot be rewritten ahead of the code it grades — row 104 owns it. Until
-///   then the repository knowingly ships a decline list naming a decline that
-///   has been lifted, which is better than an evidence-carrying document whose
-///   evidence does not resolve.
+///
+/// `docs/DECLINED.md` was the third, with this note beside it:
+///
+/// > Until then the repository knowingly ships a decline list naming a decline
+/// > that has been lifted, which is better than an evidence-carrying document
+/// > whose evidence does not resolve.
+///
+/// **Row 104 is the "then".** It rewrote the document against doc 87 §22, neither
+/// retired phrasing survives, and the exemption now excuses nothing — so it is
+/// gone. A disclosed inconsistency is still an inconsistency; removing the
+/// exemption is what keeps it closed rather than merely admitted.
 fn is_historical_record(relative: &str) -> bool {
   if relative == "docs/90 - 92 - The Charter Reversal.md"
-    || relative == "docs/DECLINED.md"
     || relative == "crates/voltaic-cli/tests/declined.rs"
     || relative.starts_with("tools/port/batches/")
   {
