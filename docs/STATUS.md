@@ -35,7 +35,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---:|
 | `voltaic-ast` | 1653 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1416 | 13559 |
+| `voltaic-cli` | 1416 | 13621 |
 | `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 3676 | 316 |
 | `voltaic-emit` | 3974 | 4647 |
@@ -47,7 +47,20 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-mcp` | 464 | 776 |
 | `voltaic-parser` | 6013 | 787 |
 | `voltaic-seed` | 146 | 1130 |
-| **total** | **29546** | **26666** |
+| **total** | **29546** | **26728** |
+
+---
+
+## Generations
+
+| Generation | Crates | Seed |
+|---|---:|---|
+| `g1` | 0 | retired |
+| `g2` | 14 | `seed/voltaic-g2.wasm` |
+
+`seed/GENERATION` is the only copy of which crate is written in which generation, and `seed/` is the only place this repository tracks a binary. A crate's generation is **not** a dispatch — `bootstrap.sh` validates the column and runs the one blob — which doc 100 §10.8 records after the comment there claimed otherwise.
+
+A generation with no seed has been **retired**, which row 102 §3.1 permits only once no crate names it and `fixpoint` is green on its successor from two clean clones. `g1` is in that state; its name survives because `SEED.md` records g2's `built by: g1`, and that is how this blob came to be rather than where a file is.
 
 ---
 

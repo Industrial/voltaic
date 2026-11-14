@@ -120,6 +120,38 @@ fn gaps(root: &Path) -> Vec<(String, String)> {
   out
 }
 
+/// Crates per generation, from `seed/GENERATION`, and which generations still
+/// have a blob in `seed/`.
+///
+/// Both read from the tree, so a retired seed or a flipped column changes the
+/// generated document and fails the comparison. Ordered by generation name so
+/// the table is stable without a sort key of its own.
+fn generation_counts(root: &Path) -> (Vec<(String, usize)>, Vec<String>) {
+  let listed = std::fs::read_to_string(root.join("seed/GENERATION"))
+    .expect("seed/GENERATION should be readable");
+  let mut counts: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+  for line in listed.lines() {
+    let line = line.split('#').next().unwrap_or_default().trim();
+    if line.is_empty() {
+      continue;
+    }
+    if let Some(generation) = line.split_whitespace().nth(2) {
+      *counts.entry(generation.to_string()).or_default() += 1;
+    }
+  }
+  // Every generation the *names* mention, not only the ones with a count, so a
+  // retired one still gets its row rather than vanishing from the record.
+  for named in voltaic_lexer::GENERATIONS {
+    counts.entry((*named).to_string()).or_default();
+  }
+  let blobs: Vec<String> = voltaic_lexer::GENERATIONS
+    .iter()
+    .filter(|g| root.join(format!("seed/voltaic-{g}.wasm")).is_file())
+    .map(|g| (*g).to_string())
+    .collect();
+  (counts.into_iter().collect(), blobs)
+}
+
 /// Plan rows of doc 04, by status.
 ///
 /// # Why this does not split the row into cells
@@ -283,6 +315,36 @@ fn render(root: &Path) -> String {
     let _ = writeln!(out, "| `{name}` | {s} | {t} |");
   }
   let _ = writeln!(out, "| **total** | **{src}** | **{tests}** |");
+
+  // Row 104 leaf 4's `seed/GENERATION`. The two corpora that leaf also names,
+  // `tests/solve/` and `tests/refine/`, do not exist — rows 95 and 97 create
+  // them and have not — so they are absent rather than listed as zero. A row of
+  // zeroes reads as a corpus that is empty, which is a different claim from a
+  // corpus that was never built.
+  out.push_str("\n---\n\n## Generations\n\n");
+  let (generations, blobs) = generation_counts(root);
+  let _ = writeln!(out, "| Generation | Crates | Seed |\n|---|---:|---|");
+  for (name, n) in &generations {
+    let blob = if blobs.contains(name) {
+      format!("`seed/voltaic-{name}.wasm`")
+    } else {
+      "retired".to_string()
+    };
+    let _ = writeln!(out, "| `{name}` | {n} | {blob} |");
+  }
+  let _ = writeln!(
+    out,
+    "\n`seed/GENERATION` is the only copy of which crate is written in which \
+     generation, and `seed/` is the only place this repository tracks a binary. \
+     A crate's generation is **not** a dispatch — `bootstrap.sh` validates the \
+     column and runs the one blob — which doc 100 §10.8 records after the \
+     comment there claimed otherwise.\n\n\
+     A generation with no seed has been **retired**, which row 102 §3.1 permits \
+     only once no crate names it and `fixpoint` is green on its successor from \
+     two clean clones. `g1` is in that state; its name survives because \
+     `SEED.md` records g2's `built by: g1`, and that is how this blob came to \
+     be rather than where a file is."
+  );
 
   out.push_str("\n---\n\n## Corpora\n\n| Corpus | Files | What it asserts |\n|---|---:|---|\n");
   let examples = count(&root.join("examples"), ".vlt");
