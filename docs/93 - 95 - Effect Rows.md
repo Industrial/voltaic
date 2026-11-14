@@ -259,8 +259,9 @@ None. Emerald had no effect system; its fallibility story was `Result` by hand.
 ## 10. Result
 
 In progress. Leaves 1 and 2 shipped 2026-11-14: the closed alphabet, the subset
-lattice, and upward propagation over real programs. 132 tests in the crate — 101
-inline, 11 row corpus, 11 solve corpus, 9 store. Clippy clean; gate green at 28 tasks.
+lattice, and propagation — first upward through expressions, then across the call
+graph (§10.6, a correction to what this section first claimed). 183 inline tests
+in the crate plus 14 in the row corpus. Clippy clean; gate green at 14 tasks.
 
 ### 10.1 The rows are visible, and they are right
 
@@ -268,8 +269,8 @@ inline, 11 row corpus, 11 solve corpus, 9 store. Clippy clean; gate green at 28 
 
 ```
 $ voltaic sig examples/errors.vlt
-retries : &<str> -> Result<u32, ConfigError> ! fail ConfigError
-describe : &<ConfigError> -> String
+retries : &str -> Result<u32, ConfigError> ! fail ConfigError
+describe : &ConfigError -> String
 main : () ! io
 
 $ voltaic sig examples/async.vlt
@@ -280,6 +281,72 @@ main : () ! io
 
 `announce` is the case a single-effect model cannot express: **a join**, inferred,
 with the two effects printed in the lattice's order rather than the program's.
+
+### 10.6 Leaf 2 was half done, and the sidecar corpus is what said so
+
+This section first recorded leaf 2 as shipped on the strength of §10.1's
+transcript. It was propagating **within a body** and not **across calls**, and
+the transcript could not show that because each of its three examples happens to
+perform its own effects directly.
+
+What showed it was row 100's sidecar corpus, as a blessed and therefore readable
+line:
+
+```
+announce : () ! io
+main : ()
+```
+
+`main` calls `announce`. §1 says a caller's row is the join of its own effects and
+its callees', so `main : () ! io` — and a function with an empty row that prints
+is the exact failure the whole feature exists to prevent. It sat in a green suite
+until a corpus wrote it down where a human would read it.
+
+That is the second time in this generation a *blessed text file* caught something
+a unit test could not, after row 101 §10.9's `&<Point>`. The shape is the same
+both times: a wrong answer that both sides of an assertion agree on is invisible,
+and a wrong answer a person reads is not.
+
+### 10.7 The fix threads the table through the one walker
+
+`clause_row_with` / `block_row_with` / `expr_row_with` take `&[(String, Row)]` —
+the rows known so far — and the `Expr::Ident` arm joins a mentioned name's row.
+`raise_rows` iterates to a fixed point over `walk`'s definitions.
+
+The alternative was a second walker that collected callee names, and it was
+rejected for a specific reason: `expr_row` has about twenty-five arms and a
+fallback, so a second walker with its own fallback would **silently miss names
+inside any arm it forgot** — and `_ -> Vec::new ()` fails without saying so.
+Threading the table reuses the one arm list, so a construct either carries rows
+through or does not, in one place.
+
+A bare mention is a call here, not just a call expression. `main = announce` has
+no `Expr::Call` in it at all, because application is juxtaposition and a nullary
+application is the name, so keying on call expressions would have missed the very
+case that prompted this.
+
+`raise_rows` is the sibling of `raise_receivers`, which already solved this shape
+for modes over the same graph. Its bound is the same counting argument §1 makes:
+the alphabet is closed at seven, `join` is a union, so a row can only grow and the
+iteration must terminate. `mutual_recursion_reaches_a_fixed_point` is the case a
+non-fixed-point implementation gets wrong, and it is in the corpus.
+
+### 10.8 Measured on the corpus
+
+`examples/async.vlt`, which has a two-step async chain:
+
+```
+double : i32 -> i32 ! async @ n shared
+quadruple : i32 -> i32 ! async @ n shared
+```
+
+`quadruple` has no `async` marker of its own and calls `double`. Before this it
+read as pure.
+
+The answer key from row 99 wave 1 is unaffected — 215/215 on the examples and
+614/614 on the compiler's own source — because that gate compares *types*, and
+this changes rows. Worth stating: a row change cannot move the type agreement, so
+the two measurements are independent and neither covers the other.
 
 ### 10.2 These are generation 1's markers, and that is the point
 

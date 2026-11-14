@@ -1,6 +1,7 @@
 import crate::run::usage
 import voltaic_lattice::walk
 import voltaic_parser::parse_source
+import std::path::Path
 import std::path::PathBuf
 
 export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String>, export(crate) verify : bool, export(crate) emit : bool, export(crate) against : Option<PathBuf> }
@@ -82,7 +83,7 @@ sig_command args =
     (report input (.as_deref parsed.why))?
   Ok ()
 
-sidecar_path : &PathBuf -> PathBuf
+sidecar_path : &Path -> PathBuf
 sidecar_path input =
   mut shown = input |> .as_os_str |> .to_os_string
   shown |> .push ".sig"

@@ -41,6 +41,7 @@ walk program =
             definitions |> .push (one f None (&mut store))
       _ -> ()
   raise_receivers (.as_mut_slice definitions) program
+  raise_rows (.as_mut_slice definitions) program
   Report { store, definitions, known = crate::declarations::collect program }
 
 raise_receivers : &mut [Inferred] -> &Program -> ()
@@ -55,6 +56,39 @@ raise_receivers definitions program =
       if receiver_mode definitions (&edge.0) is Some needed && raise_in definitions (&edge.1) (&edge.2) needed
         changed := true
   ()
+
+raise_rows : &mut [Inferred] -> &Program -> ()
+raise_rows definitions program =
+  mut rounds = 0
+  mut changed = true
+  while changed && rounds < ROW_ROUNDS
+    changed := false
+    rounds += 1
+    known = row_table definitions
+    for item in .iter program.items
+      for f in methods_of item
+        reached = crate::infer_row::clause_row_with (.as_slice f.clauses) (.as_slice known)
+        if join_into definitions (&f.name.text) (&reached)
+          changed := true
+  ()
+
+export const ROW_ROUNDS : u32 = 8
+
+row_table : &[Inferred] -> Vec<(String, crate::row::Row)>
+row_table definitions =
+  mut found = Vec::new ()
+  for definition in .iter definitions
+    found |> .push (.clone definition.name, .clone definition.row)
+  found
+
+join_into : &mut [Inferred] -> &str -> &crate::row::Row -> bool
+join_into definitions name reached =
+  mut changed = false
+  for definition in .iter_mut definitions
+    if definition.name == name && !.is_subrow_of (&definition.row) reached
+      definition.row := .join reached definition.row
+      changed := true
+  changed
 
 call_edges : &Program -> Vec<(String, String, String)>
 call_edges program =

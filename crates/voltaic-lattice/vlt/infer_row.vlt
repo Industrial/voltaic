@@ -10,76 +10,95 @@ export const IO_MACROS : &[&str] = &["println", "print", "eprintln", "eprint"]
 
 export const PANICKING : &[&str] = &["unwrap", "expect", "unwrap_err", "must"]
 
+export const NO_CALLEES : &[(String, Row)] = &[]
+
 export clause_row : &[voltaic_ast::Clause] -> Row
-clause_row clauses =
+clause_row clauses = clause_row_with clauses NO_CALLEES
+
+export clause_row_with : &[voltaic_ast::Clause] -> &[(String, Row)] -> Row
+clause_row_with clauses known =
   mut found = Row::empty ()
   for clause in .iter clauses
     case &clause.body of
       ClauseBody::Plain block ->
-        found := .join (&block_row block) found
+        found := .join (&block_row_with block known) found
         ()
       ClauseBody::Guarded arms ->
         for arm in .iter arms
           if .as_ref arm.condition is Some condition
-            found := .join (&expr_row condition) found
-          found := .join (&block_row (&arm.body)) found
+            found := .join (&expr_row_with condition known) found
+          found := .join (&block_row_with (&arm.body) known) found
   found
 
 export block_row : &Block -> Row
-block_row block =
+block_row block = block_row_with block NO_CALLEES
+
+export block_row_with : &Block -> &[(String, Row)] -> Row
+block_row_with block known =
   mut found = Row::empty ()
   for stmt in .iter block.stmts
-    found := .join (&expr_row (&stmt.expr)) found
+    found := .join (&expr_row_with (&stmt.expr) known) found
   found
 
 export expr_row : &Expr -> Row
-expr_row e = case e of
-  Expr::Try { inner, .. } -> .discharge_fallible (expr_row inner)
-  Expr::TryBlock { body, .. } -> .discharge_fallible (block_row body)
-  Expr::Await { value, .. } -> .join (&Row::single Effect::Suspends) (expr_row value)
-  Expr::AsyncBlock { body, .. } -> .join (&Row::single Effect::Suspends) (block_row body)
+expr_row e = expr_row_with e NO_CALLEES
+
+export expr_row_with : &Expr -> &[(String, Row)] -> Row
+expr_row_with e known = case e of
+  Expr::Try { inner, .. } -> .discharge_fallible (expr_row_with inner known)
+  Expr::TryBlock { body, .. } -> .discharge_fallible (block_row_with body known)
+  Expr::Await { value, .. } -> .join (&Row::single Effect::Suspends) (expr_row_with value known)
+  Expr::AsyncBlock { body, .. } -> .join (&Row::single Effect::Suspends) (block_row_with body known)
   Expr::MacroCall { name, args, .. } ->
     mut found = Row::empty ()
     for a in .iter args
-      found := .join (&expr_row a) found
+      found := .join (&expr_row_with a known) found
     if .contains (&.as_str name) IO_MACROS
       found := .join (&Row::single Effect::Performs) found
     found
   Expr::Assign { target, value, .. } ->
     region = root_of target
-    .join (&Row::single (Effect::Mutates region)) (.join (&expr_row value) (expr_row target))
+    .join (&Row::single (Effect::Mutates region)) (.join (&expr_row_with value known) (expr_row_with target known))
   Expr::Binary { op, lhs, rhs, .. } ->
-    both = .join (&expr_row rhs) (expr_row lhs)
+    both = .join (&expr_row_with rhs known) (expr_row_with lhs known)
     if *op == BinaryOp::Catch || *op == BinaryOp::Coalesce
       return .discharge_fallible both
     both
   Expr::Call { callee, args, .. } ->
-    mut found = expr_row callee
+    mut found = expr_row_with callee known
     for a in .iter args
-      found := .join (&expr_row a) found
+      found := .join (&expr_row_with a known) found
     found
+  Expr::Ident name -> called (&name.text) known
   Expr::MethodRef { name, .. } ->
     if .contains (&.as_str name.text) PANICKING
       return Row::single Effect::Panics
-    Row::empty ()
-  Expr::Paren { inner, .. } -> expr_row inner
-  Expr::Ascribe { inner, .. } -> expr_row inner
-  Expr::Block { body, .. } -> block_row body
-  Expr::UnsafeBlock { body, .. } -> block_row body
-  Expr::BindBlock { body, .. } -> .discharge_fallible (block_row body)
-  Expr::Draw { value, .. } -> expr_row value
+    called (&name.text) known
+  Expr::Paren { inner, .. } -> expr_row_with inner known
+  Expr::Ascribe { inner, .. } -> expr_row_with inner known
+  Expr::Block { body, .. } -> block_row_with body known
+  Expr::UnsafeBlock { body, .. } -> block_row_with body known
+  Expr::BindBlock { body, .. } -> .discharge_fallible (block_row_with body known)
+  Expr::Draw { value, .. } -> expr_row_with value known
   Expr::Return { value, .. } ->
     if .as_ref (*value) is Some held
-      return expr_row held
+      return expr_row_with held known
     Row::empty ()
   Expr::If { then_block, r#otherwise, .. } ->
-    mut found = block_row then_block
+    mut found = block_row_with then_block known
     if .as_ref (*r#otherwise) is Some other
-      found := .join (&block_row other) found
+      found := .join (&block_row_with other known) found
     found
   Expr::Break { .. } -> Row::single Effect::Diverges
   Expr::Continue { .. } -> Row::single Effect::Diverges
   _ -> Row::empty ()
+
+called : &str -> &[(String, Row)] -> Row
+called name known =
+  for pair in .iter known
+    if pair.0 == name
+      return .clone pair.1
+  Row::empty ()
 
 root_of : &Expr -> String
 root_of target = case target of
@@ -122,3 +141,18 @@ test "the io macros are the four printing ones"
   assert_eq! \-> .len IO_MACROS \-> 4
   assert! \-> .contains (&"println") IO_MACROS
   assert! \-> !.contains (&"format") IO_MACROS \-> "format! performs no io"
+
+test "a mention of a name with no known row contributes nothing"
+  mentioned = Expr::Ident (voltaic_ast::Ident { text = .to_string "announce", span = (0, 8) })
+  assert! \-> .is_empty (expr_row (&mentioned))
+
+test "a mention of a name with a known row carries that row to the caller"
+  mentioned = Expr::Ident (voltaic_ast::Ident { text = .to_string "announce", span = (0, 8) })
+  known = vec! \-> (.to_string "announce", Row::single Effect::Performs)
+  assert! \-> .holds (&Effect::Performs) (expr_row_with (&mentioned) (.as_slice known))
+
+test "an unrelated name in the table is not picked up"
+  mentioned = Expr::Ident (voltaic_ast::Ident { text = .to_string "quiet", span = (0, 5) })
+  known = vec! \-> (.to_string "announce", Row::single Effect::Performs)
+  assert! \-> .is_empty (expr_row_with (&mentioned) (.as_slice known))
+

@@ -180,3 +180,70 @@ fn every_effect_in_the_alphabet_prints_distinguishably() {
     "two effects printing the same would make a row ambiguous in a diagnostic"
   );
 }
+
+/// Row 95 leaf 3: the caller's row is the join of its own effects and the rows
+/// it reaches.
+///
+/// This lives here rather than inline because it needs `voltaic_ast::Item` to
+/// destructure a parsed program, and a pattern cannot be written
+/// fully-qualified — so an inline test would need an `import` the lib build
+/// then reports unused.
+#[test]
+fn a_called_row_joins_with_the_callers_own_effects() {
+  let program = voltaic_parser::parse_source(
+    "loud : ()\nloud =\n  announce\n  println! \\-> \"and more\"\n  ()\n",
+  )
+  .expect("should parse");
+  let known = vec![(
+    "announce".to_string(),
+    voltaic_lattice::Row::single(voltaic_lattice::Effect::Absent),
+  )];
+  let voltaic_ast::Item::Fn(f) = &program.items[0] else {
+    panic!("the fixture is a function");
+  };
+  let found = voltaic_lattice::clause_row_with(&f.clauses, &known);
+  assert!(
+    found.holds(&voltaic_lattice::Effect::Absent),
+    "the callee's row did not reach the caller: {found}"
+  );
+  assert!(
+    found.holds(&voltaic_lattice::Effect::Performs),
+    "the caller lost its own effects: {found}"
+  );
+}
+
+/// The whole fixed point, through `walk`, which is what the pipeline uses.
+#[test]
+fn an_io_call_propagates_to_its_caller_through_walk() {
+  let program = voltaic_parser::parse_source(
+    "announce : ()\nannounce =\n  println! \\-> \"ready\"\n  ()\n\nmain : ()\nmain =\n  announce\n  ()\n",
+  )
+  .expect("should parse");
+  let found = voltaic_lattice::walk(&program);
+  let main = found.find("main").expect("main should be inferred");
+  assert!(
+    main.row.holds(&voltaic_lattice::Effect::Performs),
+    "`main` calls an `io` function and must carry `io`; got `{}`",
+    main.row
+  );
+}
+
+/// Mutual recursion is the case a non-fixed-point implementation gets wrong,
+/// and the reason the bound is a counting argument: the alphabet is closed at
+/// seven and a row can only grow, so the iteration cannot fail to terminate.
+#[test]
+fn mutual_recursion_reaches_a_fixed_point() {
+  let program = voltaic_parser::parse_source(
+    "ping : u64 -> u64\nping n =\n  if n > 0\n    pong (n - 1)\n  else\n    0\n\npong : u64 -> u64\npong n =\n  println! \\-> \"tick\"\n  ping n\n",
+  )
+  .expect("should parse");
+  let found = voltaic_lattice::walk(&program);
+  for name in ["ping", "pong"] {
+    let d = found.find(name).unwrap_or_else(|| panic!("{name}"));
+    assert!(
+      d.row.holds(&voltaic_lattice::Effect::Performs),
+      "`{name}` reaches the printing side of the cycle; got `{}`",
+      d.row
+    );
+  }
+}

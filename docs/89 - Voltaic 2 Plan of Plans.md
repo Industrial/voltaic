@@ -126,7 +126,7 @@ findings; three change later rows:
 And one toolchain trap worth knowing before row 95: **`crates/<crate>/src/.voltaic-cache`
 serves stale output across a `.vlt` edit**, so `bootstrap.sh` reports success while
 leaving the previous generation in place (doc 92 §10.8).
-| 95 | Effect Rows | The seven-effect alphabet, the subset lattice, implicit propagation, `else` / `.must` / `~` discharge, effect variables. | `in-progress` — leaves 1, 2 `done` 2026-11-14 | 94 |
+| 95 | Effect Rows | The seven-effect alphabet, the subset lattice, implicit propagation, `else` / `.must` / `~` discharge, effect variables. | `in-progress` — leaf 1 and leaf 2 (expressions **and** the call graph) `done` 2026-11-14 | 94 |
 
 Leaves 1 and 2 shipped: the closed alphabet, the subset lattice, and upward
 propagation. `voltaic sig` now prints rows, and `announce : () ! async + io` on this
