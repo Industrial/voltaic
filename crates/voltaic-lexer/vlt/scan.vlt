@@ -67,7 +67,7 @@ scan_comment rest =
   opens = case .next (.chars after) of
     None -> true
     Some c -> .is_whitespace c || c == '-'
-  opens |> .then_some (TriviaKind::LineComment, 2)
+  opens.then_some (TriviaKind::LineComment, 2)
 
 test "a dash dash space opens a line comment"
   assert_eq! \-> scan_comment "-- hello" \-> Some (TriviaKind::LineComment, 2)
@@ -118,7 +118,7 @@ scan_cstring cur =
 
 export(crate) scan_escape : &mut Cursor -> Result<char, LexError>
 scan_escape cur =
-  start = cur |> .pos |> .saturating_sub 1
+  start = cur.pos ().saturating_sub 1
 
   ch = case .bump cur of
     Some c -> c
@@ -150,7 +150,7 @@ scan_escape cur =
         Err $ .to_string "`\\u` must be followed by `{`"
       else
         digits = .eat_while (\c -> .is_ascii_hexdigit c) cur
-        text = cur |> .slice digits |> .to_string
+        text = (cur.slice digits).to_string ()
         if !.eat "}" cur
           Err $ .to_string "unterminated `\\u{…}` escape"
         else
@@ -195,7 +195,7 @@ scan_number cur =
   start = .pos cur
 
   if .peek cur == Some '0'
-    radix = cur |> .peek_at 1 |> .unwrap_or '\0'
+    radix = (cur.peek_at 1).unwrap_or '\0'
     pair : (&str, fn(char) -> bool) = case radix of
       'x' or 'X' -> ("hexadecimal", \c -> .is_ascii_hexdigit c)
       'o' or 'O' -> ("octal", \c -> .contains (&c) ('0' ..= '7'))
@@ -238,7 +238,7 @@ scan_number cur =
 
   .eat_while (\c -> .is_ascii_alphanumeric c || c == '_') cur
 
-  text = cur |> .slice (start, .pos cur) |> .to_string
+  text = (cur.slice (start, .pos cur)).to_string ()
   if is_float
     return Ok (TokenKind::Float text)
   Ok $ TokenKind::Int text
@@ -393,10 +393,10 @@ scan_quote cur =
       return Ok (TokenKind::Char ch)
     _ -> ()
 
-  cur |> .reset_to mark
+  cur.reset_to mark
   .bump cur
   name_span = .eat_while (\c -> .is_ascii_alphanumeric c || c == '_') cur
-  name = cur |> .slice name_span |> .to_string
+  name = (cur.slice name_span).to_string ()
   if .is_empty name
     return Err (LexError { code = Code::BadQuote, help = None, message = .to_string "a `'` must open a character literal or name a lifetime or label", span = (start, .pos cur) })
   Ok $ TokenKind::Label name
@@ -415,7 +415,7 @@ scan_raw_string cur =
   .bump cur
 
   hash_span = .eat_while (== '#') cur
-  hashes = cur |> .slice hash_span |> .len
+  hashes = (cur.slice hash_span).len ()
 
   if !.eat "\"" cur
     return Err (LexError { code = Code::UnterminatedRawString, help = None, message = .to_string "a raw string must open with `\"` after `r` and any `#`", span = (start, .pos cur) })
@@ -426,7 +426,7 @@ scan_raw_string cur =
   while !.starts_with (&closing) cur
     if .is_none (.bump cur)
       return Err (LexError { code = Code::UnterminatedRawString, help = None, message = format! \-> "unterminated raw string; expected closing `#{closing}`", span = (start, .pos cur) })
-  text = cur |> .slice (text_start, .pos cur) |> .to_string
+  text = (cur.slice (text_start, .pos cur)).to_string ()
   .eat (&closing) cur
   Ok (TokenKind::RawStr { text, hashes })
 
@@ -467,7 +467,7 @@ scan_string cur =
     "\"\"\""
   else
     "\""
-  cur |> .eat delim
+  cur.eat delim
 
   body_start = .pos cur
   loop
@@ -488,7 +488,7 @@ scan_string cur =
   body_end = .pos cur
   .eat delim cur
 
-  raw = cur |> .slice (start, .pos cur) |> .to_string
+  raw = (cur.slice (start, .pos cur)).to_string ()
   body = .slice (body_start, body_end) cur
 
   owned = if triple
@@ -513,7 +513,7 @@ split_parts body base =
       open = bounds.0
       close = bounds.1
 
-      inner = body |> .get (open .. close) |> .unwrap_or ""
+      inner = (body.get (open .. close)).unwrap_or ""
       split = split_format_spec inner
       expr = split.0
       spec = split.1
@@ -567,7 +567,7 @@ split_format_spec body =
   mut i : usize = 0
 
   while i < .len bytes
-    byte = bytes |> .get i |> .copied |> .unwrap_or 0
+    byte = (bytes.get i).copied ().unwrap_or 0
     case byte of
       b'(' or b'[' or b'{' -> depth += 1
       b')' or b']' or b'}' -> depth -= 1
@@ -576,8 +576,8 @@ split_format_spec body =
           i += 2
           continue
         len = .len body
-        head = body |> .get (0 .. i) |> .unwrap_or ""
-        tail = body |> .get (i + 1 .. len) |> .unwrap_or ""
+        head = (body.get (0 .. i)).unwrap_or ""
+        tail = (body.get (i + 1 .. len)).unwrap_or ""
         return (head, Some tail)
       _ -> ()
     i += 1
@@ -605,7 +605,7 @@ test "takes the first eligible colon"
   assert_eq! \-> split_format_spec "a:>8:x" \-> ("a", Some ">8:x")
 
 export(crate) trim_comment : &str -> String
-trim_comment rest = rest |> .strip_prefix ' ' |> .unwrap_or rest |> .to_string
+trim_comment rest = ((rest.strip_prefix ' ').unwrap_or rest).to_string ()
 
 test "strips one leading space and no more"
   assert_eq! \-> trim_comment " text" \-> "text"
@@ -621,6 +621,6 @@ verbatim_triple raw =
 
 export(crate) dedent_triple_body : &str -> String
 dedent_triple_body body =
-  inner = body |> .strip_prefix '\n' |> .unwrap_or body
+  inner = (body.strip_prefix '\n').unwrap_or body
   trimmed = .trim_end_matches ' ' inner
   dedent_block $ .unwrap_or trimmed $ .strip_suffix '\n' trimmed

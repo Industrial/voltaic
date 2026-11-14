@@ -5,14 +5,9 @@ import crate::lex::Lexer
 
 export(crate) dedent_block : &str -> String
 dedent_block body =
-  lines : Vec<&str> = body |> .lines |> .collect
+  lines : Vec<&str> = body.lines ().collect ()
 
-  common = lines
-    |> .iter
-    |> .filter (\l -> !.is_empty (.trim l))
-    |> .map (\l -> .len l - .len (.trim_start_matches ' ' l))
-    |> .min
-    |> .unwrap_or 0
+  common = ((lines.iter ().filter (\l -> !.is_empty (.trim l))).map (\l -> .len l - .len (.trim_start_matches ' ' l))).min ().unwrap_or 0
 
   mut out = String::new ()
   for pair in .enumerate (.iter lines)

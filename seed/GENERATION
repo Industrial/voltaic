@@ -36,7 +36,7 @@
 # Every crate is `g1` today. The first `g2` line is row 103's first commit, and
 # the last `g1` line leaving is row 102 §3.1's retirement step.
 voltaic-diag 73 g2
-voltaic-lexer 74 g1
+voltaic-lexer 74 g2
 voltaic-ast 68 g1
 voltaic-lattice 94 g1
 voltaic-parser 82 g1

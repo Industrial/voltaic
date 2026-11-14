@@ -3,8 +3,8 @@ new : &str -> Cursor @ src shared
 pos : Cursor -> usize @ self shared
 is_eof : Cursor -> bool @ self shared
 peek : Cursor -> Option<char> ! none @ self shared
-peek_at : usize -> Cursor -> Option<char> ! none @ n shared, self shared
-starts_with : &str -> Cursor -> bool @ s shared, self shared
+peek_at : usize -> Cursor -> Option<char> ! none @ n owned, self shared
+starts_with : &str -> Cursor -> bool @ s owned, self shared
 rest : Cursor -> &str @ self shared
 bump : Cursor -> Option<char> ! none + mut self @ self unique
 eat : &str -> Cursor -> bool @ s shared, self unique

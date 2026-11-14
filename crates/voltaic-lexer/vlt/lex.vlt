@@ -23,7 +23,7 @@ import voltaic_diag::Code
 export lex : &str -> Result<Vec<Token>, LexError>
 lex src = .run $ Lexer::new src
 
-export data LexError = LexError { export code : Code, export message : String, export span : Span, export help : Option<String> }
+export data LexError { export code Code, export message String, export span Span, export help Option<String> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance LexError
@@ -32,7 +32,7 @@ instance LexError
     self.span := (self.span.0 + base, self.span.1 + base)
     self
 
-export(crate) data Lexer = Lexer { cur : Cursor<'a>, toks : Vec<Token>, indents : Vec<usize>, pending : Vec<Trivia>, open_delims : Vec<(usize, usize)>, trailing : Option<Trivia>, at_line_start : bool }
+export(crate) data Lexer { cur Cursor<'a>, toks Vec<Token>, indents Vec<usize>, pending Vec<Trivia>, open_delims Vec<(usize, usize)>, trailing Option<Trivia>, at_line_start bool }
 
 instance (Lexer 'a)
   export(crate) new : &'a str -> Self
@@ -88,7 +88,7 @@ instance (Lexer 'a)
 
   scan_token : &mut self -> Result<TokenKind, LexError>
   scan_token self =
-    ch = self.cur |> .peek |> .expect "step checked for eof"
+    ch = self.cur.peek ().expect "step checked for eof"
 
     if ch == '"'
       return scan_string (&mut self.cur)
@@ -140,7 +140,7 @@ instance (Lexer 'a)
         "\#!["
       else
         "\#["
-      self.cur |> .eat opener
+      self.cur.eat opener
       body_start = .pos self.cur
       mut depth : i32 = 1
       while depth > 0
@@ -152,15 +152,12 @@ instance (Lexer 'a)
           '[' -> depth += 1
           ']' -> depth -= 1
           _ -> ()
-      text = self.cur
-        |> .slice (body_start, .pos self.cur - 1)
-        |> .to_string
+      text = (self.cur.slice (body_start, .pos self.cur - 1)).to_string ()
       marker = if inner
         TriviaKind::InnerAttribute
       else
         TriviaKind::Attribute
-      self.pending
-        |> .push (Trivia::comment marker text (start, .pos self.cur))
+      self.pending.push (Trivia::comment marker text (start, .pos self.cur))
       return Ok true
 
     Ok false
@@ -185,12 +182,8 @@ instance (Lexer 'a)
         if .is_none (.bump self.cur)
           return Err (LexError { code = Code::UnterminatedFence, help = Some (.to_string "close it with `-}`"), message = .to_string "unterminated `{- -}` comment", span = (start, .pos self.cur) })
       end = .pos self.cur - 2
-      text = self.cur
-        |> .slice (body_start, end)
-        |> .trim
-        |> .to_string
-      self.pending
-        |> .push (Trivia::comment TriviaKind::FencedComment text (start, .pos self.cur))
+      text = (self.cur.slice (body_start, end)).trim ().to_string ()
+      self.pending.push (Trivia::comment TriviaKind::FencedComment text (start, .pos self.cur))
       return Ok true
 
     found = case scan_comment (.rest self.cur) of
@@ -209,14 +202,14 @@ instance (Lexer 'a)
     if !self.at_line_start && .is_some_and (\t -> !.is_structural t.kind) (.last self.toks)
       self.trailing := Some trivium
     else
-      self.pending |> .push trivium
+      self.pending.push trivium
     Ok true
 
   track_delims : &TokenKind -> usize -> &mut self -> ()
   track_delims kind start self =
     case kind of
       TokenKind::LParen or TokenKind::LBracket or TokenKind::LBrace ->
-        self.open_delims |> .push (start, .len self.indents)
+        self.open_delims.push (start, .len self.indents)
       TokenKind::RParen or TokenKind::RBracket or TokenKind::RBrace ->
         mark = case .pop self.open_delims of
           Some opened -> opened.1
@@ -252,9 +245,7 @@ instance (Lexer 'a)
       at = (.pos self.cur, .pos self.cur)
       .push TokenKind::Newline at false self
       trailing = .take self.trailing
-      last = self.toks
-        |> .last_mut
-        |> .expect "a Newline was just pushed"
+      last = self.toks.last_mut ().expect "a Newline was just pushed"
       last.trailing := trailing
     ()
 
@@ -313,7 +304,7 @@ instance (Lexer 'a)
     at = (line_start + width, line_start + width)
 
     if width > top
-      self.indents |> .push width
+      self.indents.push width
       .push TokenKind::Indent at false self
       return Ok ()
 
@@ -332,7 +323,7 @@ instance (Lexer 'a)
         return Err (LexError { code = Code::UnbalancedDelimiter, help = Some (.to_string "add the closing delimiter"), message = .to_string "unbalanced delimiter: this is never closed", span = (pos, pos + 1) })
       None -> ()
 
-    self |> .end_of_line
+    self.end_of_line ()
     end = .pos self.cur
     while .len self.indents > 1
       .pop self.indents
@@ -348,8 +339,7 @@ instance (Lexer 'a)
       Vec::new ()
     else
       std::mem::take $ &mut self.pending
-    self.toks
-      |> .push (Token { kind, span, ws_before, leading, trailing = None })
+    self.toks.push (Token { kind, span, ws_before, leading, trailing = None })
     ()
 
   push_blank : usize -> usize -> &mut self -> ()
@@ -358,5 +348,5 @@ instance (Lexer 'a)
       Some t | t.kind == TriviaKind::BlankLines ->
         t.span.1 := end
       _ ->
-        self.pending |> .push (Trivia::blank (start, end))
+        self.pending.push (Trivia::blank (start, end))
     ()

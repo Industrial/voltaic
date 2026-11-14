@@ -5,17 +5,17 @@ new : &str -> Lexer @ src owned
 run : Lexer -> Result<Vec<Token>, LexError> ! fail LexError + mut last + mut self @ self owned
 step : Lexer -> Result<(), LexError> ! fail LexError + mut last + mut self @ self owned
 scan_token : Lexer -> Result<TokenKind, LexError> ! fail LexError @ self shared
-scan_hash : Lexer -> Result<bool, LexError> ! fail LexError + mut self @ self shared
+scan_hash : Lexer -> Result<bool, LexError> ! fail LexError + mut self @ self unique
 scan_dashes : Lexer -> Result<bool, LexError> ! fail LexError + mut self @ self unique
 track_delims : &TokenKind -> usize -> Lexer -> () @ kind shared, start owned, self unique
 next_line_continues : Lexer -> bool @ self shared
 end_of_line : Lexer -> () ! mut last + mut self @ self unique
 start_of_line : Lexer -> Result<(), LexError> ! fail LexError @ self owned
 measure_indent : Lexer -> Result<usize, LexError> ! fail LexError @ self shared
-sync_indent : usize -> usize -> Lexer -> Result<(), LexError> ! fail LexError + mut self @ width unique, line_start shared, self unique
+sync_indent : usize -> usize -> Lexer -> Result<(), LexError> ! fail LexError + mut self @ width shared, line_start shared, self unique
 finish : Lexer -> Result<(), LexError> ! fail LexError + mut last + mut self @ self unique
 push : TokenKind -> Span -> bool -> Lexer -> () ! mut self @ kind shared, span shared, ws_before shared, self unique
-push_blank : usize -> usize -> Lexer -> () @ start owned, end owned, self shared
+push_blank : usize -> usize -> Lexer -> () @ start owned, end owned, self unique
 LexError.code field
 LexError.message field
 LexError.span field
