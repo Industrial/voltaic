@@ -189,7 +189,7 @@ expr_type e store env = case e of
   Expr::Bool { .. } -> Ty::named "bool"
   Expr::Char { .. } -> Ty::named "char"
   Expr::StrLit { .. } -> str_ref ()
-  Expr::StrInterp { .. } -> str_ref ()
+  Expr::StrInterp { .. } -> Ty::named "String"
   Expr::Unit { .. } -> Ty::unit ()
   Expr::Field { recv, name, span, .. } ->
     owner = expr_type recv store env

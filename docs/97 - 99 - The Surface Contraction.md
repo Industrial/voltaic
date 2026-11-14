@@ -288,6 +288,68 @@ because `no_literal_expectations.rs` has been enforcing the rule since plan 08.
 
 ## 10. Result
 
-*To be filled after execution. Required contents: the measured terseness figures per
-program; every UI fixture's disposition; the three `do`-only functions deleted from
-`bind.vlt`; and what the plan got wrong.*
+In progress. Wave 1's **answer key is established and gated**, which is the thing
+§4 ordered wave 1 first in order to get. Waves 2–9 are open.
+
+### 10.1 Inferred equals written, 809 out of 809
+
+| Corpus | Written signatures | Inferred equals written |
+|---|---:|---:|
+| `examples/` (43 programs) | 215 | **215** |
+| `crates/*/vlt/` (122 files) | 594 | **594** |
+| | **809** | **809** |
+
+`voltaic sig --verify` is the comparison and
+`crates/voltaic-cli/tests/inferred.rs` is the gate that keeps it true. The gate
+matters more than the number: once wave 1 deletes the written signatures there is
+nothing left to compare against, so the comparison has to be *gated* before the
+deletion rather than run once beside it.
+
+`examples/lexical.vlt` is excluded because it is a lexical catalogue rather than a
+program and does not parse by design. A test asserts that it still does not parse,
+so the exclusion cannot quietly widen to cover a file that stopped parsing for a
+real reason.
+
+### 10.2 Both corpora were necessary, and that was not the expectation
+
+The plan treats the compiler's own source as the demanding corpus — 11,668 lines
+nobody wrote to be easy to infer, against 43 small examples. The measurement says
+the opposite: **the compiler's source found neither defect, and the examples found
+both.** 594/594 was already true at the first run.
+
+The reason is that the compiler's source happens never to return an interpolated
+string from an annotated function, and happens never to write the same type alias
+twice in one signature. A gate on the large corpus alone would have been green
+while inference was wrong in two ways — which is the same shape as plan 66's
+grammar gates passing before `grammar.js` knew `>>>`.
+
+So the gate runs both, and `both_corpora_are_the_size_the_tree_says_they_are`
+asserts neither has quietly shrunk.
+
+### 10.3 The two defects
+
+**An interpolated string is `String`, not `&str`** — 15 of the 16 disagreements.
+`"#{tier n}"` lowers to `format!`, which returns `String`; a plain `"abc"` is
+`&str`. `expr_type` typed both as `&str`, so every function written
+`f : i32 -> String` whose body ends in an interpolation read as inferring
+`i32 -> &str`. `Expr::StrInterp` was already a distinct variant, so the fix is one
+arm.
+
+**The alias cycle guard was per-type instead of per-path** — the 16th, and a defect
+in the alias support this row's SOLVE-stage commit had just added.
+`double : Depth -> Depth` expanded the parameter, pushed `Depth` onto the shared
+`seen` list, and then declined to expand the return as a cycle, yielding
+`f64 -> Depth`. Each branch now carries its own path. The cyclic-alias test was
+green throughout, because one `Depth` is all it ever had.
+
+That is the general shape and it is worth stating on its own: **an occurs-style
+guard that is shared across sibling branches under-expands rather than looping, so
+it fails quietly.** The looping it prevents is loud; the over-reach it causes is
+not.
+
+### 10.4 What wave 1 still owes
+
+The agreement is a statement about *inference*, not about *emission*. Wave 1 also
+has the emitter write the inferred signature, and deleting the signature lines
+changes the parser's accepted surface — neither has happened. The number above is
+the licence to do that work, not the work.

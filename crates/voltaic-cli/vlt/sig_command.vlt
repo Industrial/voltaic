@@ -4,17 +4,36 @@ import voltaic_lattice::walk
 import voltaic_parser::parse_source
 import std::path::PathBuf
 
-export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String> }
+export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String>, export(crate) verify : bool }
   deriving (Debug, Clone, PartialEq, Eq)
+
+export(crate) data Agreement = Agreement { export(crate) checked : usize, export(crate) agreed : usize, export(crate) differed : Vec<(String, String, String)> }
+  deriving (Debug, Clone, Default)
+
+instance Agreement
+  export(crate) new : Self
+  new = Agreement { checked = 0, agreed = 0, differed = Vec::new () }
+
+  export(crate) absorb : &Agreement -> &mut self -> ()
+  absorb other self =
+    self.checked += other.checked
+    self.agreed += other.agreed
+    for row in .iter other.differed
+      self.differed |> .push (.clone row)
+    ()
 
 export(crate) parse_sig_args : &[String] -> Result<SigArgs, String>
 parse_sig_args args =
   mut inputs = Vec::new ()
   mut why = None
+  mut verify = false
   mut index = 0
   while index < .len args
     arg = &args[index]
-    if arg == "--why"
+    if arg == "--verify"
+      verify := true
+      index += 1
+    else if arg == "--why"
       if index + 1 >= .len args
         return Err (.to_string "error: `--why` needs the name of a definition")
       why := Some (.clone args[index + 1])
@@ -28,14 +47,43 @@ parse_sig_args args =
   if .is_empty inputs
     help = usage ()
     return Err (format! \-> "error: sig needs at least one .vlt\n\n#{help}")
-  Ok (SigArgs { inputs, why })
+  Ok (SigArgs { inputs, why, verify })
 
 export(crate) sig_command : &[String] -> Result<(), String>
 sig_command args =
   parsed = (parse_sig_args args)?
+  if parsed.verify
+    mut total = Agreement::new ()
+    for input in .iter parsed.inputs
+      found = (verify_one input)?
+      .absorb (&found) total
+    for row in .iter total.differed
+      println! \-> "differs: #{row.0}\n  written  #{row.1}\n  inferred #{row.2}"
+    println! \-> "verified #{total.agreed}/#{total.checked} written signatures"
+    return Ok ()
   for input in .iter parsed.inputs
     (report input (.as_deref parsed.why))?
   Ok ()
+
+verify_one : &PathBuf -> Result<Agreement, String>
+verify_one input =
+  shown = input |> .display |> .to_string
+  source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
+  program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
+  found = walk (&program)
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+  mut tally = Agreement::new ()
+  for definition in .iter found.definitions
+    if .as_ref definition.written is Some written
+      tally.checked += 1
+      inferred = .resolved (&definition.ty) outcome
+      expanded = .expand written found.known
+      if inferred == expanded
+        tally.agreed += 1
+      else
+        tally.differed |> .push (format! \-> "#{shown}: #{definition.name}", .to_string expanded, .to_string inferred)
+  Ok tally
+
 
 report : &PathBuf -> Option<&str> -> Result<(), String>
 report input why =

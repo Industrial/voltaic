@@ -35,9 +35,7 @@ instance Declarations
     None
 
   export expand : &Ty -> &self -> Ty
-  expand t self =
-    mut seen = Vec::new ()
-    expand_within t self (&mut seen)
+  expand t self = expand_within t self (Vec::new ())
 
   export knows : &str -> &self -> bool
   knows name self = .any (\t -> t == name) (.iter self.types)
@@ -65,13 +63,14 @@ instance Declarations
         return false
     true
 
-expand_within : &Ty -> &Declarations -> &mut Vec<String> -> Ty
+expand_within : &Ty -> &Declarations -> Vec<String> -> Ty
 expand_within t known seen = case t of
   Ty::Con { name, args, .. } ->
     if .is_empty args && !.contains name seen && .alias name known is Some defined
-      seen |> .push (.clone name)
-      return expand_within defined known seen
-    Ty::applied name (.collect (.map (\a -> expand_within a known seen) (.iter args)))
+      mut deeper = .clone seen
+      deeper |> .push (.clone name)
+      return expand_within defined known deeper
+    Ty::applied name (.collect (.map (\a -> expand_within a known (.clone seen)) (.iter args)))
   _ -> .clone t
 
 export collect : &Program -> Declarations
@@ -140,6 +139,13 @@ test "a chain of aliases expands all the way down"
   program = .expect "should parse" (voltaic_parser::parse_source source)
   found = collect (&program)
   assert_eq! \-> .expand (&Ty::named "Depth") found \-> Ty::named "f64"
+
+test "the same alias twice in one type expands both times"
+  source = "type Depth = f64\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  written = Ty::arrow (Ty::named "Depth") (Ty::named "Depth")
+  assert_eq! \-> .to_string (.expand (&written) found) \-> "f64 -> f64" \-> "the cycle guard is per-path, not per-type"
 
 test "a cyclic alias stops rather than looping"
   source = "type Loop = Loop\n"
