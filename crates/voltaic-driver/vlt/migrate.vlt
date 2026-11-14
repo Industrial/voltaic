@@ -1,0 +1,95 @@
+import crate::check::diagnose
+import voltaic_diag::Diagnostic
+import std::path::Path
+
+export transpile : &Path -> &str -> Result<String, Vec<Diagnostic>>
+transpile path text =
+  mut program = (.map_err (\failure -> diagnose path text (&failure)) (voltaic_parser::parse_source text))?
+  open = crate::annotate::annotate (&mut program)
+  if !.is_empty open
+    return Err (crate::annotate::refusals path text (.as_slice open))
+  shown = path |> .display |> .to_string
+  emitted = voltaic_emit::emit_with_map (&program) text (&shown)
+  Ok emitted.0
+
+export data Side
+  = Original
+  | Migrated
+  deriving (Debug, Clone, Copy, PartialEq, Eq)
+
+export data Gate
+  = Identical
+  | Differs { line : usize, was : String, now : String }
+  | Unreadable { side : Side, problems : Vec<Diagnostic> }
+  deriving (Debug, Clone)
+
+export gate : &Path -> &str -> &str -> Gate
+gate path original migrated = case transpile path original of
+  Err problems -> Gate::Unreadable { side = Side::Original, problems }
+  Ok before -> case transpile path migrated of
+    Err problems -> Gate::Unreadable { side = Side::Migrated, problems }
+    Ok after -> case first_difference (&before) (&after) of
+      Some found -> Gate::Differs { line = found.0, was = found.1, now = found.2 }
+      None -> Gate::Identical
+
+export first_difference : &str -> &str -> Option<(usize, String, String)>
+first_difference before after =
+  mine : Vec<&str> = .collect (.lines before)
+  theirs : Vec<&str> = .collect (.lines after)
+  mut i = 0
+  while i < .len mine || i < .len theirs
+    left = .copied (.get i mine) |> .unwrap_or ""
+    right = .copied (.get i theirs) |> .unwrap_or ""
+    if left != right
+      return Some (i + 1, .to_string left, .to_string right)
+    i += 1
+  None
+
+instance Gate
+  export passed : &self -> bool
+  passed self = case self of
+    Gate::Identical -> true
+    _ -> false
+
+  export explain : &self -> String
+  explain self = case self of
+    Gate::Identical -> .to_string "the generated Rust is byte-identical"
+    Gate::Differs { line, was, now } ->
+      format! \-> "the generated Rust differs at line #{line}:\n  was: #{was}\n  now: #{now}"
+    Gate::Unreadable { side, problems } ->
+      which = case side of
+        Side::Original -> "the original"
+        Side::Migrated -> "the migrated source"
+      format! \-> "#{which} does not compile: #{(.len problems)} diagnostics"
+
+export apply : &Path -> &str -> Result<Gate, String>
+apply path migrated =
+  shown = path |> .display |> .to_string
+  original = (.map_err (\e -> format! \-> "cannot read #{shown}: #{e}") (std::fs::read_to_string path))?
+  verdict = gate path (&original) migrated
+  if !.passed (&verdict)
+    return Ok verdict
+  (.map_err (\e -> format! \-> "cannot write #{shown}: #{e}") (std::fs::write path migrated))?
+  Ok verdict
+
+test "an unchanged file passes the gate"
+  source = "twice : u64 -> u64\ntwice n = n + n\n"
+  .passed (&gate (Path::new "probe.vlt") source source)
+
+test "a changed body fails the gate, and names the line"
+  before = "twice : u64 -> u64\ntwice n = n + n\n"
+  after = "twice : u64 -> u64\ntwice n = n * 2\n"
+  case gate (Path::new "probe.vlt") before after of
+    Gate::Differs { line, .. } -> line > 0
+    _ -> false
+
+test "a spelling change with the same lowering passes"
+  before = "pick : u64 -> u64\npick n = n |> .max 3\n"
+  after = "pick : u64 -> u64\npick n = .max 3 n\n"
+  .passed (&gate (Path::new "probe.vlt") before after)
+
+test "source the compiler cannot read is rejected, not compared"
+  before = "twice : u64 -> u64\ntwice n = n + n\n"
+  case gate (Path::new "probe.vlt") before "twice n = = =\n" of
+    Gate::Unreadable { side, .. } -> side == Side::Migrated
+    _ -> false

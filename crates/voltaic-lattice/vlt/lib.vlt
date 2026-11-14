@@ -28,6 +28,8 @@ export import annotation::write_type
 export import constraint::Constraint
 export import constraint::Obligation
 export import declarations::Declarations
+export import declarations::Member
+export import declarations::MemberKind
 export import declarations::collect
 export import driver::Failure
 export import driver::MAX_ROUNDS

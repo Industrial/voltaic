@@ -442,6 +442,78 @@ That is also `AGENTS.md`'s *"do not grep compiler output for `^error`"* in a new
 costume: the port's refusal says *"should transpile"*, not *"error"*, so a filter
 built to catch `^error|E0[0-9]+` showed nothing and the silence read as success.
 
+### 10.7 Leaf 3: the identity gate, and it needs no wasm
+
+`crates/voltaic-driver/vlt/migrate.vlt` and
+`crates/voltaic-driver/tests/identity_gate.rs`. `gate` transpiles both sides and
+compares the generated Rust line by line; `apply` writes **only** on
+`Gate::Identical`, and `Gate` is one of `Identical`, `Differs { line, was, now }`
+or `Unreadable { side, problems }`.
+
+**The gate does not run the g2 blob**, though §3 step 4's wording says "with the
+g2 compiler". It does not have to: the compiler in the tree reads **both**
+generations for the duration of the turn, so it transpiles the generation-1
+original and the generation-2 candidate itself. That is the same comparison with
+one fewer moving part, and it costs nothing in trust because row 102's
+`across_the_turn.rs` separately proves blob == tree over all fourteen ported
+crates and all forty-seven compiling examples. The two gates compose: that one
+says *blob is the tree*, this one says *tree(original) == tree(migrated)*.
+
+**The write-after-gate claim is falsified, not asserted.** Inverting the two
+statements in `apply` — write, then gate — turns
+`a_migration_the_gate_rejects_leaves_the_file_untouched` and
+`a_migration_the_compiler_cannot_read_leaves_the_file_untouched` red and leaves
+the other three green. §2.3's first trap says a guard before a destructive step
+has to be checked before the step; that is the check, and it was run in both
+directions.
+
+Five integration tests rather than more inline ones, because the claim is about
+the **filesystem**: a pure test cannot observe a write that did not happen.
+`migrate.vlt`'s own four tests stay pure and cover the decision —
+including the one that matters most for pass 1, *a spelling change with the same
+lowering passes*: `n |> .max 3` and `.max 3 n` are different text and identical
+Rust, which is precisely what the gate has to accept.
+
+One of the five is not in the plan and should be: `an_already_migrated_file_gates_
+against_itself`. Row 103 migrates crate by crate with `seed/GENERATION`'s column
+tracking progress, so a second run over a finished crate must be a no-op. Without
+it the gate would report every completed crate as failing, which is a migration
+tool that cannot be run twice.
+
+### 10.8 Wave 3 is the next prerequisite, and the solver could not answer its question
+
+Leaf 2's largest `auto` construct is doc 87 §1.2's inversion of `.`:
+
+> | `f x` | `f(x)` — a free function |
+> | `x.f y` | `f(x, y)` — the same function, receiver first |
+
+That is **not implemented**: `"ab".to_uppercase` emits `"ab".to_uppercase` with no
+call, because plan 57 §1.1 made `.` field access and nothing else, and rustc
+answers `E0615` *"method, not a field"*. Row 99 wave 3 owns the inversion. Until it
+lands, pass 1's receiver-order rewrite has no target surface to rewrite *to* —
+which is §5.7's and §5.6's shape for a third time, found the same way.
+
+What could be closed here was closed. Doc 87 §2.2 states:
+
+> Field access is `.` too, and a bare field reference is `(.name)` — resolved by
+> the solver, **which knows whether `name` is a field or a method.**
+
+**It did not know.** `declarations::collect` pushed a `data` declaration's fields
+and an `instance` block's methods into one `members` list with nothing telling
+them apart, so `.member "Cursor" "pos"` and `.member "Cursor" "bump"` were
+indistinguishable. `Member` now carries a `MemberKind`, and `kind_of`, `is_field`
+and `is_method` are the queries wave 3's emitter will ask — `x.pos` is `x.pos`,
+`x.bump` is `x.bump()`.
+
+`kind_of` returns `Option<MemberKind>` rather than defaulting, because *"neither"*
+is a real third answer and the one that will matter most: a receiver whose type
+the solver does not know is **not** a field access, and saying that is different
+from saying it is a method. Over a `std` type the solver knows no fields at all,
+so every `.name` on one is a call — correct for `"ab".len`, and wrong for a public
+field like `Range::start`, which rustc will reject loudly. That is the charter
+working rather than a gap, and it is the kind of case wave 3 has to measure rather
+than reason about.
+
 ### 10.6 Every `manual` hit was the compiler talking *about* a construct
 
 This is the finding that matters for leaf 1's method, and it is not a caveat

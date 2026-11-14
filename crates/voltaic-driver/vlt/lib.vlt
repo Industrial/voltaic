@@ -5,6 +5,7 @@ module compile_dir
 module annotate
 module judge
 module lint
+module migrate
 module remap
 
 export import cache::CacheReporter
@@ -30,5 +31,11 @@ export import compile_dir::compile_dir_with
 export import judge::judge
 export import judge::judgements
 export import lint::lint
+export import migrate::Gate
+export import migrate::Side
+export import migrate::apply
+export import migrate::first_difference
+export import migrate::gate
+export import migrate::transpile
 export import remap::RustcMessage
 export import remap::remap

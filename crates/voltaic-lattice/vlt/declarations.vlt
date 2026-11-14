@@ -5,7 +5,12 @@ import voltaic_ast::ConstructorFields
 import voltaic_ast::Item
 import voltaic_ast::Program
 
-export data Member = Member { export owner : String, export name : String, export ty : Ty }
+export data MemberKind
+  = Field
+  | Method
+  deriving (Debug, Clone, Copy, PartialEq, Eq)
+
+export data Member = Member { export owner : String, export name : String, export ty : Ty, export kind : MemberKind }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data Requirement = Requirement { export class_name : String, export name : String }
@@ -47,6 +52,18 @@ instance Declarations
         return Some (&held.ty)
     None
 
+  export kind_of : &str -> &str -> &self -> Option<MemberKind>
+  kind_of owner name self = self.members
+    |> .iter
+    |> .find (\m -> m.owner == owner && m.name == name)
+    |> .map (\m -> m.kind)
+
+  export is_field : &str -> &str -> &self -> bool
+  is_field owner name self = .kind_of owner name self == Some MemberKind::Field
+
+  export is_method : &str -> &str -> &self -> bool
+  is_method owner name self = .kind_of owner name self == Some MemberKind::Method
+
   export members_of : &str -> &self -> Vec<&Member>
   members_of owner self = self.members |> .iter |> .filter (\m -> m.owner == owner) |> .collect
 
@@ -84,11 +101,11 @@ collect program =
           case &constructor.fields of
             ConstructorFields::Record fields ->
               for field in .iter fields
-                found.members |> .push (Member { owner = .clone d.name.text, name = .clone field.name.text, ty = annotation::read (&field.ty) })
+                found.members |> .push (Member { owner = .clone d.name.text, name = .clone field.name.text, ty = annotation::read (&field.ty), kind = MemberKind::Field })
               ()
             ConstructorFields::Tuple every ->
               for pair in .enumerate (.iter every)
-                found.members |> .push (Member { owner = .clone d.name.text, name = .to_string (format! \-> "#{pair.0}"), ty = annotation::read pair.1 })
+                found.members |> .push (Member { owner = .clone d.name.text, name = .to_string (format! \-> "#{pair.0}"), ty = annotation::read pair.1, kind = MemberKind::Field })
               ()
             ConstructorFields::Unit -> ()
         ()
@@ -108,13 +125,37 @@ collect program =
         owner = .clone block.target.head.text
         for member in .iter block.members
           if member is ClassMember::Method f && .as_ref f.sig.ret is Some written
-            found.members |> .push (Member { owner = .clone owner, name = .clone f.name.text, ty = annotation::read written })
+            found.members |> .push (Member { owner = .clone owner, name = .clone f.name.text, ty = annotation::read written, kind = MemberKind::Method })
         ()
       Item::Type a ->
         found.aliases |> .push (Alias { name = .clone a.name.text, ty = annotation::read (&a.ty) })
         ()
       _ -> ()
   found
+
+test "a data declaration's fields are fields, and an instance's methods are methods"
+  source = "data Cursor = Cursor { src : String, pos : usize }\n\ninstance Cursor\n  bump : &mut self -> usize\n  bump self = self.pos\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  assert! \-> .is_field "Cursor" "pos" found
+  assert! \-> .is_field "Cursor" "src" found
+  assert! \-> .is_method "Cursor" "bump" found
+  assert! \-> !.is_field "Cursor" "bump" found
+  assert! \-> !.is_method "Cursor" "pos" found
+
+test "a name the solver has never seen is neither a field nor a method"
+  found = Declarations::empty ()
+  assert_eq! \-> .kind_of "Cursor" "pos" found \-> None
+  assert! \-> !.is_field "Cursor" "pos" found
+  assert! \-> !.is_method "Cursor" "pos" found
+
+test "a tuple field is a field, addressed by its index"
+  source = "data Pair = Pair u64 u64\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = collect (&program)
+  assert! \-> .is_field "Pair" "0" found
+  assert! \-> .is_field "Pair" "1" found
+  assert_eq! \-> .kind_of "Pair" "2" found \-> None
 
 test "a type alias is recorded and expands to its definition"
   source = "type Depth = f64\n"
