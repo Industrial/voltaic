@@ -379,13 +379,20 @@ rounding-up the project's own §1.2 names.
 
 | Leaf | State |
 |---|---|
-| 1 — `GRAMMAR.md` regraded | blocked on row 99 waves 4–9 |
+| 1 — `GRAMMAR.md` regraded | blocked, **per construct** — §10.9 |
 | 2 — `DECLINED.md` | **done** (§10.1–§10.5) |
-| 3 — `CONFORMANCE.md` | blocked on row 99 waves 4–9 |
-| 4 — `STATUS.md` | **done** (§10.7) |
-| 5 — `.vlt.sig` in `dependency_sources` | blocked on row 100 leaf 1's other half |
-| 6 — doc 86 §10's correction | blocked on leaf 1 |
+| 3 — `CONFORMANCE.md` | blocked on row 99 wave 6, and smaller than written — §10.9 |
+| 4 — `STATUS.md` | **done** (§10.7, extended by §10.9) |
+| 5 — `.vlt.sig` in `dependency_sources` | **done** — 110 sidecars committed, not two |
+| 6 — doc 86 §10's correction | **done** (§10.9) — it did not need leaf 1 |
 | 7 — headers on docs 01–85 | **done** (§10.6) |
+
+> **This table said leaves 5 and 6 were blocked, and both have since been done.**
+> Leaf 5's entry rested on *"there are **two** `.vlt.sig` files in the repository,
+> both fixtures"*; row 100 leaf 1's other half landed and there are now **110**,
+> one per source file, so the glob matches something and the assertion is not
+> vacuous. Leaf 6's entry said it waited on leaf 1, and §10.9 is why it did
+> not.
 
 §1.1 is why the blocked four cannot be hurried: *a gated reference document cannot
 be written ahead of its code.* A `GRAMMAR.md` regraded against waves 2 and 3 with
@@ -419,3 +426,77 @@ construct named as its venue.*
 final `UNREACHABLE` count. Declaration reflection **did** join the list — doc 87
 §22.4's row, in `DECLINED.md`'s "fabricate names or API" section, with the `macro`
 construct named as its venue.*
+
+### 10.9 Leaf 6 without leaf 1, and what leaves 1 and 3 actually wait on
+
+§10.8 had leaf 6 blocked on leaf 1, on the reasonable ground that the regrade is
+what would contradict doc 86 §10's prediction. **It is not the only thing that
+can.** The prediction does not merely assign grades — it names a *mechanism* for
+each closure, and a mechanism is testable on its own with two fixtures.
+
+So leaf 6 is done, and doc 86 §10.1 carries it: **zero of eight** close as a
+consequence of the solver, where the table claimed two.
+
+- **`as` casts.** The predicted mechanism was *"`x : u8` is an ascription and the
+  solver knows whether it is a coercion or a cast"*. Measured: `n : u8` on an
+  `i32` is `E0308`, with Lattice's own help saying *"pinned by an ascription"*. An
+  ascription pins a type; it does not insert a conversion — and that is right,
+  because a truncating `as` conjured from an ascription is a silent lossy
+  conversion, the sibling of the implicit clone doc 01 §25.1 declines.
+  `tests/unreachable/as_cast.vlt` now carries both spellings, so the correction is
+  **gated** rather than only written down.
+- **`ref` / `ref mut`.** The capability is reachable — `case p of (a, _) -> *a += 1`
+  on a `&mut (u32, u32)` compiles and emits `match p { (a, _) => … }` — but by
+  **match ergonomics**, which `examples/destructuring.vlt:54` says generation 1
+  already had. The solver adds nothing. What is unreachable is the `ref` spelling,
+  for a lexical reason: `ref` is not a reserved word, so `ref a` lexes as two
+  identifiers.
+
+Which makes `ref` the same shape as the or-pattern row this table already
+corrected once — **cosmetic, not expressive** — and `as` the opposite shape, a
+predicted closure that does not happen at all. The pattern worth keeping is that
+the *fixtures* were right and the *prediction* was wrong: both
+`tests/unreachable/` comments already said as much, and both are gated where the
+table was not.
+
+#### Leaf 1, blocked per construct rather than on "waves 4–9"
+
+§10.8's *"blocked on row 99 waves 4–9"* is true but too coarse to act on. Measured
+by running the fixtures:
+
+| Row | Diagnostic today | What would close it |
+|---|---|---|
+| `\|` or-patterns | `E0308` — `1 \| 2` parses as a **guard**, meaning `1` guarded by `2` | wave **2** finishing the guard-ladder replacement. `examples/case.vlt:10` still writes `n \| n > 65`, so `\|` is not free |
+| `as` casts | `VLT0101` on `n as u8` | `as` freed from `import … as`, which is wave **6**'s import deletion — and that closes the *spelling* only, per the measurement above |
+| `ref` / `ref mut` | `VLT0101` then `VLT0103` — `ref a` is two identifiers | reserving `ref`, which is **no wave's work**: doc 18 §7 keeps the reserved set small and `ref` is a plausible identifier in a compiler. A decision nobody has scheduled |
+
+So two rows wait on two specific waves and the third waits on a decision. §1.1's
+argument for this row being last holds unchanged — a regrade now would produce
+rows needing a regrade again — but it holds for a nameable reason per row rather
+than for the surface in general.
+
+#### Leaf 3 is blocked on wave 6, and is smaller than §4 wrote it
+
+§4's leaf 3 says generation 1 went from 952 of 964 blocking occurrences to 12,
+*"and the twelve were `as` casts — which generation 2 makes reachable, so the count
+changes and the shape of the document does too"*.
+
+**The count does not change.** `as` casts do not close, per the measurement above,
+so the twelve stay twelve until wave 6 frees the spelling. The recount against the
+migrated corpus is still worth doing and is a smaller job than the leaf was
+written to expect.
+
+#### Leaf 4's extension, which does not reverse §10.7's declination
+
+`status.rs` gained a `## Generations` table reading `seed/GENERATION` and `seed/`,
+falsified both ways — removing `seed/voltaic-g2.wasm` turns `status_is_current`
+red, and flipping one column back to `g1` does too.
+
+**§10.7 declined `seed/GENERATION` and that declination stands.** It was about
+sourcing the *crate list* from it, because `GENERATION` lists the crates whose
+`src/` is generated and an unported crate would vanish from the Source table. This
+table asks a different question — which generation each crate is *written in* — and
+`GENERATION` is the only copy of that answer. A retired generation keeps its row,
+built from `voltaic_lexer::GENERATIONS` rather than from the lines that have a
+count, so `g1`'s retirement is recorded where a reader looks for the current state
+rather than disappearing from it.

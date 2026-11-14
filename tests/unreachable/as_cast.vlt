@@ -6,9 +6,28 @@
 -- The nearest working thing is `u8::try_from n`, which is NOT a cast: `as`
 -- truncates and `try_from` is fallible, so a program wanting the truncating
 -- conversion cannot write it.
+--
+-- **Doc 86 §10 predicted this row closes in generation 2**, and the mechanism it
+-- named was the ascription: *"`x : u8` is an ascription and the solver knows
+-- whether it is a coercion or a cast"*. Measured 2026-11-14 and false. The
+-- second definition below is that spelling, and it is `E0308` — *mismatched
+-- types: expected `u8`, found `i32`* — with Lattice's own help text saying
+-- *"pinned by an ascription"*. An ascription pins a type; it does not insert a
+-- conversion.
+--
+-- That is the right behaviour and not a defect to fix. A truncating `as`
+-- conjured out of an ascription would be a **silent lossy conversion**, which is
+-- the sibling of the implicit clone doc 01 §25.1 declines: when no reading
+-- satisfies every use, the answer is a diagnostic. So this fixture now witnesses
+-- both spellings failing, and the prediction's correction is gated rather than
+-- only written down. Row 104 leaf 6; doc 86 §10's dated note.
 
 narrow : i32 -> u8
 narrow n = n as u8
+
+-- Doc 86 §10's predicted replacement, failing for its own reason.
+narrow_by_ascription : i32 -> u8
+narrow_by_ascription n = n : u8
 
 main : ()
 main =

@@ -689,6 +689,75 @@ careless first pass, **eleven were the probe's own bug** — so a predicted grad
 carries exactly the weight of a prediction, and `docs/GRAMMAR.md` remains the
 authority.
 
+### 10.1 Corrected 2026-11-14, row 104 leaf 6: **zero** of eight close as a consequence of the solver
+
+Appended rather than rewritten, per leaf 6. The table above says *"**Two** of eight
+close as a consequence of the solver rather than as features — `as` casts and `ref`
+patterns"*. Both rows are wrong, in **opposite directions**, and both were measured
+rather than re-reasoned.
+
+#### `as` casts do not close, and the predicted mechanism is false
+
+The table says *"reachable — `x : u8` is an ascription and the solver knows whether it
+is a coercion or a cast"*. That spelling is `E0308`:
+
+```
+narrow_by_ascription n = n : u8
+  × mismatched types: expected `u8`, found `i32`
+  help: pinned by an ascription. Run `voltaic sig --why …` for the constraint chain
+```
+
+An ascription **pins** a type; it does not insert a conversion. Lattice's own help
+text says so.
+
+**And that is right, not a defect to fix.** A truncating `as` conjured out of an
+ascription would be a *silent lossy conversion* — the sibling of the implicit clone
+doc 01 §25.1 declines, where the rule is that when no reading satisfies every use the
+answer is a diagnostic, never a quiet repair. So this row stays `UNREACHABLE`, and
+`tests/unreachable/as_cast.vlt` now carries **both** spellings so the correction is
+gated rather than only written here.
+
+#### `ref` / `ref mut` was already reachable, by match ergonomics — not by the solver
+
+The table says *"reachable — a pattern binding's mode is inferred like any other"*.
+The **capability** is indeed reachable, and measured:
+
+```
+bump : &mut (u32, u32) -> ()
+bump p = case p of
+  (a, _) ->
+    *a += 1
+    ()
+```
+
+compiles, and emits `match p { (a, _) => { *a += 1; } }` — rustc's match ergonomics
+bind `a` as `&mut u32`. But **generation 1 had that too**: `examples/destructuring.vlt`
+is built on it and says so at line 54, *"Rust's match ergonomics, unchanged here"*.
+The solver adds nothing to this row.
+
+What remains unreachable is the `ref` **spelling**, and for a lexical reason the
+solver cannot touch: `ref` is not a reserved word, so `ref a` lexes as two
+identifiers. Reserving it is not free — doc 18 §7 keeps the reserved set small, and
+`ref` is a plausible identifier in a compiler.
+
+#### So the correction is the same one this table already made once
+
+The or-pattern row was corrected earlier on exactly this ground: **the gap was
+cosmetic, not expressive**. `ref` is the same shape — the capability exists, the
+punctuation does not — and `as` is the opposite shape, a predicted closure that does
+not happen at all.
+
+Which means the count is **zero**, not two, and clause 4 is not satisfied by these
+rows. Five of eight remain unreachable with the answers they always had, two are
+cosmetic-spelling gaps, and `as` is a genuine expressive gap that generation 2 does
+not close.
+
+**The pattern worth keeping:** the *fixtures* were right and the *prediction* was
+wrong. `tests/unreachable/ref_pattern.vlt` already said the nearest working thing was
+match ergonomics, and `as_cast.vlt` already said `try_from` is not a cast. Both are
+gated; this table was not. That is doc 102 §1.2's thesis — an evidence-carrying
+document beats a predicted one — landing on the document that predicted it.
+
 ---
 
 ## 11. Citations
