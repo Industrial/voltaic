@@ -1,7 +1,7 @@
 [package]
 name = "voltaic-seed"
-version = "0.1.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 publish = false
 description = "The bootstrap seed: .vlt in, .rs out, and nothing else."
 

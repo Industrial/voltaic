@@ -14,8 +14,8 @@ description = "Lattice: the inference engine for the Voltaic compiler — types,
 include = ["src/**/*.rs", "vlt/**/*.vlt", "Cargo.toml"]
 
 [dependencies]
-voltaic-ast = { path = "../voltaic-ast", version = "0.1.1" }
-voltaic-diag = { path = "../voltaic-diag", version = "0.1.1" }
+voltaic-ast.workspace = true
+voltaic-diag.workspace = true
 
 # The parser is a *dev* dependency. Leaf 5's corpus needs real programs, and a
 # runtime dependency would be the wrong direction: the parser does not know about

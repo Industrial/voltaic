@@ -2,8 +2,14 @@
 
 A release is a pushed `v*` tag. [`.github/workflows/publish.yml`](../.github/workflows/publish.yml)
 does the rest: it runs the gate, packages, attests, publishes to crates.io,
-verifies what crates.io serves against the attestation, creates the GitHub
-Release, and then opens the nixpkgs version-bump PR.
+verifies what crates.io serves against the attestation, and creates the GitHub
+Release.
+
+**Voltaic is not distributed through nixpkgs.** The submission was declined by
+their maintainers, so there is no downstream bump to automate and no
+`nix/nixpkgs-package.nix` to keep in step. `flake.nix` in this repository is the
+Nix delivery path, it builds from the seed, and it needs nothing from a
+release.
 
 ## Cutting a release
 
@@ -13,6 +19,17 @@ Release, and then opens the nixpkgs version-bump PR.
    `[workspace.dependencies]`, so that is the one place the version is written
    twice; `scripts/validate-crate-packaging.sh` fails if the two drift, which is
    the only reason a second copy is tolerable. Update `CHANGELOG.md`.
+
+   **It was written in four places until 0.2.0, and the other two were found by
+   the bump failing.** `voltaic-lattice` pinned `voltaic-ast` and `voltaic-diag`
+   with literal versions instead of `.workspace = true` — every other crate uses
+   the inherited form — and `voltaic-seed`, `mdbook-voltaic` both set their own
+   `version` and `edition` literally. `cargo update` is what caught it:
+   *"failed to select a version for the requirement `voltaic-ast = "^0.1.1"`…
+   candidate versions found which didn't match: 0.2.0"*. All four now inherit,
+   so the two copies this step describes are the only two that exist. Run
+   `grep -rn --include=Cargo.toml '<old version>' .` after a bump; a literal
+   that survives is this.
 2. Run the gate locally:
 
    ```bash
@@ -31,7 +48,7 @@ To rehearse, run the workflow by hand (Actions → Publish to crates.io → Run
 workflow) with **Dry run** checked. A dry run packages and attests everything,
 runs `cargo publish --dry-run` over the whole order, checks the packages against
 the attested digests and runs `slsa-verifier` on them. It uploads nothing,
-creates no release and opens no nixpkgs PR. A run *without* **Dry run** must be
+and creates no release. A run *without* **Dry run** must be
 dispatched on a tag ref.
 
 ## What the workflow does
@@ -46,7 +63,6 @@ dispatched on a tag ref.
 | `publish` | `cargo publish --locked` crate by crate in the same order. `.github/scripts/publish-crate.sh` skips a version the crates.io index already has, so re-running after a partial publish resumes at the first missing crate; after each upload it checks the `.crate` cargo uploaded has the attested sha256 and stops the release otherwise. |
 | `verify` | Downloads every crate from `static.crates.io`, checks its sha256 equals the subject digest in the signed provenance, and runs `slsa-verifier verify-artifact`. Any mismatch fails the run and no release is created. |
 | `release` | GitHub Release with the `.crate` files, the `.cdx.json` SBOMs and `voltaic-<version>.intoto.jsonl`. |
-| `nixpkgs` | Opens the nixpkgs version-bump PR. Last, and after `release`. See [`NIXPKGS.md`](NIXPKGS.md). |
 
 All actions are pinned by commit SHA. The one exception is the SLSA generator, a
 reusable workflow that must be referenced by its `@vX.Y.Z` tag because it
@@ -54,17 +70,22 @@ verifies its own ref.
 
 ## What gets published, and what does not
 
-Eight crates: `voltaic-diag`, `voltaic-lexer`, `voltaic-ast`, `voltaic-emit`,
-`voltaic-fmt`, `voltaic-parser`, `voltaic-driver` and `voltaic-cli`, in that
-order. The order is not written down anywhere — it is derived by topological
-sort of the intra-workspace dependencies in `scripts/validate-crate-packaging.sh`,
-so adding a crate or changing a dependency reorders it automatically. Print it
-with `./scripts/validate-crate-packaging.sh --print-order`.
+Nine crates: `voltaic-diag`, `voltaic-lexer`, `voltaic-ast`, `voltaic-emit`,
+`voltaic-fmt`, `voltaic-lattice`, `voltaic-parser`, `voltaic-driver` and
+`voltaic-cli`, in that order. **`voltaic-lattice` is new in 0.2.0** — it did not
+exist at 0.1.1 — so that release is the one that creates it on crates.io.
+Don't take the count from here: `./scripts/validate-crate-packaging.sh
+--print-order` derives it, and this sentence is a second copy free to drift,
+which it did once already.
+
+The order is not written down anywhere — it is derived by topological sort of
+the intra-workspace dependencies in `scripts/validate-crate-packaging.sh`, so
+adding a crate or changing a dependency reorders it automatically.
 
 `voltaic-bench`, `voltaic-fuzz`, `voltaic-lsp`, `voltaic-mcp` and `voltaic-seed`
 carry `publish = false`. The first two and the seed are internal. The language
-server and the MCP server are binary-only and nothing links them: nixpkgs and
-`flake.nix` both build them, and the editor clients run them as processes. If
+server and the MCP server are binary-only and nothing links them: `flake.nix`
+builds them, and the editor clients run them as processes. If
 `cargo install voltaic-lsp` ever becomes the asked-for install path, the name is
 free on crates.io — unlike the pre-rename `redox-lsp`, which belongs to an
 unrelated project.
@@ -102,7 +123,7 @@ gate on it will eventually be removed:
   wrong.
 - `cargo package` keeps verification **on** there, so every archive is extracted
   and compiled. That is the only check proving the bytes build rather than
-  merely package. It costs 17s for all eight crates.
+  merely package. It costs about 17s for the whole set.
 
 ### And `--allow-dirty` is required, everywhere
 
@@ -163,66 +184,38 @@ has the full rule. Note that `:seed-refresh` prints a *cached* size, so check
 The `publish` job uses the `CARGO_REGISTRY_TOKEN` secret of the `crates-io`
 environment; `publish-crate.sh` hands it to cargo via `cargo login` on stdin,
 never on the command line. The token can also publish a crate's first version,
-so the eight crates need no owner step before the first release.
+so a crate's first version needs no owner step beforehand.
 
 ### Secrets and environments to set up
 
-Two secrets, and they go in **different places**, because the `publish` job
-declares `environment: crates-io` and the `nixpkgs` job declares no environment
-at all.
+**One secret**, and it is an *environment* secret rather than a repository one,
+because the `publish` job declares `environment: crates-io`.
 
 | Name | Where exactly | Needed by | Needed from |
 |---|---|---|---|
 | `CARGO_REGISTRY_TOKEN` | Settings → Environments → `crates-io` → *Add environment secret* | `publish` | the first release |
-| `NIXPKGS_PR_TOKEN` | Settings → Secrets and variables → Actions → *New repository secret* | `nixpkgs` | the first *bump*, not the first release |
 
 `CARGO_REGISTRY_TOKEN` comes from crates.io → Account Settings → API Tokens, with
 the `publish-new` and `publish-update` scopes. Scope it to the `voltaic-*` crates
 if you like; it needs `publish-new` because the first release creates them.
 
-`NIXPKGS_PR_TOKEN` is a GitHub PAT that can push a branch to the
-`Industrial/nixpkgs` fork and open a PR from it against `NixOS/nixpkgs`:
-
-- **Classic token** (<https://github.com/settings/tokens/new>), scope
-  **`public_repo`**. This is the dependable choice. nixpkgs and the fork are both
-  public, so `public_repo` is enough and `repo` would be needlessly broad.
-- **Fine-grained token** (<https://github.com/settings/personal-access-tokens/new>)
-  is tighter — resource owner `Industrial`, repository access limited to
-  `Industrial/nixpkgs`, permissions *Contents: read and write* and *Pull
-  requests: read and write*. Opening a pull request **across** repositories is
-  the part fine-grained tokens have historically been awkward about, since the
-  base repo is not one the token selects. Worth trying; if the `gh pr create`
-  step fails with a permissions error while the push succeeded, that is this, and
-  the classic token is the fallback.
-
-Mind the **expiry**. A token that lapses turns into a release that publishes to
-crates.io and silently stops updating nixpkgs. The job is built so that cannot
-pass unnoticed — a missing token with the package already upstream fails loudly
-rather than skipping — but an expiry you have to remember is still worse than one
-you do not, so prefer a long or no expiry and treat the job's error as the
-reminder.
+There was a second secret, `NIXPKGS_PR_TOKEN`, for the job that opened the
+nixpkgs version-bump PR. Both are gone: nixpkgs declined the submission, so
+there is nothing downstream to bump. **If that secret is still set on the
+repository, delete it** — it now grants push access to a fork for no reason, and
+an unused credential is the kind that outlives the memory of why it existed.
 
 Protecting the `crates-io` environment is worth doing: Settings →
 Environments → `crates-io`, deployment refs limited to `v*` tags plus whatever
 branch dry runs are dispatched from.
 
-#### Running without `NIXPKGS_PR_TOKEN`
-
-Deliberately supported, because it is the state of the first release. Everything
-the `nixpkgs` job does apart from the push and the PR is read-only against public
-repositories, so with no token it still checks out the fork, reports whether the
-package is upstream, and stops. The asymmetry is the useful part:
-
-| | no token | token |
-|---|---|---|
-| package not yet in nixpkgs | passes, with a notice | passes, with a notice |
-| package in nixpkgs | **fails loudly** | opens the bump PR |
-
 ## If the first release stops partway
 
 Expected, recoverable, and worth knowing before it happens: the first release
-creates **eight new crates in one run**, and crates.io rate-limits new-crate
-publishes. If it trips, the `publish` job fails with a 429.
+creates several new crates in one run, and crates.io rate-limits new-crate
+publishes. If it trips, the `publish` job fails with a 429. 0.1.0 created eight;
+0.2.0 adds `voltaic-lattice`, so a release that introduces only one or two new
+names is unlikely to trip it at all.
 
 Nothing is lost and nothing needs fixing. `publish-crate.sh` checks the
 crates.io index before each crate and skips the ones already there, so
@@ -250,9 +243,6 @@ Stated rather than left to be discovered:
   unchanged by design.
 - **The licence changed to MIT** at the same time as this pipeline landed,
   replacing `CC-BY-SA-4.0`. A root `LICENSE` file now exists; it did not before.
-- **`nix/nixpkgs-package.nix` is not built by this repository.** `flake.nix` is
-  what `nix build` here uses. The two share three build-time facts — wasmtime,
-  rustfmt and the `preBuild` bootstrap — and nothing checks that they agree.
 - **`nextest.toml` has never been read, and should be moved — carefully.**
   nextest reads `.config/nextest.toml`; this repository's copy is at the root and
   there is no `.config/` directory, so every test run ever made here has used

@@ -1,7 +1,7 @@
 [package]
 name = "mdbook-voltaic"
-version = "0.1.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 # Never published. It is a build tool for this repository's own documentation,
 # and it lives under `tools/` rather than `crates/` for the reason AGENTS.md
 # gives: every crate under `crates/` is written in Voltaic, and this one is

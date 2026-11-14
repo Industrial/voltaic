@@ -1,12 +1,104 @@
 # Changelog
 
-Notable changes per release. `docs/RELEASING.md` is how a release is cut, and
-`docs/NIXPKGS.md` covers the downstream bump.
+Notable changes per release. `docs/RELEASING.md` is how a release is cut.
+
+Entries for shipped versions are left as they were written, so an older one may
+cite a file or a channel that no longer exists — `docs/NIXPKGS.md` and the
+nixpkgs route in 0.1.1 below, for instance, both retired in 0.2.0.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-11-14
+
+Generation 2: an inference engine, and the surface contraction it pays for.
+
+Voltaic 1 could not know a type, so every type had to be written. Measured over
+the whole compiler, that charter was not a tax on the terseness claim but its
+**ceiling** — the line saving was 1.544× and the character saving 1.002×,
+because what the surface deleted was punctuation and what it could not delete
+was types. `docs/90 - 92 - The Charter Reversal.md` is the argument.
+
+### Added
+
+- **`voltaic-lattice`, the inference engine.** Rank-1 Hindley–Milner over a
+  constraint store that keeps provenance, so a failure can name the chain that
+  produced it. It infers types, **parameter modes** (`&`, `&mut`, owned) and
+  **effect rows** (`io`, `panics`, `suspends`), and writes all of them into the
+  generated Rust explicitly. What it computes is what the emitter writes down;
+  deciding whether a program is *well-typed* stays rustc's, and there is still
+  no borrow checker and no exhaustiveness checker. A program Lattice accepts and
+  rustc rejects is a bug in Voltaic, filed as one.
+- **Signatures are optional.** `voltaic sig` prints the inferred judgement —
+  `doubled : u64 -> u64 @ n owned`, `main : () ! io` — with modes after `@` and
+  the effect row after `!`. What decides whether one may be omitted is
+  **inferability, not visibility**: an `export`ed definition needs none either,
+  and an unsigned `main` compiles. A definition reaching no written type
+  anywhere is `VLT0128`.
+- **Inherent `instance` members infer too**, receiver mode included:
+  `current self = self.value` emits `fn current(&self) -> u32` and
+  `bump self = self.value += 1` emits `fn bump(&mut self)`. Doc 63 had held this
+  impossible because an inherent instance names no class — true of the
+  *resolver*, which looks a signature up, and silent about the *solver*, which
+  computes one.
+- **Signature sidecars.** 110 committed `.vlt.sig` files, written by
+  `voltaic fmt`, read by cross-crate resolution, and gated for currency — a
+  stale sidecar answers confidently about a program that no longer exists.
+- **The guard ladder reaches value position**, pattern rows may be ladder arms,
+  and a binding carries an `else` tail (`Some v = .pop (&mut rest) else break`,
+  Rust's let-else stated explicitly).
+- **Operator declarations**: `infixl 6 <+> = merge` gives an existing function a
+  spelling and a fixity over a closed set of twelve forms, emitting no item.
+- **`given <…>`**, the verbatim generic parameter list, for the six binder
+  shapes synthesis cannot reach.
+
+### Changed
+
+- **`.` is inverted.** `x.f y` is `f(x, y)` — the receiver **first** — so a
+  chain reads left to right and needs none of `|>`, `>>>`, `<<<` or `$`.
+  Generation 1 chose receiver-last because it was the only way to make partial
+  application and pipelines share a spelling without types; inference removed
+  the constraint. A `.` in head position is still receiver-last, so `.len xs`
+  remains live. The whole compiler — 8,479 call sites — is written in the new
+  form.
+- **Derives are computed.** The eight standard derives come from the
+  intersection over a declaration's fields, and `deriving (…)` is no longer
+  written; `data !Copy Token { kind u64 }` opts out by name. Generation 1 wrote
+  the clause on 109 of 128 declarations, every one restating what the fields
+  already implied.
+- **Fields are `name Type`**, juxtaposed, freeing `:` for ascription. The `:`
+  form still parses.
+- **Self-hosting crossed to generation 2.** All fourteen crates, one crate per
+  reviewable commit, each gated byte-identical before it landed. There is one
+  seed blob, `seed/voltaic-g2.wasm`; `voltaic-g1.wasm` is retired, and
+  `seed/SEED.md` now *checks* rather than states doc 100's invariant — a blob
+  whose `built by` names the generation in its `compiles` is refused.
+- An identifier that is a Rust keyword now emits `r#name` rather than invalid
+  Rust.
+- The book covers the generation-2 surface, and every example in the corpus is
+  now cited by a chapter — a gate, because the existing provenance check
+  structurally could not see an *absent* citation.
+
+### Removed
+
+- **Six keywords, 58 down to 52**: `otherwise` (now `_`), `until`, `when`, and
+  wave 4's first cull. `cond` and `switch` were never keywords despite being
+  named as constructs to delete — the wave list had been written from the
+  languages being drawn from rather than from Voltaic's lexer.
+- **The `errors` declaration**, deleted as a construct and kept as a shape: a
+  `data` whose variants carry a trailing string literal is an error type, and it
+  goes through the same emitter. It was the only construct in the language that
+  emitted more than one Rust item.
+- **nixpkgs is no longer a distribution channel.** The submission was declined
+  by nixpkgs' maintainers, so `nix/nixpkgs-package.nix`, `docs/NIXPKGS.md` and
+  the `nixpkgs` version-bump job in `publish.yml` are all gone, along with the
+  `NIXPKGS_PR_TOKEN` secret the job needed — delete that secret if it is still
+  set on the repository. **`flake.nix` is unaffected and is the Nix route**:
+  `nix profile install github:Industrial/voltaic`, or the flake input shown in
+  the book's Install chapter. It builds from the seed, so a clean checkout needs
+  no previously installed Voltaic.
 
 ## [0.1.1] - 2026-11-13
 

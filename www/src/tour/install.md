@@ -15,13 +15,14 @@ because the workspace's libraries are `voltaic-ast`, `voltaic-lexer`,
 `voltaic-parser` and so on — the CLI is one crate among them rather than the
 root of the set.
 
-## From nixpkgs
+## With Nix
 
 ```bash
-nix profile install nixpkgs#voltaic
+nix profile install github:Industrial/voltaic
 ```
 
-Or as a flake input:
+Voltaic is **not** in nixpkgs, so there is no `nixpkgs#voltaic` to install — this
+repository's own flake is the Nix route. Or as a flake input:
 
 ```nix
 {

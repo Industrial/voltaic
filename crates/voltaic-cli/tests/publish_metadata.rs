@@ -34,7 +34,7 @@ fn workspace_root() -> PathBuf {
 ///
 /// `voltaic-bench`, `voltaic-fuzz` and `voltaic-seed` are internal: the gates
 /// and the bootstrap are their only consumers. `voltaic-lsp` and `voltaic-mcp`
-/// are binary-only — nixpkgs and `flake.nix` build them and editors run them as
+/// are binary-only — `flake.nix` builds them and editors run them as
 /// processes, so nothing links them as libraries.
 ///
 /// Listed rather than derived on purpose. A crate silently falling off
