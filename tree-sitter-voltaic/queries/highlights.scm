@@ -22,8 +22,8 @@
 ; grammar has, a hard `Invalid node type` error rather than a dead pattern.
 [
   "import" "module" "data" "newtype" "type" "class" "instance" "errors"
-  "test" "const" "static" "deriving" "from" "as" "where" "given" "pattern" "template" "otherwise"
-  "if" "else" "while" "until" "for" "in" "loop" "break" "continue"
+  "test" "const" "static" "deriving" "from" "as" "where" "given" "pattern" "template"
+  "if" "else" "while" "for" "in" "loop" "break" "continue"
   "return" "guard" "is" "with" "case" "of" "async" "try" "catch"
   "mut" "move" "or"
   "infix" "infixl" "infixr"

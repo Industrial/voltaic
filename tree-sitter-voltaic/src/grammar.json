@@ -1982,11 +1982,11 @@
             "members": [
               {
                 "type": "STRING",
-                "value": "otherwise"
+                "value": "_"
               },
               {
                 "type": "SYMBOL",
-                "name": "_expression"
+                "name": "condition"
               }
             ]
           }
@@ -2481,17 +2481,8 @@
           ]
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "while"
-            },
-            {
-              "type": "STRING",
-              "value": "until"
-            }
-          ]
+          "type": "STRING",
+          "value": "while"
         },
         {
           "type": "FIELD",

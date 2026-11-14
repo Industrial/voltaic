@@ -2965,107 +2965,15 @@
         ]
       },
       "condition": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "as",
+            "type": "_",
             "named": false
           },
           {
-            "type": "ascription",
-            "named": true
-          },
-          {
-            "type": "boolean",
-            "named": true
-          },
-          {
-            "type": "catch",
-            "named": false
-          },
-          {
-            "type": "char",
-            "named": true
-          },
-          {
-            "type": "comprehension",
-            "named": true
-          },
-          {
-            "type": "conditional_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "lambda",
-            "named": true
-          },
-          {
-            "type": "lifetime",
-            "named": true
-          },
-          {
-            "type": "list",
-            "named": true
-          },
-          {
-            "type": "macro_call",
-            "named": true
-          },
-          {
-            "type": "number",
-            "named": true
-          },
-          {
-            "type": "operator",
-            "named": true
-          },
-          {
-            "type": "otherwise",
-            "named": false
-          },
-          {
-            "type": "parenthesized",
-            "named": true
-          },
-          {
-            "type": "path",
-            "named": true
-          },
-          {
-            "type": "raw_string",
-            "named": true
-          },
-          {
-            "type": "record_literal",
-            "named": true
-          },
-          {
-            "type": "rust_hatch",
-            "named": true
-          },
-          {
-            "type": "section",
-            "named": true
-          },
-          {
-            "type": "self_expression",
-            "named": true
-          },
-          {
-            "type": "string",
-            "named": true
-          },
-          {
-            "type": "type_identifier",
-            "named": true
-          },
-          {
-            "type": "user_operator",
+            "type": "condition",
             "named": true
           }
         ]
@@ -5508,6 +5416,11 @@
     }
   },
   {
+    "type": "wildcard",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "!",
     "named": false
   },
@@ -5649,6 +5562,10 @@
   },
   {
     "type": "]",
+    "named": false
+  },
+  {
+    "type": "_",
     "named": false
   },
   {
@@ -5808,10 +5725,6 @@
     "named": false
   },
   {
-    "type": "otherwise",
-    "named": false
-  },
-  {
     "type": "over",
     "named": false
   },
@@ -5884,10 +5797,6 @@
     "named": false
   },
   {
-    "type": "until",
-    "named": false
-  },
-  {
     "type": "visibility",
     "named": true
   },
@@ -5898,10 +5807,6 @@
   {
     "type": "while",
     "named": false
-  },
-  {
-    "type": "wildcard",
-    "named": true
   },
   {
     "type": "with",

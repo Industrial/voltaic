@@ -1,6 +1,7 @@
 import crate::ParseError
 import crate::block::check_callback_tails
 import crate::block::condition
+import crate::block::ladder_condition
 import crate::block::stmt
 import crate::datatype::data_decl
 import crate::datatype::derive_template
@@ -382,7 +383,7 @@ instance (Parser 'a)
         .advance self
         None
       else
-        Some (parse_expr self 0)?
+        Some (ladder_condition self)?
       (.expect (&TokenKind::Eq) "expected `=` after a guard's condition" self)?
       body = (.inline_body self)?
       (.newline_with_trailing "expected a line break after a guard's body" self)?

@@ -133,7 +133,7 @@ export data FnDecl = FnDecl { export name : Ident, export sig : Signature, expor
 export data ForeignFn = ForeignFn { export name : Ident, export sig : Signature, export span : Span, export leading : Vec<Trivia> }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Guard = Guard { export condition : Option<Expr>, export body : Block, export span : Span }
+export data Guard = Guard { export condition : Option<crate::Condition>, export body : Block, export span : Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data ImportDecl = ImportDecl { export path : String, export alias : Option<Ident>, export visibility : Visibility, export span : Span, export leading : Vec<Trivia> }

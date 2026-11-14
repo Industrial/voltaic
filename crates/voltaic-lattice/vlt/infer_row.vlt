@@ -26,7 +26,8 @@ clause_row_with clauses known =
       ClauseBody::Guarded arms ->
         for arm in .iter arms
           if .as_ref arm.condition is Some condition
-            found := .join (&expr_row_with condition known) found
+            for held in .sources condition
+              found := .join (&expr_row_with held known) found
           found := .join (&block_row_with (&arm.body) known) found
   found
 

@@ -383,11 +383,11 @@ emit_guards out guards indent tail joinable =
     case (&row.condition, i) of
       (Some cond, 0) ->
         pad out indent
-        head = emit_expr cond indent
+        head = emit_condition cond indent
         .push_str (&format! \-> "if #{head} {\n") out
       (Some cond, _) ->
         pad out indent
-        head = emit_expr cond indent
+        head = emit_condition cond indent
         .push_str (&format! \-> "} else if #{head} {\n") out
       (None, 0) ->
         emit_stmts out (&row.body.stmts) indent tail
@@ -489,7 +489,7 @@ two_armed guards indent =
     return None
   then_text = (sole_expression first indent)?
   else_text = (sole_expression second indent)?
-  head = emit_expr (unparen condition) indent
+  head = emit_condition condition indent
   text = format! \-> "if #{head} { #{then_text} } else { #{else_text} }"
   if .len text > SINGLE_LINE_IF_ELSE_MAX_WIDTH || .contains '\n' text
     return None

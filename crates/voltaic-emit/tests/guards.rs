@@ -90,3 +90,52 @@ fn a_ladder_without_a_catch_all_still_emits() {
   assert!(rust.contains("if 1 > 0 {"), "{rust}");
   assert!(!rust.contains("else"), "nothing is invented:\n{rust}");
 }
+
+/// Row 99 wave 2's additive half: a ladder arm may be a **pattern row**.
+///
+/// §4 says `case` collapses into "the guard ladder and pattern rows", and two
+/// thirds of that already existed — multi-clause dispatch is pattern rows, and
+/// `describe (Some n) = …` has lowered to a `match` since generation 1. What had
+/// no replacement was `case` used as an *expression* in the middle of a body,
+/// because multi-clause dispatch only dispatches on parameters.
+///
+/// The arm's type was the only thing in the way: it was `Option<Expr>` while
+/// `if` already took a `Condition`, which models `x is Some y` and carries
+/// `has_pattern`. `emit_condition` then lowers it to `let Some(n) = held`, which
+/// is exactly what `if`/`else if` wants — so the machinery was all built for
+/// `if` and the change is the type.
+#[test]
+fn a_pattern_row_becomes_an_if_let() {
+  let rust = emit(
+    &parse_source(concat!(
+      "describe : Option<u64> -> &'static str\n",
+      "describe held\n",
+      "  | held is Some n = \"some\"\n",
+      "  | _ = \"none\"\n",
+    ))
+    .expect("should parse"),
+  );
+  assert!(
+    rust.contains("if let Some(n) = held {"),
+    "a pattern row lowers to `if let`:\n{rust}"
+  );
+}
+
+/// A pattern row chains like any other arm, so the second one is `else if let`.
+#[test]
+fn a_second_pattern_row_chains_as_else_if_let() {
+  let rust = emit(
+    &parse_source(concat!(
+      "name : Result<u64, u64> -> &'static str\n",
+      "name held\n",
+      "  | held is Ok n = \"ok\"\n",
+      "  | held is Err e = \"err\"\n",
+      "  | _ = \"neither\"\n",
+    ))
+    .expect("should parse"),
+  );
+  assert!(
+    rust.contains("} else if let Err(e) = held {"),
+    "a second pattern row chains:\n{rust}"
+  );
+}

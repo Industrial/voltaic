@@ -36,6 +36,15 @@ instance Condition
   export plain : Expr -> Self
   plain expr = Condition { operands = [ConditionOperand::Expr expr] : Vec<ConditionOperand> }
 
+  export sources : &self -> Vec<&Expr>
+  sources self =
+    mut found = Vec::new ()
+    for operand in .iter self.operands
+      case operand of
+        ConditionOperand::Expr held -> found |> .push held
+        ConditionOperand::Pattern { source, .. } -> found |> .push source
+    found
+
   export has_pattern : &self -> bool
   has_pattern self = .any (\o -> case o of
     ConditionOperand::Pattern { .. } -> true

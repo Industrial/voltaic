@@ -114,7 +114,8 @@ demands_of clauses =
       ClauseBody::Guarded arms ->
         for arm in .iter arms
           if .as_ref arm.condition is Some condition
-            walk_expr condition (&mut found) false
+            for held in .sources condition
+              walk_expr held (&mut found) false
           walk_block (&arm.body) (&mut found) true
   found
 

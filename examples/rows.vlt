@@ -1,0 +1,40 @@
+-- Row 99 wave 2: a guard ladder arm may be a **pattern row**.
+--
+-- §4 says `case` collapses into "the guard ladder and pattern rows", and two
+-- thirds of that already existed. Multi-clause dispatch *is* pattern rows —
+-- `describe (Some n) = …` has lowered to a `match` since generation 1, and
+-- `examples/case.vlt` witnesses the `case` form. What had no replacement was
+-- `case` used as an expression in the middle of a body, because multi-clause
+-- dispatch only dispatches on parameters.
+--
+-- The arm's type was the only thing in the way: it held an expression while
+-- `if` already took a condition, which models `x is Some y`. So the machinery
+-- was built for `if` and the change was the type.
+
+-- A pattern row and a catch-all, which is the shape an inline `case` had.
+describe : Option<u64> -> &'static str
+describe held
+  | held is Some _n = "some"
+  | _ = "none"
+
+-- Rows chain, so the second is `else if let`. And a pattern row sits beside an
+-- ordinary condition in the same ladder: the arm kinds do not have to agree.
+classify : Result<u64, u64> -> u64 -> &'static str
+classify held floor
+  | held is Ok _n = "ok"
+  | floor > 100 = "high floor"
+  | held is Err _e = "err"
+  | _ = "neither"
+
+-- A pattern row binds, and the binding reaches the body.
+doubled : Option<u64> -> u64
+doubled held
+  | held is Some n = n * 2
+  | _ = 0
+
+main : ()
+main =
+  println! \-> "#{(describe (Some 1))} #{(describe None)}"
+  println! \-> "#{(classify (Ok 1) 0)} #{(classify (Err 2) 500)}"
+  println! \-> "#{(doubled (Some 21))}"
+  ()

@@ -718,7 +718,7 @@ module.exports = grammar({
 		guard: ($) =>
 			seq(
 				"|",
-				field("condition", choice("_", $._expression)),
+				field("condition", choice("_", $.condition)),
 				"=",
 				field("body", $._expression),
 				$._newline,

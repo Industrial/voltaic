@@ -275,8 +275,10 @@ clause_type clauses store env =
       ClauseBody::Guarded arms ->
         for arm in .iter arms
           if .as_ref arm.condition is Some condition
-            seen = expr_type condition store env
-            .require (Obligation::Unify { left = seen, right = Ty::named "bool" }) arm.span Reason::GuardCondition store
+            for held in .sources condition
+              seen = expr_type held store env
+              if !.has_pattern condition
+                .require (Obligation::Unify { left = seen, right = Ty::named "bool" }) arm.span Reason::GuardCondition store
           found = block_type (&arm.body) store env
           .require (Obligation::Unify { left = .clone result, right = found }) arm.span Reason::EquationBody store
   result

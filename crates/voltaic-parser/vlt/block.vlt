@@ -101,9 +101,13 @@ check_callback_tails program =
 
 export(crate) condition : &mut Parser -> Result<Condition, ParseError>
 condition p =
+  if !holds_a_pattern_test p false (&TokenKind::Kw Keyword::Is) && holds_a_pattern_test p false (&TokenKind::Eq)
+    return Err (ParseError::r#with Code::ExpectedToken (.to_string "a pattern test is written `scrutinee is pattern` — plan 60 moved it off `=`, which now means definition and nothing else") (.peek_span p))
+  ladder_condition p
+
+export(crate) ladder_condition : &mut Parser -> Result<Condition, ParseError>
+ladder_condition p =
   if !holds_a_pattern_test p false (&TokenKind::Kw Keyword::Is)
-    if holds_a_pattern_test p false (&TokenKind::Eq)
-      return Err (ParseError::r#with Code::ExpectedToken (.to_string "a pattern test is written `scrutinee is pattern` — plan 60 moved it off `=`, which now means definition and nothing else") (.peek_span p))
     return Ok (Condition::plain (parse_expr p 0)?)
   mut operands = vec! \-> (condition_operand p)?
   while .check (&TokenKind::AndAnd) p

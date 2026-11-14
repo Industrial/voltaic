@@ -654,6 +654,79 @@ graded reachable and witnessed by nothing — and `when` was never graded in
 `docs/GRAMMAR.md`, so it was invisible to the one check designed to find it. An
 *ungraded* keyword is outside every gate at once.
 
+### 10.19 Pattern rows: wave 2's additive half, and two thirds already existed
+
+§4 says `case` collapses into "the guard ladder and pattern rows". Measured
+before writing anything, **two thirds of that was already the language**:
+
+```
+describe (Some n) = "some"
+describe None     = "none"
+```
+
+lowers to a `match` and has since generation 1. `examples/case.vlt` witnesses the
+`case` form. What had **no** replacement was `case` used as an *expression* in
+the middle of a body, because multi-clause dispatch only dispatches on
+parameters.
+
+A guard ladder is the right home for it, and the only thing in the way was the
+arm's type. `Guard.condition` was `Option<Expr>`; `if` already took a
+`Condition`, which models `x is Some y` and carries `has_pattern`. Widening the
+arm to `Condition` is the whole feature:
+
+```
+describe held
+  | held is Some n = "some"
+  | _ = "none"
+```
+
+→ `if let Some(n) = held { "some" } else { "none" }`
+
+`emit_condition` already lowered a pattern test to `let Some(n) = x`, which is
+exactly what `if` / `else if` wants, so a pattern row chains as `else if let`
+with no new machinery. `examples/rows.vlt` witnesses three shapes: a row with a
+catch-all, rows chained with an ordinary condition *between* them, and a binding
+reaching the body. **Additive**, so nothing is deleted and no gate that parses
+the compiler's own source is disturbed.
+
+### 10.20 A pattern row's scrutinee is not a `bool`, and one obligation would have said it was
+
+The arm used to carry one `expr_type … = bool` obligation over its whole
+condition. A `Condition` is a list of operands, and a *pattern* operand's source
+is **matched rather than tested** — `held is Some n` says nothing about `held`
+being a boolean. Keeping the single obligation would have unified every
+scrutinee with `bool`.
+
+`Condition::sources` is the accessor the three `voltaic-lattice` consumers want,
+and it is on `Condition` rather than open-coded three times for a specific
+reason: each copy would have to decide independently what a pattern operand
+contributes, and they would not have agreed. Two tests pin both directions — a
+pattern row's scrutinee is unconstrained, and an ordinary arm still contradicts
+when handed a `u64`.
+
+### 10.21 Two things the gates caught that review would not have
+
+**`condition`'s legacy check false-positived on the ladder's own separator.**
+Plan 60 moved a pattern test off `=` onto `is`, and `condition` still reports the
+old spelling helpfully — so `| spend > 10_000 = "gold"` was told *"a pattern test
+is written `scrutinee is pattern`"*. `ladder_condition` is the same parse without
+that check, and `condition` is now the check plus a delegation: factored rather
+than copied, because the operand loop and the `||` refusal are the parts that
+must not drift.
+
+**I encoded my own taste and `generated_rust_is_rustfmt_clean` refused it.** The
+single-line `if … { … } else { … }` form declined a pattern row on the grounds
+that a binding is harder to read on one line. rustfmt collapses a short
+`if let … else` itself, so the emitter was simply wrong and the gate said so on
+the first run. The taste being encoded was mine; rustfmt's is the one that
+counts, which is the whole reason that gate exists.
+
+A third, smaller: `highlights.scm` in **two** places — `tree-sitter-voltaic` and
+`editors/zed` — named `otherwise` and `until` as *node types*, so the queries
+failed to load rather than merely mis-colouring. `grammar.js` itself also needed
+the widened `condition`, and per `AGENTS.md`'s precedence trap it was **run** on
+a pattern row rather than reasoned about: zero `ERROR` nodes.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

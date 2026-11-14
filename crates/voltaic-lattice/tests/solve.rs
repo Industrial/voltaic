@@ -213,3 +213,28 @@ fn a_method_does_not_enter_the_global_scope_under_its_bare_name() {
     "an unsigned free function still resolves through the globals table"
   );
 }
+
+/// A pattern row's scrutinee is **not** constrained to `bool`, which an
+/// ordinary guard arm is.
+///
+/// Row 99 wave 2 widened a ladder arm from `Expr` to `Condition` so a pattern
+/// row can replace an inline `case`. `held is Some n` says nothing about `held`
+/// being a boolean, so unifying the scrutinee with `bool` would be wrong — and
+/// it is exactly the mistake one `expr_type … = bool` obligation over the whole
+/// condition would make, which is what the code did before the widening.
+#[test]
+fn a_pattern_rows_scrutinee_is_not_constrained_to_bool() {
+  let program = voltaic_parser::parse_source(concat!(
+    "describe : Option<u64> -> &'static str\n",
+    "describe held\n",
+    "  | held is Some n = \"some\"\n",
+    "  | _ = \"none\"\n",
+  ))
+  .expect("should parse");
+  let found = voltaic_lattice::walk(&program);
+  let outcome = voltaic_lattice::solve_with(&found.store, &found.known);
+  assert!(
+    outcome.contradictions(&found.store).is_empty(),
+    "the scrutinee was constrained to bool"
+  );
+}
