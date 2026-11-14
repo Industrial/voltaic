@@ -19,10 +19,7 @@ walk at graph state path =
   .push at path
   for next in &graph[at]
     if state[*next] == 1
-      from = path
-        |> .iter
-        |> .position (\i -> *i == *next)
-        |> .unwrap_or 0
+      from = (path.iter ().position (\i -> *i == *next)).unwrap_or 0
       end = .len path
       return Some (.to_vec path[from .. end])
     if state[*next] == 0 && walk (*next) graph state path is Some found
@@ -33,19 +30,13 @@ walk at graph state path =
 
 export where_edges : &[Stmt] -> Vec<Vec<usize>>
 where_edges entries =
-  named : Vec<(usize, String)> = entries
-    |> .iter
-    |> .enumerate
-    |> .filter_map (\pair -> case &pair.1.expr of
+  named : Vec<(usize, String)> = (entries.iter ().enumerate ().filter_map (\pair -> case &pair.1.expr of
     Expr::Binding b -> case .as_slice (.binders b.pattern) of
       [one] -> Some (pair.0, .clone one)
       _ -> None
-    _ -> None)
-    |> .collect
+    _ -> None)).collect ()
 
-  entries
-    |> .iter
-    |> .map (\entry ->
+  (entries.iter ().map (\entry ->
     case &entry.expr of
       Expr::Binding b ->
         mut found = Vec::new ()
@@ -53,8 +44,7 @@ where_edges entries =
         .sort_unstable found
         .dedup found
         found
-      _ -> Vec::new ())
-    |> .collect
+      _ -> Vec::new ())).collect ()
 
 export(crate) mentions : &Expr -> &[(usize, String)] -> &mut Vec<usize> -> ()
 mentions e named into =
@@ -81,15 +71,9 @@ operands e = case e of
   Expr::ArrayRepeat { value, count, .. } -> [.as_ref value, .as_ref count] : Vec<&Expr>
   Expr::MacroCall { args, .. } -> .collect (.iter args)
   Expr::StrInterp { parts, .. } ->
-    parts
-      |> .iter
-      |> .filter_map (\p -> case p of
+    (parts.iter ().filter_map (\p -> case p of
       StrInterpPart::Interp { expr, .. } -> Some expr
-      StrInterpPart::Text _ -> None)
-      |> .collect
+      StrInterpPart::Text _ -> None)).collect ()
   Expr::Record { fields, .. } ->
-    fields
-      |> .iter
-      |> .filter_map (\f -> .as_ref f.value)
-      |> .collect
+    (fields.iter ().filter_map (\f -> .as_ref f.value)).collect ()
   _ -> Vec::new ()

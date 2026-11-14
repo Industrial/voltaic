@@ -37,7 +37,7 @@
 # the last `g1` line leaving is row 102 §3.1's retirement step.
 voltaic-diag 73 g2
 voltaic-lexer 74 g2
-voltaic-ast 68 g1
+voltaic-ast 68 g2
 voltaic-lattice 94 g1
 voltaic-parser 82 g1
 voltaic-fmt 69 g1

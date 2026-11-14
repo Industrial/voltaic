@@ -5,7 +5,7 @@ import crate::TypeExpr
 import voltaic_lexer::Span
 import voltaic_lexer::Trivia
 
-export data Block = Block { export stmts : Vec<Stmt>, export span : Span }
+export data Block { export stmts Vec<Stmt>, export span Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Block
@@ -14,7 +14,7 @@ instance Block
     [stmt] | !.is_statement_form stmt.expr -> Some (&stmt.expr)
     _ -> None
 
-export data Stmt = Stmt { export expr : Expr, export span : Span, export leading : Vec<Trivia>, export trailing : Option<Trivia> }
+export data Stmt { export expr Expr, export span Span, export leading Vec<Trivia>, export trailing Option<Trivia> }
   deriving (Debug, Clone, PartialEq, Eq)
 instance Stmt
   export where_entry_name : &self -> Option<String>
@@ -27,10 +27,10 @@ instance Stmt
       _ -> None
     _ -> None
 
-export data Binding = Binding { export pattern : Pattern, export ty : Option<TypeExpr>, export value : Expr, export is_mut : bool, export r#otherwise : Option<Block>, export span : Span }
+export data Binding { export pattern Pattern, export ty Option<TypeExpr>, export value Expr, export is_mut bool, export r#otherwise Option<Block>, export span Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Condition = Condition { export operands : Vec<crate::ConditionOperand> }
+export data Condition { export operands Vec<crate::ConditionOperand> }
   deriving (Debug, Clone, PartialEq, Eq)
 instance Condition
   export plain : Expr -> Self
@@ -41,8 +41,8 @@ instance Condition
     mut found = Vec::new ()
     for operand in .iter self.operands
       case operand of
-        ConditionOperand::Expr held -> found |> .push held
-        ConditionOperand::Pattern { source, .. } -> found |> .push source
+        ConditionOperand::Expr held -> found.push held
+        ConditionOperand::Pattern { source, .. } -> found.push source
     found
 
   export has_pattern : &self -> bool
@@ -52,5 +52,5 @@ instance Condition
 
 export data ConditionOperand
   = Expr crate::Expr
-  | Pattern { pattern : crate::Pattern, source : crate::Expr }
+  | Pattern { pattern crate::Pattern, source crate::Expr }
   deriving (Debug, Clone, PartialEq, Eq)
