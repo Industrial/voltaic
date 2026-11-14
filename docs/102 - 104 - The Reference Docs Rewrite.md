@@ -622,3 +622,50 @@ a cited path *exists* and `construct_coverage` checks that a construct appears
 less well than another file does. That is how this row kept two stale citations
 through a whole generation, and it is a per-row judgement rather than something
 to gate.
+
+### 10.11 Leaf 1's completeness pass, which was never wave-blocked
+
+§10.9 and §10.10 both treated the re-derivation as waiting on waves 4, 6, 7 and
+8. **One dimension of it never was: Rust's grammar does not change with the
+waves**, so checking the inventory's *coverage of the host language* was
+available the whole time — and it is the dimension leaf 1 asks for by name,
+*"organised by the Rust reference's areas, so coverage is checked against the
+host language rather than against this project's history"*.
+
+Done, area by area. The organisation was already right and the ~128 rows are
+largely sound. **Four Rust constructs had no row at all:**
+
+| Construct | Grade | Evidence |
+|---|---|---|
+| Visibility modifiers | `SUGARED` | `examples/visibility.vlt` |
+| Turbofish `x.parse::<T>()` | `SUGARED` | `examples/hole.vlt` |
+| `let … else` | `SUGARED` | `examples/else_tail.vlt` |
+| Raw borrows `&raw const` | `UNREACHABLE` | `tests/unreachable/raw_borrow.vlt` |
+
+Three were **reachable and exampled for a whole generation** and simply
+ungraded. Each grade is measured: the turbofish is `SUGARED` because an
+ascription pins the type and rustc infers the rest, so Voltaic emits no `::<>`
+and needs none; `&raw const n` is `VLT0101`, because `raw` is an ordinary
+identifier and lexes as `&raw` applied to `const`.
+
+#### A missing row is the one gap neither gate can see
+
+`grammar_inventory` resolves a row's evidence and `construct_coverage` checks the
+construct appears in the corpus. **Both start from this document's rows**, so
+neither can notice one that is absent. An ungraded construct is worse than a
+mis-graded one, because nothing will ever contradict it — and §1.1's whole
+argument for gating this document is that prose with no evidence is prose.
+
+Adding the rows turned both gates red, correctly and in different ways: one
+caught the turbofish row citing nothing, the other caught all three reachable
+rows missing from `construct_coverage`'s witness table. That is the two-sided
+property doing its job in the direction it was built for.
+
+#### What is left of leaf 1, stated so it is not read as more than it is
+
+- **The three gap rows** — or-patterns, `as`, `ref` — need generation 3, per
+  §10.9 and doc 97 wave 9's note. Stable, not pending.
+- **Prose churn.** Rows quoting a generation-1 spelling will want updating as
+  waves 4, 6, 7 and 8 delete it. That is maintenance on a correct document
+  rather than a regrade: the *grades* are derived from fixtures and complete
+  against the host language, which is what the leaf asked for.
