@@ -83,6 +83,7 @@ voltaic-diag = { path = "crates/voltaic-diag", version = "0.1.1" }
 voltaic-driver = { path = "crates/voltaic-driver", version = "0.1.1" }
 voltaic-emit = { path = "crates/voltaic-emit", version = "0.1.1" }
 voltaic-fmt = { path = "crates/voltaic-fmt", version = "0.1.1" }
+voltaic-lattice = { path = "crates/voltaic-lattice", version = "0.1.1" }
 voltaic-lexer = { path = "crates/voltaic-lexer", version = "0.1.1" }
 voltaic-parser = { path = "crates/voltaic-parser", version = "0.1.1" }
 

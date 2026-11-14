@@ -25,3 +25,11 @@ roundtrip bytes =
   text = String::from_utf8_lossy bytes
   program = (.ok (voltaic_parser::parse_source (&text)))?
   Some (voltaic_emit::emit (&program))
+
+export solve_program : &[u8] -> Option<u32>
+solve_program bytes =
+  text = String::from_utf8_lossy bytes
+  program = (.ok (voltaic_parser::parse_source (&text)))?
+  found = voltaic_lattice::walk (&program)
+  outcome = voltaic_lattice::solve (&found.store)
+  Some outcome.rounds

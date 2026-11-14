@@ -7,15 +7,36 @@
 //!
 //! **The list below is a deliberate second copy.** A test that read `COMMANDS`
 //! would pass for any table, which is no test at all; this one fails when the
-//! table changes, so a seventh subcommand costs three edits — doc 01 §27, the
-//! table, and a line here that says why it is here. Doc 02 §3 records
+//! table changes, so a seventh subcommand costs three edits — the specification,
+//! the table, and a line here that says why it is here. Doc 02 §3 records
 //! Emerald's CLI reaching seventeen subcommands, and nothing in its code said
 //! when to stop. This is that something.
+//!
+//! # `sig` is the seventh, and it paid the three edits
+//!
+//! Generation 2 adds one subcommand. Its authority is **doc 86 §8.1**, not doc
+//! 01 §27: doc 01 is generation 1's record and is not edited (doc 04 rule 3),
+//! so the specification edit landed in the document that supersedes it.
+//!
+//! It is not a convenience. Doc 86 §2 clause 1 admits a solver-determined
+//! lowering *only if the choice can be printed*, so `voltaic sig` is the
+//! mechanism that discharges the clause the whole generation rests on — row 92
+//! §2.3 made it a condition of the charter reversal. A seventh subcommand that
+//! the specification requires is a different thing from a seventh that someone
+//! wanted.
 
 use std::process::Command;
 
-/// Doc 01 §27's surface, written out.
-const SURFACE: &[&str] = &["build", "check", "fmt", "watch", "--version", "--help"];
+/// The surface, written out: doc 01 §27's six, plus doc 86 §8.1's `sig`.
+const SURFACE: &[&str] = &[
+  "build",
+  "check",
+  "fmt",
+  "sig",
+  "watch",
+  "--version",
+  "--help",
+];
 
 fn voltaic(args: &[&str]) -> std::process::Output {
   Command::new(env!("CARGO_BIN_EXE_voltaic"))
@@ -41,14 +62,16 @@ fn the_surface_is_exactly_doc_01_section_27() {
   }
 
   // And nothing else. Every `voltaic <word>` line in the usage must name one of
-  // the six — a seventh would show up here.
+  // the seven — an eighth would show up here.
   for line in help.lines().filter(|l| l.starts_with("  voltaic ")) {
     let named = line.trim_start().trim_start_matches("voltaic ");
     let name = named.split_whitespace().next().unwrap_or_default();
     assert!(
       SURFACE.contains(&name),
-      "--help advertises `{name}`, which doc 01 §27 does not list. \
-       If this is deliberate, doc 01 §27 and SURFACE both need editing:\n{line}"
+      "--help advertises `{name}`, which the specification does not list. \
+       If this is deliberate, the specification and SURFACE both need \
+       editing — and for generation 2 the specification is doc 86, because \
+       doc 01 is generation 1's record and is not edited:\n{line}"
     );
   }
 }

@@ -195,6 +195,7 @@ fn no_target_panics() {
     voltaic_fuzz::parse_program(&bytes);
     voltaic_fuzz::emit_program(&bytes);
     let _ = voltaic_fuzz::roundtrip(&bytes);
+    let _ = voltaic_fuzz::solve_program(&bytes);
     // The name is used so a panic's surroundings are identifiable in the
     // output, and so the loop cannot be optimised into nothing.
     assert!(!name.is_empty());
@@ -327,4 +328,35 @@ fn an_input_that_must_be_rejected_is_rejected() {
     voltaic_lexer::lex(&String::from_utf8_lossy(good)).is_ok(),
     "a nested block then a dedent to a level that *is* open must lex"
   );
+}
+
+/// Doc 86 §2 clause 5: every inference this surface depends on terminates on
+/// every input.
+///
+/// The round bound is a **bound**, not a timing, so unlike the throughput
+/// figures in `benchmarks/REPORT.md` it is asserted rather than reported — doc
+/// 88 §4.2 draws that line, and plan 97's refinement timeout is the only stage
+/// where it has to be a diagnostic instead.
+///
+/// The argument the bound rests on is a counting one: each round either binds at
+/// least one variable or is the last, so a program with *n* type variables
+/// cannot need more than *n* rounds, and `MAX_ROUNDS` caps it regardless. A
+/// fuzz input that exceeded it would mean the loop can spin without binding
+/// anything, which is the clause-5 violation doc 88 §4.2 says blocks the
+/// generation.
+#[test]
+fn the_solver_never_exceeds_its_round_bound() {
+  for (name, bytes) in inputs() {
+    let Some(rounds) = voltaic_fuzz::solve_program(&bytes) else {
+      continue; // did not parse; there was nothing to solve
+    };
+    assert!(
+      rounds <= voltaic_lattice::MAX_ROUNDS,
+      "{name} drove the solver to {rounds} rounds, past the {} bound. \
+       This is doc 86 §2 clause 5: an inference that does not terminate on \
+       every input is not admissible, so the loop binds nothing on some round \
+       and must be fixed rather than the bound raised.",
+      voltaic_lattice::MAX_ROUNDS
+    );
+  }
 }

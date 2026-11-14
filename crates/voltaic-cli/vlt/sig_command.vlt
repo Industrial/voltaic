@@ -1,0 +1,108 @@
+import crate::run::usage
+import voltaic_lattice::explain
+import voltaic_lattice::solve
+import voltaic_lattice::walk
+import voltaic_parser::parse_source
+import std::path::PathBuf
+
+export(crate) data SigArgs = SigArgs { export(crate) inputs : Vec<PathBuf>, export(crate) why : Option<String> }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export(crate) parse_sig_args : &[String] -> Result<SigArgs, String>
+parse_sig_args args =
+  mut inputs = Vec::new ()
+  mut why = None
+  mut index = 0
+  while index < .len args
+    arg = &args[index]
+    if arg == "--why"
+      if index + 1 >= .len args
+        return Err (.to_string "error: `--why` needs the name of a definition")
+      why := Some (.clone args[index + 1])
+      index += 2
+    else
+      if .starts_with '-' arg
+        help = usage ()
+        return Err (format! \-> "error: unknown flag `#{arg}`\n\n#{help}")
+      inputs |> .push (PathBuf::from arg)
+      index += 1
+  if .is_empty inputs
+    help = usage ()
+    return Err (format! \-> "error: sig needs at least one .vlt\n\n#{help}")
+  Ok (SigArgs { inputs, why })
+
+export(crate) sig_command : &[String] -> Result<(), String>
+sig_command args =
+  parsed = (parse_sig_args args)?
+  for input in .iter parsed.inputs
+    (report input (.as_deref parsed.why))?
+  Ok ()
+
+report : &PathBuf -> Option<&str> -> Result<(), String>
+report input why =
+  shown = input |> .display |> .to_string
+  source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string input))?
+  program = (.map_err (\e -> format! \-> "error: #{shown} does not parse: #{e:?}") (parse_source (&source)))?
+  found = walk (&program)
+  outcome = solve (&found.store)
+
+  for definition in .iter found.definitions
+    resolved = .resolved (&definition.ty) outcome
+    println! \-> "#{definition.name} : #{resolved}"
+
+  if why is Some name
+    if .find name found is Some definition
+      println! \-> "---"
+      println! \-> "why #{definition.name} : #{(.resolved (&definition.ty) outcome)}"
+      for at in touching definition (&found.store)
+        println! \-> "#{(explain at (&found.store))}"
+    else
+      return Err (format! \-> "error: #{shown} has no definition called `#{name}`")
+
+  for failure in .iter outcome.failures
+    held = .unwrap (.at failure.at found.store)
+    eprintln! \-> "error: #{shown}: #{(voltaic_lattice::summarise (&held.obligation))}"
+    eprintln! \-> "#{(explain failure.at (&found.store))}"
+  if .is_solved outcome
+    Ok ()
+  else
+    Err (format! \-> "error: #{shown}: #{(.len outcome.failures)} judgement(s) could not be solved")
+
+touching : &voltaic_lattice::Inferred -> &voltaic_lattice::Store -> Vec<usize>
+touching definition store =
+  wanted = .holes definition.ty
+  mut hits = Vec::new ()
+  for constraint in .enumerate (.iter (.all store))
+    for hole in .holes constraint.1
+      if .contains (&hole) wanted && !.contains (&constraint.0) hits
+        hits |> .push constraint.0
+  hits
+
+test "sig refuses an empty argument list"
+  parsed = parse_sig_args (&Vec::new ())
+  assert! \-> .is_err parsed
+  assert! \-> .contains "at least one" (.unwrap_err parsed)
+
+test "sig takes one or more paths"
+  args = vec! \-> .to_string "a.vlt" \-> .to_string "b.vlt"
+  parsed = .expect "should parse" (parse_sig_args (.as_slice args))
+  assert_eq! \-> .len parsed.inputs \-> 2
+  assert_eq! \-> parsed.why \-> None
+
+test "why takes the name after it"
+  args = vec! \-> .to_string "a.vlt" \-> .to_string "--why" \-> .to_string "peek"
+  parsed = .expect "should parse" (parse_sig_args (.as_slice args))
+  assert_eq! \-> parsed.why \-> Some (.to_string "peek")
+  assert_eq! \-> .len parsed.inputs \-> 1
+
+test "why without a name is an error rather than a silent no-op"
+  args = vec! \-> .to_string "a.vlt" \-> .to_string "--why"
+  parsed = parse_sig_args (.as_slice args)
+  assert! \-> .is_err parsed
+  assert! \-> .contains "needs the name" (.unwrap_err parsed)
+
+test "an unknown flag is refused rather than taken as a path"
+  args = vec! \-> .to_string "--nope"
+  parsed = parse_sig_args (.as_slice args)
+  assert! \-> .is_err parsed
+  assert! \-> .contains "unknown flag" (.unwrap_err parsed)

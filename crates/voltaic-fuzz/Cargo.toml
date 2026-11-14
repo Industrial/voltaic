@@ -14,6 +14,7 @@ publish = false
 # ordinary gate exercises it. The libFuzzer harnesses in `fuzz/` are three-line
 # wrappers around these functions and are outside the workspace.
 voltaic-emit = { path = "../voltaic-emit" }
+voltaic-lattice = { path = "../voltaic-lattice" }
 voltaic-lexer = { path = "../voltaic-lexer" }
 voltaic-parser = { path = "../voltaic-parser" }
 

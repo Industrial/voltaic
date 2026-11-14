@@ -4,3 +4,4 @@ export import target::emit_program
 export import target::lex_source
 export import target::parse_program
 export import target::roundtrip
+export import target::solve_program

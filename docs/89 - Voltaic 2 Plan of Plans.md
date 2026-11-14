@@ -103,7 +103,29 @@ three.
 
 | # | Plan | Scope | Status | Depends on |
 |---|---|---|---|---|
-| 94 | The Lattice Crate | `voltaic-lattice`: the constraint store, the fixed-point driver, provenance, and rank-1 HM with row-polymorphic records. The `tests/solve/` corpus. | `in-progress` — leaf 1 `done` 2026-11-14 | 93 |
+| 94 | The Lattice Crate | `voltaic-lattice`: the constraint store, the fixed-point driver, provenance, and rank-1 HM with row-polymorphic records. The `tests/solve/` corpus. | `done` 2026-11-14 | 93 |
+
+Row 94 shipped in four commits, one per coherent leaf group, with the register row
+held `in-progress` across them. 14 modules, 96 tests in the crate plus a fuzz-corpus
+bound assertion, and `voltaic sig` as the seventh subcommand. Doc 92 §10 has eight
+findings; three change later rows:
+
+- **Row 100 inherits the blessable corpus.** Leaf 5 shipped as a Rust corpus rather
+  than `tests/solve/*.sig`, because a judgement is one line and generation 1's own
+  signature already states it — a `.sig` file would be a third copy. It becomes the
+  right shape at row 100, where `.vlt.sig` is the *published API* rather than a
+  restatement (doc 92 §10.13).
+- **Row 98 inherits `Member`.** The driver defers field-access obligations rather
+  than guessing, and a test asserts the limitation so that closing it breaks the test
+  instead of changing behaviour silently.
+- **Four keyword collisions** in names that read as obviously fine — `type` as a
+  module, `of` and `guard` as binders, `|` as an or-pattern that becomes a guard.
+  Rows 95–101 are written in the same surface and will hit more; the 74-keyword list
+  is worth reading before naming anything.
+
+And one toolchain trap worth knowing before row 95: **`crates/<crate>/src/.voltaic-cache`
+serves stale output across a `.vlt` edit**, so `bootstrap.sh` reports success while
+leaving the previous generation in place (doc 92 §10.8).
 | 95 | Effect Rows | The seven-effect alphabet, the subset lattice, implicit propagation, `else` / `.must` / `~` discharge, effect variables. | `planned` | 94 |
 | 96 | Mode Inference | The three-element chain, use-site constraints, the least-fixed-point solve, lifetime emission, `@` ascription, `VLT0601`. | `planned` | 94, 95 |
 | 97 | Refinements | Predicate extraction, the QF_ALIA fragment, the solver interface and pin, the timeout-is-a-diagnostic policy, `tests/refine/`. | `planned` | 94 |

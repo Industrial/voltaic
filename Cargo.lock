@@ -1422,6 +1422,7 @@ dependencies = [
  "voltaic-driver",
  "voltaic-emit",
  "voltaic-fmt",
+ "voltaic-lattice",
  "voltaic-lexer",
  "voltaic-parser",
  "zip",
@@ -1470,6 +1471,7 @@ version = "0.1.1"
 dependencies = [
  "syn 3.0.9",
  "voltaic-emit",
+ "voltaic-lattice",
  "voltaic-lexer",
  "voltaic-parser",
 ]

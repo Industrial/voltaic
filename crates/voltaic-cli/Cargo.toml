@@ -34,6 +34,8 @@ voltaic-driver.workspace = true
 voltaic-emit.workspace = true
 # Plan 34: `voltaic fmt`.
 voltaic-fmt.workspace = true
+# Plan 94: `voltaic sig` prints what Lattice inferred.
+voltaic-lattice.workspace = true
 voltaic-parser.workspace = true
 
 [dev-dependencies]

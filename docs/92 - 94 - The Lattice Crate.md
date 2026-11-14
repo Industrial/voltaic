@@ -396,14 +396,71 @@ exists to invalidate.
 | 1 — the constraint store | `done` |
 | 2 — the fixed-point driver | `done` |
 | 3 — unification, generalisation, instantiation | `done` |
-| 4 — `voltaic sig` | **outstanding** — the engine and the report exist; the CLI subcommand does not |
-| 5 — `tests/solve/` | `done`, as a Rust corpus under `crates/voltaic-lattice/tests/` rather than a blessable `tests/solve/` directory. The blessable form wants `voltaic sig` to produce the expectation, so it follows leaf 4. |
-| 6 — the fuzz target | outstanding |
+| 4 — `voltaic sig` | `done` |
+| 5 — `tests/solve/` | `done`, as a Rust corpus under `crates/voltaic-lattice/tests/` rather than a blessable `tests/solve/` directory. §10.12 is why. |
+| 6 — the fuzz target | `done` |
 
 Leaf 5 landing before leaf 4 is a deviation worth naming: the corpus is what makes
 leaf 4 worth building, because `voltaic sig` with no oracle prints numbers nobody can
-check. The blessable `.sig` expectation files arrive with the subcommand that writes
-them.
+check.
+
+### 10.11 `voltaic sig` is the seventh subcommand, and the surface gate priced it
+
+Run on `examples/guards.vlt`, with nothing in the file read but its code:
+
+```
+tier : u64 -> &<str>
+fib : u64 -> u64
+step : u64 -> u64
+main : ()
+```
+
+Those are generation 1's own hand-written signatures, derived rather than read —
+modulo the lifetime erasure §10.9 records. `--why fib` prints the provenance chain
+behind each, which is what **discharges doc 86 §2 clause 1 for types**: a
+solver-determined lowering is admissible only if the choice can be printed, and this
+is the thing that prints it. Row 92 §2.3 made that a condition of the charter
+reversal rather than a nicety.
+
+`crates/voltaic-cli/tests/cli_surface.rs` is a deliberate second copy of the command
+list whose own doc comment prices a seventh subcommand at *"three edits — the
+specification, the table, and a line here that says why it is here."* All three were
+paid. The specification edit went to **doc 86 §8.1**, not doc 01 §27: doc 01 is
+generation 1's record and is not edited, so the gate's prose now names the document
+that supersedes it. Doc 02 §3 records Emerald's CLI reaching seventeen subcommands
+with nothing in its code to say when to stop; this gate is that something, and it
+worked.
+
+### 10.12 The round bound is asserted, not reported
+
+`voltaic-fuzz` gains a `solve_program` target and `sweep.rs` a
+`the_solver_never_exceeds_its_round_bound` assertion over the whole fuzz corpus —
+the hostile inputs, the deep nesting and the mutations included.
+
+It is asserted rather than reported because **it is a bound, not a timing**. Doc 88
+§4.2 draws that line and plan 44's standing decision is the reason: a timing in the
+gate is a flaky gate. The counting argument is what makes the bound checkable — each
+round either binds a variable or is the last — so an input that exceeded it would mean
+the loop can spin without binding anything, which doc 88 §4.2 says blocks the
+generation rather than raising the bound.
+
+### 10.13 `tests/solve/` is Rust, not a blessable directory
+
+§4 leaf 5 asks for `tests/solve/*.vlt` with blessable `.sig` expectations. What
+shipped is `crates/voltaic-lattice/tests/solve.rs`, which asserts the same property
+against inline programs.
+
+The reason is the oracle. A blessable expectation file is only worth having when the
+expectation is *expensive to state and cheap to check* — which is true of the golden
+`.vrs` corpus, where the expected text is a hundred lines of Rust. A judgement is one
+line, and generation 1's own signature already states it, so a `.sig` file would be a
+third copy of a fact the source and the corpus both carry. Blessing it would also
+make a changed judgement absorbable by re-blessing, where a Rust assertion makes it a
+code change someone has to justify.
+
+**When the blessable form becomes the right shape is row 100**, which introduces
+`.vlt.sig` as the *published API* — there the file is the artifact rather than a
+restatement, and `voltaic sig` is already able to write it.
 
 Committed per leaf rather than per plan: each leaf has its own gate, and a single
 commit containing an inference engine is not reviewable. The register row stays
