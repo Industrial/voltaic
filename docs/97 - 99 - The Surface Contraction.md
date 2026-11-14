@@ -1287,6 +1287,68 @@ Not decided here, because it is a structural choice and this subsection exists t
 record that the primitive is in place and the choice is the next thing, not to
 make it in passing.
 
+### 10.36 Wave 3's no-argument half: the solver decides, and the emitter asks
+
+`c.pos` emits `c.pos`; `c.depth` emits `c.depth()`. Doc 87 §2.2's *"resolved by
+the solver, which knows whether `name` is a field or a method"*, working.
+`examples/dot_resolution.vlt` witnesses a field, a method, both in one
+expression, and the two boundaries below.
+
+**The emitter asks an ambient scope, and the default is `field`.**
+`MethodScope`/`MethodTable` hold the spans the solver resolved to method calls;
+`emit_expr`'s `Field` arm consults them. Outside a scope the answer is always
+*field*, so a caller that never solved emits exactly what generation 1 emitted.
+That is the same restriction the SOLVE-stage judge follows — speak only where
+sure — and it is what makes a missing scope safe.
+
+An ambient scope rather than a threaded parameter because the emitter already
+receives two answers that way: `BindingScope` and `ArityScope`. §10.35 argued for
+a `&mut Expr` walker instead, on the grounds that an AST saying `Field` where the
+program means a call lies to the formatter and the LSP. **That argument was
+wrong, and the correction is the useful part**: the formatter prints `x.f` either
+way, because `x.f` *is* what the author wrote. `Expr::Field` names the syntax, and
+the interpretation is the solver's — so there is nothing to rewrite and no lie to
+tell. The only consumer that needs the answer is the one that emits Rust.
+
+**The safe default is also what made the bug invisible, and that cost a gate.**
+The no-argument half was wired into `compile_dir.vlt`, verified end to end by
+`voltaic-driver`'s own tests, and did nothing at all through `voltaic build` —
+because `build_command.vlt` has its own emit path, as do `check.vlt`,
+`migrate.vlt`, `voltaic-fuzz/vlt/target.vlt` and `voltaic-mcp/vlt/tools.vlt`. Six
+emit sites, one wired, nothing failing, because an absent scope is
+indistinguishable from a scope that found no methods.
+
+`annotate_before_emit.rs` already existed for exactly that shape — its header
+records finding a *fifth* site nobody had looked at — so it gained
+`every_emit_site_also_installs_the_method_scope`, and that gate **found two more
+on its first run**: the fuzz target and the MCP tool. The same two. A gate written
+once for a class of defect earns its keep the second time the class recurs.
+
+**Two boundaries, both measured rather than assumed.**
+
+- **`std` is outside the declaration environment.** It knows the fields and
+  methods of types declared in the program and nothing of `Vec` or `str`, so a
+  receiver-first `v.len` is not resolved and emits `v.len` — `E0615`.
+  Receiver-last `.len v` is unaffected, because it was never an `Expr::Field`.
+- **A `self` receiver is not resolved either, and that is the sharper limit.**
+  `self.depth` inside an `instance Cursor` method emits `self.depth`, because the
+  solver does not bind `self` to the enclosing instance's target and
+  `receiver_owner` has nothing to answer with. A method calling a sibling method
+  still needs `.depth self`.
+
+Both are pinned by tests that assert the *absence* —
+`a_self_receiver_is_not_resolved_so_a_method_call_on_self_stays_a_field_read`
+asserts `analysis.methods` is **empty** for a program whose only method call is on
+`self`. A test that asserts a limitation is how the limitation stops being a
+surprise, and it is the test that will fail when the limitation is lifted, which
+is the point.
+
+**Six `needless_borrow` and three `collapsible_if` errors, all in new test
+bodies.** A method call's receiver auto-borrows, so `.is_empty (&table)` emits
+`(&table).is_empty()` where clippy wants `table.is_empty()`. Worth one line
+because it is a *Voltaic* surface fact with a *Rust* lint attached: the
+receiver-last spelling makes the `&` look necessary, and it is not.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

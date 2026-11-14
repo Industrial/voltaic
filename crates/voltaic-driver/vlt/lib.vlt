@@ -11,7 +11,9 @@ module remap
 export import cache::CacheReporter
 export import cache::Fingerprint
 export import cache::Silent
+export import annotate::Analysis
 export import annotate::Unresolved
+export import annotate::analyse
 export import annotate::annotate
 export import annotate::refusals
 export import check::CheckOutcome

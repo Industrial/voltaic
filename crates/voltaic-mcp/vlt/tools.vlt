@@ -16,7 +16,8 @@ build request =
         |> .map diagnostic_from_voltaic
         |> .collect })
 
-  open = voltaic_driver::annotate (&mut program)
+  analysis = voltaic_driver::analyse (&mut program)
+  open = analysis.open
   if !.is_empty open
     return Ok (BuildResponse { ok = false, output = None, map = None, diagnostics = voltaic_driver::refusals path (&source) (.as_slice open)
       |> .iter
@@ -24,7 +25,9 @@ build request =
       |> .collect })
 
   diagnostics = voltaic_driver::lint path (&source) (Some (&program))
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) (&source) (&request.path)
+  drop scope
   generated = emitted.0
   map = emitted.1
 

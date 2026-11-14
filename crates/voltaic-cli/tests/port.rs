@@ -353,6 +353,13 @@ const HATCH_ALLOWED: &[(&str, &str)] = &[
      `Sync`. This one is the arity table",
   ),
   (
+    "crates/voltaic-emit/vlt/method.vlt",
+    "the same `thread_local!` again, for the same reason, over the set of spans \
+     the solver resolved to method calls. Doc 87 §2.2 makes that the solver's \
+     answer and the emitter's question, and an ambient scope is how this \
+     emitter already receives an answer it cannot thread",
+  ),
+  (
     "crates/voltaic-emit/vlt/binding.vlt",
     "the same `thread_local!`, for the same reason, twice: over \
      `BindingTable` and over a `Cell<BindMode>`",

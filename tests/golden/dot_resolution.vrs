@@ -1,0 +1,70 @@
+// Doc 87 §2.2: "Field access is `.` too, and a bare field reference is `(.name)`
+// — resolved by the solver, which knows whether `name` is a field or a method."
+//
+// This is §1.2's inversion in the half that *needs* the solver. `x.f y` is a
+// call whatever the types are, because a field access takes no arguments; `x.f`
+// is a field read or a nullary method call and nothing syntactic separates them.
+// Generation 1 could not choose, which is why plan 57 §1.1 made `.` field access
+// and nothing else and `docs/DECLINED.md` recorded UFCS as "requires type
+// knowledge to choose a shape". Lattice has the type knowledge.
+
+struct Cursor {
+    pos: usize,
+}
+
+impl Cursor {
+    pub fn depth(&self) -> usize {
+        self.pos
+    }
+
+    pub fn doubled(&self) -> usize {
+        self.pos * 2
+    }
+}
+
+// `pos` is a declared field of `Cursor`, so this emits `c.pos` — a read.
+fn held(c: &Cursor) -> usize {
+    c.pos
+}
+
+// `depth` is an instance method of `Cursor`, so this emits `c.depth()` — a call.
+// Same syntax, different lowering, and the solver is what decides which.
+fn reached(c: &Cursor) -> usize {
+    c.depth()
+}
+
+// Both in one expression, so the decision is per access and not per file.
+fn summed(c: &Cursor) -> usize {
+    c.pos + c.doubled()
+}
+
+// The default is **field**, and that is a deliberate restriction rather than an
+// oversight. Outside a resolved scope — a caller that never ran the solver — every
+// `.name` stays exactly what generation 1 emitted, so a missing answer degrades
+// instead of turning every field read into a call that does not exist. It is the
+// same rule the SOLVE-stage judge follows: speak only where sure.
+//
+// **A `self` receiver is not resolved either**, and that is the sharper limit.
+// `self.depth` inside an `instance Cursor` method emits `self.depth` — a field
+// read — because the solver does not bind `self` to the enclosing instance's
+// target, so `receiver_owner` has nothing to answer with. A method calling a
+// sibling method therefore still needs the receiver-last `.depth self`. Doc 97
+// §10.36 records it with the test that pins it.
+//
+// **What the `std` boundary costs, stated precisely.** The declaration environment knows the
+// fields and methods of types declared *here*, and nothing about `std`. So a
+// receiver-first `v.len` on a `Vec` is not resolved to a method and emits `v.len`,
+// which is `E0615`. Receiver-last `.len v` is unaffected — it was never a
+// `Field` — so this line is the form that works today, and `v.len` is the form
+// that waits on `std` reaching the environment. Doc 101 §10.8 records it.
+fn counted(v: &Vec<u64>) -> usize {
+    v.len()
+}
+
+fn main() {
+    let c = Cursor { pos: 7 };
+    println!("{} {} {}", held(&c), reached(&c), summed(&c));
+    let v: Vec<u64> = Vec::new();
+    println!("{}", counted(&v));
+    ();
+}

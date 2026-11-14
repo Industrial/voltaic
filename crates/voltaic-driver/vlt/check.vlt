@@ -16,13 +16,15 @@ check path source =
     Err failure ->
       return Ok (CheckOutcome { diagnostics = diagnose path source (&failure), failed = true })
 
-  open = crate::annotate::annotate (&mut program)
-  if !.is_empty open
-    return Ok (CheckOutcome { diagnostics = crate::annotate::refusals path source (.as_slice open), failed = true })
+  analysis = crate::annotate::analyse (&mut program)
+  if !.is_empty analysis.open
+    return Ok (CheckOutcome { diagnostics = crate::annotate::refusals path source (.as_slice analysis.open), failed = true })
 
   mut diagnostics = crate::lint path source (Some (&program))
 
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) source (&vlt_path)
+  drop scope
 
   rustc = (.ok_or_else (\-> .to_string "error: no rustc found. `voltaic check` compiles the generated Rust, so it needs the Rust toolchain on PATH.") (rustc_path ()))?
 

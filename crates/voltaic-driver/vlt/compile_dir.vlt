@@ -24,10 +24,12 @@ compile_file source out store fingerprint =
     return Ok (Outcome { written = cached, was_cached = true })
 
   mut program = (.map_err (\failure -> diagnose source (&text) (&failure)) (voltaic_parser::parse_source (&text)))?
-  open = crate::annotate::annotate (&mut program)
-  if !.is_empty open
-    return Err (crate::annotate::refusals source (&text) (.as_slice open))
+  analysis = crate::annotate::analyse (&mut program)
+  if !.is_empty analysis.open
+    return Err (crate::annotate::refusals source (&text) (.as_slice analysis.open))
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) (&text) (&path)
+  drop scope
   fresh = Cached { r#rust = emitted.0, map = voltaic_diag::render_map (&emitted.1) }
 
   written = (write_outputs source out (&path) (&fresh))?

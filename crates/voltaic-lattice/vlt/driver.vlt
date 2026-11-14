@@ -68,9 +68,8 @@ apply at c known subst failures deferred =
 export receiver_owner : &Store -> &Outcome -> Span -> Option<String>
 receiver_owner store outcome at =
   for c in .all store
-    if c.provenance.span == at
-      if &c.obligation is Obligation::Member { recv, .. }
-        return owner_of (&.resolved recv outcome)
+    if &c.obligation is Obligation::Member { recv, .. } && c.provenance.span == at
+      return owner_of (&.resolved recv outcome)
   None
 
 export owner_of : &Ty -> Option<String>
@@ -181,7 +180,7 @@ test "a span with no member obligation has no owner"
 
 test "a receiver that never resolved has no owner, rather than a guess"
   mut s = Store::new ()
-  hole = .fresh_hole (&mut s)
+  hole = .fresh_hole s
   _ = .require (Obligation::Member { recv = .clone hole, name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
   outcome = solve (&s)
   assert_eq! \-> receiver_owner (&s) (&outcome) (4, 11) \-> None

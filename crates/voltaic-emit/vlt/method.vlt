@@ -1,0 +1,67 @@
+import std::cell::RefCell
+import std::collections::BTreeSet
+import voltaic_ast::Span
+
+rust """
+thread_local! {
+    /// The spans the solver resolved to **method** calls, empty outside a
+    /// [`MethodScope`].
+    static IN_SCOPE: RefCell<MethodTable> = RefCell::new(MethodTable::default());
+}
+"""
+
+export data MethodScope = MethodScope { previous : MethodTable }
+
+instance MethodScope
+  export enter : MethodTable -> Self
+  enter table =
+    previous = .with_borrow_mut (\slot -> std::mem::replace slot table) IN_SCOPE
+    MethodScope { previous }
+
+  export(crate) is_method : Span -> bool
+  is_method at = .with_borrow (\table -> .holds at table) IN_SCOPE
+
+instance Drop MethodScope
+  drop : &mut self -> ()
+  drop self =
+    restored = std::mem::take $ &mut self.previous
+    _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
+    ()
+
+export data MethodTable = MethodTable { spans : BTreeSet<Span> }
+  deriving (Debug, Clone, Default)
+
+instance MethodTable
+  export from_spans : &[Span] -> Self
+  from_spans every = MethodTable { spans = .collect (.copied (.iter every)) }
+
+  export(crate) holds : Span -> &self -> bool
+  holds at self = .contains (&at) self.spans
+
+  export len : &self -> usize
+  len self = .len self.spans
+
+  export is_empty : &self -> bool
+  is_empty self = .is_empty self.spans
+
+test "an empty table holds nothing, so a dot stays a field access"
+  table = MethodTable::default ()
+  assert! \-> .is_empty table
+  assert! \-> !.holds (4, 11) table
+
+test "a table holds exactly the spans it was given"
+  table = MethodTable::from_spans (&[(4, 11), (20, 24)])
+  assert! \-> .holds (4, 11) table
+  assert! \-> .holds (20, 24) table
+  assert! \-> !.holds (4, 12) table
+  assert_eq! \-> .len table \-> 2
+
+test "outside a scope nothing is a method, which is generation 1's behaviour"
+  assert! \-> !MethodScope::is_method (4, 11)
+
+test "a scope is visible while it lives and gone after it drops"
+  assert! \-> !MethodScope::is_method (4, 11)
+  scope = MethodScope::enter (MethodTable::from_spans (&[(4, 11)]))
+  assert! \-> MethodScope::is_method (4, 11)
+  drop scope
+  assert! \-> !MethodScope::is_method (4, 11)

@@ -57,7 +57,7 @@ Each is graded `UNREACHABLE` in `docs/GRAMMAR.md`.
 | `voltaic-cli` | 6 | 0 | 0% |
 | `voltaic-diag` | 5 | 0 | 0% |
 | `voltaic-driver` | 10 | 0 | 0% |
-| `voltaic-emit` | 10 | 0 | 0% |
+| `voltaic-emit` | 11 | 0 | 0% |
 | `voltaic-fmt` | 6 | 0 | 0% |
 | `voltaic-fuzz` | 2 | 0 | 0% |
 | `voltaic-lattice` | 23 | 0 | 0% |
@@ -66,7 +66,7 @@ Each is graded `UNREACHABLE` in `docs/GRAMMAR.md`.
 | `voltaic-mcp` | 5 | 0 | 0% |
 | `voltaic-parser` | 13 | 0 | 0% |
 | `voltaic-seed` | 2 | 0 | 0% |
-| **total** | **107** | **0** | **0%** |
+| **total** | **108** | **0** | **0%** |
 
 ---
 
@@ -74,9 +74,9 @@ Each is graded `UNREACHABLE` in `docs/GRAMMAR.md`.
 
 The table above measures what *could* be ported. Fourteen crates **have** been, and for them the question is settled by rustc rather than by a blocker count: `voltaic-diag` (plan 73), `voltaic-lexer` (plan 74), `voltaic-ast` (plan 68), `voltaic-lattice` (plan 94), `voltaic-parser` (plan 82), `voltaic-fmt` (plan 69), `voltaic-fuzz` (plan 75), `voltaic-bench` (plan 76), `voltaic-mcp` (plan 77), `voltaic-lsp` (plan 78), `voltaic-emit` (plan 81), `voltaic-driver` (plan 80), `voltaic-cli` (plan 79) and `voltaic-seed` (plan 83) are written in Voltaic, their `.vlt` living in `crates/<crate>/vlt/` beside the `src/` it generates, and the generated Rust is compiled as part of the workspace.
 
-So **the compiler is now compiled from Voltaic** — 107 files of it. That corrects what this document said until plan 70: *"nothing in the build depends on `conformance/`, and the compiler is not compiled from it"*, which was true when plan 48 lifted one 45-line module out of a crate and checked it with `syn`, and stopped being true the moment a whole crate's `src/` was generated.
+So **the compiler is now compiled from Voltaic** — 108 files of it. That corrects what this document said until plan 70: *"nothing in the build depends on `conformance/`, and the compiler is not compiled from it"*, which was true when plan 48 lifted one 45-line module out of a crate and checked it with `syn`, and stopped being true the moment a whole crate's `src/` was generated.
 
-Plan 48's probe is retired with that sentence. `conformance/clause.vlt` was `clause.rs` expressed in Voltaic and checked by `syn::parse_file`, because one module lifted out of a crate cannot resolve `crate::Stmt`; the real port has no extraction to concede to, so the weaker oracle expired. Its no-escape-hatch assertion now runs over all 107 files in `port.rs`.
+Plan 48's probe is retired with that sentence. `conformance/clause.vlt` was `clause.rs` expressed in Voltaic and checked by `syn::parse_file`, because one module lifted out of a crate cannot resolve `crate::Stmt`; the real port has no extraction to concede to, so the weaker oracle expired. Its no-escape-hatch assertion now runs over all 108 files in `port.rs`.
 
 What it found still stands, and is the reason doc 02 §4.8 expected a port to be worth doing: every field doc comment was silently discarded, and `voltaic fmt` deleted them from the source, because the lexer classified a comment opening a continuation line as *trailing* the previous line and then held it for a `Newline` a continuation never produces. Plans 68 and 69 found three more of that class and two formatter defects, and plan 73 four more in the toolchain that writes the port.
 

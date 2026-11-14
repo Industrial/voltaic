@@ -35,19 +35,19 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---:|
 | `voltaic-ast` | 1651 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1402 | 12555 |
+| `voltaic-cli` | 1406 | 12602 |
 | `voltaic-diag` | 1055 | 0 |
-| `voltaic-driver` | 2897 | 160 |
-| `voltaic-emit` | 3747 | 4634 |
+| `voltaic-driver` | 3006 | 160 |
+| `voltaic-emit` | 3854 | 4634 |
 | `voltaic-fmt` | 1545 | 1497 |
-| `voltaic-fuzz` | 54 | 362 |
+| `voltaic-fuzz` | 65 | 362 |
 | `voltaic-lattice` | 5875 | 1176 |
 | `voltaic-lexer` | 2222 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
-| `voltaic-mcp` | 459 | 776 |
+| `voltaic-mcp` | 464 | 776 |
 | `voltaic-parser` | 5936 | 787 |
 | `voltaic-seed` | 146 | 1118 |
-| **total** | **28224** | **25234** |
+| **total** | **28460** | **25281** |
 
 ---
 
@@ -55,13 +55,13 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.vlt` | 49 | the CI-checked source of truth for what works |
-| `tests/golden/*.vrs` | 48 | the generated Rust, as exact text |
+| `examples/*.vlt` | 50 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 49 | the generated Rust, as exact text |
 | `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
 | `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**49 examples and 48 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "49 examples, all green" would be rounding up by exactly one file.
+**50 examples and 49 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "50 examples, all green" would be rounding up by exactly one file.
 
 ---
 

@@ -5,9 +5,12 @@ emit_program bytes =
     Ok p -> p
     Err _ ->
       return ()
-  if !.is_empty (voltaic_driver::annotate (&mut program))
+  analysis = voltaic_driver::analyse (&mut program)
+  if !.is_empty analysis.open
     return ()
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   _dropped = voltaic_emit::emit (&program)
+  drop scope
   ()
 
 export lex_source : &[u8] -> ()
@@ -26,9 +29,13 @@ export roundtrip : &[u8] -> Option<String>
 roundtrip bytes =
   text = String::from_utf8_lossy bytes
   mut program = (.ok (voltaic_parser::parse_source (&text)))?
-  if !.is_empty (voltaic_driver::annotate (&mut program))
+  analysis = voltaic_driver::analyse (&mut program)
+  if !.is_empty analysis.open
     return None
-  Some (voltaic_emit::emit (&program))
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
+  rendered = voltaic_emit::emit (&program)
+  drop scope
+  Some rendered
 
 export solve_program : &[u8] -> Option<u32>
 solve_program bytes =

@@ -3,7 +3,12 @@ import voltaic_ast::FnDecl
 import voltaic_ast::Item
 import voltaic_ast::Program
 import voltaic_ast::TypeExpr
+import voltaic_lattice::Declarations
+import voltaic_lattice::Obligation
+import voltaic_lattice::Outcome
+import voltaic_lattice::Store
 import voltaic_lattice::Ty
+import voltaic_ast::Span
 import voltaic_diag::Code
 import voltaic_diag::Diagnostic
 import voltaic_diag::DiagnosticCode
@@ -13,16 +18,23 @@ import std::path::Path
 export data Unresolved = Unresolved { export name : String, export shown : String, export span : voltaic_ast::Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
+export data Analysis = Analysis { export open : Vec<Unresolved>, export methods : Vec<Span> }
+  deriving (Debug, Clone)
+
 export annotate : &mut Program -> Vec<Unresolved>
-annotate program =
+annotate program = (analyse program).open
+
+export analyse : &mut Program -> Analysis
+analyse program =
   found = voltaic_lattice::walk program
   outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+  methods = method_spans (&found.store) (&outcome) (&found.known)
   mut filled = Vec::new ()
   for definition in .iter found.definitions
     if .is_none definition.written
       filled |> .push (.clone definition.name, .judged (&outcome) definition, definition.span)
   if .is_empty filled
-    return Vec::new ()
+    return Analysis { open = Vec::new (), methods }
 
   mut open = Vec::new ()
   for item in .iter_mut program.items
@@ -33,7 +45,16 @@ annotate program =
             open |> .push (Unresolved { name = .clone f.name.text, shown = .to_string whole, span = f.span })
         else
           open |> .push (Unresolved { name = .clone f.name.text, shown = .to_string "?", span = f.span })
-  open
+  Analysis { open, methods }
+
+method_spans : &Store -> &Outcome -> &Declarations -> Vec<Span>
+method_spans store outcome known =
+  mut found = Vec::new ()
+  for c in .all store
+    at = c.provenance.span
+    if &c.obligation is Obligation::Member { name, .. } && voltaic_lattice::receiver_owner store outcome at is Some owner && .is_method (&owner) name known
+      found |> .push at
+  found
 
 methods_of : &mut Item -> Vec<&mut FnDecl>
 methods_of item =
@@ -100,6 +121,39 @@ refusals path source open =
       path = .clone shown,
       source = .to_string source })
   diagnostics
+
+test "the solver resolves a method and a field through an annotated receiver"
+  source = "data Cursor = Cursor { pos : usize }\n\ninstance Cursor\n  export depth : &self -> usize\n  depth self = 1\n\nreach : &Cursor -> usize\nreach c = c.depth\n\nread : &Cursor -> usize\nread c = c.pos\n"
+  program = .expect "should parse" (voltaic_parser::parse_source source)
+  found = voltaic_lattice::walk (&program)
+  outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
+  assert! \-> .is_method "Cursor" "depth" found.known
+  assert! \-> .is_field "Cursor" "pos" found.known
+  mut named : Vec<String> = Vec::new ()
+  for c in .all found.store
+    if &c.obligation is Obligation::Member { name, .. } && voltaic_lattice::receiver_owner (&found.store) (&outcome) c.provenance.span is Some owner
+      named |> .push (format! \-> "#{owner}.#{name}")
+  assert! \-> .contains (&.to_string "Cursor.depth") named
+  assert! \-> .contains (&.to_string "Cursor.pos") named
+
+test "a self receiver is not resolved, so a method call on self stays a field read"
+  source = "data Cursor = Cursor { pos : usize }\n\ninstance Cursor\n  export depth : &self -> usize\n  depth self = self.pos\n\n  export twice : &self -> usize\n  twice self = self.depth\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  analysis = analyse (&mut program)
+  assert! \-> .is_empty analysis.methods
+
+test "analyse reports the method call's span, which is what the emitter asks about"
+  source = "data Cursor = Cursor { pos : usize }\n\ninstance Cursor\n  export depth : &self -> usize\n  depth self = self.pos\n\nreach : &Cursor -> usize\nreach c = c.depth\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  analysis = analyse (&mut program)
+  assert! \-> .is_empty analysis.open
+  assert_eq! \-> .len analysis.methods \-> 1
+
+test "a program with no methods reports no spans, so the default stays field"
+  source = "data Cursor = Cursor { pos : usize }\n\nreach : &Cursor -> usize\nreach c = c.pos\n"
+  mut program = .expect "should parse" (voltaic_parser::parse_source source)
+  analysis = analyse (&mut program)
+  assert! \-> .is_empty analysis.methods
 
 test "a program whose definitions are all signed is left alone"
   mut program = .expect "should parse" (voltaic_parser::parse_source "twice : u64 -> u64\ntwice n = n + n\n")

@@ -307,7 +307,12 @@ emit_expr e indent = case e of
       right = emit_expr rhs indent
       format! \-> "#{left} #{text} #{right}"
     None -> format! \-> "compile_error!(\"`#{op:?}` is parsed but not yet lowered\")"
-  Expr::Field { recv, name, .. } -> format! \-> "#{receiver recv indent}.#{name.text}"
+  Expr::Field { recv, name, span } ->
+    head = receiver recv indent
+    if crate::method::MethodScope::is_method (*span)
+      format! \-> "#{head}.#{name.text}()"
+    else
+      format! \-> "#{head}.#{name.text}"
   Expr::Dot { recv, name, args, .. } -> emit_dot recv name args indent
   Expr::Index { recv, index, .. } ->
     head = receiver recv indent

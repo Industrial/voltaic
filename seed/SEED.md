@@ -88,8 +88,8 @@ compiler and has to be looked at rather than absorbed into a green build.
 | built from commit | the commit that adds this table — row 102 step 3 |
 | compiles | g2 |
 | built by | the generation-1-written front end in the tree, which is what doc 100 §1.2 requires |
-| size | 1087337 bytes |
-| blake3 | `6c118b43cd1861fd3c589c7c1186c0dfda00114f41f8e38ebeeef5e5e9caa692` |
+| size | 1099060 bytes |
+| blake3 | `3c57121f1a2b08cf8f0748bfa3c817ccc259ddb9927436812176aab033dab815` |
 
 This is the invariant's **ordinary** case, where g1's was the base case. The
 compiler in the tree reads generation 2 — doc 87 §5.6's `else` tail and §5.7's

@@ -11,15 +11,17 @@ build_command args =
   source = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_to_string (&parsed.input)))?
 
   mut program = (.map_err (\failure -> voltaic_diag::render (&diagnose (&parsed.input) (&source) (&failure)) parsed.plain) (voltaic_parser::parse_source (&source)))?
-  open = voltaic_driver::annotate (&mut program)
-  if !.is_empty open
-    return Err (voltaic_diag::render (&voltaic_driver::refusals (&parsed.input) (&source) (.as_slice open)) parsed.plain)
+  analysis = voltaic_driver::analyse (&mut program)
+  if !.is_empty analysis.open
+    return Err (voltaic_diag::render (&voltaic_driver::refusals (&parsed.input) (&source) (.as_slice analysis.open)) parsed.plain)
   warnings = voltaic_driver::lint (&parsed.input) (&source) (Some (&program))
   if !.is_empty warnings
     rendered = voltaic_diag::render (&warnings) parsed.plain
     eprint! \-> "#{rendered}"
 
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) (&source) (&shown)
+  drop scope
 
   out_shown = parsed.output |> .display |> .to_string
   (.map_err (\e -> format! \-> "error: cannot write #{out_shown}: #{e}") (std::fs::write (&parsed.output) (&emitted.0)))?

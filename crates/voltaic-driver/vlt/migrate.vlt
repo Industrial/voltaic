@@ -5,11 +5,13 @@ import std::path::Path
 export transpile : &Path -> &str -> Result<String, Vec<Diagnostic>>
 transpile path text =
   mut program = (.map_err (\failure -> diagnose path text (&failure)) (voltaic_parser::parse_source text))?
-  open = crate::annotate::annotate (&mut program)
-  if !.is_empty open
-    return Err (crate::annotate::refusals path text (.as_slice open))
+  analysis = crate::annotate::analyse (&mut program)
+  if !.is_empty analysis.open
+    return Err (crate::annotate::refusals path text (.as_slice analysis.open))
   shown = path |> .display |> .to_string
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) text (&shown)
+  drop scope
   Ok emitted.0
 
 export data Side
@@ -67,14 +69,14 @@ apply path migrated =
   shown = path |> .display |> .to_string
   original = (.map_err (\e -> format! \-> "cannot read #{shown}: #{e}") (std::fs::read_to_string path))?
   verdict = gate path (&original) migrated
-  if !.passed (&verdict)
+  if !.passed verdict
     return Ok verdict
   (.map_err (\e -> format! \-> "cannot write #{shown}: #{e}") (std::fs::write path migrated))?
   Ok verdict
 
 test "an unchanged file passes the gate"
   source = "twice : u64 -> u64\ntwice n = n + n\n"
-  .passed (&gate (Path::new "probe.vlt") source source)
+  .passed (gate (Path::new "probe.vlt") source source)
 
 test "a changed body fails the gate, and names the line"
   before = "twice : u64 -> u64\ntwice n = n + n\n"
@@ -86,7 +88,7 @@ test "a changed body fails the gate, and names the line"
 test "a spelling change with the same lowering passes"
   before = "pick : u64 -> u64\npick n = n |> .max 3\n"
   after = "pick : u64 -> u64\npick n = .max 3 n\n"
-  .passed (&gate (Path::new "probe.vlt") before after)
+  .passed (gate (Path::new "probe.vlt") before after)
 
 test "source the compiler cannot read is rejected, not compared"
   before = "twice : u64 -> u64\ntwice n = n + n\n"

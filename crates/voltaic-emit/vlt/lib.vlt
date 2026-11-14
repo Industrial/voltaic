@@ -4,9 +4,12 @@ module datatype
 module emit
 module expr
 module item
+module method
 module pattern
 module sink
 module template
 
 export import emit::emit
 export import expr::emit_with_map
+export import method::MethodScope
+export import method::MethodTable
