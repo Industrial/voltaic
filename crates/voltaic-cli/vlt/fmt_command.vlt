@@ -35,6 +35,8 @@ fmt_command args =
     program = (.map_err (\failure -> voltaic_diag::render (&diagnose path (&source) (&failure)) parsed.plain) (voltaic_parser::parse_source (&source)))?
 
     formatted = voltaic_fmt::format (&program) (&source)
+    if !parsed.check
+      (crate::sig_command::write_sidecar path)?
     if formatted == source
       continue
 
