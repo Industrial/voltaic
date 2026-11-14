@@ -34,15 +34,12 @@ export data Keyword
   | Where
   | Given
   | Or
-  | Not
   | As
   | Dyn
-  | Impls
   | Fn
   | Move
   | Async
   | Await
-  | Pure
   | Import
   | Export
   | SelfValue
@@ -94,15 +91,12 @@ instance Keyword
     "where" -> Some Where
     "given" -> Some Given
     "or" -> Some Or
-    "not" -> Some Not
     "as" -> Some As
     "dyn" -> Some Dyn
-    "implements" -> Some Impls
     "fn" -> Some Fn
     "move" -> Some Move
     "async" -> Some Async
     "await" -> Some Await
-    "pure" -> Some Pure
     "import" -> Some Import
     "export" -> Some Export
     "self" -> Some SelfValue
@@ -153,15 +147,12 @@ instance Keyword
     Where -> "where"
     Given -> "given"
     Or -> "or"
-    Not -> "not"
     As -> "as"
     Dyn -> "dyn"
-    Impls -> "implements"
     Fn -> "fn"
     Move -> "move"
     Async -> "async"
     Await -> "await"
-    Pure -> "pure"
     Import -> "import"
     Export -> "export"
     SelfValue -> "self"
@@ -175,10 +166,10 @@ instance Keyword
     Union -> "union"
 
 test "round trips every spelling"
-  for word in ["mut", "if", "do", "case", "of", "data", "newtype", "deriving", "instance", "module", "not", "or", "guard", "catch", "loop", "Self", "self", "true", "errors", "implements"]
+  for word in ["mut", "if", "do", "case", "of", "data", "newtype", "deriving", "instance", "module", "or", "guard", "catch", "loop", "Self", "self", "true", "errors"]
     kw = .expect "should be reserved" $ Keyword::from_text word
     assert_eq! \-> .text kw \-> word
 
 test "leaves ordinary identifiers alone"
-  for word in ["main", "print", "iff", "switched", "island", "notable", "Selfish", "and", "use", "defer", "cond", "into", "derive", "mod", "unless", "switch", "withhold", "then", "otherwise", "until", "when"]
+  for word in ["main", "print", "iff", "switched", "island", "notable", "Selfish", "and", "use", "defer", "cond", "into", "derive", "mod", "unless", "switch", "withhold", "then", "otherwise", "until", "when", "not", "implements", "pure"]
     assert! \-> .is_none (Keyword::from_text word) \-> "#{word} should not reserve"
