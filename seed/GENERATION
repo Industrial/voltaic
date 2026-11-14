@@ -43,7 +43,7 @@ voltaic-parser 82 g2
 voltaic-fmt 69 g2
 voltaic-fuzz 75 g2
 voltaic-bench 76 g2
-voltaic-mcp 77 g1
+voltaic-mcp 77 g2
 voltaic-lsp 78 g1
 voltaic-emit 81 g1
 voltaic-driver 80 g1

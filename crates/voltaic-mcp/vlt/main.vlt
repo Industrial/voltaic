@@ -4,9 +4,7 @@ import rmcp::ServiceExt
 
 main : async Result<(), Box<dyn std::error::Error>>
 main =
-  wants_version = std::env::args ()
-    |> .skip 1
-    |> .any (\arg -> arg == "--version" || arg == "-V")
+  wants_version = ((std::env::args ()).skip 1).any (\arg -> arg == "--version" || arg == "-V")
   if wants_version
     version = env! \-> "CARGO_PKG_VERSION"
     println! \-> "voltaic-mcp #{version}"

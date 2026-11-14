@@ -60,9 +60,7 @@ instance ServerHandler Server
   get_info : &self -> ServerConfig
   get_info self =
     mut config = ServerConfig::default ()
-    config.capabilities := ServerCapabilities::builder ()
-      |> .enable_tools
-      |> .build
+    config.capabilities := (ServerCapabilities::builder ()).enable_tools ().build ()
     config.instructions := Some $ .to_string "Voltaic transpiles .vlt to .vrs containing ordinary Rust. Diagnostics are reported against the .vlt you wrote, with 1-based line and column in characters. rustc is the authority on types and borrows — Voltaic infers them and writes them down, and has no borrow checker of its own."
     config
 
