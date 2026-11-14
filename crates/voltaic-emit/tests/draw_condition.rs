@@ -116,36 +116,38 @@ fn a_while_let_chain_emits_as_rusts() {
   );
 }
 
-// --- §5.7: `until` declines ------------------------------------------------
+// --- §5.7: `until`, retired ------------------------------------------------
 
-/// `until c` lowers to `while !(c)`, and a pattern test cannot be negated.
-/// The nearest Rust — `while !matches!(x, Some(_))` — **binds nothing**, so it
-/// cannot be what a binding construct meant. Plan 22 §1.3 reports instead of
-/// lowering to something plausible.
+/// Row 99 wave 2 deleted `until`, which collapses two tests into one.
+///
+/// They used to assert opposite halves of a decline: `until c` lowered to
+/// `while !(c)`, a pattern test cannot be negated, and the nearest Rust —
+/// `while !matches!(x, Some(_))` — **binds nothing**, so plan 22 §1.3 reported
+/// `VLT0107` rather than lowering to something plausible. An ordinary `until`
+/// was untouched, because the decline was about the pattern and not the keyword.
+///
+/// That asymmetry is the construct's epitaph and the reason it is worth
+/// recording here: `until` declined a pattern test while `while` accepts one, so
+/// the keyword meant as sugar for `while` could do strictly less than it. Both
+/// cases now get the same answer, which is that the keyword is gone — and
+/// `VLT0107` went with it.
 #[test]
-fn until_with_a_pattern_is_an_error() {
-  let failure =
-    parse_source("main : ()\nmain =\n  until x is Some v\n    println! \\-> \"#{v}\"\n")
-      .expect_err("`until` cannot hold a pattern test");
-  let voltaic_parser::ParseFailure::Parse(errors) = failure else {
-    panic!("expected a parse failure, not a lex one");
-  };
-  assert!(
-    errors
-      .iter()
-      .any(|e| e.code == voltaic_diag::Code::PatternUntil),
-    "{errors:?}"
-  );
-}
-
-/// An ordinary `until` is untouched — the decline is about the pattern, not
-/// about the keyword.
-#[test]
-fn until_without_a_pattern_still_works() {
-  assert_eq!(
-    body("  until n > 5\n    n += 1\n"),
-    "while !(n > 5) {\n    n += 1;\n}"
-  );
+fn until_is_retired_whether_or_not_it_holds_a_pattern() {
+  for source in [
+    "main : ()\nmain =\n  until x is Some v\n    println! \\-> \"#{v}\"\n",
+    "main : ()\nmain =\n  mut n = 0\n  until n > 5\n    n += 1\n  ()\n",
+  ] {
+    let failure = parse_source(source).expect_err("`until` is retired");
+    let voltaic_parser::ParseFailure::Parse(errors) = failure else {
+      panic!("expected a parse failure, not a lex one");
+    };
+    assert!(
+      errors
+        .iter()
+        .any(|e| e.code == voltaic_diag::Code::RetiredSpelling),
+      "{errors:?}"
+    );
+  }
 }
 
 // --- §5.5: `guard` ---------------------------------------------------------

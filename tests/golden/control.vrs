@@ -97,8 +97,10 @@ fn bracketed_block(n: i32) {
     ();
 }
 
-// `until c` is `while !(c)`, **parenthesised**. This is the case the run
-// catches and the text cannot: stop once `n` is over 5 *and* even.
+// Negating a compound condition needs **parentheses**. This is the case the run
+// catches and the text cannot: stop once `n` is over 5 *and* even. Row 99 wave 2
+// deleted `until`, which lowered to exactly the first line below — and the trap
+// it carried is now the author's to see rather than the compiler's to hide.
 //
 //   `while !(n > 5 && n % 2 == 0)`  runs to n = 6   — correct
 //   `while !(n > 5) && n % 2 == 0`  stops at n = 1  — the missing parentheses

@@ -27,6 +27,11 @@ import voltaic_lexer::Keyword
 import voltaic_lexer::Span
 import voltaic_lexer::TokenKind
 
+names_the_retired_until : &Parser -> bool
+names_the_retired_until p = case &(.peek p).kind of
+  TokenKind::Ident text | text == "until" -> true
+  _ -> false
+
 export(crate) arm_body : &mut Parser -> Result<Expr, ParseError>
 arm_body p =
   start = (.peek_span p).0
@@ -125,16 +130,13 @@ control_flow p =
       .advance p
       Some owned
     _ -> None
-  if .check (&TokenKind::Kw Keyword::While) p || .check (&TokenKind::Kw Keyword::Until) p
-    negated = .check (&TokenKind::Kw Keyword::Until) p
-    keyword_span = .peek_span p
+  if names_the_retired_until p
+    return Err (ParseError::with_help Code::RetiredSpelling (.to_string "`until` is no longer a loop keyword") "write `while !(…)` with the condition negated, or a `loop` with a `break`. Row 99 wave 2 deleted it: `until` lowered to exactly that and could not take a pattern test, which is the one thing `while` can do and it could not" (.peek_span p))
+  if .check (&TokenKind::Kw Keyword::While) p
     .advance p
     cond = (condition p)?
-    reject = negated && .has_pattern cond
     body = (.statement_block "expected an indented loop body" p)?
-    if reject
-      return Err (ParseError::r#with Code::PatternUntil "`until` cannot take a pattern test: it lowers to `while !(…)`, and a pattern test cannot be negated. Write `while` with the opposite pattern, or a `loop` with a `break`" keyword_span)
-    return Ok (Some (Expr::While { condition = cond, negated, body, label, span = (start, (.prev_span p).1) }))
+    return Ok (Some (Expr::While { condition = cond, body, label, span = (start, (.prev_span p).1) }))
   if .check (&TokenKind::Kw Keyword::For) p
     .advance p
     binder = (.ident "expected a name after `for`" p)?

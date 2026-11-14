@@ -87,12 +87,8 @@ code_text expr indent source =
       format! \-> "guard #{(expr_text r#from 0 indent source)} is #{(pattern_text pattern)} else\n#{(block_text r#otherwise inner source)}"
     Expr::If { condition, then_block, r#otherwise, .. } ->
       format! \-> "if #{(condition_text condition indent source)}\n#{(block_text then_block inner source)}#{(else_text r#otherwise indent source)}"
-    Expr::While { condition, negated, body, label, .. } ->
-      keyword = if *negated
-        "until"
-      else
-        "while"
-      format! \-> "#{(label_text label)}#{keyword} #{(condition_text condition indent source)}\n#{(block_text body inner source)}"
+    Expr::While { condition, body, label, .. } ->
+      format! \-> "#{(label_text label)}while #{(condition_text condition indent source)}\n#{(block_text body inner source)}"
     Expr::For { binder, source = r#from, body, label, .. } ->
       format! \-> "#{(label_text label)}for #{binder.text} in #{(expr_text r#from 0 indent source)}\n#{(block_text body inner source)}"
     Expr::Loop { body, label, .. } ->

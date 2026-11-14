@@ -1,9 +1,13 @@
 //! Doc 01 §8's control flow, as doc 18 §1.1 leaves it — plan 20.
 //!
 //! Doc 18 deletes `cond`, `unless` and every postfix form, so what remains is
-//! `if`, `while`, `until`, `for`, `loop`, `do`, `break` and `continue`. Each
-//! lowers to the Rust construct of the same name; `until` is the one rewrite,
-//! and the parentheses it adds are the whole point of asserting it.
+//! `if`, `while`, `for`, `loop`, `do`, `break` and `continue`. Each lowers to
+//! the Rust construct of the same name.
+//!
+//! `until` was the one rewrite and the parentheses it added were the whole point
+//! of asserting it. Row 99 wave 2 deleted it: an author writes `while !(…)`
+//! themselves now, so the trap the parentheses hid is visible instead of
+//! handled.
 
 use voltaic_emit::emit;
 use voltaic_parser::parse_source;
@@ -72,7 +76,7 @@ fn else_if_chains_as_rust_does() {
   );
 }
 
-// --- §5.3: `while` and `until` --------------------------------------------
+// --- §5.3: `while` ---------------------------------------------------------
 
 #[test]
 fn while_emits_while() {
@@ -82,27 +86,35 @@ fn while_emits_while() {
   );
 }
 
-/// **The one assertion this plan exists for.** `until a && b` is
-/// `while !(a && b)`, not `while !a && b` — the two agree on the first
-/// iteration and part company on the second, so nothing but the parentheses
-/// distinguishes a correct lowering from a silently wrong one.
+/// Row 99 wave 2 deleted `until`, and this is what its two assertions became.
+///
+/// They were plan 55's whole point: `until a && b` is `while !(a && b)` and not
+/// `while !a && b`, the two agree on the first iteration and part company on the
+/// second, so nothing but the parentheses distinguished a correct lowering from
+/// a silently wrong one.
+///
+/// The construct is gone, so the lowering is gone, and the trap is now the
+/// author's to see rather than the compiler's to hide — `examples/control.vlt`
+/// carries it as a comment beside the `while !(…)` it now spells out. What is
+/// left to assert is that the keyword is **refused**, with the replacement
+/// named, rather than silently reparsed as a call to a function called `until`.
 #[test]
-fn until_parenthesises_its_whole_condition() {
-  assert_eq!(
-    body("  until n > 5 && n % 2 == 0\n    n += 1\n"),
-    "while !(n > 5 && n % 2 == 0) {\n    n += 1;\n}"
+fn until_is_refused_with_its_replacement_named() {
+  let source = concat!(
+    "settle : i32\n",
+    "settle =\n",
+    "  mut n = 0\n",
+    "  until n > 5 && n % 2 == 0\n",
+    "    n += 1\n",
+    "  n\n",
   );
-}
-
-/// A single-term condition is parenthesised too. Emitting `while !n` for
-/// `until n` would be correct and emitting it only there would be a special
-/// case, so there is none.
-#[test]
-fn until_parenthesises_a_single_term_as_well() {
-  assert_eq!(
-    body("  until done\n    n += 1\n"),
-    "while !(done) {\n    n += 1;\n}"
-  );
+  let error = voltaic_parser::parse_source(source).expect_err("`until` is retired");
+  let voltaic_parser::ParseFailure::Parse(errors) = error else {
+    panic!("expected parse errors, got {error:?}");
+  };
+  assert_eq!(errors[0].code, voltaic_diag::Code::RetiredSpelling);
+  let help = errors[0].help.as_deref().expect("a help line");
+  assert!(help.contains("while !("), "{help}");
 }
 
 // --- §5.4 and §5.5: `for` and `loop` --------------------------------------
@@ -183,7 +195,6 @@ fn break_and_continue_emit_their_rust() {
 fn a_label_prefixes_any_loop() {
   for (vlt, want) in [
     ("'a while c", "'a: while c {"),
-    ("'a until c", "'a: while !(c) {"),
     ("'a for x in xs", "'a: for x in xs {"),
     ("'a loop", "'a: loop {"),
   ] {

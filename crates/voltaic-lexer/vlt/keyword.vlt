@@ -17,14 +17,12 @@ export data Keyword
   | If
   | Else
   | While
-  | Until
   | For
   | In
   | With
   | Loop
   | Case
   | Of
-  | When
   | Do
   | Break
   | Continue
@@ -79,14 +77,12 @@ instance Keyword
     "if" -> Some If
     "else" -> Some Else
     "while" -> Some While
-    "until" -> Some Until
     "for" -> Some For
     "in" -> Some In
     "with" -> Some With
     "loop" -> Some Loop
     "case" -> Some Case
     "of" -> Some Of
-    "when" -> Some When
     "do" -> Some Do
     "break" -> Some Break
     "continue" -> Some Continue
@@ -140,14 +136,12 @@ instance Keyword
     If -> "if"
     Else -> "else"
     While -> "while"
-    Until -> "until"
     For -> "for"
     In -> "in"
     With -> "with"
     Loop -> "loop"
     Case -> "case"
     Of -> "of"
-    When -> "when"
     Do -> "do"
     Break -> "break"
     Continue -> "continue"
@@ -186,5 +180,5 @@ test "round trips every spelling"
     assert_eq! \-> .text kw \-> word
 
 test "leaves ordinary identifiers alone"
-  for word in ["main", "print", "iff", "switched", "island", "notable", "Selfish", "and", "use", "defer", "cond", "into", "derive", "mod", "unless", "switch", "withhold", "then", "otherwise"]
+  for word in ["main", "print", "iff", "switched", "island", "notable", "Selfish", "and", "use", "defer", "cond", "into", "derive", "mod", "unless", "switch", "withhold", "then", "otherwise", "until", "when"]
     assert! \-> .is_none (Keyword::from_text word) \-> "#{word} should not reserve"

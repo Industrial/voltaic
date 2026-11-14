@@ -263,15 +263,10 @@ emit_control out expr indent tail =
       .unmark out
       pad out indent
       .push_str "}\n" out
-    Expr::While { condition, negated, body, label, .. } ->
+    Expr::While { condition, body, label, .. } ->
       pad out indent
-      if *negated
-        text = emit_condition condition indent
-        prefix = label_prefix label
-        .push_str (&format! \-> "#{prefix}while !(#{text}) {\n") out
-      else
-        .push_str (&label_prefix label) out
-        .push_str (&condition_head "while" condition indent) out
+      .push_str (&label_prefix label) out
+      .push_str (&condition_head "while" condition indent) out
       emit_stmts out (&body.stmts) (indent + RUST_INDENT) false
       .unmark out
       pad out indent

@@ -910,7 +910,7 @@ module.exports = grammar({
 		while_statement: ($) =>
 			seq(
 				optional($.label),
-				choice("while", "until"),
+				"while",
 				field("condition", $.condition),
 				$.statement_block,
 			),

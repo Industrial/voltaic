@@ -33,21 +33,21 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Crate | `src` | `tests` |
 |---|---:|---:|
-| `voltaic-ast` | 1626 | 0 |
+| `voltaic-ast` | 1625 | 0 |
 | `voltaic-bench` | 355 | 217 |
 | `voltaic-cli` | 1402 | 12378 |
-| `voltaic-diag` | 1058 | 0 |
+| `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 2701 | 0 |
-| `voltaic-emit` | 3696 | 4572 |
-| `voltaic-fmt` | 1494 | 1497 |
+| `voltaic-emit` | 3689 | 4585 |
+| `voltaic-fmt` | 1489 | 1497 |
 | `voltaic-fuzz` | 54 | 362 |
 | `voltaic-lattice` | 5712 | 1151 |
-| `voltaic-lexer` | 2189 | 1196 |
+| `voltaic-lexer` | 2185 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 459 | 776 |
-| `voltaic-parser` | 5829 | 787 |
+| `voltaic-parser` | 5833 | 787 |
 | `voltaic-seed` | 146 | 771 |
-| **total** | **27601** | **24463** |
+| **total** | **27585** | **24476** |
 
 ---
 

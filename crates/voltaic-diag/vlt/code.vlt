@@ -18,7 +18,6 @@ export data Code
   | ExpectedType
   | EmptyBody
   | ModuleScopeBinding
-  | PatternUntil
   | EllipsisRestPattern
   | NestingTooDeep
   | SpacedPathSeparator
@@ -69,7 +68,6 @@ instance Code
     Code::ExpectedType -> 104
     Code::EmptyBody -> 105
     Code::ModuleScopeBinding -> 106
-    Code::PatternUntil -> 107
     Code::EllipsisRestPattern -> 108
     Code::NestingTooDeep -> 109
     Code::SpacedPathSeparator -> 110
@@ -101,7 +99,7 @@ instance Code
   text self = format! \-> "VLT#{(.number self):04}"
 
   export all : &'static [Code]
-  all = &[Code::TabIndent, Code::InconsistentDedent, Code::UnterminatedString, Code::UnterminatedRawString, Code::UnterminatedInterpolation, Code::UnterminatedFence, Code::UnterminatedAttribute, Code::UnterminatedByteLiteral, Code::UnknownEscape, Code::MalformedNumber, Code::UnexpectedCharacter, Code::UnbalancedDelimiter, Code::BadQuote, Code::ExpectedToken, Code::ExpectedExpression, Code::ExpectedName, Code::ExpectedType, Code::EmptyBody, Code::ModuleScopeBinding, Code::PatternUntil, Code::EllipsisRestPattern, Code::NestingTooDeep, Code::SpacedPathSeparator, Code::NewtypeShape, Code::LocalTest, Code::UnitTail, Code::ReservedWord, Code::MethodCallSyntax, Code::PipelineSection, Code::OptionalChaining, Code::RetiredSpelling, Code::WhereGroupShape, Code::BoundClauseShape, Code::PatternSynonymShape, Code::DeriveTemplateShape, Code::UndeclaredOperator, Code::OperatorPrecedence, Code::NonAssociativeOperator, Code::OperatorShape, Code::OverShape, Code::SignatureNotInferred, Code::UnwrapUsed, Code::CommentAllowPragma, Code::ShadowedBinding, Code::LatticeConflict, Code::ReturnInCallbackTail]
+  all = &[Code::TabIndent, Code::InconsistentDedent, Code::UnterminatedString, Code::UnterminatedRawString, Code::UnterminatedInterpolation, Code::UnterminatedFence, Code::UnterminatedAttribute, Code::UnterminatedByteLiteral, Code::UnknownEscape, Code::MalformedNumber, Code::UnexpectedCharacter, Code::UnbalancedDelimiter, Code::BadQuote, Code::ExpectedToken, Code::ExpectedExpression, Code::ExpectedName, Code::ExpectedType, Code::EmptyBody, Code::ModuleScopeBinding, Code::EllipsisRestPattern, Code::NestingTooDeep, Code::SpacedPathSeparator, Code::NewtypeShape, Code::LocalTest, Code::UnitTail, Code::ReservedWord, Code::MethodCallSyntax, Code::PipelineSection, Code::OptionalChaining, Code::RetiredSpelling, Code::WhereGroupShape, Code::BoundClauseShape, Code::PatternSynonymShape, Code::DeriveTemplateShape, Code::UndeclaredOperator, Code::OperatorPrecedence, Code::NonAssociativeOperator, Code::OperatorShape, Code::OverShape, Code::SignatureNotInferred, Code::UnwrapUsed, Code::CommentAllowPragma, Code::ShadowedBinding, Code::LatticeConflict, Code::ReturnInCallbackTail]
 
   #[cfg(test)]
   is_lexical : self -> bool

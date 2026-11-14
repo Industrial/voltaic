@@ -48,7 +48,7 @@ export data Expr
   | Await { pattern : Option<crate::Pattern>, value : Box<Expr>, span : Span }
   | Assign { target : Box<Expr>, op : Option<BinaryOp>, value : Box<Expr>, span : Span }
   | Guard { pattern : crate::Pattern, source : Box<Expr>, r#otherwise : crate::Block, span : Span }
-  | While { condition : crate::Condition, negated : bool, body : crate::Block, label : Option<String>, span : Span }
+  | While { condition : crate::Condition, body : crate::Block, label : Option<String>, span : Span }
   | For { binder : Ident, source : Box<Expr>, body : crate::Block, label : Option<String>, span : Span }
   | Loop { body : crate::Block, label : Option<String>, span : Span }
   | Break { label : Option<String>, value : Option<Box<Expr>>, span : Span }

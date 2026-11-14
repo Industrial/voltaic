@@ -1,0 +1,13 @@
+error[VLT0118]: `until` is no longer a loop keyword
+  --> retired_until.vlt:19:3
+   |
+19 |   until .pop queue is Some v
+   |   ^^^^^
+  = help: write `while !(…)` with the condition negated, or a `loop` with a `break`. Row 99 wave 2 deleted it: `until` lowered to exactly that and could not take a pattern test, which is the one thing `while` can do and it could not
+
+error[VLT0102]: expected an expression
+  --> retired_until.vlt:20:5
+   |
+20 |     println! \-> "#{v}"
+   |     ^
+

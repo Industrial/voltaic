@@ -603,6 +603,57 @@ cannot mean anything else. `tests/ui/retired_otherwise.vlt` is the fixture.
 cheap: the keyword's removal is three lines, and the retired-spelling diagnostic
 is what turns an unrelated rustc error into an instruction.
 
+### 10.17 `until` deleted, and the construct argued for its own removal
+
+**58 → 55 keywords** across wave 2 so far: `otherwise`, `until`, `when`.
+
+`until c` was `while !(c)` and nothing else — `Expr::While` carried a `negated`
+flag because that is exactly how it lowered. One surface use in the whole tree,
+`examples/control.vlt`.
+
+What makes it a clean deletion rather than a judgement call is `VLT0107`.
+`until` **declined a pattern test**, because `while !(let Some(v) = x)` is not
+Rust and the nearest thing that compiles — `while !matches!(x, Some(_))` — binds
+nothing. So the keyword meant as sugar for `while` could do **strictly less than
+`while`**, and it needed a diagnostic to say so. A construct whose own error
+message reads *"write `while` with the opposite pattern, or a `loop` with a
+`break`"* is a construct arguing for its own deletion. `VLT0107` is retired with
+it.
+
+Three things went beyond the keyword, and each is part of the deletion rather
+than tidying after it:
+
+- **`Expr::While.negated` is gone.** With `until` deleted nothing constructs it
+  as `true`, and a field that can only be false is a lie about the AST — the
+  emitter and the formatter both still branched on it.
+- **The parenthesisation tests became one refusal test.** They were plan 55's
+  whole point: `until a && b` is `while !(a && b)`, not `while !a && b`, and
+  nothing but the parentheses distinguished a correct lowering from a silently
+  wrong one. The trap is now the author's to see — `examples/control.vlt` carries
+  it as a comment beside the `while !(…)` it spells out — which is strictly more
+  visible than a lowering that hid it.
+- **`tests/ui/pattern_until.vlt` was re-pointed, not re-blessed.** §2.3 warns
+  that a fixture which still fails for a *new* reason with an unexamined
+  `.stderr` has stopped testing what it was written to test. It is
+  `retired_until.vlt` now and its comment records both the old decline and why
+  the asymmetry retired the keyword.
+
+### 10.18 `when` was a reserved word with no construct
+
+`Keyword::When` appeared in the lexer and in **no parser arm at all**. It had
+taken an identifier from every program since generation 1 and reached nothing.
+
+Deleting it cost no migration, because nothing was written in it — and it is the
+only deletion in this wave with no corpus at all. Worth noticing how it survived:
+`grammar.js` listed it, all three highlighters coloured it, and the lexer's
+round-trip test asserted it round-trips. Four things agreed it was a keyword and
+none of them asks what it *parses*.
+
+`construct_coverage.rs` is the gate that would catch this class — a construct
+graded reachable and witnessed by nothing — and `when` was never graded in
+`docs/GRAMMAR.md`, so it was invisible to the one check designed to find it. An
+*ungraded* keyword is outside every gate at once.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

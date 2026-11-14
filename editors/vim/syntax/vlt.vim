@@ -55,7 +55,7 @@ syn keyword vltSelf         self Self
 " grammar declares it through `reserved` rather than as a literal in a rule.
 syn keyword vltKeyword      import module data newtype type class instance
 syn keyword vltKeyword      errors test const static deriving from as where given pattern template infix infixl infixr over
-syn keyword vltKeyword      if else while until for in loop
+syn keyword vltKeyword      if else while for in loop
 syn keyword vltKeyword      break continue return guard is with case of
 syn keyword vltKeyword      do async try catch mut move or
 syn keyword vltKeyword      rust unsafe extern union
