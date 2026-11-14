@@ -272,6 +272,31 @@ fn a_declared_method_classifies_and_a_std_method_does_not() {
   );
 }
 
+/// The second half of why deletion 3 cannot be written as specified: a `.`
+/// chain cannot break across lines at all.
+///
+/// Doc 97 §1.3 deletion 3 replaces `|>` with "`.` chains that break across
+/// lines". A `|>` leads its continuation line with an explicit operator, so the
+/// lexer knows the line continues; a bare `.` has no such marker and the
+/// off-side rule ends the expression at the newline. The continuation is then a
+/// receiver-last application on its own, and the item fails with `VLT0103`.
+///
+/// So a migrated chain is not merely parenthesis-heavy — it must be **one
+/// line**, however long. That is the cost `lex.vlt`'s three-line pipeline paid
+/// when the pass was applied and reverted.
+#[test]
+fn a_dot_chain_cannot_break_across_lines() {
+  assert!(
+    voltaic_parser::parse_source(
+      "data H = H { s : String }\n\nexport two : &H -> usize\ntwo h = (h.s.to_string ())\n  .len ()\n"
+    )
+    .is_err(),
+    "if a `.` chain can now break across lines, deletion 3's second obstacle is \
+     gone — update doc 101 §10.14 and the formatter can grow the multi-line \
+     chain printer leaf 6 wants"
+  );
+}
+
 /// The gate can fail, demonstrated rather than assumed.
 ///
 /// A pass asserted over 105 files that all pass proves nothing unless the

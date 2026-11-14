@@ -710,10 +710,26 @@ This is what the corpus becomes:
 ```
 
 A three-stage chain nests two levels of parentheses, and the multi-line form
-collapses onto one long line because the formatter breaks `|>` chains and has no
-multi-line `.`-chain printer. **Doc 97 §1.3's deletion 3 — *"`|>` … replaced by
-`.` chains that break across lines"* — describes something the surface does not
-currently admit.**
+collapses onto one long line. **The second of those is not a missing printer —
+it is a surface limit, measured:**
+
+```
+two h = (h.s.to_string ())
+  .len ()
+```
+
+is `VLT0103`. A `|>` leads its continuation line with an explicit operator, so
+the lexer knows the line continues; a bare `.` has no marker and the off-side
+rule ends the expression at the newline, leaving the continuation to parse as a
+receiver-last application of its own.
+
+**So doc 97 §1.3's deletion 3 — *"`|>` … replaced by `.` chains that break
+across lines"* — is unavailable on both counts.** A migrated chain needs a
+parenthesis at every zero-argument link *and* must be one line however long. The
+first draft of this section listed a multi-line `.`-chain printer as work the
+formatter could simply grow; there is nothing for it to print until the surface
+admits the form. `a_dot_chain_cannot_break_across_lines` is the gate, and it
+fails — helpfully — if that changes.
 
 #### §10.8 is not retired; it is the route
 
@@ -764,11 +780,22 @@ The transform is **built, gated and correct, and deliberately not applied.**
 Three things must land before applying it is an improvement rather than a
 regression, and none is a defect in the pass:
 
-1. a multi-line `.`-chain printer, so a long chain does not become one long line;
-2. a decision on `std` receivers — doc 86 §4.3 clause 2 keeps `std` outside
+1. **a surface decision**, because neither obstacle is in the compiler: a `.`
+   chain cannot break across lines, and a zero-argument link needs a
+   parenthesis. Both are consequences of juxtaposition application and the
+   off-side rule, so both belong to row 99 rather than here;
+2. **a decision on `std` receivers** — doc 86 §4.3 clause 2 keeps `std` outside
    Lattice's environment, and that clause is what makes the parentheses
-   permanent;
+   permanent even once a chain can break;
 3. only then leaf 6, crate by crate.
+
+Stated plainly, because a plan row should not read as nearly-done when it is
+not: **the `|>` transform is finished and the deletion it serves is blocked on
+row 99.** Three gates hold the measurements so none of this has to be
+rediscovered — `an_unparenthesised_chain_is_not_a_chain`,
+`a_dot_chain_cannot_break_across_lines`, and
+`a_declared_method_classifies_and_a_std_method_does_not`. Each one failing is
+good news.
 
 **The mistake worth keeping is the order I looked in.** §10.14's first draft
 concluded that three sessions had reached for more inference when the defect was

@@ -60,7 +60,7 @@ forbids in exactly those words: *none of this is rounded up*.
 |---|---|---|---|
 | 1 | standalone signature lines | inference (row 94) | 1 |
 | 2 | 63 keywords | the guard ladder, comprehensions, the row, the manifest | 2, 4, 6 |
-| 3 | `\|>`, `>>>`, `<<<`, `$` | `.` chains across lines | 3 |
+| 3 | `\|>`, `>>>`, `<<<`, `$` | `.` chains across lines — **blocked, see below** | 3 |
 | 4 | receiver-last `.f x` | receiver-first `x.f` (UFCS) | 3 |
 | 5 | `name : Type` in declarations | `name Type` juxtaposition | 5 |
 | 6 | `deriving (…)`, `newtype`, `errors` | computed derives, `data` | 5 |
@@ -69,6 +69,55 @@ forbids in exactly those words: *none of this is rounded up*.
 | 9 | `&`, `&mut`, `'a`, `.clone()` | mode inference (row 96) | 8 |
 
 Wave 9 is the three gaps that close.
+
+#### Deletion 3's replacement does not exist yet, measured
+
+**`.` chains across lines are not a thing the surface can express**, so wave 3
+cannot execute deletion 3 as written. Row 103's migrator built the transform,
+gated it to byte-identical Rust across 73 of the 74 files that hold a `|>`, and
+applied it — and the result is worse than what it replaced, for two reasons that
+are both consequences of rules this generation keeps (doc 87 §20: the off-side
+rule, and juxtaposition application).
+
+**A chain cannot break across lines.** This is `VLT0103`:
+
+```
+two h = (h.s.to_string ())
+  .len ()
+```
+
+A `|>` leads its continuation with an explicit operator, so the lexer knows the
+line continues. A bare `.` has no marker, the off-side rule ends the expression
+at the newline, and the continuation parses as a receiver-last application of its
+own. The phrase *"across lines"* in the table above therefore describes nothing.
+
+**And every zero-argument link needs a parenthesis:**
+
+```
+a h = (h.s.len ()).count_ones ()   ->  h.s.len().count_ones()
+b h = h.s.len ().count_ones ()     ->  h.s.len(().count_ones, ())
+```
+
+Juxtaposition application cannot tell a zero-argument call's `()` from a unit
+first argument. 450 of the compiler's 473 pipeline stages carry no arguments, so
+this is the common case, not the corner: `self.cur |> .peek |> .expect "…"`
+becomes `(self.cur.peek ()).expect "…"`.
+
+What removes the parentheses is **deletion 4's** classification, not a printer:
+`a.f` meaning a call when `f` is a method is exactly what lets a chain compose
+with nothing between the links. It works today for declared methods and not for
+`std` — `h.twice.to_string` emits `h.twice().to_string` — and doc 86 §4.3
+clause 2 keeps `std` outside Lattice's environment deliberately. So **deletions
+3 and 4 are one piece of work in one wave, not two independent rewrites**, and
+the `std` clause is what bounds how far either can go.
+
+Three gates in `crates/voltaic-cli/tests/pipeline_pass.rs` hold these
+measurements, each written so that **failing is the good outcome**:
+`a_dot_chain_cannot_break_across_lines`,
+`an_unparenthesised_chain_is_not_a_chain`, and
+`a_declared_method_classifies_and_a_std_method_does_not`. Doc 101 §10.14 is the
+full account, including that an earlier draft of it blamed the formatter and was
+wrong.
 
 ### 1.4 Eleven keywords, and the count is a correction
 
