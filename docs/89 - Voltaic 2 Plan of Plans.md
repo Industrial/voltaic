@@ -126,7 +126,24 @@ findings; three change later rows:
 And one toolchain trap worth knowing before row 95: **`crates/<crate>/src/.voltaic-cache`
 serves stale output across a `.vlt` edit**, so `bootstrap.sh` reports success while
 leaving the previous generation in place (doc 92 §10.8).
-| 95 | Effect Rows | The seven-effect alphabet, the subset lattice, implicit propagation, `else` / `.must` / `~` discharge, effect variables. | `planned` | 94 |
+| 95 | Effect Rows | The seven-effect alphabet, the subset lattice, implicit propagation, `else` / `.must` / `~` discharge, effect variables. | `in-progress` — leaves 1, 2 `done` 2026-11-14 | 94 |
+
+Leaves 1 and 2 shipped: the closed alphabet, the subset lattice, and upward
+propagation. `voltaic sig` now prints rows, and `announce : () ! async + io` on this
+repository's own `examples/async.vlt` is an inferred **join** — the case a
+single-effect model cannot express.
+
+Two notes for later rows, from doc 93 §10:
+
+- **`infer_row.vlt` is also row 99's answer key.** It reads the effects generation 1
+  marks *explicitly* — `async`, a `Result`/`Option` return type, a printing macro,
+  `:=`, `try`, `catch` — so when row 99 deletes those markers, this corpus is what
+  says whether the row preserved the same fact. Exactly the relationship plan 94 §1.4
+  set up between generation 1's signatures and inferred types.
+- **Leaf 3 cannot move before row 99.** `else`, `.must` and `~` are generation 2
+  surface. The discharge *mechanism* exists and is already used by the
+  `try`/`catch`/`??` arms, so the engine is ready for the spelling before the
+  spelling is.
 | 96 | Mode Inference | The three-element chain, use-site constraints, the least-fixed-point solve, lifetime emission, `@` ascription, `VLT0601`. | `planned` | 94, 95 |
 | 97 | Refinements | Predicate extraction, the QF_ALIA fragment, the solver interface and pin, the timeout-is-a-diagnostic policy, `tests/refine/`. | `planned` | 94 |
 

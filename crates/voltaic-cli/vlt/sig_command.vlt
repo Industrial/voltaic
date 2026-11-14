@@ -48,7 +48,10 @@ report input why =
 
   for definition in .iter found.definitions
     resolved = .resolved (&definition.ty) outcome
-    println! \-> "#{definition.name} : #{resolved}"
+    if .is_empty definition.row
+      println! \-> "#{definition.name} : #{resolved}"
+    else
+      println! \-> "#{definition.name} : #{resolved} ! #{definition.row}"
 
   if why is Some name
     if .find name found is Some definition

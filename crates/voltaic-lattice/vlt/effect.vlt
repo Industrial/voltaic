@@ -1,0 +1,78 @@
+import crate::ty::Ty
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export const ALPHABET : usize = 7
+
+export data Effect
+  = Fails Ty
+  | Absent
+  | Suspends
+  | Performs
+  | Mutates String
+  | Panics
+  | Diverges
+  deriving (Debug, Clone, PartialEq, Eq, PartialOrd, Ord)
+
+instance Effect
+  export label : &self -> &'static str
+  label self = case self of
+    Effect::Fails _ -> "fail"
+    Effect::Absent -> "none"
+    Effect::Suspends -> "async"
+    Effect::Performs -> "io"
+    Effect::Mutates _ -> "mut"
+    Effect::Panics -> "panic"
+    Effect::Diverges -> "diverge"
+
+  export is_fallible : &self -> bool
+  is_fallible self = case self of
+    Effect::Fails _ -> true
+    Effect::Absent -> true
+    _ -> false
+
+  export error_type : &self -> Option<&Ty>
+  error_type self = case self of
+    Effect::Fails t -> Some t
+    _ -> None
+
+  export region : &self -> Option<&str>
+  region self = case self of
+    Effect::Mutates r -> Some r
+    _ -> None
+
+instance Display Effect
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f = case self of
+    Effect::Fails t -> write! \-> f \-> "fail #{t}"
+    Effect::Mutates r -> write! \-> f \-> "mut #{r}"
+    other -> write! \-> f \-> "#{(.label other)}"
+
+test "every effect in the alphabet has a label"
+  every = [Effect::Fails (Ty::named "String"), Effect::Absent, Effect::Suspends, Effect::Performs, Effect::Mutates (.to_string "self"), Effect::Panics, Effect::Diverges]
+  assert_eq! \-> .len every \-> ALPHABET \-> "the alphabet is closed at #{ALPHABET} by doc 86 §5.1"
+  for e in .iter every
+    assert! \-> !.is_empty (.label e) \-> "#{e:?} has no label"
+
+test "only fail and none are fallible"
+  assert! \-> .is_fallible (Effect::Fails (Ty::named "String"))
+  assert! \-> .is_fallible (Effect::Absent)
+  assert! \-> !.is_fallible (Effect::Suspends)
+  assert! \-> !.is_fallible (Effect::Performs)
+
+test "fail carries its error type and nothing else does"
+  assert_eq! \-> .error_type (Effect::Fails (Ty::named "String")) \-> Some (&Ty::named "String")
+  assert_eq! \-> .error_type (Effect::Absent) \-> None
+
+test "mut names the region it mutates"
+  assert_eq! \-> .region (Effect::Mutates (.to_string "self")) \-> Some "self"
+  assert_eq! \-> .region (Effect::Panics) \-> None
+
+test "fail prints with its error type"
+  assert_eq! \-> .to_string (Effect::Fails (Ty::named "String")) \-> "fail String"
+  assert_eq! \-> .to_string Effect::Suspends \-> "async"
+  assert_eq! \-> .to_string (Effect::Mutates (.to_string "self")) \-> "mut self"
+
+test "two fails with different error types are different effects"
+  assert! \-> Effect::Fails (Ty::named "String") != Effect::Fails (Ty::named "ParseIntError")

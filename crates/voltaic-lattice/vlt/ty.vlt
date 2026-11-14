@@ -9,7 +9,7 @@ export data Ty
   = Hole Variable
   | Con { name : String, args : Vec<Ty> }
   | Nil
-  deriving (Debug, Clone, PartialEq, Eq)
+  deriving (Debug, Clone, PartialEq, Eq, PartialOrd, Ord)
 
 instance Ty
   export hole : Variable -> Self

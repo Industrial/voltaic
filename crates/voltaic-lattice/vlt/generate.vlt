@@ -11,7 +11,7 @@ import voltaic_ast::Expr
 import voltaic_ast::Item
 import voltaic_ast::Program
 
-export data Inferred = Inferred { export name : String, export ty : Ty, export written : Option<Ty>, export span : voltaic_ast::Span }
+export data Inferred = Inferred { export name : String, export ty : Ty, export row : crate::row::Row, export written : Option<Ty>, export span : voltaic_ast::Span }
   deriving (Debug, Clone)
 
 export data Report = Report { export store : Store, export definitions : Vec<Inferred> }
@@ -40,8 +40,17 @@ walk program =
         .require (Obligation::Unify { left = .clone body, right = annotation::read written }) f.sig.span Reason::Ascribed store
       whole = arrow_of (.as_slice params) (&body)
       written = signature_type (&f.sig)
-      definitions |> .push (Inferred { name = .clone f.name.text, ty = whole, written, span = f.span })
+      definitions |> .push (Inferred { name = .clone f.name.text, ty = whole, row = row_of (&f.sig) (.as_slice f.clauses), written, span = f.span })
   Report { store, definitions }
+
+row_of : &voltaic_ast::Signature -> &[voltaic_ast::Clause] -> crate::row::Row
+row_of sig clauses =
+  mut found = crate::infer_row::clause_row clauses
+  if sig.is_async
+    found := .join (&crate::row::Row::single crate::effect::Effect::Suspends) found
+  if .as_ref sig.ret is Some written && crate::infer_row::fail_of (&annotation::read written) is Some raised
+    found := .join (&crate::row::Row::single raised) found
+  found
 
 signature_type : &voltaic_ast::Signature -> Option<Ty>
 signature_type sig =

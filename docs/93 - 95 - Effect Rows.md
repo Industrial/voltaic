@@ -258,4 +258,91 @@ None. Emerald had no effect system; its fallibility story was `Result` by hand.
 
 ## 10. Result
 
-*To be filled after execution.*
+In progress. Leaves 1 and 2 shipped 2026-11-14: the closed alphabet, the subset
+lattice, and upward propagation over real programs. 132 tests in the crate — 101
+inline, 11 row corpus, 11 solve corpus, 9 store. Clippy clean; gate green at 28 tasks.
+
+### 10.1 The rows are visible, and they are right
+
+`voltaic sig` on this repository's own examples, reading nothing but their code:
+
+```
+$ voltaic sig examples/errors.vlt
+retries : &<str> -> Result<u32, ConfigError> ! fail ConfigError
+describe : &<ConfigError> -> String
+main : () ! io
+
+$ voltaic sig examples/async.vlt
+double : i32 -> i32 ! async
+announce : () ! async + io
+main : () ! io
+```
+
+`announce` is the case a single-effect model cannot express: **a join**, inferred,
+with the two effects printed in the lattice's order rather than the program's.
+
+### 10.2 These are generation 1's markers, and that is the point
+
+The corpus is generation 1 source, so the effects inferred are the ones generation 1
+*marks explicitly*: an `async` signature, a `Result` or `Option` return type, a
+printing macro, `:=`, `try`, `catch`, `break`.
+
+That makes `infer_row.vlt` two things at once. It is leaf 2's propagation, and it is
+**the answer key for row 99's migration** — exactly as generation 1's hand-written
+signatures are the answer key for types (plan 94 §1.4). Row 99 deletes the markers
+and the row becomes the only statement of the same fact; this corpus is what will
+say whether the deletion preserved it.
+
+### 10.3 The bound is a counting argument, and it is asserted
+
+Doc 86 §2 clause 5 wants termination on every input. For rows that is arithmetic
+rather than a proof obligation: a row is a subset of a seven-element set, so the
+ascending chain condition holds and the fixed point arrives in at most seven steps.
+`the_alphabet_is_closed_and_bounds_every_row` asserts the alphabet's size, that the
+full row is the lattice's top, and that every single-effect row is below it.
+
+An open alphabet — user-declared effects — would still be a lattice but would lose
+the bound a reviewer can check by counting. Doc 86 §5.1 closes the set for that
+reason and this is where the closure earns its keep.
+
+### 10.4 Two keyword collisions, and a brace that does not survive a round trip
+
+`Row::pure` and `Row::of` both failed to parse: **`pure` and `of` are keywords**, the
+fifth and sixth collisions in this generation after `type`, `of`, `guard` and `|`.
+They are `Row::empty` and `Row::single`.
+
+The more interesting one: **a brace in a string literal does not survive**. `Row`
+first printed as `{io}`, and the test comparing it against the literal `"{io}"`
+failed with *left `{io}`, right `{{io}}`* — the emitter escapes `{` to `{{` so that
+interpolation works, which is correct inside a `write!` format string and wrong for a
+string used as a value. Rows now print `io` and `async + io`, with `pure` for the
+empty row, which avoids the problem and reads better in a diagnostic anyway.
+
+Worth recording because it is not a Voltaic defect so much as a shape to avoid: **a
+string literal containing a brace means different things in the two positions**, and
+the corpus has no other test that would have caught it.
+
+### 10.5 `is_subrow` had its direction backwards, in the name
+
+The first spelling was `is_subrow other self`, which read as *self ⊆ other* and which
+every call site read the other way round — three tests failed at once. Renamed to
+`is_subrow_of`, where the direction is in the name and `a.is_subrow_of(&b)` can only
+mean one thing. A receiver-last surface makes this mistake easy: the receiver is the
+*last* argument, so the first-named thing is not the subject.
+
+### 10.6 Leaves outstanding
+
+| Leaf | Status |
+|---|---|
+| 1 — the alphabet and the lattice | `done` |
+| 2 — propagation | `done`, for generation 1's markers (§10.2) |
+| 3 — discharge (`else`, `.must`, `~`) | outstanding — needs row 99's surface |
+| 4 — `From` conversion on join | outstanding |
+| 5 — effect variables | outstanding |
+| 6 — `async` without an executor | satisfied by §10.1 already: `async` is inferred and nothing is joined |
+| 7 — corpora | `done` for `tests/rows.rs`; `VLT07xx` UI fixtures wait on row 101 |
+
+Leaf 3 is the one that cannot move yet: `else`, `.must` and `~` are generation 2
+*surface*, and the surface is row 99. What exists today is the discharge *mechanism*
+— `discharge_fallible`, and the `Try`/`catch`/`??` arms of `expr_row` that already
+use it — so the row engine is ready for the spelling before the spelling exists.

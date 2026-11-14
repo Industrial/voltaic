@@ -1,0 +1,124 @@
+import crate::effect::Effect
+import crate::row::Row
+import crate::ty::Ty
+import voltaic_ast::BinaryOp
+import voltaic_ast::Block
+import voltaic_ast::ClauseBody
+import voltaic_ast::Expr
+
+export const IO_MACROS : &[&str] = &["println", "print", "eprintln", "eprint"]
+
+export const PANICKING : &[&str] = &["unwrap", "expect", "unwrap_err", "must"]
+
+export clause_row : &[voltaic_ast::Clause] -> Row
+clause_row clauses =
+  mut found = Row::empty ()
+  for clause in .iter clauses
+    case &clause.body of
+      ClauseBody::Plain block ->
+        found := .join (&block_row block) found
+        ()
+      ClauseBody::Guarded arms ->
+        for arm in .iter arms
+          if .as_ref arm.condition is Some condition
+            found := .join (&expr_row condition) found
+          found := .join (&block_row (&arm.body)) found
+  found
+
+export block_row : &Block -> Row
+block_row block =
+  mut found = Row::empty ()
+  for stmt in .iter block.stmts
+    found := .join (&expr_row (&stmt.expr)) found
+  found
+
+export expr_row : &Expr -> Row
+expr_row e = case e of
+  Expr::Try { inner, .. } -> .discharge_fallible (expr_row inner)
+  Expr::TryBlock { body, .. } -> .discharge_fallible (block_row body)
+  Expr::Await { value, .. } -> .join (&Row::single Effect::Suspends) (expr_row value)
+  Expr::AsyncBlock { body, .. } -> .join (&Row::single Effect::Suspends) (block_row body)
+  Expr::MacroCall { name, args, .. } ->
+    mut found = Row::empty ()
+    for a in .iter args
+      found := .join (&expr_row a) found
+    if .contains (&.as_str name) IO_MACROS
+      found := .join (&Row::single Effect::Performs) found
+    found
+  Expr::Assign { target, value, .. } ->
+    region = root_of target
+    .join (&Row::single (Effect::Mutates region)) (.join (&expr_row value) (expr_row target))
+  Expr::Binary { op, lhs, rhs, .. } ->
+    both = .join (&expr_row rhs) (expr_row lhs)
+    if *op == BinaryOp::Catch || *op == BinaryOp::Coalesce
+      return .discharge_fallible both
+    both
+  Expr::Call { callee, args, .. } ->
+    mut found = expr_row callee
+    for a in .iter args
+      found := .join (&expr_row a) found
+    found
+  Expr::MethodRef { name, .. } ->
+    if .contains (&.as_str name.text) PANICKING
+      return Row::single Effect::Panics
+    Row::empty ()
+  Expr::Paren { inner, .. } -> expr_row inner
+  Expr::Ascribe { inner, .. } -> expr_row inner
+  Expr::Block { body, .. } -> block_row body
+  Expr::UnsafeBlock { body, .. } -> block_row body
+  Expr::BindBlock { body, .. } -> .discharge_fallible (block_row body)
+  Expr::Draw { value, .. } -> expr_row value
+  Expr::Return { value, .. } ->
+    if .as_ref (*value) is Some held
+      return expr_row held
+    Row::empty ()
+  Expr::If { then_block, r#otherwise, .. } ->
+    mut found = block_row then_block
+    if .as_ref (*r#otherwise) is Some other
+      found := .join (&block_row other) found
+    found
+  Expr::Break { .. } -> Row::single Effect::Diverges
+  Expr::Continue { .. } -> Row::single Effect::Diverges
+  _ -> Row::empty ()
+
+root_of : &Expr -> String
+root_of target = case target of
+  Expr::Ident name -> .clone name.text
+  Expr::Field { recv, .. } -> root_of recv
+  Expr::Index { recv, .. } -> root_of recv
+  Expr::SelfField { .. } -> .to_string "self"
+  Expr::Paren { inner, .. } -> root_of inner
+  _ -> .to_string "?"
+
+export fail_of : &Ty -> Option<Effect>
+fail_of declared = case declared of
+  Ty::Con { name, args, .. } ->
+    if name == "Result" && .len args == 2
+      return Some (Effect::Fails (.clone args[1]))
+    if name == "Option" && .len args == 1
+      return Some Effect::Absent
+    None
+  _ -> None
+
+test "a pure body has a pure row"
+  assert! \-> .is_empty (expr_row (&Expr::Unit { span = (0, 2) }))
+
+test "break and continue diverge"
+  assert! \-> .holds (&Effect::Diverges) (expr_row (&Expr::Continue { label = None, span = (0, 8) }))
+
+test "a Result return type reads as a fail effect carrying its error"
+  declared = Ty::applied "Result" (vec! \-> Ty::named "i32" \-> Ty::named "String")
+  assert_eq! \-> fail_of (&declared) \-> Some (Effect::Fails (Ty::named "String"))
+
+test "an Option return type reads as the absence effect"
+  declared = Ty::applied "Option" (vec! \-> Ty::named "char")
+  assert_eq! \-> fail_of (&declared) \-> Some Effect::Absent
+
+test "an ordinary type carries no effect"
+  assert_eq! \-> fail_of (&Ty::named "u64") \-> None
+  assert_eq! \-> fail_of (&Ty::applied "Vec" (vec! \-> Ty::named "u8")) \-> None
+
+test "the io macros are the four printing ones"
+  assert_eq! \-> .len IO_MACROS \-> 4
+  assert! \-> .contains (&"println") IO_MACROS
+  assert! \-> !.contains (&"format") IO_MACROS \-> "format! performs no io"

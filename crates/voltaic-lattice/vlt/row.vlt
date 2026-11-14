@@ -1,0 +1,140 @@
+
+import crate::effect::Effect
+import std::collections::BTreeSet
+import std::fmt::Display
+import std::fmt::Formatter
+import std::fmt::Result
+
+export data Row = Row { effects : BTreeSet<Effect> }
+  deriving (Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)
+
+instance Row
+  export empty : Self
+  empty = Row { effects = BTreeSet::new () }
+
+  export single : Effect -> Self
+  single effect =
+    mut effects = BTreeSet::new ()
+    .insert effect effects
+    Row { effects }
+
+  export from_effects : Vec<Effect> -> Self
+  from_effects every =
+    mut effects = BTreeSet::new ()
+    for e in every
+      .insert e effects
+    Row { effects }
+
+  export is_empty : &self -> bool
+  is_empty self = .is_empty self.effects
+
+  export len : &self -> usize
+  len self = .len self.effects
+
+  export holds : &Effect -> &self -> bool
+  holds effect self = .contains effect self.effects
+
+  export effects : &self -> Vec<&Effect>
+  effects self = self.effects |> .iter |> .collect
+
+  export join : &Row -> &self -> Row
+  join other self =
+    mut effects = .clone self.effects
+    for e in .iter other.effects
+      .insert (.clone e) effects
+    Row { effects }
+
+  export is_subrow_of : &Row -> &self -> bool
+  is_subrow_of other self = .is_subset (&other.effects) self.effects
+
+  export without : &Effect -> &self -> Row
+  without effect self =
+    mut effects = .clone self.effects
+    .remove effect effects
+    Row { effects }
+
+  export discharge_fallible : &self -> Row
+  discharge_fallible self =
+    mut effects = BTreeSet::new ()
+    for e in .iter self.effects
+      if !.is_fallible e
+        .insert (.clone e) effects
+    Row { effects }
+
+  export fallible : &self -> Vec<&Effect>
+  fallible self = self.effects |> .iter |> .filter (\e -> .is_fallible e) |> .collect
+
+instance Display Row
+  fmt : &self -> &mut Formatter<'_> -> Result
+  fmt self f =
+    if .is_empty self
+      return write! \-> f \-> "pure"
+    shown = self.effects |> .iter |> .map (\e -> .to_string e) |> .collect : Vec<String>
+    write! \-> f \-> "#{(.join " + " (.as_slice shown))}"
+
+test "the pure row holds nothing"
+  r = Row::empty ()
+  assert! \-> .is_empty r
+  assert_eq! \-> .len r \-> 0
+  assert_eq! \-> .to_string r \-> "pure"
+
+test "a single-effect row holds exactly that effect"
+  r = Row::single Effect::Performs
+  assert! \-> .holds (&Effect::Performs) r
+  assert! \-> !.holds (&Effect::Suspends) r
+  assert_eq! \-> .to_string r \-> "io"
+
+test "join is union and is idempotent"
+  a = Row::single Effect::Performs
+  b = Row::single Effect::Suspends
+  joined = .join (&b) a
+  assert_eq! \-> .len joined \-> 2
+  assert_eq! \-> .join (&joined) joined \-> joined
+
+test "join is commutative"
+  a = Row::single Effect::Performs
+  b = Row::single Effect::Suspends
+  assert_eq! \-> .join (&b) a \-> .join (&a) b
+
+test "the pure row is the identity for join"
+  a = Row::single Effect::Panics
+  assert_eq! \-> .join (&Row::empty ()) a \-> a
+  assert_eq! \-> .join (&a) (Row::empty ()) \-> a
+
+test "a row is a subrow of its join with anything"
+  a = Row::single Effect::Performs
+  joined = .join (&Row::single Effect::Suspends) a
+  assert! \-> .is_subrow_of (&joined) a
+  assert! \-> !.is_subrow_of (&a) joined
+
+test "the pure row is a subrow of every row"
+  assert! \-> .is_subrow_of (&Row::single Effect::Panics) (Row::empty ())
+  assert! \-> .is_subrow_of (&Row::empty ()) (Row::empty ())
+
+test "a duplicate effect does not grow the row"
+  r = Row::from_effects (vec! \-> Effect::Performs \-> Effect::Performs \-> Effect::Suspends)
+  assert_eq! \-> .len r \-> 2
+
+test "discharging the fallible effects leaves the rest"
+  r = Row::from_effects (vec! \-> Effect::Fails (crate::ty::Ty::named "String") \-> Effect::Absent \-> Effect::Performs)
+  left = .discharge_fallible r
+  assert_eq! \-> .len left \-> 1
+  assert! \-> .holds (&Effect::Performs) left
+
+test "removing an effect it does not hold changes nothing"
+  r = Row::single Effect::Performs
+  assert_eq! \-> .without (&Effect::Suspends) r \-> r
+
+test "the fallible effects are reported separately"
+  r = Row::from_effects (vec! \-> Effect::Fails (crate::ty::Ty::named "String") \-> Effect::Performs)
+  assert_eq! \-> .len (.fallible r) \-> 1
+
+test "a row cannot exceed the alphabet, which is the clause-5 bound"
+  every = Row::from_effects (vec! \-> Effect::Fails (crate::ty::Ty::named "String") \-> Effect::Absent \-> Effect::Suspends \-> Effect::Performs \-> Effect::Mutates (.to_string "self") \-> Effect::Panics \-> Effect::Diverges)
+  assert_eq! \-> .len every \-> crate::effect::ALPHABET
+  assert! \-> .is_subrow_of (&every) (Row::single Effect::Performs) \-> "every row is a subrow of the full one"
+  assert_eq! \-> .join (&every) every \-> every \-> "the full row is the top of the lattice"
+
+test "a row prints its effects in a stable order"
+  r = Row::from_effects (vec! \-> Effect::Performs \-> Effect::Suspends)
+  assert_eq! \-> .to_string r \-> .to_string (Row::from_effects (vec! \-> Effect::Suspends \-> Effect::Performs))
