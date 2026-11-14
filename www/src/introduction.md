@@ -9,10 +9,10 @@ exhaustiveness checker, because Rust already has both and having two of anything
 means having two that can disagree. What Voltaic does have is an inference
 engine: it works out the types, effects and borrow modes you did not write, and
 writes them into the generated Rust explicitly, so rustc still checks a program
-that states its own types. What Voltaic changes
-is the *surface*: the off-side rule instead of braces, parenless calls,
-receiver-last methods, pipelines, comprehensions, and a `where` that holds
-local definitions.
+that states its own types. What Voltaic changes is the *surface*: the off-side
+rule instead of braces, parenless calls, receiver-first methods, guard ladders,
+comprehensions, optional signatures, and a `where` that holds local
+definitions.
 
 ```voltaic
 {{#include ../../examples/hello.vlt}}

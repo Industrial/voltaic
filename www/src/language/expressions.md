@@ -25,6 +25,26 @@ A nullary function is declared `name : ReturnType` and called as `name`. A
 signature of `: () -> T` declares a function taking *unit*, which is a
 different thing — and is the mistake to expect if you come from Rust.
 
+## A bare `.name` is resolved by the solver
+
+```voltaic
+{{#include ../../../examples/dot_resolution.vlt}}
+```
+
+`c.pos` is a field read and `c.depth` is a nullary method call, and **nothing
+syntactic separates them** — inference decides. `x.f y` needs no help, because a
+field access takes no arguments and so the form is a call whatever the types
+are; `x.f` is the ambiguous one.
+
+Generation 1 could not choose, which is why `.` was made field-access-only and
+[Declined and unreachable](../reference/declined.md) recorded UFCS as *requiring
+type knowledge to choose a shape*. Inference has that knowledge, and the decline
+is lifted.
+
+One limit worth knowing: this resolves for a method **declared in your
+program**. For a `std` method, write the `()` — `s.len ()` — which needs no
+solver at all.
+
 ## The pipeline operator
 
 ```voltaic
@@ -45,6 +65,25 @@ jumping position at every step.
 `|x| x.f`, with no call — which is the one trap here: `.f x` is the method call
 `x.f()`, so `(.f)` and `.f` are different constructs and eta-reducing a method
 call to a field section is a type error, not a simplification.
+
+## Operator declarations
+
+```voltaic
+{{#include ../../../examples/operator.vlt}}
+```
+
+`infixl 6 <+> = merge` gives an **existing** function a spelling and a fixity,
+so `a <+> b` is `merge(a, b)`. Nothing is declared and nothing is renamed — no
+item is emitted — which is what keeps go-to-definition pointing somewhere real.
+
+The spelling set is **closed**: twelve `<` · *char* · `>` forms, which is what
+keeps the lexer static. An undeclared use is `VLT0123`. Precedence is Haskell's
+0–9, mapped so every user operator binds looser than arithmetic, and `infix` is
+non-associative by diagnostic (`VLT0125`) because a Pratt loop's binding powers
+can only group one way.
+
+A Haskell-style *definition* stays out of reach: no Rust function can be named
+`<+>`, and inventing one would be a fabricated API.
 
 ## `is`, and chained comparison
 

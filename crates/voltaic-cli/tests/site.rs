@@ -167,6 +167,76 @@ fn every_sample_comes_from_the_gated_example_corpus() {
   );
 }
 
+/// Criterion: every example in the corpus is cited by some chapter.
+///
+/// The check above ties each *sample* to the corpus. This ties the corpus the
+/// other way, and it is the half that was missing: a corpus file nothing
+/// includes is a language feature with no documentation.
+///
+/// That is not hypothetical. **Eleven of the fifty-three examples were uncited**
+/// when this was written, and every one was a generation-2 surface change —
+/// `inferred.vlt`, `receiver_first.vlt`, `derives.vlt`, `juxtaposed.vlt`,
+/// `error_data.vlt`, `ladder.vlt`, `rows.vlt`, `else_tail.vlt`,
+/// `dot_resolution.vlt`, `operator.vlt`, `binder.vlt`. Meanwhile the book still
+/// taught `cond`, `defer` and `switch` as live constructs, and none of the three
+/// parses; `functions.md` stated the signature "is not optional"; and two
+/// chapters carried prose about one construct over a sample of another.
+///
+/// The provenance check was **green throughout all of it**, because it only
+/// ever looks at the samples a chapter already cites. A gate that inspects what
+/// is there cannot see what is absent, which is the general shape of the thing
+/// and the reason this test exists rather than a tightening of that one.
+#[test]
+fn every_example_is_cited_by_a_chapter() {
+  let root = root();
+  let cited: std::collections::BTreeSet<String> = markdown_under(&root.join("www/src"))
+    .iter()
+    .flat_map(|page| {
+      let body = std::fs::read_to_string(page).expect("a chapter should be readable");
+      includes(&body)
+    })
+    .filter_map(|target| {
+      Path::new(&target)
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+    })
+    .collect();
+
+  // `lexical.vlt` is the one file in the corpus asserted to **fail**, so it is
+  // quoted in `language/lexical.md` rather than included: a sample that does
+  // not compile, shown as a sample, reads as one that does. Named here so the
+  // exemption is a decision with a reason rather than a hole.
+  const QUOTED_NOT_INCLUDED: &[&str] = &["lexical.vlt"];
+
+  let mut uncited = Vec::new();
+  for entry in std::fs::read_dir(root.join("examples")).expect("should read examples/") {
+    let path = entry.expect("should read an examples/ entry").path();
+    if path.extension().is_none_or(|e| e != "vlt") {
+      continue;
+    }
+    let name = path
+      .file_name()
+      .expect("a file has a name")
+      .to_string_lossy()
+      .to_string();
+    if !cited.contains(&name) && !QUOTED_NOT_INCLUDED.contains(&name.as_str()) {
+      uncited.push(name);
+    }
+  }
+  uncited.sort();
+
+  assert!(
+    !cited.is_empty(),
+    "no includes were read at all, so this proved nothing"
+  );
+  assert!(
+    uncited.is_empty(),
+    "these examples are in the corpus but no chapter includes them, so whatever \
+     each one witnesses is undocumented:\n  {}",
+    uncited.join("\n  ")
+  );
+}
+
 /// Criterion: Ctrl-K opens, filters, navigates and closes, in a real browser.
 ///
 /// Driven by headless chromium and `--dump-dom` rather than by a browser

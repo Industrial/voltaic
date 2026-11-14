@@ -37,15 +37,25 @@ stack. Voltaic has no exceptions; `catch` is sugar over `Result`.
 Scope a run of `?` operations so that the first failure leaves the block rather
 than the whole function.
 
-## Typed domain errors
+## Typed domain errors are `data`
 
 ```voltaic
-{{#include ../../../examples/bind.vlt}}
+{{#include ../../../examples/error_data.vlt}}
 ```
 
-An `errors` declaration defines a domain error type with its variants and
-their messages, which is the shape that would otherwise be a `data`
-declaration plus a `Display` implementation plus a `From` chain.
+A `data` declaration whose variants carry a **trailing string literal** is an
+error type: the message is the literal, and the enum, its `Display` and its
+`Error` implementation all come from the shape rather than being written out.
+`Invalid String u32 "invalid value #{0} at line #{1}"` numbers its payload
+positionally. The `Error` impl is what makes the type usable as a
+`Box<dyn Error>`, and the example asserts it by compiling — a missing one does
+not coerce.
+
+Generation 1 spelled this as a dedicated `errors` declaration, the only
+construct in the language that emitted more than one Rust item. It is deleted as
+a *construct* and kept as a *shape*: identical output, one construct fewer. The
+keyword is still accepted while both forms are exercised, and
+`examples/errors.vlt` above is the older spelling of this same type.
 
 ## `unwrap` is discouraged, not forbidden
 

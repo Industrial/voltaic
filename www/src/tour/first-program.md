@@ -9,8 +9,11 @@ define the language.
 
 **`main : ()`** is a type signature, written separately from the definition.
 The `:` reads "has type", and `()` is Rust's unit, so this function returns
-nothing. Signatures are not decoration — the parser learns a function's shape
-from its signature, which is how it knows the line below starts a definition.
+nothing. The signature is **optional** — `main =` on its own also compiles, and
+Voltaic infers the same `fn main()` — but writing it is how you say what you
+meant rather than what you happened to write.
+[Functions](../language/functions.md) covers when a signature can be dropped
+and when inference has nothing to go on.
 
 **`main =`** begins that definition. Its body is everything indented beneath
 it, which is the off-side rule; the next chapter is about that alone.

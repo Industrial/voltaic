@@ -42,8 +42,10 @@ pattern-test operator `is` read as English with them and as line noise without.
 
 `examples/lexical.vlt` is the error-path example: it exercises token forms that
 no parser rule accepts, so it is the one file in the corpus asserted to
-**fail**. That is also why the repository has 44 examples and 43 goldens, which
-is not an off-by-one.
+**fail**. That is also why the corpus holds one more example than it holds
+golden expectations, which is not an off-by-one — `docs/STATUS.md` measures
+both counts from the working tree. It is quoted here rather than included,
+because a sample that does not compile would read as one that does.
 
 ---
 

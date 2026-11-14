@@ -10,8 +10,13 @@ Voltaic has one spelling for each thing, and `voltaic fmt` produces it.
 
 Where the surface admits two spellings of the same construct, one is canonical
 and the formatter rewrites the other into it. Parenless application is
-canonical; so is receiver-last method calling; so is `and` over `&&` in Voltaic
-source.
+canonical: `scaled (n)` is rewritten to `scaled n`.
+
+What the formatter deliberately does **not** decide is which of two *equally
+valid* constructs you meant. Method-call direction is left as written — both
+`xs.len ()` and `.len xs` survive `fmt` — and so is `&&` against `and`. Those
+are choices about what a line says, not about how it is laid out, and a
+formatter that rewrote them would be editing rather than formatting.
 
 This is not a style preference with a tool attached. A language with two
 spellings has two things to read, two things to search for, and two things for

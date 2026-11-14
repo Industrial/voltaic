@@ -4,6 +4,25 @@
 {{#include ../../../examples/data.vlt}}
 ```
 
+## Fields are `name Type`
+
+```voltaic
+{{#include ../../../examples/juxtaposed.vlt}}
+```
+
+A field is `name Type`, juxtaposed, with no `:` — and a record needs no
+constructor head, so `data Point { x f64, y f64 }` is the whole declaration.
+The constructor takes the type's own name.
+
+Two reasons, and the second is the one that pays. It removes a token per field,
+which over a corpus is the largest repeated-token class after signature lines.
+And it frees `:` for **ascription**, which generation 2 needs wherever a type is
+stated against an *expression* rather than declared beside a name.
+
+The `:` form still parses — `data Point = Point { x : f64, y : f64 }` emits the
+same struct — because the compiler's own sources are written in it. The accepted
+surface widens first and narrows once the tree catches up.
+
 ## One keyword for both
 
 `data` declares a struct or an enum — which one depends on whether it has
@@ -32,13 +51,26 @@ place the grammar reaches a method reference.
 {{#include ../../../examples/optic.vlt}}
 ```
 
-## `derive`
+## Derives are computed
 
 ```voltaic
-{{#include ../../../examples/synonym.vlt}}
+{{#include ../../../examples/derives.vlt}}
 ```
 
-Rust's derives, by name. Voltaic adds no derive macros of its own.
+`Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash` are derived for every
+`data` whose fields all support them, and `deriving (…)` is **not written**.
+`data Point { x u64, y u64 }` gets all eight. `data Named { label String }` gets
+seven, because `String` has no `Copy`. `data Scaled { ratio f64 }` gets five,
+because an `f64` has no `Eq`, `Ord` or `Hash` — an intersection over the fields
+rather than a special case for floats.
+
+`data !Copy Token { kind u64 }` opts out by name, because move semantics are
+sometimes the contract.
+
+The direction is deliberately conservative: the emitter reads a field's type as
+**text**, so a type it has no table for gets **nothing**. That is when you write
+`deriving (Debug, Clone)` or a Rust `#[derive(…)]` yourself, both of which are
+still accepted. Voltaic adds no derive macros of its own.
 
 ## Visibility
 

@@ -27,6 +27,27 @@ In a signature, `where` carries Rust's predicates verbatim:
 local-definition `where` of [Functions](functions.md), and the two cannot
 appear in the same place.
 
+## `given` — the verbatim generic list
+
+```voltaic
+{{#include ../../../examples/binder.vlt}}
+```
+
+Normally the generic list is **synthesised**: a lowercase type name is a type
+variable, and the list is the order of first appearance. That covers every
+signature in every other example here, and it is still the default.
+
+`given <…>` is the hatch for the shapes synthesis cannot reach —
+`given <const N: usize> [u8; N] -> u8`, `given <T: ?Sized>`,
+`given <U: From<T>, T>` where the declaration order is not the appearance
+order. The clause is Rust's own parameter list, verbatim, so every present and
+future Rust binder form is reachable and nothing can drift.
+
+The rule is **all or nothing per signature**: a signature carrying `given` gets
+no synthesised generic list, no `=>` bounds and no type rewrite, so its
+lowercase atoms are ordinary verbatim Rust types. That is what makes the `N` in
+`[u8; N]` the one the author declared.
+
 ## Classes and instances
 
 ```voltaic
@@ -41,7 +62,21 @@ instance elsewhere fails with `VLT0101` on every name in the line, which looks
 nothing like the real cause.
 
 It is a constraint rather than a defect: the parser needs a member's *shape*,
-not its types, so it does not cross the no-type-checker line.
+not its types. An **inherent** `instance` has no class to read, so its members
+infer instead and may omit their signatures entirely — see
+[Functions](functions.md).
+
+## What inference does, and what it does not
+
+Voltaic infers types, parameter modes and effect rows, and that is what lets a
+signature be omitted. What it computes is **what the emitter writes down** — the
+output states every type, borrow and lifetime explicitly, which is what keeps
+rustc an independent check rather than a rubber stamp.
+
+Deciding whether a program is *well-typed* is not inference's job and stays
+rustc's. There is no borrow checker and no exhaustiveness checker here, and
+there will not be one. A program inference accepts and rustc rejects is a **bug
+in Voltaic**, filed as one — not a mistake on your part.
 
 ## Async
 

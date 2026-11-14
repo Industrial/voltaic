@@ -35,7 +35,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---:|
 | `voltaic-ast` | 1721 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1416 | 14281 |
+| `voltaic-cli` | 1416 | 14351 |
 | `voltaic-diag` | 1055 | 0 |
 | `voltaic-driver` | 3706 | 316 |
 | `voltaic-emit` | 3974 | 4647 |
@@ -47,7 +47,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-mcp` | 464 | 776 |
 | `voltaic-parser` | 6019 | 787 |
 | `voltaic-seed` | 146 | 1130 |
-| **total** | **29626** | **27388** |
+| **total** | **29626** | **27458** |
 
 ---
 

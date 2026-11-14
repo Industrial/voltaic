@@ -15,13 +15,21 @@ brings a path into scope exactly as `use` does.
 That example is the repository's own map of what a Voltaic program can reach,
 and it is in CI, so it is the honest answer rather than an aspiration.
 
-## Method calls put the receiver last
+## Method calls put the receiver first
 
-`.len x` is `x.len()`. The method name leads and the receiver follows, which is
-what makes method calls compose with parenless application and with the
-pipeline operator. A bare `(.f)` is a *field* section — it emits a closure
-reading the field `f` — and is not a method reference, which is a distinction
-worth knowing before you try to eta-reduce a call.
+`x.max 3` is `max(x, 3)` — the receiver leads, so a chain reads left to right.
+For a call with no arguments write the `()`: `x.len ()`. Those parentheses are
+the whole difference from a field read, since `x.len` on its own would select a
+field called `len` — unless inference can tell that `len` is a method you
+declared, which it can for your own types but not for `std`'s.
+
+A `.` in **head** position is the older receiver-last form and still works:
+`.len xs` is `xs.len()` too. That is what lets a method compose with parenless
+application and with the pipeline operator.
+
+A bare `(.f)` is a *field* section — it emits a closure reading the field `f` —
+and is not a method reference, which is a distinction worth knowing before you
+try to eta-reduce a call.
 
 ## The escape hatch
 

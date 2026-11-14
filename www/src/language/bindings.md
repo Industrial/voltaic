@@ -17,27 +17,59 @@ The early-return form. A `guard` whose condition fails runs its `else` branch,
 which must diverge. It is the construct that keeps the happy path at one
 indentation level instead of nesting every precondition.
 
-## `cond`
+## The guard ladder
 
-A multi-branch conditional with no scrutinee — the form Rust writes as
-`if … else if … else`, flattened so each branch sits at one level.
+```voltaic
+{{#include ../../../examples/ladder.vlt}}
+```
+
+A multi-branch conditional is a **guard ladder** — `| condition = value` rows
+with `| _ =` as the catch-all — and it is admissible **wherever a value is**,
+not only as a clause body. Nothing delimits it: the dedent ends it, which is
+why a construct that needs `if`/`else`/`end` in other languages needs neither
+bracket nor keyword here.
+
+## Pattern rows
+
+```voltaic
+{{#include ../../../examples/rows.vlt}}
+```
+
+A ladder arm may be a **pattern row** — `| held is Some _n = "some"` — which is
+what an inline `case` was for. Multi-clause definitions already give you
+pattern rows on a function's parameters; this is the same dispatch in the
+middle of a body, where multi-clause dispatch cannot reach.
+
+## A binding with an `else` tail
+
+```voltaic
+{{#include ../../../examples/else_tail.vlt}}
+```
+
+`Some v = .pop (&mut rest) else break` is Rust's let-else, stated explicitly
+like everything else Voltaic emits. The tail takes any diverging statement, and
+`return` is the one that makes this the form for an early exit:
+`Some head = .first xs else return None`.
 
 ## `with` — receiver-implicit mutation
 
 Inside a `with` block the receiver is implicit, so a run of mutations on one
 value reads as a list of operations rather than as the same name repeated.
 
-## `use` — callback flattening
+## Named bind — callback flattening
 
-`use` turns a callback-taking call into a straight-line binding, which is the
-difference between a pyramid of closures and a sequence of steps. It is the
-same shape as a `do` block, and it is why Voltaic needs no async runtime of its
-own.
+```voltaic
+{{#include ../../../examples/bind.vlt}}
+```
 
-## `defer`
-
-Runs its body when the enclosing scope ends. For the cases where Rust would
-want a `Drop` guard and the value is not yours to implement one on.
+`do .method` is a block modifier, and `<-` inside it binds through the method
+the modifier names — so a pyramid of callbacks becomes a sequence of steps.
+This is the construct [Declined and unreachable](../reference/declined.md)
+refused as a *general monadic comprehension*, reopened on the terms that
+document set: the **modifier** is the type-free discrimination, so Voltaic
+chooses nothing between `flat_map` and `and_then` — it transcribes the method
+you named. The final row is written out for the same reason, rather than having
+a `pure` inserted for you.
 
 ## Blocks, labels and loops
 
