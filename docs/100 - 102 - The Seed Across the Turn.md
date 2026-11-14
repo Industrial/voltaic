@@ -351,11 +351,80 @@ it can do is refuse a provenance table that states the forbidden thing, and refu
 one that states nothing — and the second is the failure that matters, because an
 absent row reads as fine while a present wrong one reads as verified.
 
-### 10.5 What remains
+### 10.5 Steps 2, 3 and 4 are done, and the precondition was the ladder
 
-Leaves 1–6 — building the generation-2 front end's blob, `fixpoint` on g2, and
-retiring g1 — all need row 99's surface to exist. Nothing in this row's remaining
-scope can precede it, which is what §2's precondition was about and still is.
+Leaves 1–6 needed row 99's surface to exist. It does now: doc 87 §5.7's ladder
+expression and §5.6's `else` tail were the last two pieces, and the two commits
+that added them are what unblocked this row rather than anything in it.
 
-*Still to fill when leaves 1–6 land: step 2's baseline, g2's full provenance, and
-whether step 4's byte-identity held on the first attempt.*
+**Step 2, the baseline.** Every generated `src/` deleted, `./bootstrap.sh` from
+`voltaic-g1.wasm`, build, test: **0.58s** to regenerate fourteen crates,
+**2.88s** to `cargo build`, **1301/1301**. Taken before anything interesting
+happened, which is §3's whole reason for ordering it second — a later failure is
+now attributable.
+
+The generated trees were confirmed untracked **in the tree** first, not in
+`.tmp/`: `git ls-files "crates/*/src/**/*.rs"` reports zero. `AGENTS.md` records
+why that check is not optional — a scratch probe answers a different question
+about git status than the repository does, optimistically.
+
+**Step 3, the g2 blob.** `seed/voltaic-g2.wasm`, 1,084,471 bytes, 79,301 more
+than g1 — the two surface additions, nothing surprising, since both blobs are the
+same crate at two commits. `seed/SEED.md` now carries an identity table per
+generation and `moon.yml` a task per blob.
+
+Two tasks rather than one with an argument, and the reason is the invariant: g1's
+blob is frozen at its own provenance for the duration of the turn and g2's tracks
+the tree, so a single parameterised task would put refreshing the wrong one one
+typo away — and refreshing g1 from a generation-2 tree is exactly what §1.2
+forbids, caught by `blob.rs` only *after* the bytes were replaced.
+
+`blob.rs` was generalised to match, and one hazard in doing so is worth keeping:
+**a line-wise pass over `SEED.md` would have stamped one blob's hash onto both
+tables.** With one table, "rewrite every `| blake3 |` row" was correct; with two
+it is a bug that leaves the test *passing* while one blob's provenance is wrong.
+The blessing is per-section, keyed by each table's `compiles` row — which is also
+what determines the filename, so there is no second copy of the mapping.
+
+It gained a fourth test for the other direction. The size-and-hash check iterates
+the *tables*, so it is blind to a `.wasm` in `seed/` with no table —
+an orphaned blob from an abandoned generation, tracked and a megabyte, with
+nothing asserting anything about it. `every_committed_blob_has_a_provenance_table`
+iterates the *directory*. Two-sided, for the reason this repository keeps
+rediscovering: a list plus a check that reads the list is narrow in one direction
+only.
+
+**Step 4, byte-identity, and it held on the first attempt** — once the corpus was
+right. `crates/voltaic-seed/tests/across_the_turn.rs` runs the g2 blob and the
+native in-tree compiler over the same input and compares bytes: all fourteen
+ported crates, and all forty-seven examples that compile. No rustfmt on either
+side, deliberately, since formatting both would normalise away the one class of
+disagreement the test exists to catch.
+
+It failed on its first run, and not on a disagreement: **`examples/lexical.vlt` is
+not a compilable program.** It is a lexer fixture — `[0, ...rest, 9]`,
+`total : u64`, a run of token shapes — and `voltaic build` rejects it exactly as
+the seed does. Pointing a compiler at `examples/` therefore fails before any
+comparison happens. The corpus is now staged from the examples that **have a
+golden**, which is derived from the tree rather than a second list: `tests/golden/`
+holds a `.vrs` for every example that compiles, and exactly one example has none.
+
+The falsification is worth recording because it is also the first hard evidence
+the two generations are distinct. Run g1 over the same staged corpus and it
+rejects **four of forty-seven** — `ladder`, `else_tail`, `inferred`, `rows` —
+emitting 43 files where g2 emits 47. So the comparison is not vacuous, g1 cannot
+read generation 2, g2 can, and the four-file gap names precisely what the turn has
+added so far.
+
+### 10.6 What remains
+
+Steps 5 and 6. Step 5 is row 103's — migrating the tree's source to generation 2,
+crate by crate, flipping each `GENERATION` line to `g2`. Step 6 is `fixpoint` on
+g2 twice on a clean clone, and only then is `voltaic-g1.wasm` deleted and
+`GENERATION` reduced to one generation.
+
+`fixpoint.rs` still runs against g1, which is correct while every crate is `g1`:
+it asks whether the compiler reproduces itself through the blob that actually
+bootstraps the tree. It moves to g2 when the last crate does, not before — §3.1's
+reason, which is that g1 stays until there is something proven able to replace
+it.

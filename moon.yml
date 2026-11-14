@@ -156,7 +156,26 @@ tasks:
         wasm-opt -Oz --enable-bulk-memory \
           -o seed/voltaic-g1.wasm \
           target/wasm32-wasip1/release/voltaic-seed.wasm
-        echo "seed/voltaic-g1.wasm is $(stat -c %s seed/voltaic-g1.wasm) bytes"
+        stat -c "seed/voltaic-g1.wasm is %s bytes" seed/voltaic-g1.wasm
+        echo "now: VOLTAIC_UPDATE=1 cargo test -p voltaic-seed --test blob"
+    inputs:
+      - 'crates/voltaic-seed/src/**/*'
+      - 'crates/voltaic-seed/Cargo.toml'
+    options:
+      cache: false
+      outputStyle: buffer-only-failure
+  seed-refresh-g2:
+    description: 'Rebuild seed/voltaic-g2.wasm from crates/voltaic-seed'
+    command: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        cargo build --release -p voltaic-seed --target wasm32-wasip1
+        wasm-opt -Oz --enable-bulk-memory \
+          -o seed/voltaic-g2.wasm \
+          target/wasm32-wasip1/release/voltaic-seed.wasm
+        stat -c "seed/voltaic-g2.wasm is %s bytes" seed/voltaic-g2.wasm
         echo "now: VOLTAIC_UPDATE=1 cargo test -p voltaic-seed --test blob"
     inputs:
       - 'crates/voltaic-seed/src/**/*'

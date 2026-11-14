@@ -1,10 +1,25 @@
-# `voltaic-g1.wasm` — the bootstrap seed
+# The bootstrap seeds
 
-Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 3.
+Plan 72 (`docs/66 - 72 - The Seed Compiler.md`) leaf 3, with a second generation
+added by row 102 (`docs/100 - 102 - The Seed Across the Turn.md`) step 3.
 
-This directory holds **one binary**, and it is the only binary this repository
-tracks. It is `crates/voltaic-seed` compiled to `wasm32-wasip1`: `.vlt` in, `.rs`
-out, and nothing else — no `check`, no `fmt`, no `watch`, no colour.
+This directory holds the **only binaries this repository tracks**. Each is
+`crates/voltaic-seed` compiled to `wasm32-wasip1`: `.vlt` in, `.rs` out, and
+nothing else — no `check`, no `fmt`, no `watch`, no colour.
+
+There are two for the duration of the turn, and `seed/GENERATION`'s third column
+is what picks between them per crate:
+
+| | compiles | built by | why it exists |
+|---|---|---|---|
+| `voltaic-g1.wasm` | g1 | the pre-Voltaic Rust implementation | every crate's `.vlt` is generation 1 today |
+| `voltaic-g2.wasm` | g2 | the generation-1-written front end in the tree | row 103 migrates crates to generation 2 one at a time |
+
+Two, rather than one replaced in place, because row 102 §3.1 keeps g1 until
+`fixpoint` is green on g2 twice: retiring it when it stops being *used* would mean
+a defect found in g2 leaves nothing able to rebuild the repository, and that
+defect would be found on a clean clone, where the generated trees are absent. The
+cost of keeping it is one megabyte for the duration of the turn.
 
 ## What it is for
 
@@ -25,7 +40,7 @@ verified by a compiler the seed is supposed to underwrite.
 
 `docs/64 - 70 - The Source Beside the Crate.md` §1 is the full survey.
 
-## Identity
+## Identity — g1
 
 | | |
 |---|---|
@@ -66,27 +81,58 @@ The update rewrites this table and then **fails**, which is deliberate and is ho
 every other expectation in this repository behaves: a changed hash is a changed
 compiler and has to be looked at rather than absorbed into a green build.
 
-## How to rebuild it
+## Identity — g2
+
+| | |
+|---|---|
+| built from commit | the commit that adds this table — row 102 step 3 |
+| compiles | g2 |
+| built by | the generation-1-written front end in the tree, which is what doc 100 §1.2 requires |
+| size | 1084471 bytes |
+| blake3 | `598986de06e2b032951907d66ca84abd2becccadb8ded95ee4b26bd61914bd8e` |
+
+This is the invariant's **ordinary** case, where g1's was the base case. The
+compiler in the tree reads generation 2 — doc 87 §5.6's `else` tail and §5.7's
+ladder expression are the last two pieces, added by row 99 wave 2 — and is itself
+written in generation 1. So it can produce generation 2's seed *before* generation
+1's source is replaced, which is the ordering the invariant is about.
+
+`blob.rs` asserts the pair: `built by` names `g1` and `compiles` names `g2`, and a
+blob whose `built by` named its own generation is refused.
+
+It is **79,301 bytes larger** than `voltaic-g1.wasm`, which is the two surface
+additions and their tree-sitter-free plumbing rather than anything surprising;
+both blobs are the same crate at different commits.
+
+## How to rebuild them
 
 ```bash
-moon run :seed-refresh
+moon run :seed-refresh      # seed/voltaic-g1.wasm
+moon run :seed-refresh-g2   # seed/voltaic-g2.wasm
 ```
 
-which is exactly:
+which are exactly:
 
 ```bash
 cargo build --release -p voltaic-seed --target wasm32-wasip1
 wasm-opt -Oz --enable-bulk-memory \
-  -o seed/voltaic1.wasm \
+  -o seed/voltaic-g1.wasm \
   target/wasm32-wasip1/release/voltaic-seed.wasm
 ```
+
+with `-o seed/voltaic-g2.wasm` for the other. **Two tasks and not one with an
+argument**, because what they build is not the same thing: g1's blob is frozen at
+its own provenance for the duration of the turn and g2's tracks the tree. A single
+task would make refreshing the wrong one a typo away, and refreshing g1 from a
+generation-2 tree is precisely the invariant violation `blob.rs` exists to catch —
+except that it would catch it only *after* the bytes had been replaced.
 
 `wasm-opt` is not optional and not cosmetic: the release build is 1,351,423
 bytes and `-Oz` takes it to 913,549, so a blob built without it is a third
 larger for no reason. `devenv.nix` pins both `binaryen` (for `wasm-opt`) and
 `wasmtime` (to run the result).
 
-## When to rebuild it
+## When to rebuild them
 
 **Whenever the seed can no longer parse this repository's own `.vlt`.** That is
 the version-skew rule, and `AGENTS.md` carries it:
@@ -103,10 +149,10 @@ unreleased, which is also the window in which Voltaic's surface still moves.
 Refreshing it for any other reason is churn: a new blob is ~900 KB of history
 that does not delta-compress, so the rule is a trigger and not a cadence.
 
-## Running it
+## Running them
 
 ```bash
-wasmtime run --dir . seed/voltaic1.wasm crates/voltaic-ast/vlt <out-dir>
+wasmtime run --dir . seed/voltaic-g1.wasm crates/voltaic-ast/vlt <out-dir>
 ```
 
 `--dir .` is required — WASI grants no filesystem access by default, so without
