@@ -35,19 +35,19 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---:|
 | `voltaic-ast` | 1626 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1402 | 12372 |
+| `voltaic-cli` | 1402 | 12378 |
 | `voltaic-diag` | 1058 | 0 |
 | `voltaic-driver` | 2701 | 0 |
 | `voltaic-emit` | 3696 | 4572 |
 | `voltaic-fmt` | 1494 | 1497 |
 | `voltaic-fuzz` | 54 | 362 |
 | `voltaic-lattice` | 5712 | 1151 |
-| `voltaic-lexer` | 2176 | 1196 |
+| `voltaic-lexer` | 2189 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 459 | 776 |
-| `voltaic-parser` | 5805 | 787 |
+| `voltaic-parser` | 5829 | 787 |
 | `voltaic-seed` | 146 | 771 |
-| **total** | **27564** | **24457** |
+| **total** | **27601** | **24463** |
 
 ---
 
@@ -57,7 +57,7 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 |---|---:|---|
 | `examples/*.vlt` | 45 | the CI-checked source of truth for what works |
 | `tests/golden/*.vrs` | 44 | the generated Rust, as exact text |
-| `crates/voltaic-cli/tests/ui/*.vlt` | 56 | the diagnostic a bad program gets |
+| `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
 | `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 

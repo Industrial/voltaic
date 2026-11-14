@@ -1,0 +1,18 @@
+-- Row 99 wave 2 deleted `otherwise`: a guard ladder's catch-all arm is spelled
+-- `_`, the same wildcard a `case` arm and a parameter pattern use.
+--
+-- Without this diagnostic the program would still *parse* — `otherwise` is an
+-- ordinary identifier now, so the arm reads as a guard whose condition is a
+-- variable of that name — and fail at rustc with `E0425: cannot find value`.
+-- That is rustc being the authority, which is the charter, and a poor migration
+-- message: the program is not wrong about a value, it is written in the
+-- previous spelling.
+tier : i32 -> &'static str
+tier n
+  | n > 9 = "big"
+  | otherwise = "small"
+
+main : ()
+main =
+  println! \-> "#{(tier 3)}"
+  ()

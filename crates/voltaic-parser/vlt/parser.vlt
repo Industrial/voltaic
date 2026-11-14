@@ -375,7 +375,10 @@ instance (Parser 'a)
         break
       start = (.peek_span self).0
       .advance self
-      cond = if .check (&TokenKind::Kw Keyword::Otherwise) self
+      if .names_the_retired_catch_all self
+        message = .to_string "`otherwise` is no longer the catch-all arm of a guard ladder"
+        return Err (ParseError::with_help Code::RetiredSpelling message "write `_`, which is the same wildcard a `case` arm and a parameter pattern use. Row 99 wave 2 deleted the keyword: one spelling for one meaning" (.peek_span self))
+      cond = if .is_wildcard self
         .advance self
         None
       else
@@ -386,6 +389,17 @@ instance (Parser 'a)
       .push (Guard { condition = cond, body, span = (start, (.prev_span self).1) }) rows
     debug_assert! \-> !.is_empty rows \-> "`opens_a_guard_list` guarantees a first `|`"
     Ok rows
+  export(crate) is_wildcard : &self -> bool
+  is_wildcard self = case &(.peek self).kind of
+    TokenKind::Ident text | text == "_" -> true
+    _ -> false
+  export(crate) names_the_retired_catch_all : &self -> bool
+  names_the_retired_catch_all self =
+    if !.is_some_and (\t -> t.kind == TokenKind::Eq) (.peek_at 1 self)
+      return false
+    case &(.peek self).kind of
+      TokenKind::Ident text | text == "otherwise" -> true
+      _ -> false
   export(crate) try_draw : &mut self -> Result<Option<Expr>, ParseError>
   try_draw self =
     if !.check (&TokenKind::Kw Keyword::With) self

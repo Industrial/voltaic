@@ -1014,10 +1014,10 @@ const WITNESSES: &[Covers] = &[
   },
   Covers {
     row: "Guards",
-    spelling: "`| spend > 10_000 = …` and `| otherwise = …`",
+    spelling: "`| spend > 10_000 = …` and `| _ = …`",
     witness: Witness::All(&[
       Witness::Toks(&["|", "«id»", ">"]),
-      Witness::Toks(&["|", "otherwise", "="]),
+      Witness::Toks(&["|", "_", "="]),
     ]),
   },
   Covers {

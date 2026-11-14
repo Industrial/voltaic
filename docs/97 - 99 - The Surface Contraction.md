@@ -516,6 +516,93 @@ belongs with row 102, which owns generation-tagged seeds. Recording it here
 because the discovery is this row's, and because the next session should not
 re-derive it.
 
+### 10.14 Wave 2 is half the size §4 states: six of its eleven constructs were never keywords
+
+§4's wave 2 reads:
+
+> `if`/`else if`/`match`/`case`/`cond`/`switch`/`when`/`iff`/`unless`/`guard`/`then`
+> collapse into the guard ladder and pattern rows.
+
+Measured against `crates/voltaic-lexer/vlt/keyword.vlt`, **six of those eleven are
+not keywords and never were**: `match`, `cond`, `switch`, `iff`, `unless`, `then`.
+Five are: `if`, `else`, `case`, `when`, `guard`.
+
+`keyword.vlt`'s own `leaves_ordinary_identifiers_alone` test already listed
+`iff`, `cond`, `unless`, `switch` and `then` as free identifiers — so the
+repository has asserted for some time that they are not keywords, while this
+plan's wave list named them as constructs to delete. Nothing was wrong; the list
+was written from the *languages being drawn from* rather than from Voltaic's
+lexer, which is the right way to design a surface and the wrong way to size the
+work of changing one.
+
+So wave 2's real targets are `if`, `else`, `case`, `when`, `guard`, `otherwise`
+and the loop set (`while`, `until`, `for`, `loop`, `in`). That is substantially
+less than eleven-into-one.
+
+### 10.15 `otherwise` → `_` is done, and it cost eight follow-throughs
+
+The first of wave 2's real deletions. A guard ladder's catch-all arm is spelled
+`_`, which is the wildcard it already is in a `case` arm, a parameter pattern and
+a binding. One spelling for one meaning; the keyword set drops from 58 to 57.
+
+The surface corpus was **three lines** — `examples/guards.vlt` twice and
+`examples/testing.vlt` once — so this did not need wave 1's two-step
+accept-then-reject. A deprecation window that exists for nobody is a second
+spelling to carry.
+
+What it did need was eight consequences, and they are the honest measure of what
+deleting a keyword costs here:
+
+| | |
+|---|---|
+| `voltaic-emit/tests/guards.rs` | two tests whose fixtures used it, and whose names said `otherwise` |
+| `voltaic-fmt/vlt/item_text.vlt` | the formatter *printed* the keyword when a guard had no condition |
+| `voltaic-lexer`'s round-trip test | the word moves from the reserved list to the free-identifier list |
+| `editors/vim/syntax/vlt.vim` | coloured it |
+| `editors/vscode/syntaxes/voltaic.tmLanguage.json` | the same |
+| `tree-sitter-voltaic/grammar.js` | `choice("otherwise", $._expression)` |
+| `construct_coverage.rs` | the *Guards* row's witness tokens |
+| `editors.rs` | `otherwise` was one of six canaries proving the keyword scan still works |
+
+The last one is the interesting one. A canary list exists to catch a scan that has
+silently stopped working, and one of its six members was a construct being
+deleted — so the deletion broke the test that watches the tests. `newtype`
+replaced it, and **not** `guard`, for a reason worth keeping: `grammar.js` also
+has `field("guard", …)`, and the extractor skips any literal that is also a field
+name, so `guard` is not in the derived set at all.
+
+### 10.16 The retired spelling gets a diagnostic, because rustc's answer was right and useless
+
+Deleting the keyword left `otherwise` a free identifier, so `| otherwise = …`
+still *parses* — as a guard whose condition is a variable of that name — and
+fails at rustc:
+
+```
+E0425: cannot find value `otherwise` in this scope
+```
+
+That is rustc being the authority, which is the charter, and it is a poor
+migration message: the program is not wrong about a value, it is written in the
+previous spelling. `VLT0118` already exists for exactly this and already had
+precedent in `item.vlt`, so:
+
+```
+error[VLT0118]: `otherwise` is no longer the catch-all arm of a guard ladder
+  --> retired_otherwise.vlt:13:5
+   |
+13 |   | otherwise = "small"
+   |     ^^^^^^^^^
+  = help: write `_`, which is the same wildcard a `case` arm and a parameter
+    pattern use. Row 99 wave 2 deleted the keyword: one spelling for one meaning
+```
+
+A parse error rather than a lint, because the construct is gone and the program
+cannot mean anything else. `tests/ui/retired_otherwise.vlt` is the fixture.
+
+**This is the shape every remaining wave-2 deletion should take**, and it is
+cheap: the keyword's removal is three lines, and the retired-spelling diagnostic
+is what turns an unrelated rustc error into an instruction.
+
 ### 10.2 Both corpora were necessary, and that was not the expectation
 
 The plan treats the compiler's own source as the demanding corpus — 11,668 lines

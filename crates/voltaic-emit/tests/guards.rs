@@ -13,7 +13,7 @@ fn vrs(src: &str) -> String {
   emit(&parse_source(src).expect("should parse"))
 }
 
-/// §2.3's own example, including that `otherwise` becomes a bare `else`.
+/// §2.3's own example, including that `_` becomes a bare `else`.
 #[test]
 fn a_ladder_becomes_an_if_else_chain() {
   let rust = vrs(
@@ -21,27 +21,27 @@ fn a_ladder_becomes_an_if_else_chain() {
      tier spend\n  \
        | spend > 10_000 = \"platinum\"\n  \
        | spend > 1_000 = \"gold\"\n  \
-       | otherwise = \"basic\"\n",
+       | _ = \"basic\"\n",
   );
   assert!(rust.contains("if spend > 10_000 {"), "{rust}");
   assert!(rust.contains("} else if spend > 1_000 {"), "{rust}");
   assert!(rust.contains("} else {"), "{rust}");
   assert!(
-    !rust.contains("otherwise"),
-    "otherwise is not emitted:\n{rust}"
+    !rust.contains("_ ="),
+    "the catch-all spelling is not emitted:\n{rust}"
   );
 }
 
-/// `otherwise` must not become `if true`. A conditional chain has an implicit
+/// The catch-all must not become `if true`. A conditional chain has an implicit
 /// `else` of `()`, so a guarded function with a return type would stop
 /// compiling — and rustc, not Voltaic, is what notices. Doc 18 §1.
 #[test]
-fn otherwise_does_not_become_a_condition() {
+fn the_catch_all_does_not_become_a_condition() {
   let rust = vrs(
     "tier : u64 -> &'static str\n\
      tier spend\n  \
        | spend > 10 = \"high\"\n  \
-       | otherwise = \"low\"\n",
+       | _ = \"low\"\n",
   );
   assert!(!rust.contains("if true"), "{rust}");
   // The chain closes, so the whole `if` is one expression with a value.
@@ -61,7 +61,7 @@ fn a_ladder_needs_no_return() {
     "sign : i32 -> i32\n\
      sign n\n  \
        | n > 0 = 1\n  \
-       | otherwise = 0\n",
+       | _ = 0\n",
   );
   assert!(!rust.contains("return"), "{rust}");
 }
@@ -75,17 +75,17 @@ fn a_ladder_lives_inside_a_match_arm() {
      step 0 = 0\n\
      step n\n  \
        | n > 100 = 100\n  \
-       | otherwise = n\n",
+       | _ = n\n",
   );
   assert!(rust.contains("match "), "{rust}");
   assert!(rust.contains("0 => 0,"), "{rust}");
   assert!(rust.contains("if n > 100 {"), "{rust}");
 }
 
-/// A guard with no `otherwise` still emits — Voltaic does not decide whether a
+/// A guard with no catch-all still emits — Voltaic does not decide whether a
 /// ladder is total, so the chain reaches rustc and rustc reports the type.
 #[test]
-fn a_ladder_without_otherwise_still_emits() {
+fn a_ladder_without_a_catch_all_still_emits() {
   let rust = vrs("noisy : ()\nnoisy\n  | 1 > 0 = println! \\-> \"hi\"\n");
   assert!(rust.contains("if 1 > 0 {"), "{rust}");
   assert!(!rust.contains("else"), "nothing is invented:\n{rust}");

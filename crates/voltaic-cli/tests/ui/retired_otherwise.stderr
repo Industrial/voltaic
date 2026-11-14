@@ -1,0 +1,13 @@
+error[VLT0118]: `otherwise` is no longer the catch-all arm of a guard ladder
+  --> retired_otherwise.vlt:13:5
+   |
+13 |   | otherwise = "small"
+   |     ^^^^^^^^^
+  = help: write `_`, which is the same wildcard a `case` arm and a parameter pattern use. Row 99 wave 2 deleted the keyword: one spelling for one meaning
+
+error[VLT0106]: a module-scope binding needs `const` or `static` and a type: `const otherwise : T = …`. Rust forbids `let` at module scope, and doc 03 §13.4 corrects doc 01 §4.3 accordingly
+  --> retired_otherwise.vlt:13:5
+   |
+13 |   | otherwise = "small"
+   |     ^^^^^^^^^
+

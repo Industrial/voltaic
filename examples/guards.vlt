@@ -2,12 +2,14 @@
 -- running the generated Rust: a ladder lowered to the wrong chain prints the
 -- wrong word.
 
--- A ladder, including `otherwise` as the final catch-all.
+-- A ladder, with `_` as the final catch-all — the same wildcard a `case` arm and
+-- a parameter pattern use. Row 99 wave 2 deleted `otherwise`: one spelling for
+-- one meaning, and the keyword it cost was the eleventh of fifty-eight.
 tier : u64 -> &'static str
 tier spend
   | spend > 10_000 = "platinum"
   | spend > 1_000 = "gold"
-  | otherwise = "basic"
+  | _ = "basic"
 
 -- Several equations, each with a short body on the `=` line.
 fib : u64 -> u64
@@ -21,7 +23,7 @@ step : u64 -> u64
 step 0 = 0
 step n
   | n > 100 = 100
-  | otherwise = n
+  | _ = n
 
 main : ()
 main =

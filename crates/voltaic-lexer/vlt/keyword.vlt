@@ -24,7 +24,6 @@ export data Keyword
   | Loop
   | Case
   | Of
-  | Otherwise
   | When
   | Do
   | Break
@@ -87,7 +86,6 @@ instance Keyword
     "loop" -> Some Loop
     "case" -> Some Case
     "of" -> Some Of
-    "otherwise" -> Some Otherwise
     "when" -> Some When
     "do" -> Some Do
     "break" -> Some Break
@@ -149,7 +147,6 @@ instance Keyword
     Loop -> "loop"
     Case -> "case"
     Of -> "of"
-    Otherwise -> "otherwise"
     When -> "when"
     Do -> "do"
     Break -> "break"
@@ -184,10 +181,10 @@ instance Keyword
     Union -> "union"
 
 test "round trips every spelling"
-  for word in ["mut", "if", "do", "case", "of", "otherwise", "data", "newtype", "deriving", "instance", "module", "not", "or", "guard", "catch", "loop", "Self", "self", "true", "errors", "implements"]
+  for word in ["mut", "if", "do", "case", "of", "data", "newtype", "deriving", "instance", "module", "not", "or", "guard", "catch", "loop", "Self", "self", "true", "errors", "implements"]
     kw = .expect "should be reserved" $ Keyword::from_text word
     assert_eq! \-> .text kw \-> word
 
 test "leaves ordinary identifiers alone"
-  for word in ["main", "print", "iff", "switched", "island", "notable", "Selfish", "and", "use", "defer", "cond", "into", "derive", "mod", "unless", "switch", "withhold", "then"]
+  for word in ["main", "print", "iff", "switched", "island", "notable", "Selfish", "and", "use", "defer", "cond", "into", "derive", "mod", "unless", "switch", "withhold", "then", "otherwise"]
     assert! \-> .is_none (Keyword::from_text word) \-> "#{word} should not reserve"

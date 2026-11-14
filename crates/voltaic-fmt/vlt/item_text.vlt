@@ -121,7 +121,7 @@ clause_text clause name indent source =
         |> .map (\r#guard ->
         r#test = case &r#guard.condition of
           Some condition -> expr_text condition 0 (indent + 1) source
-          None -> String::from "otherwise"
+          None -> String::from "_"
         arm = if same_line source r#guard.span.0 r#guard.body.span.0
           format! \-> " = #{(inline_body (&r#guard.body) (indent + 1) source)}"
         else

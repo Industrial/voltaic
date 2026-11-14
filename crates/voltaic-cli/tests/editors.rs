@@ -487,7 +487,13 @@ fn every_grammar_keyword_is_coloured() {
     "expected the grammar's keyword set, found {}: {keywords:?}",
     keywords.len()
   );
-  for expected in ["rust", "unsafe", "extern", "union", "deriving", "otherwise"] {
+  // `otherwise` was the sixth until row 99 wave 2 deleted it — a guard ladder's
+  // catch-all arm is spelled `_` now, which is not a keyword and so cannot be a
+  // canary. `newtype` replaces it, and `guard` does not, for a reason worth
+  // knowing: `grammar.js` also has `field("guard", …)`, and the extractor skips
+  // any literal that is also a field name. A canary only has to be a keyword the
+  // scan can actually derive.
+  for expected in ["rust", "unsafe", "extern", "union", "deriving", "newtype"] {
     assert!(
       keywords.contains(&expected.to_string()),
       "`{expected}` should be in the derived set, or this test is not reading \

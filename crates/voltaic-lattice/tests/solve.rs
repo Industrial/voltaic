@@ -79,7 +79,7 @@ fn a_guard_ladder_unifies_every_arm() {
     "tier : u64 -> &'static str\n",
     "tier spend\n",
     "  | spend > 10 = \"gold\"\n",
-    "  | otherwise = \"basic\"\n",
+    "  | _ = \"basic\"\n",
   );
   // `&'static str` reads as `&str`: a lifetime is not part of the type for
   // inference purposes, because Lattice does not infer lifetimes (doc 86 §6.3).

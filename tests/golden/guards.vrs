@@ -2,7 +2,9 @@
 // running the generated Rust: a ladder lowered to the wrong chain prints the
 // wrong word.
 
-// A ladder, including `otherwise` as the final catch-all.
+// A ladder, with `_` as the final catch-all — the same wildcard a `case` arm and
+// a parameter pattern use. Row 99 wave 2 deleted `otherwise`: one spelling for
+// one meaning, and the keyword it cost was the eleventh of fifty-eight.
 fn tier(spend: u64) -> &'static str {
     if spend > 10_000 {
         "platinum"

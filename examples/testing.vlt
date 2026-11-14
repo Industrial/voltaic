@@ -11,7 +11,7 @@ add a b = a + b
 halve : i32 -> Option<i32>
 halve n
   | n % 2 == 0 = Some (n / 2)
-  | otherwise = None
+  | _ = None
 
 main : ()
 main =
