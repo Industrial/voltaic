@@ -71,9 +71,7 @@ rust_hatch p =
     return Err (ParseError::expected "expected a `\"\"\"` block of Rust after `rust`, or an indented block on the lines under it" span)
   literal = .clone raw
   .advance p
-  verbatim_triple (&literal)
-    |> .map (\code -> (code, span))
-    |> .ok_or_else (\-> ParseError::expected "inline Rust needs a `\"\"\"` block or an indented one: a single-quoted string cannot hold Rust's own quotes" span)
+  ((verbatim_triple (&literal)).map (\code -> (code, span))).ok_or_else (\-> ParseError::expected "inline Rust needs a `\"\"\"` block or an indented one: a single-quoted string cannot hold Rust's own quotes" span)
 
 export(crate) rust_string_body : &str -> String
 rust_string_body text =
@@ -120,7 +118,7 @@ substitute_var sig var subject =
 export(crate) token_text : &TokenKind -> String
 token_text kind = case kind of
   TokenKind::Ident t -> .clone t
-  TokenKind::Kw kw -> kw |> .text |> .to_string
+  TokenKind::Kw kw -> kw.text ().to_string ()
   TokenKind::Int t or TokenKind::Float t -> .clone t
   TokenKind::Char c -> format! \-> "#{c:?}"
   TokenKind::Byte b ->

@@ -119,6 +119,17 @@ fn scoped_to() -> Option<String> {
   std::env::var("VOLTAIC_MIGRATE_CRATE").ok()
 }
 
+/// The crates `seed/GENERATION` marks `g2` — the ones leaf 6 has already taken
+/// across. Read from the file rather than counted, for that file's own reason:
+/// it is the only copy of which crate is which generation.
+fn migrated_crates() -> Vec<String> {
+  support::generations()
+    .into_iter()
+    .filter(|(_, _, generation)| generation == "g2")
+    .map(|(name, _, _)| name)
+    .collect()
+}
+
 #[test]
 fn collapsing_every_pipeline_changes_no_program() {
   let updating = std::env::var("VOLTAIC_UPDATE").is_ok();
@@ -128,6 +139,7 @@ fn collapsing_every_pipeline_changes_no_program() {
   let mut touched = 0;
   let mut stages = 0;
   let mut survived = Vec::new();
+  let mut unmigrated = Vec::new();
   for path in sources() {
     let text = std::fs::read_to_string(&path).expect("a listed source should be readable");
     if !text.contains("|>") {
@@ -138,6 +150,14 @@ fn collapsing_every_pipeline_changes_no_program() {
       continue;
     };
     touched += 1;
+    if after != text
+      && let Some(crate_name) = path
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().to_string())
+        .find(|c| migrated_crates().iter().any(|m| m == c))
+    {
+      unmigrated.push(format!("{} (in {crate_name}, marked g2)", path.display()));
+    }
     if after.contains("|>") {
       let line = after
         .lines()
@@ -175,10 +195,22 @@ fn collapsing_every_pipeline_changes_no_program() {
       rejected.push(format!("{}: {}", path.display(), verdict.explain()));
     }
   }
+  // **A crate marked `g2` must already be migrated**, which is the assertion
+  // that replaced a hard floor of `touched > 50`.
+  //
+  // That floor was right while the corpus was wholly generation 1 and said "the
+  // compiler's own source is written in pipelines". Row 103 leaf 6 drains it by
+  // design — it fell below 50 at the fifth crate — so a floor would have to be
+  // lowered each commit, which is a gate that reports whatever it is told.
+  //
+  // This is two-sided instead, and strictly stronger: it fails if a `g2` crate
+  // still has a pipeline the pass would rewrite, and it keeps meaning something
+  // when the last crate crosses, where a floor would have to be deleted.
   assert!(
-    touched > 50,
-    "only {touched} files hold a `|>`, which is too few to mean anything — the \
-     compiler's own source is written in pipelines"
+    unmigrated.is_empty(),
+    "these files are in crates `seed/GENERATION` marks `g2`, but the pass still \
+     rewrites them — so the crate was flipped without being migrated, or a \
+     pipeline was written into it afterwards: {unmigrated:#?}"
   );
   // The reach, reported rather than assumed. Until the formatter printed a
   // zero-argument `Dot` as `recv.name ()` the pass had to *decline* every
@@ -368,5 +400,67 @@ fn the_gate_rejects_a_rewrite_that_changes_the_call() {
     matches!(verdict, Gate::Differs { .. }),
     "renaming the method must fail the gate: {}",
     verdict.explain()
+  );
+}
+
+/// Formatting is a **fixpoint**: formatting twice equals formatting once.
+///
+/// This is the gate that was missing, and its absence cost a bad migration.
+/// `collapse_pipeline` builds `Expr::Dot { args: [] }`, the printer writes that
+/// as `recv.name ()`, and reparsing *that* yields `Expr::Dot { args: [Unit] }` —
+/// a different AST for the same program. `takes_a_postfix` distinguished the
+/// two, so pass one printed `self.cur.peek ().expect "…"` and pass two printed
+/// `(self.cur.peek ()).expect "…"`, adding a parenthesis per link forever.
+///
+/// Three things hid it, and all three are reasons to assert the property
+/// rather than any of its symptoms:
+///
+/// - the **identity gate still passed**, because both spellings lower to the
+///   same Rust, which is exactly what it compares;
+/// - `formatting_preserves_meaning` still passed, because the meaning *is*
+///   preserved — only the spelling grows;
+/// - the migration writes each file once, so the second format never ran until
+///   a later crate's migration re-walked an already-migrated file.
+///
+/// `no_real_arguments` is the fix: one `Unit` argument is no arguments, which is
+/// what the emitter has always believed — `h.items.len ()` emits
+/// `h.items.len()`, not `h.items.len(())`.
+#[test]
+fn formatting_is_a_fixpoint_over_the_whole_corpus() {
+  let mut unstable = Vec::new();
+  for path in sources() {
+    let text = std::fs::read_to_string(&path).expect("a listed source should be readable");
+    let Ok(program) = voltaic_parser::parse_source(&text) else {
+      continue;
+    };
+    let once = voltaic_fmt::format(&program, &text);
+    let Ok(reparsed) = voltaic_parser::parse_source(&once) else {
+      unstable.push(format!("{}: its own output does not parse", path.display()));
+      continue;
+    };
+    let twice = voltaic_fmt::format(&reparsed, &once);
+    if twice != once {
+      let at = once
+        .lines()
+        .zip(twice.lines())
+        .enumerate()
+        .find(|(_, (a, b))| a != b);
+      unstable.push(match at {
+        Some((n, (a, b))) => format!(
+          "{} line {}:\n  once: {}\n  twice: {}",
+          path.display(),
+          n + 1,
+          a.trim(),
+          b.trim()
+        ),
+        None => format!("{}: differs only in length", path.display()),
+      });
+    }
+  }
+  assert!(
+    unstable.is_empty(),
+    "formatting twice must equal formatting once, or every pass over a file \
+     rewrites it again — and a migration that re-walks an already-migrated \
+     crate would compound it: {unstable:#?}"
   );
 }

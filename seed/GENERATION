@@ -39,7 +39,7 @@ voltaic-diag 73 g2
 voltaic-lexer 74 g2
 voltaic-ast 68 g2
 voltaic-lattice 94 g2
-voltaic-parser 82 g1
+voltaic-parser 82 g2
 voltaic-fmt 69 g1
 voltaic-fuzz 75 g1
 voltaic-bench 76 g1

@@ -181,31 +181,22 @@ method_call_syntax name span =
   help = format! \-> "application is juxtaposition, so write `recv.#{name} args` with no parentheses and no commas. Doc 87 §1.2: `x.f y` is `f(x, y)`, the receiver first — row 99 wave 3 inverted the `.` that plan 57 §1.1 had made field-access-only, and the parenthesised form is the one spelling it did not take"
   ParseError::with_help Code::MethodCallSyntax "method-call syntax is retired" help span
 
-export(crate) data MethodContext = MethodContext { export vars : Vec<(String, String)>, export recording : Option<String>, export implementing : Option<String> }
+export(crate) data MethodContext { export vars Vec<(String, String)>, export recording Option<String>, export implementing Option<String> }
 
 instance MethodContext
   export(crate) for_class : &[Ident] -> Self
   for_class params =
-    vars = params
-      |> .iter
-      |> .map (\param -> (.clone param.text, rust_generic (&param.text)))
-      |> .collect
+    vars = (params.iter ().map (\param -> (.clone param.text, rust_generic (&param.text)))).collect ()
     MethodContext { vars, recording = None, implementing = None }
 
   export(crate) for_instance : Option<&str> -> &str -> Self
   for_instance var subject =
-    vars = var
-      |> .map (\found -> (.to_string found, .to_string subject))
-      |> .into_iter
-      |> .collect
+    vars = (var.map (\found -> (.to_string found, .to_string subject))).into_iter ().collect ()
     MethodContext { vars, recording = None, implementing = None }
 
   export(crate) reserved : &self -> Vec<String>
   reserved self =
-    self.vars
-      |> .iter
-      |> .map (\pair -> .clone pair.0)
-      |> .collect
+    (self.vars.iter ().map (\pair -> .clone pair.0)).collect ()
 
 export(crate) opens_a_section : &TokenKind -> bool
 opens_a_section kind = case kind of
@@ -281,10 +272,7 @@ export(crate) receiver : &mut Signature -> ()
 receiver sig =
   guard .position (\param -> .is_some_and (\ty -> .is_some (receiver_text (&ty.text))) (.as_ref param.ty)) (.iter sig.params) is Some at else
     return ()
-  text = sig.params[at].ty
-    |> .as_ref
-    |> .and_then (\ty -> receiver_text (&ty.text))
-    |> .expect "the position just matched"
+  text = (sig.params[at].ty.as_ref ().and_then (\ty -> receiver_text (&ty.text))).expect "the position just matched"
   span = sig.params[at].span
   sig.params[at] := Param { name = Ident { text, span }, ty = None, is_mut = false, span }
   if at > 0
@@ -394,7 +382,7 @@ export(crate) ungrouped : &str -> String
 ungrouped text =
   guard .and_then (\t -> .strip_suffix ')' t) (.strip_prefix '(' text) is Some inner else
     return .to_string text
-  chars : Vec<char> = inner |> .chars |> .collect
+  chars : Vec<char> = inner.chars ().collect ()
   mut depth : i32 = 0
   mut top_level_arrow = false
   mut top_level_comma = false

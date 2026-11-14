@@ -16,6 +16,7 @@ pipeline_text : &Expr -> &Expr -> usize -> &str -> String @ lhs shared, rhs shar
 power_of : &Expr -> Option<u8> ! none @ expr shared
 deref_text : &Expr -> &str @ e shared
 receiver : &Expr -> usize -> &str -> String @ expr owned, indent owned, source owned
+no_real_arguments : &[Expr] -> bool @ args shared
 takes_a_postfix : &Expr -> bool @ expr shared
 record_text : &Expr -> &[FieldInit] -> usize -> &str -> String @ head shared, fields shared, indent shared, source shared
 rust_hatch_text : &str -> usize -> String @ code shared, indent shared

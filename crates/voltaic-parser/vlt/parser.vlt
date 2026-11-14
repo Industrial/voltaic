@@ -64,7 +64,7 @@ parse toks src_len =
     return Err (vec! \-> ParseError { code = Code::NestingTooDeep, message, span = (0, 0), help = None })
   .run src_len $ Parser::new toks
 
-export(crate) data Parser = Parser { toks : &'a [Token], pos : usize, export(crate) r#errors : Vec<ParseError>, class_heads : std::collections::BTreeMap<(String, String), SignatureHead>, export(crate) fixities : std::collections::BTreeMap<String, (Fixity, u8, String)> }
+export(crate) data Parser { toks &'a [Token], pos usize, export(crate) r#errors Vec<ParseError>, class_heads std::collections::BTreeMap<(String, String), SignatureHead>, export(crate) fixities std::collections::BTreeMap<String, (Fixity, u8, String)> }
 
 instance (Parser 'a)
   export(crate) new : &'a [Token] -> Self
@@ -233,7 +233,7 @@ instance (Parser 'a)
   export(crate) borrowed_head : &str -> &str -> &self -> Option<SignatureHead>
   borrowed_head class_name member self =
     key = (.to_string class_name, .to_string member)
-    self.class_heads |> .get (&key) |> .cloned
+    (self.class_heads.get (&key)).cloned ()
   export(crate) equations : Ident -> Vec<Trivia> -> usize -> &SignatureHead -> &[String] -> bool -> &mut self -> Result<FnDecl, ParseError>
   equations name leading start head reserved ends_on_a_new_name self =
     spine = &head.types
@@ -587,10 +587,7 @@ instance (Parser 'a)
     Err $ ParseError::expected message (.peek_span self)
   export(crate) just_dedented : &self -> bool
   just_dedented self =
-    self.pos
-      |> .checked_sub 1
-      |> .and_then (\i -> .get i self.toks)
-      |> .is_some_and (\t -> t.kind == TokenKind::Dedent)
+    ((self.pos.checked_sub 1).and_then (\i -> .get i self.toks)).is_some_and (\t -> t.kind == TokenKind::Dedent)
   export(crate) skip_separators : &mut self -> ()
   skip_separators self =
     while .check (&TokenKind::Newline) self

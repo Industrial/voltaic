@@ -216,21 +216,11 @@ export(crate) generalise : &mut Signature -> &[Constraint] -> &[String] -> ()
 generalise sig constraints reserved =
   if .is_some sig.r#given
     return ()
-  mut texts : Vec<&str> = sig.params
-    |> .iter
-    |> .filter_map (\param -> .map (\t -> .as_str t.text) (.as_ref param.ty))
-    |> .collect
+  mut texts : Vec<&str> = (sig.params.iter ().filter_map (\param -> .map (\t -> .as_str t.text) (.as_ref param.ty))).collect ()
   if &sig.ret is Some ret
     .push (.as_str ret.text) texts
-  found : Vec<String> = type_vars (&texts)
-    |> .into_iter
-    |> .filter (\v -> !.contains v reserved)
-    |> .collect
-  sig.bounds := constraints
-    |> .iter
-    |> .filter (\c -> !.contains (&c.var.text) reserved)
-    |> .map (\c -> (rust_generic (&c.var.text), .clone c.trait_name.text))
-    |> .collect
+  found : Vec<String> = ((type_vars (&texts)).into_iter ().filter (\v -> !.contains v reserved)).collect ()
+  sig.bounds := ((constraints.iter ().filter (\c -> !.contains (&c.var.text) reserved)).map (\c -> (rust_generic (&c.var.text), .clone c.trait_name.text))).collect ()
   if .is_empty found
     return ()
   sig.generics := .collect (.map (\v -> rust_generic v) (.iter found))
@@ -253,7 +243,7 @@ generalise_data d =
       ConstructorFields::Unit -> ()
       ConstructorFields::Tuple ts -> .extend (.map (\t -> .clone t.text) (.iter ts)) texts
       ConstructorFields::Record fs -> .extend (.map (\f -> .clone f.ty.text) (.iter fs)) texts
-  refs : Vec<&str> = texts |> .iter |> .map String::as_str |> .collect
+  refs : Vec<&str> = (texts.iter ().map String::as_str).collect ()
   found = type_vars (&refs)
   if .is_empty found
     return ()

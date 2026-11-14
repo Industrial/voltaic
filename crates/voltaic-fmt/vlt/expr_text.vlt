@@ -28,7 +28,7 @@ expr_text expr required indent source = case expr of
       |> .iter
       |> .map (\arg -> argument arg indent source)
       |> .collect
-    if .is_empty printed
+    if no_real_arguments args
       format! \-> "#{head}.#{name.text} ()"
     else
       format! \-> "#{head}.#{name.text} #{(.join " " printed)}"
@@ -300,13 +300,27 @@ receiver expr indent source =
   else
     format! \-> "(#{(expr_text expr 0 indent source)})"
 
+export(crate) no_real_arguments : &[Expr] -> bool
+no_real_arguments args =
+  if .is_empty args
+    return true
+  if .len args != 1
+    return false
+  case &args[0] of
+    Expr::Unit { .. } -> true
+    _ -> false
+
 export(crate) takes_a_postfix : &Expr -> bool
 takes_a_postfix expr = case expr of
   Expr::Ident _ or Expr::Path { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } or Expr::Unit { .. } or Expr::Tuple { .. } or Expr::List { .. } or Expr::ArrayRepeat { .. } or Expr::Record { .. } or Expr::Section { .. } or Expr::Comprehension { .. } or Expr::SelfField { .. } or Expr::SelfType { .. } -> true
-  Expr::Dot { args, .. } | !.is_empty args -> false
+  Expr::Dot { args, .. } | !no_real_arguments args -> false
   Expr::Field { .. } or Expr::Dot { .. } or Expr::Index { .. } or Expr::Try { .. } -> true
   Expr::MethodRef { .. } -> true
-  Expr::Paren { inner, .. } -> takes_a_postfix inner
+  Expr::Paren { inner, .. } ->
+    if can_drop_paren inner 0
+      takes_a_postfix inner
+    else
+      true
   Expr::Call { .. } -> false
   _ -> false
 

@@ -200,7 +200,7 @@ pattern_synonym p leading start =
   (.expect (&TokenKind::Eq) "expected `=` after the pattern synonym's name" p)?
   body = (pattern_alt p)?
   (.newline_with_trailing "expected a line break after the pattern synonym" p)?
-  declared : Vec<String> = params |> .iter |> .map (\i -> .clone i.text) |> .collect
+  declared : Vec<String> = (params.iter ().map (\i -> .clone i.text)).collect ()
   for bound in .binders body
     if !.contains (&bound) declared
       message = format! \-> "`#{bound}` is not a parameter of this pattern synonym, so it would introduce a name the use site never wrote"

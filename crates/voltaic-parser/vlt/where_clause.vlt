@@ -28,7 +28,7 @@ where_entry_is_a_function p =
 
 export(crate) where_group : &[Stmt] -> &[Pattern] -> Result<(), ParseError>
 where_group entries params =
-  bound : Vec<String> = params |> .iter |> .flat_map Pattern::binders |> .collect
+  bound : Vec<String> = (params.iter ().flat_map Pattern::binders).collect ()
   for entry in entries
     case &entry.expr of
       Expr::Item { .. } ->
@@ -43,10 +43,7 @@ where_group entries params =
   if where_cycle entries is Some names
     joined = .join ", " names
     message = format! \-> "these `where` bindings depend on each other in a cycle: #{joined}"
-    blame = entries
-      |> .iter
-      |> .find (\e -> .is_some_and (\binder -> .contains (&binder) names) (.where_entry_name e))
-      |> .map_or (0, 0) (\e -> e.span)
+    blame = (entries.iter ().find (\e -> .is_some_and (\binder -> .contains (&binder) names) (.where_entry_name e))).map_or (0, 0) (\e -> e.span)
     return Err (ParseError::with_help Code::WhereGroupShape message "Rust `let` bindings are evaluated in order, so a cycle among values has no order to emit. Haskell accepts this and diverges; give one of them a parameter, which makes it a nested function and lets the cycle be recursion" blame)
   Ok ()
 

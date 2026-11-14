@@ -87,9 +87,7 @@ class_member p ctx =
       .record_head recording_class (&declared.text) (&stated) p
     stated
   else
-    borrowed = ctx.implementing
-      |> .as_deref
-      |> .and_then (\implemented -> .borrowed_head implemented (&name.text) p)
+    borrowed = ctx.implementing.as_deref ().and_then (\implemented -> .borrowed_head implemented (&name.text) p)
     guard borrowed is Some found else
       message = case .as_deref ctx.implementing of
         Some implemented -> format! \-> "`#{name.text}` has no signature here, and `#{implemented}` declares none for it earlier in this file — write the signature, or declare the class above the instance"
@@ -205,7 +203,7 @@ instance_decl p leading start =
     (None, first)
   else
     mut args = .clone first.args
-    head = args |> .pop |> .expect "the argument list is not empty"
+    head = args.pop ().expect "the argument list is not empty"
     class_end = .map_or first.head.span.1 (\a -> a.span.1) (.last args)
     class_app = TypeApp { head = .clone first.head, args, span = (first.head.span.0, class_end) }
     target_app = TypeApp { head = .clone head, args = Vec::new (), span = head.span }
@@ -213,9 +211,7 @@ instance_decl p leading start =
   implemented = split.0
   target = split.1
   var = .map (\v -> .to_string v) (.first (.vars target))
-  subject = var
-    |> .as_deref
-    |> .map_or_else String::new TypeApp::rust_name
+  subject = var.as_deref ().map_or_else String::new TypeApp::rust_name
   mut ctx = MethodContext::for_instance (.as_deref var) (&subject)
   ctx.implementing := .map (\c -> .clone c.head.text) (.as_ref implemented)
   members = (class_body p (&ctx))?
