@@ -397,3 +397,48 @@ reads the body's own effects and stops. That is row 95 leaf 3's work and this is
 the first place it shows as a concrete, blessed, wrong line rather than an
 unimplemented leaf. The sidecar corpus will diff when it is fixed, which is what
 the corpus is for.
+
+
+### 10.5 The sidecar carries declarations, because signatures were not enough
+
+§1.3's format published judgements. It now also publishes one line per member:
+
+```
+across : &Point -> f64 @ p shared
+Point.x field
+Point.y field
+```
+
+**Doc 101 §10.12 is why.** Cross-crate resolution has to answer doc 87 §2.2's
+field-or-method question, and `declarations::collect` runs over **one
+`Program`** — one `.vlt` file. So `voltaic-lattice` cannot learn from
+`voltaic-ast`'s source that `TypeExpr` has a field `text`; it can only read what
+`voltaic-ast` *published*. A rule that guessed instead — "a type not declared
+here has no fields we know, so `x.name` is a method" — turned `written.text` into
+`written.text()` and the port refused the crate.
+
+**The line carries the kind and not the type**, deliberately. The question is
+field-or-method; the type is already in the judgement line where it matters; and
+a published member type is API surface this row has no mandate to widen. §1.3's
+rule that a sidecar disagreeing with its source is `VLT0901` applies to these
+lines as it does to the others.
+
+`Sidecar::member` and `Sidecar::declares` mirror `Declarations`' own queries, so a
+resolver can fall back from the local environment to a published one without a
+second shape to learn. Four tests: a field is published as a field, an instance
+method as a method, both survive the round trip through the text, and **a sidecar
+with no declarations declares nothing rather than everything** — the last one
+being the direction that matters, because an empty answer read as "no fields"
+would reclassify every access in every consumer.
+
+### 10.6 What remains of leaf 1, and what it unblocks
+
+`voltaic sig --emit` writes a sidecar on demand. §1.3's leaf 1 says `voltaic fmt`
+writes it, and that is the step not taken here — the format is settled and the
+emission point is not.
+
+What waits on it is a chain with one root: doc 101 §10.12's cross-crate
+resolution, and therefore wave 3's no-argument half, leaf 2's receiver-order
+transform, leaf 6's crate-by-crate run, row 102 step 5, and `.vlt.sig` in
+`dependency_sources` (doc 102 leaf 5). One file's worth of emission and one
+resolver, with five consumers.

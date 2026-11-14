@@ -41,13 +41,13 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 | `voltaic-emit` | 3974 | 4647 |
 | `voltaic-fmt` | 1585 | 1569 |
 | `voltaic-fuzz` | 65 | 378 |
-| `voltaic-lattice` | 5875 | 1176 |
+| `voltaic-lattice` | 5981 | 1176 |
 | `voltaic-lexer` | 2222 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 464 | 776 |
 | `voltaic-parser` | 6000 | 787 |
 | `voltaic-seed` | 146 | 1129 |
-| **total** | **29191** | **25782** |
+| **total** | **29297** | **25782** |
 
 ---
 

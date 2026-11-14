@@ -2,3 +2,5 @@
 across : &Point -> f64 @ p shared
 depth : &Point -> f64 @ p shared
 scaled : u64 -> u64 -> u64 @ factor shared, n shared
+Point.x field
+Point.y field
