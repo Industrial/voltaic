@@ -64,10 +64,30 @@ instance Display Ty
     Ty::Con { name, args, .. } ->
       if name == ARROW && .len args == 2
         return write! \-> f \-> "#{args[0]} -> #{args[1]}"
+      if (name == "&" || name == "&mut") && .len args == 1
+        separator = if name == "&mut"
+          " "
+        else
+          ""
+        return write! \-> f \-> "#{name}#{separator}#{args[0]}"
       if .is_empty args
         return write! \-> f \-> "#{name}"
       shown = args |> .iter |> .map (\a -> .to_string a) |> .collect : Vec<String>
       write! \-> f \-> "#{name}<#{(.join ", " (.as_slice shown))}>"
+
+test "a shared reference prints the way Rust writes it"
+  assert_eq! \-> .to_string (Ty::applied "&" (vec! \-> Ty::named "Point")) \-> "&Point"
+  assert_eq! \-> .to_string (Ty::applied "&" (vec! \-> Ty::named "str")) \-> "&str"
+
+test "a unique reference prints the way Rust writes it"
+  assert_eq! \-> .to_string (Ty::applied "&mut" (vec! \-> Ty::named "Cursor")) \-> "&mut Cursor"
+
+test "a reference to an applied type keeps the inner angle brackets"
+  inner = Ty::applied "Vec" (vec! \-> Ty::named "u8")
+  assert_eq! \-> .to_string (Ty::applied "&" (vec! \-> inner)) \-> "&Vec<u8>"
+
+test "a constructor merely named `&` with the wrong arity falls back to the generic form"
+  assert_eq! \-> .to_string (Ty::applied "&" (vec! \-> Ty::named "a" \-> Ty::named "b")) \-> "&<a, b>"
 
 test "a nullary constructor prints as its name"
   assert_eq! \-> .to_string (Ty::named "u64") \-> "u64"

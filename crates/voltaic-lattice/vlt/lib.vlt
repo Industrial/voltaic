@@ -41,7 +41,10 @@ export import fragment::RULE_PRODUCT
 export import fragment::RULE_SHAPE
 export import fragment::read as read_predicate
 export import fragment::term_of
+export import explain::Step
 export import explain::explain
+export import explain::rendered
+export import explain::steps
 export import explain::summarise
 export import generate::Inferred
 export import generate::Report

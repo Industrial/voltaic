@@ -1,0 +1,13 @@
+width : ?0 -> f64 @ self shared
+width : Box -> f64 @ self shared
+measured : &Box -> f64 @ b shared
+---
+why measured : &Box -> f64
+1. pinned by an ascription
+   11:10  ?6 must equal &Box
+1. a field is read here
+   11:14  ?6 must have `side` of type ?8
+1. an equation's body returns this
+   11:10  ?7 must equal ?8
+1. pinned by an ascription
+   11:1  ?7 must equal f64

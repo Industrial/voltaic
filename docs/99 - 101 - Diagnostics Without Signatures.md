@@ -339,6 +339,78 @@ it is a weaker claim than it looks: the stage is quiet because it is *restricted
 because inference is complete. Widening what Lattice is entitled to say is leaves 1–6
 and rows 95–97, and each widening has to re-measure this.
 
+### 10.7 Leaves 3 and 4
+
+**Leaf 3 — provenance rendering.** `steps` returns the chain as structured
+`Step` values and `rendered` prints them with line:column plus the obligation
+each step asserts. Three things were wrong with what `explain` did before:
+
+- it printed **byte offsets**, which is not something a reader can act on.
+  `line_col` already existed in `voltaic-diag` and was private; it is exported
+  rather than reimplemented;
+- `Store::chain` hands back provenances, which carry the reason and the span and
+  **not** the obligation, so an explanation built from it could say why a
+  constraint exists and not what it says. `chain_indices` is the same walk
+  returning indices, and `chain` is now written in terms of it so the two
+  cannot diverge;
+- `CallArgument n` rendered as *"passed as an argument here"*. The index was
+  recorded by row 94 and dropped by every renderer. `phrasing` is the
+  ordinal-aware form and `label` stays the plain one.
+
+**Leaf 4 — `tests/explain/`.** Six cases, each `.vlt` beside the `.why` it
+earns, blessable with `VOLTAIC_UPDATE=1`. There is no way to assert that an
+explanation is *good*; there is a way to make a change that makes one *worse*
+show up as a reviewable diff, which is what the leaf asks for.
+
+Both streams are captured into the expectation. A contradiction goes to stderr
+and the chain to stdout, so a harness reading one stream would have recorded
+nothing at all for `wrong.vlt` — the case that exists to show a contradiction
+explained.
+
+### 10.8 Measured: half the reason vocabulary cannot appear
+
+Leaf 3 says every structured reason gets a phrasing. Writing them exposed that
+**six of the twelve `Reason` variants are constructed by no code**, and two more
+are constructed but cannot reach `--why`:
+
+| | Reasons | Why |
+|---|---|---|
+| reached | `Ascribed`, `EquationBody`, `FieldAccess`, `CallCallee` | emitted and visible; the corpus pins them |
+| produced, unreachable | `GuardCondition`, `ClassRequirement` | `touching` selects by hole intersection with the *subject*, and these holes belong to a subexpression |
+| never produced | `CallArgument`, `Discharged`, `ElementOf`, `LiteralKind`, `ParameterUse`, `ReturnPosition` | no constructor anywhere |
+
+The last column is the useful part. `Discharged` waits on row 95; `CallArgument`
+waits on per-argument constraints rather than one bundled `Callable`; and
+`LiteralKind` and `ReturnPosition` are simply not used where the generator could
+use them — it reaches for `Ascribed` and `EquationBody` instead.
+
+An unreachable phrasing is **indistinguishable from a working one** until
+something makes it reachable, so this is a gate rather than a note:
+`every_unreachable_reason_is_still_unreachable` fails if one of the eight starts
+appearing, and says in its message that this is progress and the phrasing should
+move to the reached list with the case that reached it.
+`the_three_categories_cover_every_reason` asserts the three lists still account
+for all twelve, so none can be dropped from all three.
+
+This is the same two-sided shape `no_comments.rs` and `port.rs` use, and for the
+reason recorded there: a list plus a check that reads it can be narrow in two
+ways, and only one of them is visible from the green side.
+
+### 10.9 `&<Point>` was what every judgement showed a reader
+
+`&` and `&mut` are ordinary constructors in row 94's representation, so the
+generic arm of `Display` printed `&<Point>` and `&<str>` — in `sig` output, in
+`--why`, and in every judgement diagnostic. A reader would not recognise the
+type they had just written. Two arms fix it, and four tests pin the forms
+including the fallback for a constructor merely *named* `&` with the wrong
+arity. Four existing expectations asserted the old spelling and were updated.
+
+Worth noting what found this: the explain corpus. A type printed wrongly is
+invisible in a unit test that round-trips it, because the same wrong spelling
+appears on both sides of the assertion — which is exactly what
+`annotation.vlt`'s tests were doing. It is visible the moment a human reads a
+blessed file.
+
 ### 10.6 Registration, again
 
 The driver taking `voltaic-lattice` propagated into the **transitive** closure of four

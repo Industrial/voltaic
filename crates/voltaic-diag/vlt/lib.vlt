@@ -8,6 +8,7 @@ export import code::DiagnosticCode
 export import code::Lint
 export import diagnostic::Diagnostic
 export import diagnostic::Severity
+export import render::line_col
 export import render::render
 export import source::Origin
 export import source::SourceMap

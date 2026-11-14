@@ -34,7 +34,7 @@ caret_width source span = source
   |> .get (span.0 .. span.1)
   |> .map_or 1 (\text -> .max 1 (.count (.chars text)))
 
-line_col : &str -> usize -> (usize, usize)
+export line_col : &str -> usize -> (usize, usize)
 line_col source offset =
   clamped = .min (.len source) offset
   before = &source[0 .. clamped]

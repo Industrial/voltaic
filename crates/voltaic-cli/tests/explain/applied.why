@@ -1,0 +1,12 @@
+scaled : u64 -> u64 -> u64 @ factor shared, n shared
+applied : u64 -> u64 @ n owned
+---
+why applied : u64 -> u64
+1. pinned by an ascription
+   5:9  ?3 must equal u64
+1. this is called
+   5:13  ?5 must be callable with 2 argument(s), returning ?7
+1. an equation's body returns this
+   5:9  ?4 must equal ?7
+1. pinned by an ascription
+   5:1  ?4 must equal u64

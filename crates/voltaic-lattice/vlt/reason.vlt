@@ -29,6 +29,11 @@ instance Reason
     Discharged -> "an effect is discharged here"
     ElementOf -> "an element of this collection"
 
+  export phrasing : self -> String
+  phrasing self = case self of
+    CallArgument n -> format! \-> "passed as argument #{n + 1} here"
+    _ -> .to_string (.label self)
+
   export argument_index : self -> Option<u32>
   argument_index self = case self of
     CallArgument n -> Some n
@@ -38,6 +43,14 @@ test "every reason has a label"
   reasons = [ParameterUse, FieldAccess, CallCallee, CallArgument 0, LiteralKind, EquationBody, GuardCondition, ReturnPosition, Ascribed, ClassRequirement, Discharged, ElementOf]
   for r in reasons
     assert! \-> !.is_empty (.label r) \-> "#{r:?} has no label"
+
+test "a call argument's phrasing names which argument, counting from one"
+  assert_eq! \-> .phrasing (CallArgument 0) \-> "passed as argument 1 here"
+  assert_eq! \-> .phrasing (CallArgument 2) \-> "passed as argument 3 here"
+
+test "every other reason's phrasing is its label"
+  for r in [ParameterUse, FieldAccess, CallCallee, LiteralKind, EquationBody, GuardCondition, ReturnPosition, Ascribed, ClassRequirement, Discharged, ElementOf]
+    assert_eq! \-> .phrasing r \-> .label r \-> "#{r:?}"
 
 test "only a call argument carries an index"
   assert_eq! \-> .argument_index (CallArgument 2) \-> Some 2

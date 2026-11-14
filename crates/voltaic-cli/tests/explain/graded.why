@@ -1,0 +1,9 @@
+graded : u64 -> u64 @ n shared
+---
+why graded : u64 -> u64
+1. pinned by an ascription
+   2:8  ?0 must equal u64
+1. an equation's body returns this
+   2:8  ?1 must equal ?2
+1. pinned by an ascription
+   2:1  ?1 must equal u64

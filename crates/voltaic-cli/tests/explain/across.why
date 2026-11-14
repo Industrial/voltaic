@@ -1,0 +1,11 @@
+across : &Point -> f64 @ p shared
+---
+why across : &Point -> f64
+1. pinned by an ascription
+   4:8  ?0 must equal &Point
+1. a field is read here
+   4:12  ?0 must have `x` of type ?2
+1. an equation's body returns this
+   4:8  ?1 must equal ?2
+1. pinned by an ascription
+   4:1  ?1 must equal f64

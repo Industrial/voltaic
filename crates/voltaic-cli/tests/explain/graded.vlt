@@ -1,0 +1,6 @@
+graded : u64 -> u64
+graded n =
+  if n > 9
+    1
+  else
+    0

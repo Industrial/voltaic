@@ -97,20 +97,20 @@ test "an arrow inside an application is not a top-level arrow"
   assert_eq! \-> .to_string read_back \-> "Option<u64 -> bool>"
 
 test "a shared reference reads as an application of &"
-  assert_eq! \-> .to_string (from_text "&str") \-> "&<str>"
+  assert_eq! \-> .to_string (from_text "&str") \-> "&str"
 
 test "a unique reference reads as an application of &mut"
-  assert_eq! \-> .to_string (from_text "&mut Cursor") \-> "&mut<Cursor>"
+  assert_eq! \-> .to_string (from_text "&mut Cursor") \-> "&mut Cursor"
 
 test "a reference to an applied type keeps both layers"
-  assert_eq! \-> .to_string (from_text "&Vec<u8>") \-> "&<Vec<u8>>"
+  assert_eq! \-> .to_string (from_text "&Vec<u8>") \-> "&Vec<u8>"
 
 test "reading a written annotation goes through the same path"
   written = TypeExpr { text = .to_string "Option<char>", span = (0, 12) }
   assert_eq! \-> read (&written) \-> from_text "Option<char>"
 
 test "a lifetime is dropped, because Lattice does not infer lifetimes"
-  assert_eq! \-> .to_string (from_text "&'static str") \-> "&<str>"
+  assert_eq! \-> .to_string (from_text "&'static str") \-> "&str"
   assert_eq! \-> from_text "&'a str" \-> from_text "&str"
 
 test "an arrow is not found inside a generic bound's >"

@@ -1,0 +1,8 @@
+total : u64
+doubled : u64
+---
+why doubled : u64
+1. an equation's body returns this
+   5:9  ?2 must equal ?3
+1. pinned by an ascription
+   5:1  ?2 must equal u64

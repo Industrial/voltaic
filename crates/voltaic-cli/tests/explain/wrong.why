@@ -1,0 +1,10 @@
+wrong : bool
+---
+why wrong : bool
+1. an equation's body returns this
+   2:7  ?0 must equal bool
+1. pinned by an ascription
+   2:1  ?0 must equal u64
+--- stderr
+error: wrong.vlt: ?0 must equal u64
+error: wrong.vlt: 1 contradiction(s)

@@ -1,0 +1,5 @@
+scaled : u64 -> u64 -> u64
+scaled factor n = factor * n
+
+applied : u64 -> u64
+applied n = scaled n 4

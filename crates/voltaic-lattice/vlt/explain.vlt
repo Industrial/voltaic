@@ -1,14 +1,42 @@
 import crate::constraint::Obligation
 import crate::store::Store
 
+export data Step = Step { export depth : usize, export phrasing : String, export summary : String, export span : voltaic_ast::Span }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export steps : usize -> &Store -> Vec<Step>
+steps index store =
+  walked = .chain_indices index store
+  mut found = Vec::new ()
+  total = .len walked
+  for pair in .enumerate (.copied (.iter walked))
+    if .at pair.1 store is Some held
+      found |> .push (Step {
+        depth = total - pair.0,
+        phrasing = .phrasing held.provenance.reason,
+        summary = summarise (&held.obligation),
+        span = held.provenance.span })
+  found
+
 export explain : usize -> &Store -> String
 explain index store =
-  walked = .chain index store
+  walked = steps index store
   if .is_empty walked
     return .to_string "no constraint at that index"
   mut out = String::new ()
-  for pair in .enumerate (.iter walked)
-    out |> .push_str (&format! \-> "#{pair.0}: #{(.label pair.1.reason)} at #{pair.1.span.0}..#{pair.1.span.1}\n")
+  for step in .iter walked
+    out |> .push_str (&format! \-> "#{step.phrasing} at #{step.span.0}..#{step.span.1}\n")
+  out
+
+export rendered : usize -> &Store -> &str -> String
+rendered index store source =
+  walked = steps index store
+  if .is_empty walked
+    return .to_string "no constraint at that index\n"
+  mut out = String::new ()
+  for step in .iter walked
+    at = voltaic_diag::line_col source step.span.0
+    out |> .push_str (&format! \-> "#{step.depth}. #{step.phrasing}\n   #{at.0}:#{at.1}  #{step.summary}\n")
   out
 
 export summarise : &Obligation -> String
@@ -21,6 +49,10 @@ test "explaining an unknown index says so rather than panicking"
   s = Store::new ()
   assert! \-> .contains "no constraint" (explain 0 (&s))
 
+test "rendering an unknown index says so rather than panicking"
+  s = Store::new ()
+  assert! \-> .contains "no constraint" (rendered 0 (&s) "")
+
 test "an explanation names one line per step, newest first"
   mut s = Store::new ()
   root = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
@@ -30,6 +62,40 @@ test "an explanation names one line per step, newest first"
   assert_eq! \-> .len lines \-> 2
   assert! \-> .contains "returned from here" lines[0] \-> "#{shown}"
   assert! \-> .contains "literal" lines[1] \-> "#{shown}"
+
+test "a step's depth counts down to the root, so the root is one"
+  mut s = Store::new ()
+  root = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
+  leaf = .require_from root (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "bool" }) (9, 12) crate::reason::Reason::ReturnPosition s
+  walked = steps leaf (&s)
+  assert_eq! \-> .len walked \-> 2
+  assert_eq! \-> walked[0].depth \-> 2
+  assert_eq! \-> walked[1].depth \-> 1 \-> "the root is step one however deep the chain is"
+
+test "a rendered chain gives line and column rather than byte offsets"
+  source = "a : u64\na = 1\nb = a\n"
+  mut s = Store::new ()
+  root = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (8, 9) crate::reason::Reason::LiteralKind s
+  leaf = .require_from root (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "bool" }) (14, 15) crate::reason::Reason::ReturnPosition s
+  shown = rendered leaf (&s) source
+  assert! \-> .contains "3:1" shown \-> "#{shown}"
+  assert! \-> .contains "2:1" shown \-> "#{shown}"
+  assert! \-> .contains "u64 must equal bool" shown \-> "#{shown}"
+
+test "a rendered step carries its phrasing and its obligation on separate lines"
+  mut s = Store::new ()
+  at = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "bool" }) (0, 3) crate::reason::Reason::Ascribed s
+  shown = rendered at (&s) "ab\n"
+  lines = shown |> .lines |> .collect : Vec<&str>
+  assert_eq! \-> .len lines \-> 2
+  assert_eq! \-> lines[0] \-> "1. pinned by an ascription"
+  assert! \-> .contains "must equal" lines[1] \-> "#{shown}"
+
+test "a call argument's step says which argument"
+  mut s = Store::new ()
+  at = .require (Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "bool" }) (0, 3) (crate::reason::Reason::CallArgument 1) s
+  walked = steps at (&s)
+  assert_eq! \-> walked[0].phrasing \-> "passed as argument 2 here"
 
 test "a unify obligation summarises as an equality"
   o = Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "bool" }

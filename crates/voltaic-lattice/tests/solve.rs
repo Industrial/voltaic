@@ -42,7 +42,7 @@ fn inferred(source: &str, name: &str) -> String {
 #[test]
 fn a_literal_body_fixes_the_return_type() {
   let source = "greeting : &str\ngreeting = \"hello\"\n";
-  assert_eq!(inferred(source, "greeting"), "&<str>");
+  assert_eq!(inferred(source, "greeting"), "&str");
 }
 
 #[test]
@@ -81,9 +81,9 @@ fn a_guard_ladder_unifies_every_arm() {
     "  | spend > 10 = \"gold\"\n",
     "  | otherwise = \"basic\"\n",
   );
-  // `&'static str` reads as `&<str>`: a lifetime is not part of the type for
+  // `&'static str` reads as `&str`: a lifetime is not part of the type for
   // inference purposes, because Lattice does not infer lifetimes (doc 86 §6.3).
-  assert_eq!(inferred(source, "tier"), "u64 -> &<str>");
+  assert_eq!(inferred(source, "tier"), "u64 -> &str");
 }
 
 #[test]

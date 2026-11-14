@@ -1,5 +1,4 @@
 import crate::run::usage
-import voltaic_lattice::explain
 import voltaic_lattice::walk
 import voltaic_parser::parse_source
 import std::path::PathBuf
@@ -111,18 +110,23 @@ report input why =
       println! \-> "---"
       println! \-> "why #{definition.name} : #{(.resolved (&definition.ty) outcome)}"
       for at in touching definition (&found.store)
-        println! \-> "#{(explain at (&found.store))}"
+        print! \-> "#{(voltaic_lattice::rendered at (&found.store) (&source))}"
     else
       return Err (format! \-> "error: #{shown} has no definition called `#{name}`")
 
-  for failure in .iter outcome.failures
+  conflicting = .contradictions (&found.store) outcome
+  for failure in .iter conflicting
     held = .unwrap (.at failure.at found.store)
     eprintln! \-> "error: #{shown}: #{(voltaic_lattice::summarise (&held.obligation))}"
-    eprintln! \-> "#{(explain failure.at (&found.store))}"
-  if .is_solved outcome
+    if .is_none why
+      eprint! \-> "#{(voltaic_lattice::rendered failure.at (&found.store) (&source))}"
+  undischarged = .len outcome.failures - .len conflicting
+  if undischarged > 0
+    eprintln! \-> "note: #{undischarged} obligation(s) Lattice could not discharge, which is a gap in Lattice rather than in #{shown}"
+  if .is_empty conflicting
     Ok ()
   else
-    Err (format! \-> "error: #{shown}: #{(.len outcome.failures)} judgement(s) could not be solved")
+    Err (format! \-> "error: #{shown}: #{(.len conflicting)} contradiction(s)")
 
 touching : &voltaic_lattice::Inferred -> &voltaic_lattice::Store -> Vec<usize>
 touching definition store =

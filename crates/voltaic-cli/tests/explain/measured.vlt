@@ -1,0 +1,11 @@
+class Sized
+  width : &self -> f64
+
+data Box = Box { side : f64 }
+
+instance Sized Box
+  width : &self -> f64
+  width self = self.side
+
+measured : &Box -> f64
+measured b = b.side

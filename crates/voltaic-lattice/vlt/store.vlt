@@ -52,14 +52,33 @@ instance Store
   export chain : usize -> &self -> Vec<Provenance>
   chain index self =
     mut walked = Vec::new ()
+    for i in .chain_indices index self
+      if .get i self.constraints is Some c
+        walked |> .push c.provenance
+    walked
+
+  export chain_indices : usize -> &self -> Vec<usize>
+  chain_indices index self =
+    mut walked = Vec::new ()
     mut cursor = Some index
     while cursor is Some i
       if .get i self.constraints is Some c
-        walked |> .push c.provenance
+        walked |> .push i
         cursor := c.provenance.derived_from
       else
         cursor := None
     walked
+
+test "the index walk and the provenance walk are the same length"
+  mut s = Store::new ()
+  root = .require (crate::constraint::Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
+  leaf = .require_from root (crate::constraint::Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (9, 12) crate::reason::Reason::ReturnPosition s
+  assert_eq! \-> .len (.chain_indices leaf s) \-> .len (.chain leaf s)
+  assert_eq! \-> .chain_indices leaf s \-> vec! \-> leaf \-> root
+
+test "the index walk of an unknown index is empty"
+  s = Store::new ()
+  assert! \-> .is_empty (.chain_indices 7 s)
 
 test "a fresh store is empty and hands out variables from zero"
   mut s = Store::new ()

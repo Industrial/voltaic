@@ -1,0 +1,5 @@
+total : u64
+total = 7
+
+doubled : u64
+doubled = total + total
