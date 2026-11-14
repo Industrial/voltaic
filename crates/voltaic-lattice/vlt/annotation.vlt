@@ -1,0 +1,117 @@
+import crate::ty::Ty
+import voltaic_ast::TypeExpr
+
+export read : &TypeExpr -> Ty
+read written = from_text (.trim written.text)
+
+export from_text : &str -> Ty
+from_text text =
+  trimmed = .trim text
+  if .is_empty trimmed || trimmed == "()"
+    return Ty::unit ()
+  if split_arrow trimmed is Some at
+    left = from_text (.trim trimmed[0 .. at])
+    right = from_text (.trim trimmed[at + 2 .. .len trimmed])
+    return Ty::arrow left right
+  if .starts_with '&' trimmed
+    inner = without_lifetime (.trim trimmed[1 .. .len trimmed])
+    if .starts_with "mut " inner
+      return Ty::applied "&mut" (vec! \-> from_text (.trim inner[4 .. .len inner]))
+    return Ty::applied "&" (vec! \-> from_text inner)
+  if .ends_with '>' trimmed && .find '<' trimmed is Some open
+    head = .trim trimmed[0 .. open]
+    body = .trim trimmed[open + 1 .. .len trimmed - 1]
+    return Ty::applied head (split_arguments body)
+  Ty::named trimmed
+
+without_lifetime : &str -> &str
+without_lifetime text =
+  if !.starts_with '\'' text
+    return text
+  if .find ' ' text is Some at
+    return .trim text[at + 1 .. .len text]
+  text
+
+split_arrow : &str -> Option<usize>
+split_arrow text =
+  mut depth = 0
+  mut index = 0
+  bytes = .as_bytes text
+  while index + 1 < .len bytes
+    byte = bytes[index]
+    if byte == b'<' || byte == b'(' || byte == b'['
+      depth += 1
+    if byte == b'>' && index > 0 && bytes[index - 1] != b'-'
+      depth -= 1
+    if byte == b')' || byte == b']'
+      depth -= 1
+    if depth == 0 && byte == b'-' && bytes[index + 1] == b'>'
+      return Some index
+    index += 1
+  None
+
+split_arguments : &str -> Vec<Ty>
+split_arguments body =
+  mut parts = Vec::new ()
+  mut depth = 0
+  mut start = 0
+  mut index = 0
+  bytes = .as_bytes body
+  while index < .len bytes
+    byte = bytes[index]
+    if byte == b'<' || byte == b'(' || byte == b'['
+      depth += 1
+    if byte == b'>' || byte == b')' || byte == b']'
+      depth -= 1
+    if depth == 0 && byte == b','
+      parts |> .push (from_text (.trim body[start .. index]))
+      start := index + 1
+    index += 1
+  if start < .len bytes
+    parts |> .push (from_text (.trim body[start .. .len bytes]))
+  parts
+
+test "a bare name reads as a nullary constructor"
+  assert_eq! \-> from_text "u64" \-> Ty::named "u64"
+
+test "the unit type reads as nil"
+  assert_eq! \-> from_text "()" \-> Ty::unit ()
+  assert_eq! \-> from_text "" \-> Ty::unit ()
+
+test "an applied type reads its arguments"
+  assert_eq! \-> from_text "Option<char>" \-> Ty::applied "Option" (vec! \-> Ty::named "char")
+
+test "an applied type with two arguments splits at the comma"
+  read_back = from_text "Result<i32, String>"
+  assert_eq! \-> .to_string read_back \-> "Result<i32, String>"
+
+test "a nested application does not split on the inner comma"
+  read_back = from_text "Result<Vec<u8, A>, String>"
+  assert_eq! \-> .to_string read_back \-> "Result<Vec<u8, A>, String>"
+
+test "an arrow reads right-associated"
+  assert_eq! \-> .to_string (from_text "u64 -> bool -> char") \-> "u64 -> bool -> char"
+
+test "an arrow inside an application is not a top-level arrow"
+  read_back = from_text "Option<u64 -> bool>"
+  assert_eq! \-> .to_string read_back \-> "Option<u64 -> bool>"
+
+test "a shared reference reads as an application of &"
+  assert_eq! \-> .to_string (from_text "&str") \-> "&<str>"
+
+test "a unique reference reads as an application of &mut"
+  assert_eq! \-> .to_string (from_text "&mut Cursor") \-> "&mut<Cursor>"
+
+test "a reference to an applied type keeps both layers"
+  assert_eq! \-> .to_string (from_text "&Vec<u8>") \-> "&<Vec<u8>>"
+
+test "reading a written annotation goes through the same path"
+  written = TypeExpr { text = .to_string "Option<char>", span = (0, 12) }
+  assert_eq! \-> read (&written) \-> from_text "Option<char>"
+
+test "a lifetime is dropped, because Lattice does not infer lifetimes"
+  assert_eq! \-> .to_string (from_text "&'static str") \-> "&<str>"
+  assert_eq! \-> from_text "&'a str" \-> from_text "&str"
+
+test "an arrow is not found inside a generic bound's >"
+  assert! \-> .is_arrow (from_text "Vec<u8> -> bool")

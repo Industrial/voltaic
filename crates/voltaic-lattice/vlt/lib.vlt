@@ -1,6 +1,8 @@
+module annotation
 module constraint
 module driver
 module explain
+module generate
 module provenance
 module reason
 module scheme
@@ -10,6 +12,8 @@ module ty
 module unify
 module variable
 
+export import annotation::from_text
+export import annotation::read
 export import constraint::Constraint
 export import constraint::Obligation
 export import driver::Failure
@@ -19,6 +23,9 @@ export import driver::arrow_of
 export import driver::solve
 export import explain::explain
 export import explain::summarise
+export import generate::Inferred
+export import generate::Report
+export import generate::walk
 export import provenance::Provenance
 export import reason::Reason
 export import scheme::Scheme

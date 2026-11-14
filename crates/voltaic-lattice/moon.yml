@@ -23,3 +23,8 @@ fileGroups:
     - '/crates/voltaic-diag/vlt/**/*'
     - '/crates/voltaic-lexer/src/**/*'
     - '/crates/voltaic-lexer/vlt/**/*'
+    # The parser is a dev-dependency, and it counts: a change to it can change
+    # this crate's test verdict, which is exactly what the group exists to
+    # invalidate.
+    - '/crates/voltaic-parser/src/**/*'
+    - '/crates/voltaic-parser/vlt/**/*'

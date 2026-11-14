@@ -350,16 +350,60 @@ run's"* — and the same remedy applies: do not trust the task's report, check t
 artifact. For regeneration the check is to read the generated file, and the fix when it
 is stale is `rm -rf crates/*/src/.voltaic-cache`.
 
-### 10.9 Leaves outstanding
+### 10.9 Constraint generation and the corpus, 2026-11-14
+
+`annotation.vlt` reads a written `TypeExpr` into a `Ty`; `generate.vlt` walks a
+`Program` and produces a store plus one `Inferred` per definition. 96 tests — 76
+inline, 11 in the corpus, 9 on the store. Clippy clean; gate green at 28 tasks.
+
+**The oracle works.** §1.4 said generation 1's hand-written signatures are a free
+answer key that disappears at row 99, and the corpus now spends it: for every
+definition that states its own type, inference is compared against what the author
+wrote, and a disagreement is a Lattice bug rather than a user error (doc 90 §1.4).
+Eleven programs, including a guard ladder, a comparison, arithmetic, an ascription
+and a deliberate contradiction that must be *reported* rather than absorbed.
+
+**Lifetimes are dropped when reading an annotation, and a test caught why.**
+`&'static str` first read as `&<'static str>`, which then refused to unify with the
+`&<str>` inferred from a string literal. Doc 86 §6.3 is the rule — Lattice does not
+infer lifetimes — so a lifetime is not part of the type for inference purposes.
+`without_lifetime` strips it, and `&'a str` and `&str` are now the same `Ty`.
+
+**Two corpus programs were not valid Voltaic**, which is worth recording because it
+will recur: `ready = true` at module scope is **VLT0106** — a module-scope binding
+needs `const` or `static` and a type, because Rust forbids `let` there. So a nullary
+definition in generation 1 *must* carry a signature. Row 99 is what makes the
+signature optional; until then the oracle and the requirement happen to coincide,
+and the corpus says so rather than working around it.
+
+**`Member` is asserted to be unsolved.** One test fixes the current limitation in
+place: a field access resolves to an unconstrained hole, and closing that in row 98
+will break the test rather than silently changing behaviour. A limitation with no
+test is a limitation that becomes an accident.
+
+**Two more registration gates, both teaching a real convention.** A dev-dependency
+on a workspace crate must be **path-only with no version** — `cargo publish` resolves
+a dev-dependency's version against crates.io even when it carries a path, so a
+versioned one makes this crate's publish wait for a sibling it does not need in order
+to build. And `dependency_sources` must list the dev-dependency too, because a change
+to the parser can change this crate's test verdict, which is exactly what the group
+exists to invalidate.
+
+### 10.10 Leaves outstanding
 
 | Leaf | Status |
 |---|---|
 | 1 — the constraint store | `done` |
 | 2 — the fixed-point driver | `done` |
 | 3 — unification, generalisation, instantiation | `done` |
-| 4 — `voltaic sig` | outstanding |
-| 5 — `tests/solve/` | outstanding |
+| 4 — `voltaic sig` | **outstanding** — the engine and the report exist; the CLI subcommand does not |
+| 5 — `tests/solve/` | `done`, as a Rust corpus under `crates/voltaic-lattice/tests/` rather than a blessable `tests/solve/` directory. The blessable form wants `voltaic sig` to produce the expectation, so it follows leaf 4. |
 | 6 — the fuzz target | outstanding |
+
+Leaf 5 landing before leaf 4 is a deviation worth naming: the corpus is what makes
+leaf 4 worth building, because `voltaic sig` with no oracle prints numbers nobody can
+check. The blessable `.sig` expectation files arrive with the subcommand that writes
+them.
 
 Committed per leaf rather than per plan: each leaf has its own gate, and a single
 commit containing an inference engine is not reviewable. The register row stays

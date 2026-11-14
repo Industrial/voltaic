@@ -17,6 +17,18 @@ include = ["src/**/*.rs", "vlt/**/*.vlt", "Cargo.toml"]
 voltaic-ast = { path = "../voltaic-ast", version = "0.1.1" }
 voltaic-diag = { path = "../voltaic-diag", version = "0.1.1" }
 
+# The parser is a *dev* dependency. Leaf 5's corpus needs real programs, and a
+# runtime dependency would be the wrong direction: the parser does not know about
+# Lattice, and Lattice does not parse.
+#
+# Path only, no version — the opposite of the runtime dependencies above.
+# `cargo publish` resolves a dev-dependency's version against crates.io even when
+# it also carries a path, so a versioned dev-dep makes this crate's publish wait
+# for a sibling it does not need in order to build. `publish_metadata.rs` asserts
+# it.
+[dev-dependencies]
+voltaic-parser = { path = "../voltaic-parser" }
+
 # The five surface-fact allows — see the root manifest.
 [lints]
 workspace = true

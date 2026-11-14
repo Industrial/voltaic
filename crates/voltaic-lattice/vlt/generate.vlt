@@ -1,0 +1,150 @@
+import crate::annotation
+import crate::constraint::Obligation
+import crate::driver::arrow_of
+import crate::reason::Reason
+import crate::store::Store
+import crate::ty::Ty
+import voltaic_ast::BinaryOp
+import voltaic_ast::Block
+import voltaic_ast::ClauseBody
+import voltaic_ast::Expr
+import voltaic_ast::Item
+import voltaic_ast::Program
+
+export data Inferred = Inferred { export name : String, export ty : Ty, export written : Option<Ty>, export span : voltaic_ast::Span }
+  deriving (Debug, Clone)
+
+export data Report = Report { export store : Store, export definitions : Vec<Inferred> }
+  deriving (Debug, Clone)
+
+instance Report
+  export find : &str -> &self -> Option<&Inferred>
+  find name self = .find (\d -> d.name == name) (.iter self.definitions)
+
+export walk : &Program -> Report
+walk program =
+  mut store = Store::new ()
+  mut definitions = Vec::new ()
+  for item in .iter program.items
+    if item is Item::Fn f
+      mut env = Vec::new ()
+      mut params = Vec::new ()
+      for p in .iter f.sig.params
+        hole = .fresh_hole store
+        if .as_ref p.ty is Some written
+          .require (Obligation::Unify { left = .clone hole, right = annotation::read written }) p.span Reason::Ascribed store
+        env |> .push (.clone p.name.text, .clone hole)
+        params |> .push hole
+      body = clause_type (.as_slice f.clauses) (&mut store) (.as_slice env)
+      if .as_ref f.sig.ret is Some written
+        .require (Obligation::Unify { left = .clone body, right = annotation::read written }) f.sig.span Reason::Ascribed store
+      whole = arrow_of (.as_slice params) (&body)
+      written = signature_type (&f.sig)
+      definitions |> .push (Inferred { name = .clone f.name.text, ty = whole, written, span = f.span })
+  Report { store, definitions }
+
+signature_type : &voltaic_ast::Signature -> Option<Ty>
+signature_type sig =
+  declared = (.as_ref sig.ret)?
+  mut params = Vec::new ()
+  for p in .iter sig.params
+    written = (.as_ref p.ty)?
+    params |> .push (annotation::read written)
+  ret = annotation::read declared
+  Some (arrow_of (.as_slice params) (&ret))
+
+clause_type : &[voltaic_ast::Clause] -> &mut Store -> &[(String, Ty)] -> Ty
+clause_type clauses store env =
+  result = .fresh_hole store
+  for clause in .iter clauses
+    case &clause.body of
+      ClauseBody::Plain block ->
+        found = block_type block store env
+        .require (Obligation::Unify { left = .clone result, right = found }) clause.span Reason::EquationBody store
+        ()
+      ClauseBody::Guarded arms ->
+        for arm in .iter arms
+          if .as_ref arm.condition is Some condition
+            seen = expr_type condition store env
+            .require (Obligation::Unify { left = seen, right = Ty::named "bool" }) arm.span Reason::GuardCondition store
+          found = block_type (&arm.body) store env
+          .require (Obligation::Unify { left = .clone result, right = found }) arm.span Reason::EquationBody store
+  result
+
+export block_type : &Block -> &mut Store -> &[(String, Ty)] -> Ty
+block_type block store env =
+  mut last = Ty::unit ()
+  for stmt in .iter block.stmts
+    last := expr_type (&stmt.expr) store env
+  last
+
+export expr_type : &Expr -> &mut Store -> &[(String, Ty)] -> Ty
+expr_type e store env = case e of
+  Expr::Num { .. } -> .fresh_hole store
+  Expr::Bool { .. } -> Ty::named "bool"
+  Expr::Char { .. } -> Ty::named "char"
+  Expr::StrLit { .. } -> str_ref ()
+  Expr::StrInterp { .. } -> str_ref ()
+  Expr::Unit { .. } -> Ty::unit ()
+  Expr::Paren { inner, .. } -> expr_type inner store env
+  Expr::Ident name -> lookup (&name.text) store env
+  Expr::Path { text, .. } -> lookup text store env
+  Expr::Ascribe { inner, ty, span, .. } ->
+    declared = annotation::read ty
+    seen = expr_type inner store env
+    .require (Obligation::Unify { left = seen, right = .clone declared }) (*span) Reason::Ascribed store
+    declared
+  Expr::Binary { op, lhs, rhs, span, .. } ->
+    left = expr_type lhs store env
+    right = expr_type rhs store env
+    binary_type (*op) left right (*span) store
+  Expr::Call { callee, args, span, .. } ->
+    head = expr_type callee store env
+    mut seen = Vec::new ()
+    for a in .iter args
+      seen |> .push (expr_type a store env)
+    result = .fresh_hole store
+    .require (Obligation::Callable { callee = head, args = seen, result = .clone result }) (*span) Reason::CallCallee store
+    result
+  Expr::Block { body, .. } -> block_type body store env
+  Expr::If { then_block, r#otherwise, span, .. } ->
+    taken = block_type then_block store env
+    if .as_ref (*r#otherwise) is Some other
+      skipped = block_type other store env
+      .require (Obligation::Unify { left = .clone taken, right = skipped }) (*span) Reason::EquationBody store
+    taken
+  _ -> .fresh_hole store
+
+str_ref : Ty
+str_ref = Ty::applied "&" (vec! \-> Ty::named "str")
+
+binary_type : BinaryOp -> Ty -> Ty -> voltaic_ast::Span -> &mut Store -> Ty
+binary_type op left right span store =
+  if is_comparison op
+    .require (Obligation::Unify { left, right }) span Reason::EquationBody store
+    return Ty::named "bool"
+  if op == BinaryOp::And || op == BinaryOp::Or
+    .require (Obligation::Unify { left, right = Ty::named "bool" }) span Reason::GuardCondition store
+    .require (Obligation::Unify { left = right, right = Ty::named "bool" }) span Reason::GuardCondition store
+    return Ty::named "bool"
+  if is_arithmetic op
+    .require (Obligation::Unify { left = .clone left, right }) span Reason::EquationBody store
+    return left
+  .fresh_hole store
+
+is_comparison : BinaryOp -> bool
+is_comparison op = case op of
+  BinaryOp::Eq or BinaryOp::Ne or BinaryOp::Lt or BinaryOp::Gt or BinaryOp::Le or BinaryOp::Ge -> true
+  _ -> false
+
+is_arithmetic : BinaryOp -> bool
+is_arithmetic op = case op of
+  BinaryOp::Add or BinaryOp::Sub or BinaryOp::Mul or BinaryOp::Div or BinaryOp::Rem -> true
+  _ -> false
+
+lookup : &str -> &mut Store -> &[(String, Ty)] -> Ty
+lookup name store env =
+  for pair in .rev (.iter env)
+    if pair.0 == name
+      return .clone pair.1
+  .fresh_hole store

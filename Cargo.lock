@@ -1480,6 +1480,7 @@ version = "0.1.1"
 dependencies = [
  "voltaic-ast",
  "voltaic-diag",
+ "voltaic-parser",
 ]
 
 [[package]]
