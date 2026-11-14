@@ -191,3 +191,45 @@ fn dependency_sources_match_the_transitive_cargo_dependencies() {
     wrong.join("\n  ")
   );
 }
+
+/// Row 104 leaf 5: every dependency contributes its **sidecars** to the hash.
+///
+/// Doc 98 §10.7 made cross-crate resolution read an upstream crate's
+/// `*.vlt.sig` instead of its source, so a consumer's verdict now depends on
+/// them. Without the glob a changed sidecar leaves the consumer reporting
+/// cached — the same silent false green this file exists for, and the reason
+/// `AGENTS.md` records that `deps: ['^:check']` is not what makes the caching
+/// correct: in moon 2.5.0 it sets the order tasks run in, not the hash.
+///
+/// Asserted per dependency rather than per crate, because a crate with four
+/// dependencies and three sidecar globs is exactly the drift that would
+/// otherwise pass: the group would look populated and one upstream would be
+/// invisible to the hash.
+#[test]
+fn every_dependency_contributes_its_sidecars() {
+  let (names, transitive) = manifests();
+  let mut missing = Vec::new();
+  for name in &names {
+    let moon_yml =
+      std::fs::read_to_string(workspace_root().join("crates").join(name).join("moon.yml"))
+        .unwrap_or_else(|e| panic!("should read {name}/moon.yml: {e}"));
+    let Some(deps) = transitive.get(name) else {
+      continue;
+    };
+    for dep in deps {
+      // Either the sidecar glob itself, or a `vlt/**/*` wildcard that already
+      // subsumes it — `voltaic-lattice` uses the latter, and asserting one
+      // spelling would demand a redundant line rather than the property.
+      let specific = format!("- '/crates/{dep}/vlt/**/*.vlt.sig'");
+      let wildcard = format!("- '/crates/{dep}/vlt/**/*'");
+      if !moon_yml.contains(&specific) && !moon_yml.contains(&wildcard) {
+        missing.push(format!("{name}/moon.yml covers no sidecars for {dep}"));
+      }
+    }
+  }
+  assert!(
+    missing.is_empty(),
+    "a consumer's cached verdict must depend on the sidecars it resolved \
+     against, or a changed upstream API leaves it reporting cached: {missing:#?}"
+  );
+}

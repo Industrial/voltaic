@@ -19,18 +19,25 @@ fileGroups:
   dependency_sources:
     - '/crates/voltaic-ast/src/**/*'
     - '/crates/voltaic-ast/Cargo.toml'
+    - '/crates/voltaic-ast/vlt/**/*.vlt.sig'
     - '/crates/voltaic-diag/src/**/*'
     - '/crates/voltaic-diag/Cargo.toml'
+    - '/crates/voltaic-diag/vlt/**/*.vlt.sig'
     - '/crates/voltaic-driver/src/**/*'
     - '/crates/voltaic-driver/Cargo.toml'
+    - '/crates/voltaic-driver/vlt/**/*.vlt.sig'
     - '/crates/voltaic-emit/src/**/*'
     - '/crates/voltaic-emit/Cargo.toml'
+    - '/crates/voltaic-emit/vlt/**/*.vlt.sig'
     - '/crates/voltaic-lattice/src/**/*'
     - '/crates/voltaic-lattice/Cargo.toml'
+    - '/crates/voltaic-lattice/vlt/**/*.vlt.sig'
     - '/crates/voltaic-lexer/src/**/*'
     - '/crates/voltaic-lexer/Cargo.toml'
+    - '/crates/voltaic-lexer/vlt/**/*.vlt.sig'
     - '/crates/voltaic-parser/src/**/*'
     - '/crates/voltaic-parser/Cargo.toml'
+    - '/crates/voltaic-parser/vlt/**/*.vlt.sig'
 tasks:
   test:
     inputs:

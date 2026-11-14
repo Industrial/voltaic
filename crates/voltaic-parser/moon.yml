@@ -19,7 +19,10 @@ fileGroups:
   dependency_sources:
     - '/crates/voltaic-ast/src/**/*'
     - '/crates/voltaic-ast/Cargo.toml'
+    - '/crates/voltaic-ast/vlt/**/*.vlt.sig'
     - '/crates/voltaic-diag/src/**/*'
     - '/crates/voltaic-diag/Cargo.toml'
+    - '/crates/voltaic-diag/vlt/**/*.vlt.sig'
     - '/crates/voltaic-lexer/src/**/*'
     - '/crates/voltaic-lexer/Cargo.toml'
+    - '/crates/voltaic-lexer/vlt/**/*.vlt.sig'

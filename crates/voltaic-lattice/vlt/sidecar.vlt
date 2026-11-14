@@ -293,9 +293,9 @@ test "a sidecar publishes a declaration's members, so another crate can read the
   found = crate::generate::walk (&program)
   outcome = crate::driver::solve_with (&found.store) (&found.known)
   sidecar = of_report (&found) (&outcome)
-  assert! \-> .declares "Point" (&sidecar)
-  assert! \-> .is_some_and (\m -> m.is_field) (.member "Point" "x" (&sidecar))
-  assert! \-> .is_none (.member "Point" "z" (&sidecar))
+  assert! \-> .declares "Point" sidecar
+  assert! \-> .is_some_and (\m -> m.is_field) (.member "Point" "x" sidecar)
+  assert! \-> .is_none (.member "Point" "z" sidecar)
 
 test "an instance method is published as a method, not a field"
   source = "data Cursor = Cursor { pos : usize }\n\ninstance Cursor\n  export depth : &self -> usize\n  depth self = 1\n"
@@ -303,8 +303,8 @@ test "an instance method is published as a method, not a field"
   found = crate::generate::walk (&program)
   outcome = crate::driver::solve_with (&found.store) (&found.known)
   sidecar = of_report (&found) (&outcome)
-  assert! \-> .is_some_and (\m -> m.is_field) (.member "Cursor" "pos" (&sidecar))
-  assert! \-> .is_some_and (\m -> !m.is_field) (.member "Cursor" "depth" (&sidecar))
+  assert! \-> .is_some_and (\m -> m.is_field) (.member "Cursor" "pos" sidecar)
+  assert! \-> .is_some_and (\m -> !m.is_field) (.member "Cursor" "depth" sidecar)
 
 test "the members survive a round trip through the text"
   source = "data Point = Point { x : f64, y : f64 }\n"
@@ -313,11 +313,11 @@ test "the members survive a round trip through the text"
   outcome = crate::driver::solve_with (&found.store) (&found.known)
   written = render_sidecar (&of_report (&found) (&outcome))
   read = read_sidecar (&written)
-  assert! \-> .declares "Point" (&read)
-  assert! \-> .is_some_and (\m -> m.is_field) (.member "Point" "y" (&read))
+  assert! \-> .declares "Point" read
+  assert! \-> .is_some_and (\m -> m.is_field) (.member "Point" "y" read)
 
 test "a sidecar with no declarations declares nothing, rather than everything"
   read = read_sidecar "# voltaic 2 signature sidecar\nf : u64 -> u64\n"
-  assert! \-> !.declares "Point" (&read)
-  assert! \-> .is_none (.member "Point" "x" (&read))
-  assert_eq! \-> .len (&read) \-> 1
+  assert! \-> !.declares "Point" read
+  assert! \-> .is_none (.member "Point" "x" read)
+  assert_eq! \-> .len read \-> 1

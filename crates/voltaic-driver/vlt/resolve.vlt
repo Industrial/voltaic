@@ -96,4 +96,4 @@ test "a program with no crate-qualified import resolves nothing"
   source = "import std::path::Path\n\nf : u64 -> u64\nf n = n\n"
   program = .expect "should parse" (voltaic_parser::parse_source source)
   known = upstream (&program) (Path::new "crates/voltaic-driver/vlt/resolve.vlt")
-  assert! \-> .is_empty (&known)
+  assert! \-> .is_empty known
