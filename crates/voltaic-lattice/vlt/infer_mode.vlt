@@ -54,6 +54,12 @@ collect_calls e found =
       collect_calls callee found
       for a in .iter args
         collect_calls a found
+    Expr::Dot { recv, name, args, .. } ->
+      if root_name recv is Some binder
+        found |> .push (.clone name.text, binder)
+      collect_calls recv found
+      for a in .iter args
+        collect_calls a found
     Expr::Paren { inner, .. } -> collect_calls inner found
     Expr::Ascribe { inner, .. } -> collect_calls inner found
     Expr::Binary { lhs, rhs, .. } ->
@@ -154,6 +160,10 @@ walk_expr e found escaping =
     Expr::Unary { operand, .. } -> walk_expr operand found false
     Expr::Call { callee, args, .. } ->
       walk_expr callee found false
+      for a in .iter args
+        walk_expr a found escaping
+    Expr::Dot { recv, args, .. } ->
+      walk_expr recv found false
       for a in .iter args
         walk_expr a found escaping
     Expr::Record { head, fields, .. } ->

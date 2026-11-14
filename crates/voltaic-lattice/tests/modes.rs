@@ -191,3 +191,80 @@ fn each_mode_lowers_to_the_rust_form_doc_86_names() {
   assert_eq!(Mode::Unique.emits(), "&mut ");
   assert_eq!(Mode::Owned.emits(), "");
 }
+
+/// A receiver-first call is the **only** spelling whose modes match the callee's.
+///
+/// `infer_mode` has two walks and both were missing an `Expr::Dot` arm, so a
+/// receiver-first call contributed nothing to either: `collect_calls` never
+/// recorded the `(method, receiver)` pair, and `walk_expr` never reached the
+/// receiver or the arguments, leaving every binder at its default. Found by row
+/// 103 leaf 6 migrating `voltaic-lexer`, whose sidecar moved `push_blank`'s
+/// `@ start owned, end owned` to `start shared, end shared` while the generated
+/// Rust stayed byte-identical.
+///
+/// # The three spellings disagree, and this is which one is right
+///
+/// For `take : usize -> &self -> u64`, the callee's own modes are
+/// `at owned, self shared` — `at` is a `usize` passed by value, `self` is a
+/// shared borrow. Measured for the three ways to call it:
+///
+/// | spelling | inferred |
+/// |---|---|
+/// | `.take at self` (receiver-last) | `at owned, self` **`owned`** |
+/// | `self \|> .take at` (pipeline) | `at` **`shared`**`, self shared` |
+/// | `self.take at` (receiver-first) | `at owned, self shared` |
+///
+/// Receiver-first agrees with the callee; the other two each get one binder
+/// wrong. Receiver-last makes `self` owned because `walk_expr`'s `Call` arm
+/// passes the caller's `escaping` to every argument and the receiver *is* the
+/// last argument; the pipeline makes `at` shared because `Binary` resets
+/// `escaping` to `false` for both sides.
+///
+/// So this is asserted against the **callee's** modes rather than against
+/// another spelling: two spellings agreeing would be satisfied by both being
+/// wrong, and here two of the three are.
+///
+/// # The receiver is borrowed, not consumed
+///
+/// `walk_expr`'s `Dot` arm passes `false` for the receiver and the caller's
+/// `escaping` for the arguments. Passing `escaping` for the receiver too was
+/// tried first and is wrong: `recv.method ()` borrows `recv` exactly as
+/// `recv.field` does, and `Expr::Field` has always walked its receiver with
+/// `false`. The difference is measurable — with `escaping`, the committed corpus
+/// moved `voltaic-diag`'s `caret_width` from `@ source shared` to
+/// `@ source owned`; with `false`, **all 110 sidecars regenerate unchanged**.
+#[test]
+fn a_receiver_first_call_infers_the_modes_the_callee_declares() {
+  let source = "data H = H { export items : Vec<u64> }\n\ninstance H\n  take : usize -> &self -> u64\n  take at self = .unwrap_or 0 (.copied (.get at self.items))\n\n  export via_last : usize -> &self -> u64\n  via_last at self = .take at self\n\n  export via_pipe : usize -> &self -> u64\n  via_pipe at self = self |> .take at\n\n  export via_dot : usize -> &self -> u64\n  via_dot at self = self.take at\n";
+  let program = voltaic_parser::parse_source(source).expect("should parse");
+  let found = voltaic_lattice::walk(&program);
+  let modes = |name: &str| {
+    let d = found
+      .find(name)
+      .unwrap_or_else(|| panic!("{name} should be inferred"));
+    d.modes
+      .iter()
+      .map(|m| format!("{} {}", m.0, m.1))
+      .collect::<Vec<_>>()
+      .join(", ")
+  };
+  assert_eq!(
+    modes("via_dot"),
+    modes("take"),
+    "a receiver-first call must demand of its binders exactly what the callee \
+     declares; if it does not, migrating `|>` to `.` rewrites published modes"
+  );
+  // The other two, pinned as the known-wrong baselines. They are not bugs this
+  // test is fixing — they are why the assertion above compares against the
+  // callee and not against a sibling spelling.
+  assert_eq!(
+    modes("via_last"),
+    "at owned, self owned",
+    "receiver-last over-claims the receiver, because it *is* the last argument"
+  );
+  assert_eq!(
+    modes("via_pipe"),
+    "at shared, self shared",
+    "the pipeline under-claims the argument, because `Binary` resets `escaping`"
+  );
+}
