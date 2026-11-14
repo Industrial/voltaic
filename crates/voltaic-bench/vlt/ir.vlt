@@ -9,18 +9,7 @@ function_ir source name scratch =
   output = .join (format! \-> "#{name}_probe.ll") scratch
   (.ok (std::fs::write (&input) (mark_target source name)))?
 
-  result = (std::process::Command::new (&rustc)
-    |> .arg "-O"
-    |> .arg "-Ccodegen-units=1"
-    |> .arg "--emit=llvm-ir"
-    |> .arg "--crate-type=lib"
-    |> .arg "--crate-name"
-    |> .arg "probe"
-    |> .arg "-o"
-    |> .arg (&output)
-    |> .arg (&input)
-    |> .output
-    |> .ok)?
+  result = ((((((((((std::process::Command::new (&rustc)).arg "-O").arg "-Ccodegen-units=1").arg "--emit=llvm-ir").arg "--crate-type=lib").arg "--crate-name").arg "probe").arg "-o").arg (&output)).arg (&input)).output ().ok ()?
   if !.success result.status
     return None
 
@@ -37,14 +26,11 @@ alpha_renamed body =
       Some a -> a
       None ->
         break
-    out |> .push_str (.unwrap_or "" (.get (0 .. at) rest))
-    rest := rest |> .get (at + 1 .. .len rest) |> .unwrap_or ""
-    found = rest
-      |> .char_indices
-      |> .find (\p -> !(.is_alphanumeric p.1 || p.1 == '_' || p.1 == '.' || p.1 == '-'))
-      |> .map (\p -> p.0)
+    out.push_str (.unwrap_or "" (.get (0 .. at) rest))
+    rest := (rest.get (at + 1 .. .len rest)).unwrap_or ""
+    found = (rest.char_indices ().find (\p -> !(.is_alphanumeric p.1 || p.1 == '_' || p.1 == '.' || p.1 == '-'))).map (\p -> p.0)
     end = .unwrap_or (.len rest) found
-    name = rest |> .get (0 .. end) |> .unwrap_or ""
+    name = (rest.get (0 .. end)).unwrap_or ""
     if .all (\c -> .is_ascii_digit c) (.chars name)
       .push '%' out
       .push_str name out
@@ -54,9 +40,9 @@ alpha_renamed body =
         None ->
           .push (.to_string name) names
           .len names - 1
-      out |> .push_str (&format! \-> "%v#{index}")
-    rest := rest |> .get (end .. .len rest) |> .unwrap_or ""
-  out |> .push_str rest
+      out.push_str (&format! \-> "%v#{index}")
+    rest := (rest.get (end .. .len rest)).unwrap_or ""
+  out.push_str rest
   out
 
 export(crate) body_of : &str -> &str -> String
@@ -90,13 +76,12 @@ mark_target source name =
         .to_string line
       else
         format! \-> "pub #{line}"
-      parts
-        |> .push (format! \-> "#[no_mangle]\n#[inline(never)]\n#{body}")
+      parts.push (format! \-> "#[no_mangle]\n#[inline(never)]\n#{body}")
     else
       .push (.to_string line) parts
   .join "\n" parts
 
 export(crate) strip_debug : &str -> &str
 strip_debug line = case .find ", !dbg" line of
-  Some at -> line |> .get (0 .. at) |> .unwrap_or line
+  Some at -> (line.get (0 .. at)).unwrap_or line
   None -> line

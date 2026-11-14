@@ -1,7 +1,7 @@
 import std::path::Path
 import std::path::PathBuf
 
-export data Pair = Pair { export stem : String, export function : String, export vlt : PathBuf, export r#rust : PathBuf }
+export data Pair { export stem String, export function String, export vlt PathBuf, export r#rust PathBuf }
   deriving (Debug, Clone)
 
 export pairs : &Path -> Vec<Pair>
@@ -11,12 +11,7 @@ pairs root =
     Ok e -> e
     Err _ ->
       return Vec::new ()
-  mut stems : Vec<String> = entries
-    |> .filter_map Result::ok
-    |> .map (\entry -> .path entry)
-    |> .filter (\path -> .is_some_and (\x -> x == "vlt") (.extension path))
-    |> .filter_map (\path -> .map (\s -> .into_owned (.to_string_lossy s)) (.file_stem path))
-    |> .collect
+  mut stems : Vec<String> = ((((entries.filter_map Result::ok).map (\entry -> .path entry)).filter (\path -> .is_some_and (\x -> x == "vlt") (.extension path))).filter_map (\path -> .map (\s -> .into_owned (.to_string_lossy s)) (.file_stem path))).collect ()
   .sort stems
 
   mut found = Vec::new ()
@@ -30,8 +25,7 @@ pairs root =
       Some f -> f
       None ->
         continue
-    found
-      |> .push (Pair { stem, function, vlt = vlt_path, r#rust = rust_path })
+    found.push (Pair { stem, function, vlt = vlt_path, r#rust = rust_path })
   found
 
 export(crate) first_public_function : &str -> Option<String>
@@ -41,10 +35,7 @@ first_public_function text =
       Some r -> r
       None ->
         continue
-    name : String = rest
-      |> .chars
-      |> .take_while (\c -> .is_alphanumeric c || *c == '_')
-      |> .collect
+    name : String = (rest.chars ().take_while (\c -> .is_alphanumeric c || *c == '_')).collect ()
     if !.is_empty name
       return Some name
   None
