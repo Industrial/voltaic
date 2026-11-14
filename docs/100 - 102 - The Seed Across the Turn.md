@@ -489,16 +489,62 @@ a comment fix and not a design problem: moving one crate's `.vlt` to the new
 surface and flipping its line is still one reviewable commit. That property came
 from the commit granularity, never from which blob ran.
 
+### 10.9 §3.1: g1 retired, and the row is complete
+
+`seed/voltaic-g1.wasm` is deleted — 1,005,170 bytes, the last binary this
+repository tracked besides its successor. **Acceptance criterion 6 is met, and
+with it every criterion in §5.**
+
+§3.1's two conditions, both met before the file went:
+
+1. **`seed/GENERATION` holds no `g1` line.** Row 103 leaf 6 took all fourteen
+   crates to generation 2, one reviewable commit each.
+2. **`fixpoint` green on g2 from a clean clone, twice** — §10.8 on the
+   pre-migration tree, then twice more on the fully migrated tree. Four clones
+   in total, because the tree that matters changed between the two pairs: a
+   clone verified before the migration says nothing about a clone after it.
+
+Verified after the deletion, which is the check that actually matters: a fresh
+`git clone` whose `seed/` holds **only** `GENERATION`, `SEED.md` and
+`voltaic-g2.wasm` runs `./bootstrap.sh`, reports `git status --porcelain` as 0
+lines, and passes all twelve `voltaic-seed` tests — `stage1_equals_stage2`,
+`a_clone_without_the_generated_rust_bootstraps_from_the_seed`,
+`the_g2_blob_and_the_tree_agree_on_every_ported_crate` and the rest.
+
+#### What went with it, and one thing that did not
+
+`bootstrap.sh`'s `g1 | g2` arm is gone along with the *"newest blob present"*
+override that followed it. That override existed because g1 was immutable — its
+output diverged from the tree's the moment the emitter moved past plan 72 — so
+the column was validated and then ignored, which §10.8 recorded. One generation
+means one blob, named by the column.
+
+`moon.yml`'s `:seed-refresh` is gone. `:seed-refresh-g2` keeps its suffix rather
+than taking the shorter name, for the reason there were two tasks: one task with
+an argument would make refreshing the wrong one a typo away.
+
+Both `g1 | g2` validators, in `blob.rs` and `support.rs`, narrow to `g2`, so a
+line or table naming `g1` now fails rather than sending `bootstrap.sh` at a file
+that is not there.
+
+**What stays is g2's `built by: g1`.** It records how this blob came to be, not
+where a file is: §1.2 requires a generation's seed to be built by the previous
+generation's compiler *before* that generation's source is replaced, and g2 was.
+`blob.rs` still asserts `built by` never names the generation in `compiles`,
+which is the whole reason both fields exist.
+
 ### 10.7 What remains
 
-- **Step 5**, which is row 103's: migrating the tree's source to generation 2,
-  crate by crate, flipping each `GENERATION` line to `g2`. Blocked, and not on
-  this row: doc 97 §1.3's deletions 3 and 4 cannot be written as specified, which
-  doc 101 §10.14 measures and doc 97 §1.3 now records.
-- **Step 6 is done**, both halves — §10.6 for the clean tree, §10.8 above for the
-  two clean clones.
-- **Then** `voltaic-g1.wasm` is deleted and `GENERATION` reduced to one
-  generation, which is §3.1's retirement step and still last. It is **not**
-  unblocked by step 6: all fourteen lines still read `g1`, so
-  `every_generation_named_in_the_list_has_its_blob` would fail the moment the
-  blob were deleted. Retirement needs step 5 first, exactly as §3 orders it.
+**Nothing on this row.** Steps 1–6 and §3.1's retirement are all done; §5's seven
+acceptance criteria are all met.
+
+What remains is elsewhere, and worth naming so this row is not read as closing
+more than it does:
+
+- **doc 97 §1.3's deletion 3** still cannot break a `.` chain across lines, and
+  **deletion 4's `std` receivers** still do not classify. Doc 101 §10.14 measures
+  both. They bound how much further the surface contracts; they did not bound the
+  migration, which is why row 103 finished without them.
+- **Row 104's leaves 1, 3 and 6** — `GRAMMAR.md`'s regrade, `CONFORMANCE.md`, and
+  doc 86 §10's correction — wait on row 99's remaining waves rather than on
+  anything here.
