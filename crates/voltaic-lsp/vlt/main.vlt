@@ -3,9 +3,7 @@ import lsp_types::InitializeParams
 
 main : Result<(), String>
 main =
-  wants_version = std::env::args ()
-    |> .skip 1
-    |> .any (\arg -> arg == "--version" || arg == "-V")
+  wants_version = ((std::env::args ()).skip 1).any (\arg -> arg == "--version" || arg == "-V")
   if wants_version
     version = env! \-> "CARGO_PKG_VERSION"
     println! \-> "voltaic-lsp #{version}"
