@@ -5,7 +5,7 @@ current : Fingerprint
 now : u128
 r#of : &[u8] -> Fingerprint @ bytes owned
 as_bytes : Fingerprint -> &[u8; 32] @ self shared
-report : ?52 -> &str -> bool -> () @ self shared, __vlt_a1 shared, __vlt_a2 shared
+report : ?42 -> &str -> bool -> () @ self shared, __vlt_a1 shared, __vlt_a2 shared
 report : Collect -> &str -> bool -> () @ self shared, label shared, hit shared
 report : Silent -> &str -> bool -> () @ self shared, _label shared, _hit shared
 new : &Path -> Store ! panic @ out owned

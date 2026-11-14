@@ -22,7 +22,7 @@ export data Position
   | AtStart
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
-export data Marker = Marker { export needle : String, export construct : String, export kind : Class, export position : Position }
+export data Marker { export needle String, export construct String, export kind Class, export position Position }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export markers : Vec<Marker>
@@ -68,18 +68,18 @@ at_start into needle construct kind = at into needle construct kind Position::At
 
 at : &mut Vec<Marker> -> &str -> &str -> Class -> Position -> ()
 at into needle construct kind position =
-  into |> .push (Marker { needle = .to_string needle, construct = .to_string construct, kind, position })
+  into.push (Marker { needle = .to_string needle, construct = .to_string construct, kind, position })
   ()
 
-export data Finding = Finding { export line : usize, export construct : String, export kind : Class }
+export data Finding { export line usize, export construct String, export kind Class }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Verdict = Verdict { export kind : Class, export findings : Vec<Finding> }
+export data Verdict { export kind Class, export findings Vec<Finding> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Verdict
   export of_class : Class -> &self -> Vec<&Finding>
-  of_class wanted self = self.findings |> .iter |> .filter (\f -> f.kind == wanted) |> .collect
+  of_class wanted self = (self.findings.iter ().filter (\f -> f.kind == wanted)).collect ()
 
 export classify : &str -> Verdict
 classify source =
@@ -94,7 +94,7 @@ classify source =
       if hits text marker
         if marker.kind > worst
           worst := marker.kind
-        findings |> .push (Finding { line = pair.0 + 1, construct = .clone marker.construct, kind = marker.kind })
+        findings.push (Finding { line = pair.0 + 1, construct = .clone marker.construct, kind = marker.kind })
   Verdict { kind = worst, findings }
 
 export hits : &str -> &Marker -> bool
@@ -138,7 +138,7 @@ is_word_byte held = .any (\c -> c == '_' || char::is_alphanumeric c) (.chars hel
 is_comment : &str -> bool
 is_comment text = .starts_with "--" (.trim_start text)
 
-export data Tally = Tally { export files : usize, export by_class : BTreeMap<Class, usize> }
+export data Tally { export files usize, export by_class BTreeMap<Class, usize> }
   deriving (Debug, Clone, Default)
 
 instance Tally
@@ -153,7 +153,7 @@ instance Tally
     ()
 
   export count : Class -> &self -> usize
-  count kind self = .copied (.get (&kind) self.by_class) |> .unwrap_or 0
+  count kind self = (.copied (.get (&kind) self.by_class)).unwrap_or 0
 
   export blocking : &self -> usize
   blocking self = .count Class::Manual self
@@ -233,5 +233,5 @@ test "the marker table covers all three classes"
   mut seen = Vec::new ()
   for marker in .iter (markers ())
     if !.contains (&marker.kind) seen
-      seen |> .push marker.kind
+      seen.push marker.kind
   assert_eq! \-> .len seen \-> 3 \-> "a table missing a class would report that class as absent"

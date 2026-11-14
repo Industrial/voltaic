@@ -15,7 +15,7 @@ compile_dir src out = compile_dir_with src out (&Silent)
 
 export(crate) compile_file : &Path -> &Path -> &Store -> &Fingerprint -> Result<Outcome, Vec<Diagnostic>>
 compile_file source out store fingerprint =
-  path = source |> .display |> .to_string
+  path = source.display ().to_string ()
   text = (.map_err (\e -> vec! \-> io_diagnostic (&path) (format! \-> "cannot read #{path}: #{e}")) (std::fs::read_to_string source))?
 
   key = cache_key (&text) fingerprint
@@ -36,7 +36,7 @@ compile_file source out store fingerprint =
   .put (&key) (&fresh) store
   Ok (Outcome { written, was_cached = false })
 
-export(crate) data Outcome = Outcome { export(crate) written : PathBuf, export(crate) was_cached : bool }
+export(crate) data Outcome { export(crate) written PathBuf, export(crate) was_cached bool }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export(crate) write_outputs : &Path -> &Path -> &str -> &Cached -> Result<PathBuf, Vec<Diagnostic>>
@@ -44,31 +44,28 @@ write_outputs source out path content =
   stem = .map_or_else (\-> .to_string "generated") (\s -> .to_string (.to_string_lossy s)) (.file_stem source)
   target = .join (format! \-> "#{stem}.rs") out
 
-  out_shown = out |> .display |> .to_string
+  out_shown = out.display ().to_string ()
   (.map_err (\e -> vec! \-> io_diagnostic path (format! \-> "cannot create #{out_shown}: #{e}")) (std::fs::create_dir_all out))?
-  target_shown = target |> .display |> .to_string
+  target_shown = target.display ().to_string ()
   (.map_err (\e -> vec! \-> io_diagnostic path (format! \-> "cannot write #{target_shown}: #{e}")) (std::fs::write (&target) (&content.r#rust)))?
 
   mut map_name = .to_os_string (.expect "a name" (.file_name target))
-  map_name |> .push ".map"
+  map_name.push ".map"
   sidecar = .with_file_name map_name target
-  sidecar_shown = sidecar |> .display |> .to_string
+  sidecar_shown = sidecar.display ().to_string ()
   (.map_err (\e -> vec! \-> io_diagnostic path (format! \-> "cannot write #{sidecar_shown}: #{e}")) (std::fs::write (&sidecar) (&content.map)))?
 
   Ok target
 
-export data Compiled = Compiled { export inputs : Vec<PathBuf>, export outputs : Vec<PathBuf> }
+export data Compiled { export inputs Vec<PathBuf>, export outputs Vec<PathBuf> }
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 instance Compiled
   export rerun_directives : &self -> Vec<String>
   rerun_directives self =
-    self.inputs
-      |> .iter
-      |> .map (\p ->
+    (self.inputs.iter ().map (\p ->
       shown = .display p
-      format! \-> "cargo::rerun-if-changed=#{shown}")
-      |> .collect
+      format! \-> "cargo::rerun-if-changed=#{shown}")).collect ()
 
   export is_empty : &self -> bool
   is_empty self = .is_empty self.inputs
@@ -87,11 +84,7 @@ export(crate) vlt_in : &Path -> Vec<PathBuf>
 vlt_in dir =
   guard std::fs::read_dir dir is Ok entries else
     return Vec::new ()
-  mut found : Vec<PathBuf> = entries
-    |> .filter_map Result::ok
-    |> .map (\e -> .path e)
-    |> .filter (\p -> .is_file p && .is_some_and (\x -> x == "vlt" || x == "sdx") (.extension p))
-    |> .collect
+  mut found : Vec<PathBuf> = (((entries.filter_map Result::ok).map (\e -> .path e)).filter (\p -> .is_file p && .is_some_and (\x -> x == "vlt" || x == "sdx") (.extension p))).collect ()
   .sort found
   found
 
@@ -99,7 +92,7 @@ vlt_in dir =
 static NEXT : std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new 0
 
 #[cfg(test)]
-data Dir = Dir std::path::PathBuf
+data Dir std::path::PathBuf
 
 #[cfg(test)]
 instance Dir
@@ -122,10 +115,7 @@ instance Drop Dir
 
 test "finds vlt files and sorts them"
   dir = Dir::r#with "sorted" (&["b.vlt", "a.vlt", "c.vlt"])
-  found : Vec<String> = vlt_in (&dir.0)
-    |> .iter
-    |> .map (\p -> .to_string (.to_string_lossy (.expect "a name" (.file_name p))))
-    |> .collect
+  found : Vec<String> = ((vlt_in (&dir.0)).iter ().map (\p -> .to_string (.to_string_lossy (.expect "a name" (.file_name p))))).collect ()
   assert_eq! \-> found \-> vec! \-> "a.vlt" \-> "b.vlt" \-> "c.vlt"
 
 test "ignores other extensions"

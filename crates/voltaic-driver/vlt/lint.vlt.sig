@@ -11,8 +11,8 @@ comment_pragma_sites : &str -> Vec<(Span, Lint)> @ source shared
 line_of : &str -> usize -> usize @ source shared, offset shared
 item : PragmaWalk -> &Item -> () @ self shared, item shared
 stmts : PragmaWalk -> &[Stmt] -> () @ self shared, stmts shared
-item : ?95 -> &Item -> () @ self shared, __vlt_a1 shared
-stmts : ?98 -> &[Stmt] -> () @ self shared, __vlt_a1 shared
+item : ?83 -> &Item -> () @ self shared, __vlt_a1 shared
+stmts : ?86 -> &[Stmt] -> () @ self shared, __vlt_a1 shared
 shadow_message : &str -> String @ name shared
 shadow_sites : &Program -> Vec<(Span, String)> @ program shared
 item : ShadowWalk -> &Item -> () @ self shared, _item shared

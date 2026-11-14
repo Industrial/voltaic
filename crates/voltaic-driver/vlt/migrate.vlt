@@ -8,7 +8,7 @@ transpile path text =
   analysis = crate::annotate::analyse_at (&mut program) path
   if !.is_empty analysis.open
     return Err (crate::annotate::refusals path text (.as_slice analysis.open))
-  shown = path |> .display |> .to_string
+  shown = path.display ().to_string ()
   scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) text (&shown)
   drop scope
@@ -21,8 +21,8 @@ export data Side
 
 export data Gate
   = Identical
-  | Differs { line : usize, was : String, now : String }
-  | Unreadable { side : Side, problems : Vec<Diagnostic> }
+  | Differs { line usize, was String, now String }
+  | Unreadable { side Side, problems Vec<Diagnostic> }
   deriving (Debug, Clone)
 
 export gate : &Path -> &str -> &str -> Gate
@@ -40,8 +40,8 @@ first_difference before after =
   theirs : Vec<&str> = .collect (.lines after)
   mut i = 0
   while i < .len mine || i < .len theirs
-    left = .copied (.get i mine) |> .unwrap_or ""
-    right = .copied (.get i theirs) |> .unwrap_or ""
+    left = (.copied (.get i mine)).unwrap_or ""
+    right = (.copied (.get i theirs)).unwrap_or ""
     if left != right
       return Some (i + 1, .to_string left, .to_string right)
     i += 1
@@ -66,7 +66,7 @@ instance Gate
 
 export apply : &Path -> &str -> Result<Gate, String>
 apply path migrated =
-  shown = path |> .display |> .to_string
+  shown = path.display ().to_string ()
   original = (.map_err (\e -> format! \-> "cannot read #{shown}: #{e}") (std::fs::read_to_string path))?
   verdict = gate path (&original) migrated
   if !.passed verdict

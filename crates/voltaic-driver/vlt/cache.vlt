@@ -44,9 +44,7 @@ instance Fingerprint
 
   now : u128
   now =
-    std::time::SystemTime::now ()
-      |> .duration_since std::time::UNIX_EPOCH
-      |> .map_or 0 (\d -> .as_nanos d)
+    ((std::time::SystemTime::now ()).duration_since std::time::UNIX_EPOCH).map_or 0 (\d -> .as_nanos d)
 
   export r#of : &[u8] -> Self
   r#of bytes = Fingerprint $ blake3::hash bytes
@@ -67,7 +65,7 @@ export class CacheReporter
   report : &self -> &str -> bool -> ()
 
 #[cfg(test)]
-data Collect = Collect std::cell::RefCell<Vec<String>>
+data Collect std::cell::RefCell<Vec<String>>
 
 #[cfg(test)]
 instance CacheReporter Collect
@@ -95,7 +93,7 @@ test "accepts everything and says nothing"
   .report "a.vlt" true Silent
   .report "a.vlt" false Silent
 
-export(crate) data Store = Store { dir : PathBuf }
+export(crate) data Store { dir PathBuf }
 
 instance Store
   export(crate) new : &Path -> Self
@@ -130,7 +128,7 @@ instance Store
 static NEXT : std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new 0
 
 #[cfg(test)]
-data Dir = Dir std::path::PathBuf
+data Dir std::path::PathBuf
 
 #[cfg(test)]
 instance Dir
@@ -193,5 +191,5 @@ test "an unwritable store is simply always a miss"
   .put (&key) (&entry ()) store
   assert_eq! \-> .get (&key) store \-> None
 
-export(crate) data Cached = Cached { export(crate) r#rust : String, export(crate) map : String }
+export(crate) data Cached { export(crate) r#rust String, export(crate) map String }
   deriving (Debug, Clone, PartialEq, Eq)

@@ -81,11 +81,7 @@ char_offset source line col =
     if n + 1 == line
       if .count (.chars text) < col - 1
         return None
-      within : usize = text
-        |> .chars
-        |> .take (col - 1)
-        |> .map char::len_utf8
-        |> .sum
+      within : usize = ((text.chars ().take (col - 1)).map char::len_utf8).sum ()
       return Some (offset + within)
     offset += .len text + 1
   None
@@ -168,7 +164,7 @@ test "narrows to a whole multibyte character"
   got = narrow span src 3 3
   assert_eq! \-> &src[got.0 .. got.1] \-> "é"
 
-export data RustcMessage = RustcMessage { export path : String, export line : usize, export col : usize, export level : String, export code : Option<String>, export message : String }
+export data RustcMessage { export path String, export line usize, export col usize, export level String, export code Option<String>, export message String }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance RustcMessage

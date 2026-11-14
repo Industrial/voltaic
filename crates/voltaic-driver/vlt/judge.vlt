@@ -10,7 +10,7 @@ import std::path::Path
 
 export judge : &Path -> &str -> &Program -> Vec<Diagnostic>
 judge path source program =
-  shown = path |> .display |> .to_string
+  shown = path.display ().to_string ()
   found = voltaic_lattice::walk program
   outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
 
@@ -18,15 +18,7 @@ judge path source program =
   for failure in .contradictions (&found.store) outcome
     if .at failure.at found.store is Some held
       owner = enclosing (.as_slice found.definitions) held.provenance.span
-      diagnostics |> .push (Diagnostic {
-        code = DiagnosticCode::from Code::LatticeConflict,
-        severity = Severity::Warning,
-        message = stated owner (&held.obligation) (&outcome),
-        span = boundary owner held.provenance.span,
-        related = sides (&found.store) failure.at (&held.obligation) (&outcome) held.provenance.span,
-        help = Some (advice owner (&held.provenance)),
-        path = .clone shown,
-        source = .to_string source })
+      diagnostics.push (Diagnostic { code = DiagnosticCode::from Code::LatticeConflict, severity = Severity::Warning, message = stated owner (&held.obligation) (&outcome), span = boundary owner held.provenance.span, related = sides (&found.store) failure.at (&held.obligation) (&outcome) held.provenance.span, help = Some (advice owner (&held.provenance)), path = .clone shown, source = .to_string source })
   diagnostics
 
 enclosing : &[Inferred] -> Span -> Option<&Inferred>
@@ -62,9 +54,9 @@ sides : &voltaic_lattice::Store -> usize -> &Obligation -> &voltaic_lattice::Out
 sides store at_index obligation outcome at =
   mut found = Vec::new ()
   if obligation is Obligation::Unify { left, right, .. }
-    found |> .push (at, format! \-> "required #{(.resolved right outcome)} here")
+    found.push (at, format! \-> "required #{(.resolved right outcome)} here")
     if opposing store at_index is Some other
-      found |> .push (other.0, format! \-> "inferred #{(.resolved left outcome)} here, #{other.1}")
+      found.push (other.0, format! \-> "inferred #{(.resolved left outcome)} here, #{other.1}")
   found
 
 opposing : &voltaic_lattice::Store -> usize -> Option<(Span, String)>
@@ -104,7 +96,7 @@ judgements program =
       String::new ()
     else
       format! \-> " ! #{definition.row}"
-    shown |> .push (.clone definition.name, format! \-> "#{resolved}#{row}")
+    shown.push (.clone definition.name, format! \-> "#{resolved}#{row}")
   shown
 
 test "a program with no contradiction gets no judgement diagnostic"

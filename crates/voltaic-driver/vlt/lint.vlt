@@ -20,28 +20,22 @@ import std::path::Path
 
 export lint : &Path -> &str -> Option<&Program> -> Vec<Diagnostic>
 lint path source program =
-  shown = path |> .display |> .to_string
+  shown = path.display ().to_string ()
   warning = \code message span help -> Diagnostic { code, severity = Severity::Warning, message, span, related = Vec::new (), help = Some help, path = .clone shown, source = .to_string source }
 
-  unwraps = unwrap_call_sites source program
-    |> .into_iter
-    |> .map (\span -> warning (DiagnosticCode::from Code::UnwrapUsed) (.to_string UNWRAP_MESSAGE) span (.to_string "if a panic is intended here, say so on the line above: `\#[voltaic::allow(unwrap)]`"))
+  unwraps = (unwrap_call_sites source program).into_iter ().map (\span -> warning (DiagnosticCode::from Code::UnwrapUsed) (.to_string UNWRAP_MESSAGE) span (.to_string "if a panic is intended here, say so on the line above: `\#[voltaic::allow(unwrap)]`"))
 
-  pragmas = comment_pragma_sites source
-    |> .into_iter
-    |> .map (\pair ->
+  pragmas = (comment_pragma_sites source).into_iter ().map (\pair ->
     span = pair.0
     named = pair.1
-    code_text = named |> .code |> .text
+    code_text = named.code ().text ()
     help = format! \-> "the comment still suppresses `#{code_text}` for this milestone; the attribute is what plan 64 keeps"
     warning (DiagnosticCode::from Code::CommentAllowPragma) (comment_pragma_message named) span help)
 
   mut found : Vec<Diagnostic> = .collect (.chain pragmas unwraps)
 
   if program is Some tree
-    shadows = shadow_sites tree
-      |> .into_iter
-      |> .map (\pair ->
+    shadows = (shadow_sites tree).into_iter ().map (\pair ->
       span = pair.0
       name = pair.1
       warning (DiagnosticCode::from Code::ShadowedBinding) (shadow_message (&name)) span (.to_string SHADOW_HELP))
@@ -127,18 +121,14 @@ comment_pragma_sites source =
   guard voltaic_lexer::lex source is Ok tokens else
     return Vec::new ()
 
-  tokens
-    |> .iter
-    |> .flat_map (\t -> .chain (.as_ref t.trailing) (.iter t.leading))
-    |> .filter_map (\trivium -> .map (\lint -> (trivium.span, lint)) (comment_pragma trivium))
-    |> .collect
+  ((tokens.iter ().flat_map (\t -> .chain (.as_ref t.trailing) (.iter t.leading))).filter_map (\trivium -> .map (\lint -> (trivium.span, lint)) (comment_pragma trivium))).collect ()
 
 export(crate) line_of : &str -> usize -> usize
 line_of source offset =
   end = .min (.len source) offset
   .count (.matches '\n' source[0 .. end]) + 1
 
-export(crate) data PragmaWalk = PragmaWalk { export(crate) lint : Lint, export(crate) found : Vec<Span> }
+export(crate) data PragmaWalk { export(crate) lint Lint, export(crate) found Vec<Span> }
 
 instance ProgramWalk PragmaWalk
   item : &mut self -> &Item -> ()
@@ -174,14 +164,11 @@ shadow_sites program =
   walk_program program (&mut walk)
 
   ranges = suppressed_spans program Lint::Shadow
-  walk.found
-    |> .into_iter
-    |> .filter (\pair ->
+  (walk.found.into_iter ().filter (\pair ->
     span = pair.0
-    !.any (\r -> r.0 <= span.0 && span.1 <= r.1) (.iter ranges))
-    |> .collect
+    !.any (\r -> r.0 <= span.0 && span.1 <= r.1) (.iter ranges))).collect ()
 
-export(crate) data ShadowWalk = ShadowWalk { export(crate) found : Vec<(Span, String)> }
+export(crate) data ShadowWalk { export(crate) found Vec<(Span, String)> }
 
 instance ProgramWalk ShadowWalk
   item : &mut self -> &Item -> ()
@@ -214,27 +201,14 @@ unwrap_call_sites source program =
   guard voltaic_lexer::lex source is Ok tokens else
     return Vec::new ()
 
-  suppressed : Vec<usize> = tokens
-    |> .iter
-    |> .flat_map (\t -> .chain (.as_ref t.trailing) (.iter t.leading))
-    |> .filter (\trivium -> allow_pragma trivium Lint::Unwrap)
-    |> .map (\trivium -> line_of source trivium.span.0)
-    |> .collect
+  suppressed : Vec<usize> = (((tokens.iter ().flat_map (\t -> .chain (.as_ref t.trailing) (.iter t.leading))).filter (\trivium -> allow_pragma trivium Lint::Unwrap)).map (\trivium -> line_of source trivium.span.0)).collect ()
 
-  ranges = program
-    |> .map (\p -> suppressed_spans p Lint::Unwrap)
-    |> .unwrap_or_default
+  ranges = (program.map (\p -> suppressed_spans p Lint::Unwrap)).unwrap_or_default ()
 
-  tokens
-    |> .windows 2
-    |> .filter (\pair -> pair[0].kind == TokenKind::Dot)
-    |> .filter_map (\pair ->
+  (((((tokens.windows 2).filter (\pair -> pair[0].kind == TokenKind::Dot)).filter_map (\pair ->
     case &pair[1].kind of
       TokenKind::Ident name | name == "unwrap" || name == "expect" -> Some pair[1].span
-      _ -> None)
-    |> .filter (\span -> !.contains (&line_of source span.0) suppressed)
-    |> .filter (\span -> !.any (\r -> r.0 <= span.0 && span.1 <= r.1) (.iter ranges))
-    |> .collect
+      _ -> None)).filter (\span -> !.contains (&line_of source span.0) suppressed)).filter (\span -> !.any (\r -> r.0 <= span.0 && span.1 <= r.1) (.iter ranges))).collect ()
 
 export(crate) const UNWRAP_MESSAGE : &str = "`unwrap` and `expect` panic — the ergonomic path is `?`, `??` or `catch` (doc 03 §12.7)"
 

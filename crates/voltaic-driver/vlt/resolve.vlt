@@ -29,7 +29,7 @@ workspace_above from =
 export sidecars_of : &Path -> &str -> Vec<PathBuf>
 sidecars_of root named =
   mut found = Vec::new ()
-  dir = root |> .join "crates" |> .join named |> .join "vlt"
+  dir = ((root.join "crates").join named).join "vlt"
   gather (&dir) (&mut found)
   .sort found
   found
@@ -44,7 +44,7 @@ gather dir into =
       gather (&path) into
       continue
     if .ends_with ".vlt.sig" (.to_string_lossy path)
-      into |> .push path
+      into.push path
   ()
 
 export upstream : &Program -> &Path -> Declarations
@@ -60,7 +60,7 @@ upstream program from =
       continue
     if .contains (&named) (.as_slice seen)
       continue
-    seen |> .push (.clone named)
+    seen.push (.clone named)
     for path in sidecars_of (&root) (.as_str named)
       guard std::fs::read_to_string (&path) is Ok text else
         continue
@@ -70,9 +70,9 @@ upstream program from =
           MemberKind::Field
         else
           MemberKind::Method
-        known.members |> .push (voltaic_lattice::Member { owner = .clone m.owner, name = .clone m.name, ty = voltaic_lattice::Ty::Nil, kind })
+        known.members.push (voltaic_lattice::Member { owner = .clone m.owner, name = .clone m.name, ty = voltaic_lattice::Ty::Nil, kind })
         if !.contains (&.clone m.owner) (.as_slice known.types)
-          known.types |> .push (.clone m.owner)
+          known.types.push (.clone m.owner)
   known
 
 test "an import names a candidate crate unless its head is one of Rust's own roots"

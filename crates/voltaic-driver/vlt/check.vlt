@@ -9,7 +9,7 @@ import std::process::Command
 
 export check : &Path -> &str -> Result<CheckOutcome, String>
 check path source =
-  vlt_path = path |> .display |> .to_string
+  vlt_path = path.display ().to_string ()
 
   mut program = case voltaic_parser::parse_source source of
     Ok parsed -> parsed
@@ -29,25 +29,17 @@ check path source =
   rustc = (.ok_or_else (\-> .to_string "error: no rustc found. `voltaic check` compiles the generated Rust, so it needs the Rust toolchain on PATH.") (rustc_path ()))?
 
   dir = (ScratchDir::new "check")?
-  vrs = dir |> .path |> .join "check.vrs"
-  vrs_path = vrs |> .display |> .to_string
+  vrs = dir.path ().join "check.vrs"
+  vrs_path = vrs.display ().to_string ()
   (.map_err (\e -> format! \-> "error: cannot write #{vrs_path}: #{e}") (std::fs::write (&vrs) (&emitted.0)))?
 
-  rustc_shown = rustc |> .display |> .to_string
-  invoked = Command::new (&rustc)
-    |> .args (["--edition", "2024", "--error-format=short", "--emit=metadata"])
-    |> .arg "-o"
-    |> .arg (.join "check.rmeta" (.path dir))
-    |> .arg (&vrs)
-    |> .output
+  rustc_shown = rustc.display ().to_string ()
+  invoked = (((((Command::new (&rustc)).args (["--edition", "2024", "--error-format=short", "--emit=metadata"])).arg "-o").arg (.join "check.rmeta" (.path dir))).arg (&vrs)).output ()
   out = (.map_err (\e -> format! \-> "error: cannot run #{rustc_shown}: #{e}") invoked)?
 
   stderr = String::from_utf8_lossy (&out.stderr)
-  messages : Vec<RustcMessage> = stderr
-    |> .lines
-    |> .filter_map RustcMessage::parse
-    |> .collect
-  failed = messages |> .iter |> .any RustcMessage::is_error
+  messages : Vec<RustcMessage> = (stderr.lines ().filter_map RustcMessage::parse).collect ()
+  failed = messages.iter ().any RustcMessage::is_error
   remapped = .map (\m -> remap m (&emitted.1) (&vlt_path) source (&vrs_path) (&emitted.0)) (.iter messages)
   .extend remapped diagnostics
 
@@ -57,10 +49,10 @@ check path source =
 
   Ok (CheckOutcome { diagnostics, failed })
 
-export data CheckOutcome = CheckOutcome { export diagnostics : Vec<Diagnostic>, export failed : bool }
+export data CheckOutcome { export diagnostics Vec<Diagnostic>, export failed bool }
   deriving (Debug, Clone, Default)
 
-export(crate) data ScratchDir = ScratchDir PathBuf
+export(crate) data ScratchDir PathBuf
 
 instance ScratchDir
   export(crate) new : &str -> Result<Self, String>
@@ -68,7 +60,7 @@ instance ScratchDir
     n = .fetch_add 1 std::sync::atomic::Ordering::Relaxed NEXT
     pid = std::process::id ()
     dir = .join (format! \-> "voltaic-#{tag}-#{pid}-#{n}") (std::env::temp_dir ())
-    shown = dir |> .display |> .to_string
+    shown = dir.display ().to_string ()
     (.map_err (\e -> format! \-> "error: cannot create #{shown}: #{e}") (std::fs::create_dir_all (&dir)))?
     Ok $ ScratchDir dir
 
@@ -84,7 +76,7 @@ instance Drop ScratchDir
 test "creates and removes itself"
   gone =
     dir = .expect "should create" $ ScratchDir::new "test"
-    live = dir |> .path |> .to_path_buf
+    live = dir.path ().to_path_buf ()
     assert! \-> .is_dir live
     live
   assert! \-> !.exists gone \-> "the directory should be gone after the drop"
@@ -98,15 +90,12 @@ export(crate) static NEXT : std::sync::atomic::AtomicUsize = std::sync::atomic::
 
 export diagnose : &Path -> &str -> &ParseFailure -> Vec<Diagnostic>
 diagnose path source failure =
-  shown = path |> .display |> .to_string
+  shown = path.display ().to_string ()
   case failure of
     ParseFailure::Lex e ->
       vec! \-> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, related = Vec::new (), help = .clone e.help, path = shown, source = .to_string source }
     ParseFailure::Parse problems ->
-      problems
-        |> .iter
-        |> .map (\e -> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, related = Vec::new (), help = .clone e.help, path = .clone shown, source = .to_string source })
-        |> .collect
+      (problems.iter ().map (\e -> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, related = Vec::new (), help = .clone e.help, path = .clone shown, source = .to_string source })).collect ()
 
 test "carries a lex errors code and help across"
   source = "main : ()\nmain =\n\tprint 1\n"
@@ -139,22 +128,13 @@ test "renders without a snippet"
 
 export rustc_path : Option<PathBuf>
 rustc_path =
-  from_path = std::env::var_os "PATH"
-    |> .into_iter
-    |> .flat_map (\paths ->
-    dirs : Vec<PathBuf> = std::env::split_paths (&paths)
-      |> .map (\dir -> .join "rustc" dir)
-      |> .collect
+  from_path = (std::env::var_os "PATH").into_iter ().flat_map (\paths ->
+    dirs : Vec<PathBuf> = ((std::env::split_paths (&paths)).map (\dir -> .join "rustc" dir)).collect ()
     dirs)
   baked = std::iter::once $ PathBuf::from $ env! \-> "VOLTAIC_RUSTC"
-  from_env = std::env::var_os "RUSTC"
-    |> .map PathBuf::from
-    |> .into_iter
+  from_env = ((std::env::var_os "RUSTC").map PathBuf::from).into_iter ()
 
-  from_path
-    |> .chain baked
-    |> .chain from_env
-    |> .find (\candidate -> is_real_rustc candidate)
+  ((from_path.chain baked).chain from_env).find (\candidate -> is_real_rustc candidate)
 
 test "finds a rustc"
   found = .expect "the toolchain should provide a rustc" $ rustc_path ()
@@ -165,7 +145,7 @@ export(crate) is_real_rustc : &Path -> bool
 is_real_rustc candidate =
   if !.is_file candidate
     return false
-  probed = Command::new candidate |> .arg "--version" |> .output
+  probed = ((Command::new candidate).arg "--version").output ()
   .is_ok_and (\o -> .success o.status && .starts_with "rustc " (String::from_utf8_lossy (&o.stdout))) probed
 
 test "rejects a program that is not rustc"

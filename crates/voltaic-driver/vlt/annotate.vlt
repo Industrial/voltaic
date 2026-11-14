@@ -15,10 +15,10 @@ import voltaic_diag::DiagnosticCode
 import voltaic_diag::Severity
 import std::path::Path
 
-export data Unresolved = Unresolved { export name : String, export shown : String, export span : voltaic_ast::Span }
+export data Unresolved { export name String, export shown String, export span voltaic_ast::Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Analysis = Analysis { export open : Vec<Unresolved>, export methods : Vec<Span> }
+export data Analysis { export open Vec<Unresolved>, export methods Vec<Span> }
   deriving (Debug, Clone)
 
 export annotate : &mut Program -> Vec<Unresolved>
@@ -32,15 +32,15 @@ analyse_at program from =
   mut found = voltaic_lattice::walk program
   published = crate::resolve::upstream program from
   for m in .iter published.members
-    found.known.members |> .push (.clone m)
+    found.known.members.push (.clone m)
   for t in .iter published.types
-    found.known.types |> .push (.clone t)
+    found.known.types.push (.clone t)
   outcome = voltaic_lattice::solve_with (&found.store) (&found.known)
   methods = method_spans (&found.store) (&outcome) (&found.known)
   mut filled = Vec::new ()
   for definition in .iter found.definitions
     if .is_none definition.written
-      filled |> .push (.clone definition.name, .judged (&outcome) definition, definition.span)
+      filled.push (.clone definition.name, .judged (&outcome) definition, definition.span)
   if .is_empty filled
     return Analysis { open = Vec::new (), methods }
 
@@ -50,9 +50,9 @@ analyse_at program from =
       if .is_none f.sig.ret
         if written_for (&f.name.text) f.span (.as_slice filled) is Some whole
           if !fill f (&whole)
-            open |> .push (Unresolved { name = .clone f.name.text, shown = .to_string whole, span = f.span })
+            open.push (Unresolved { name = .clone f.name.text, shown = .to_string whole, span = f.span })
         else
-          open |> .push (Unresolved { name = .clone f.name.text, shown = .to_string "?", span = f.span })
+          open.push (Unresolved { name = .clone f.name.text, shown = .to_string "?", span = f.span })
   Analysis { open, methods }
 
 method_spans : &Store -> &Outcome -> &Declarations -> Vec<Span>
@@ -61,18 +61,18 @@ method_spans store outcome known =
   for c in .all store
     at = c.provenance.span
     if &c.obligation is Obligation::Member { name, .. } && voltaic_lattice::receiver_owner store outcome at is Some owner && .is_method (&owner) name known
-      found |> .push at
+      found.push at
   found
 
 methods_of : &mut Item -> Vec<&mut FnDecl>
 methods_of item =
   mut found = Vec::new ()
   case item of
-    Item::Fn f -> found |> .push f
+    Item::Fn f -> found.push f
     Item::Instance block ->
       for member in .iter_mut block.members
         if member is ClassMember::Method f
-          found |> .push f
+          found.push f
     _ -> ()
   found
 
@@ -100,7 +100,7 @@ spine_of whole arity =
   mut taken = 0
   while taken < arity
     next = (arrow_parts (&cursor))?
-    params |> .push ((voltaic_lattice::write_type (&next.0))?)
+    params.push (voltaic_lattice::write_type (&next.0))?
     cursor := next.1
     taken += 1
   ret = (voltaic_lattice::write_type (&cursor))?
@@ -116,18 +116,10 @@ arrow_parts held = case held of
 
 export refusals : &Path -> &str -> &[Unresolved] -> Vec<Diagnostic>
 refusals path source open =
-  shown = path |> .display |> .to_string
+  shown = path.display ().to_string ()
   mut diagnostics = Vec::new ()
   for one in .iter open
-    diagnostics |> .push (Diagnostic {
-      code = DiagnosticCode::from Code::SignatureNotInferred,
-      severity = Severity::Error,
-      message = format! \-> "cannot infer a signature for `#{one.name}`",
-      span = one.span,
-      related = Vec::new (),
-      help = Some (format! \-> "Lattice reached `#{one.shown}`, which has no Rust spelling. Write the signature, or annotate a parameter so inference can reach one. `voltaic sig --why #{one.name}` shows the chain."),
-      path = .clone shown,
-      source = .to_string source })
+    diagnostics.push (Diagnostic { code = DiagnosticCode::from Code::SignatureNotInferred, severity = Severity::Error, message = format! \-> "cannot infer a signature for `#{one.name}`", span = one.span, related = Vec::new (), help = Some (format! \-> "Lattice reached `#{one.shown}`, which has no Rust spelling. Write the signature, or annotate a parameter so inference can reach one. `voltaic sig --why #{one.name}` shows the chain."), path = .clone shown, source = .to_string source })
   diagnostics
 
 test "the solver resolves a method and a field through an annotated receiver"
@@ -140,7 +132,7 @@ test "the solver resolves a method and a field through an annotated receiver"
   mut named : Vec<String> = Vec::new ()
   for c in .all found.store
     if &c.obligation is Obligation::Member { name, .. } && voltaic_lattice::receiver_owner (&found.store) (&outcome) c.provenance.span is Some owner
-      named |> .push (format! \-> "#{owner}.#{name}")
+      named.push (format! \-> "#{owner}.#{name}")
   assert! \-> .contains (&.to_string "Cursor.depth") named
   assert! \-> .contains (&.to_string "Cursor.pos") named
 
