@@ -2,7 +2,7 @@
 # Make the built book legible to crawlers and language models.
 #
 # Identity and documentation site
-# (`.cursor/plans/voltaic-identity-and-site.plan.md`) wave 8.
+# (`.maestro/missions/voltaic-identity-and-site.plan.md`) wave 8.
 #
 # Run after `mdbook build`. Four things:
 #

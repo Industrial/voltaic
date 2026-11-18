@@ -2,7 +2,7 @@
 # Render the platform icon package from the two SVG masters.
 #
 # Identity and documentation site
-# (`.cursor/plans/voltaic-identity-and-site.plan.md`) wave 3.
+# (`.maestro/missions/voltaic-identity-and-site.plan.md`) wave 3.
 #
 # Everything here lands in `design/dist/`, which is **not** tracked: nothing
 # outside CI reads it, it is large, and it is byte-reproducible from

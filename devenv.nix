@@ -90,7 +90,7 @@
     pkgs.wasmtime
     pkgs.binaryen
     # Identity and documentation site
-    # (`.cursor/plans/voltaic-identity-and-site.plan.md`) wave 1.
+    # (`.maestro/missions/voltaic-identity-and-site.plan.md`) wave 1.
     #
     # `mdbook` builds `www/`; `mdbook-linkcheck2` is the gate that makes a dead
     # cross-reference fail the build rather than ship.

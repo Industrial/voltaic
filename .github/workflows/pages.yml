@@ -2,7 +2,7 @@ name: Pages
 # Build the book and deploy it to GitHub Pages.
 #
 # Identity and documentation site
-# (`.cursor/plans/voltaic-identity-and-site.plan.md`) wave 9.
+# (`.maestro/missions/voltaic-identity-and-site.plan.md`) wave 9.
 #
 # **This job bootstraps, and it did not used to.** The first version of this
 # workflow had no compiler in its graph at all: the book includes `.vlt` as

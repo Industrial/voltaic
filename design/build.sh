@@ -2,7 +2,7 @@
 # Emit every Voltaic identity asset from two source files.
 #
 # Identity and documentation site
-# (`.cursor/plans/voltaic-identity-and-site.plan.md`) waves 2 and 3.
+# (`.maestro/missions/voltaic-identity-and-site.plan.md`) waves 2 and 3.
 #
 # **Two sources, and nothing else.** `design/geometry/pile.json` holds the
 # mark's geometry once, `design/tokens/tokens.json` holds the palette once, and

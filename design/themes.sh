@@ -2,7 +2,7 @@
 # Emit a Voltaic theme for each of the five editor integrations.
 #
 # Identity and documentation site
-# (`.cursor/plans/voltaic-identity-and-site.plan.md`) wave 4.
+# (`.maestro/missions/voltaic-identity-and-site.plan.md`) wave 4.
 #
 # Five editors, five formats, **one palette**. `design/tokens/tokens.json`
 # holds the nine roles and the `syntax` block that maps a token class onto one
