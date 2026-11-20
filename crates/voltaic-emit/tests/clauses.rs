@@ -37,13 +37,12 @@ fn one_irrefutable_clause_emits_no_match() {
   );
 }
 
-/// A binding pattern lends its name to the parameter; a testing pattern
-/// cannot, so the parameter takes a generated name and the pattern moves into
-/// the arm.
+/// A testing pattern cannot lend a name, so the parameter takes its name
+/// from a later equation that binds one, and the pattern stays in the arm.
 #[test]
-fn a_testing_pattern_gets_a_generated_parameter_name() {
+fn a_testing_pattern_borrows_a_later_equations_name() {
   let out = vrs("f : u32 -> u32\nf 0 =\n  1\nf n =\n  n\n");
-  assert!(out.contains("fn f(__vlt_a0: u32)"), "{out}");
+  assert!(out.contains("fn f(n: u32)"), "{out}");
   assert!(
     !out.contains("fn f(0"),
     "a literal cannot be a parameter name:\n{out}"
@@ -55,7 +54,7 @@ fn a_testing_pattern_gets_a_generated_parameter_name() {
 #[test]
 fn several_parameters_match_as_a_tuple() {
   let out = vrs("g : u32 -> u32 -> u32\ng 0 0 =\n  0\ng a b =\n  a + b\n");
-  assert!(out.contains("match (__vlt_a0, __vlt_a1) {"), "{out}");
+  assert!(out.contains("match (a, b) {"), "{out}");
   assert!(out.contains("(0, 0) => 0,"), "{out}");
   assert!(out.contains("(a, b) => a + b,"), "{out}");
 }

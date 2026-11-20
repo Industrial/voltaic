@@ -153,6 +153,34 @@ signature_from spine bound span =
     .push (Param { name, ty = Some (.clone ty), is_mut = false, span = .span binder }) params
   Ok (Signature { params, ret = Some (.clone ret), generics = Vec::new (), is_const = false, is_async = false, is_unsafe = false, bounds = Vec::new (), r#given = None, predicates = None, span })
 
+export(crate) lend_names : &mut Signature -> &[Clause] -> &[(usize, usize)] -> &Parser -> ()
+lend_names sig clauses ranges p =
+  mut taken : Vec<String> = Vec::new ()
+  for i in 0 .. .len sig.params
+    mut chosen = format! \-> "__vlt_a#{i}"
+    for clause in clauses
+      if .get i clause.patterns is Some (Pattern::Binding ident)
+        if lendable (&ident.text) i clauses ranges p && !.contains (&ident.text) taken
+          chosen := .clone ident.text
+          break
+    .push (.clone chosen) taken
+    sig.params[i].name.text := chosen
+  ()
+
+export(crate) lendable : &str -> usize -> &[Clause] -> &[(usize, usize)] -> &Parser -> bool
+lendable name i clauses ranges p =
+  if .is_some_and char::is_uppercase (.next (.chars name))
+    return false
+  for pair in .zip (.iter ranges) (.iter clauses)
+    clause = pair.0
+    range = pair.1
+    binds = case .get i clause.patterns of
+      Some (Pattern::Binding ident) -> ident.text == name
+      _ -> false
+    if !binds && .mentions name (*range) p
+      return false
+  true
+
 export(crate) signature_unsigned : &[Pattern] -> Span -> Signature
 signature_unsigned bound span =
   mut params = Vec::new ()

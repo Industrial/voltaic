@@ -1,0 +1,22 @@
+-- Leaf v5, gap G4: a parameter takes its name from the equations, and an
+-- equation that does not bind that name still cannot see it.
+--
+-- The first equation binds `count` in position 0; the second binds a literal
+-- there and then mentions `count` anyway. Lending `count` to the Rust
+-- parameter would let the second arm read the scrutinee through it and compile
+-- a program Voltaic's own scoping rejects. So the parser lends a name only when
+-- every equation either binds it in that position or never mentions it, the
+-- parameter stays `__vlt_a0`, and rustc answers `E0425` against the stray use.
+--
+-- The stray use is on line 15, inside the `n + count` at column 12.
+pick : u32 -> u32 -> u32
+pick count 0 = count
+pick 1 n = n
+pick 0 n = n + count
+pick _ n = n
+
+main : ()
+main =
+  x = pick 1 0
+  println! \-> "#{x}"
+  ()

@@ -200,6 +200,31 @@ fn assigning_to_an_immutable_binding_is_rustcs_error() {
   );
 }
 
+/// Leaf v5 (gap G4): an equation cannot read a name only another equation
+/// binds, even though the parameter now takes source names from the equations.
+///
+/// The fixture's header explains the rule: a name is lent to the Rust
+/// parameter only when every equation binds it in that position or never
+/// mentions it, so the stray `count` stays unbound and rustc says so.
+#[test]
+fn an_equation_cannot_see_a_name_another_equation_binds() {
+  if support::skip_without_rustc("an_equation_cannot_see_a_name_another_equation_binds") {
+    return;
+  }
+  let checked = check("clause_scope");
+  assert!(!checked.success);
+  assert!(
+    checked.stderr.contains("error[E0425]"),
+    "rustc's unresolved-name error:\n{}",
+    checked.stderr
+  );
+  assert!(
+    checked.stderr.contains("clause_scope.vlt:15:12"),
+    "reported against the equation that mentions `count` on line 15:\n{}",
+    checked.stderr
+  );
+}
+
 /// Plan 55 criterion 7: a discarded `Result` is reported against the `.vlt`,
 /// and the program still builds.
 ///

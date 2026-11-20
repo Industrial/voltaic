@@ -46,14 +46,14 @@ fn chain(n: u64) -> u64 {
 // `Parser::function` is reused wholesale, so multi-equation bodies, guard
 // ladders and generics arrive without being written again.
 fn parity(n: u64) -> bool {
-    fn even(__vlt_a0: u64) -> bool {
-        match __vlt_a0 {
+    fn even(k: u64) -> bool {
+        match k {
             0 => true,
             k => odd(k - 1),
         }
     }
-    fn odd(__vlt_a0: u64) -> bool {
-        match __vlt_a0 {
+    fn odd(k: u64) -> bool {
+        match k {
             0 => false,
             k => even(k - 1),
         }

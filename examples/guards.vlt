@@ -25,6 +25,13 @@ step n
   | n > 100 = 100
   | _ = n
 
+-- Equations bind `a` in different positions, so neither parameter takes the
+-- name: two Rust parameters cannot share it.
+pick : u64 -> u64 -> u64
+pick a 0 = a
+pick 0 a = a
+pick _ _ = 0
+
 main : ()
 main =
   println! \-> "#{(tier 50_000)}"
@@ -34,4 +41,6 @@ main =
   println! \-> "#{(step 0)}"
   println! \-> "#{(step 500)}"
   println! \-> "#{(step 7)}"
+  println! \-> "#{(pick 3 0)}"
+  println! \-> "#{(pick 0 4)}"
   ()

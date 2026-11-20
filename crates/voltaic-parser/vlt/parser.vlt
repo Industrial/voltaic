@@ -26,6 +26,7 @@ import crate::signature::SignatureHead
 import crate::signature::TypeStop
 import crate::signature::capture_type
 import crate::signature::clause
+import crate::signature::lend_names
 import crate::signature::signature_from
 import crate::signature::signature_only
 import crate::signature::signature_unsigned
@@ -239,6 +240,7 @@ instance (Parser 'a)
     spine = &head.types
     bounds = &head.bounds
     mut clauses = Vec::new ()
+    mut ranges = Vec::new ()
     mut sig = None
     loop
       is_equation = case &(.peek self).kind of
@@ -257,14 +259,17 @@ instance (Parser 'a)
       if again.text != name.text
         message = format! \-> "this equation defines `#{again.text}`, but the signature above it is for `#{name.text}`"
         return Err (ParseError::r#with Code::ExpectedName message again.span)
+      from = .position self
       row = (patterns self)?
       built = (signature_from spine (&row) (again.span.0, (.prev_span self).1))?
       returns_unit = .returns_unit built
       if .is_none sig
         sig := Some built
       .push (clause row (&name) returns_unit self)? clauses
+      .push (from, .position self) ranges
       .skip_separators self
     mut settled = .unwrap_or_else (\-> signature_only spine (name.span.0, (.prev_span self).1)) sig
+    lend_names (&mut settled) (&clauses) (&ranges) self
     settled.r#given := .clone head.r#given
     settled.predicates := .clone head.predicates
     generalise (&mut settled) bounds reserved
@@ -280,6 +285,7 @@ instance (Parser 'a)
       message = format! \-> "a module-scope binding needs `const` or `static` and a type: `const #{name.text} : T = …`. Rust forbids `let` at module scope, and doc 03 §13.4 corrects doc 01 §4.3 accordingly"
       return Err (ParseError::r#with Code::ModuleScopeBinding message name.span)
     mut clauses = Vec::new ()
+    mut ranges = Vec::new ()
     mut sig = None
     loop
       is_equation = case &(.peek self).kind of
@@ -298,6 +304,7 @@ instance (Parser 'a)
       if again.text != name.text
         message = format! \-> "this equation defines `#{again.text}`, but the one above it defines `#{name.text}`"
         return Err (ParseError::r#with Code::ExpectedName message again.span)
+      from = .position self
       row = (patterns self)?
       if .check (&TokenKind::Eq) self && .is_some_and (\t -> t.kind != TokenKind::Newline) (.peek_at 1 self) && .is_empty row
         message = format! \-> "a module-scope binding needs `const` or `static` and a type: `const #{name.text} : T = …`. Rust forbids `let` at module scope, and doc 03 §13.4 corrects doc 01 §4.3 accordingly"
@@ -306,8 +313,10 @@ instance (Parser 'a)
       if .is_none sig
         sig := Some built
       .push (clause row (&name) false self)? clauses
+      .push (from, .position self) ranges
       .skip_separators self
     mut settled = .unwrap_or_else (\-> signature_unsigned (&[]) (name.span.0, (.prev_span self).1)) sig
+    lend_names (&mut settled) (&clauses) (&ranges) self
     generalise (&mut settled) (&[]) reserved
     end = (.prev_span self).1
     trailing = .and_then (\c -> .clone c.trailing) (.last clauses)
@@ -555,6 +564,15 @@ instance (Parser 'a)
     if .check (&TokenKind::Kw kw) self
       .advance self
       return true
+    false
+  export(crate) mentions : &str -> (usize, usize) -> &self -> bool
+  mentions name range self =
+    mut i = range.0
+    while i < range.1 && i < .len self.toks
+      if &self.toks[i].kind is TokenKind::Ident text
+        if text == name
+          return true
+      i += 1
     false
   export(crate) position : &self -> usize
   position self = self.pos
