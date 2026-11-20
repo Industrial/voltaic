@@ -40,3 +40,5 @@ async move
   n + 1
 f (move \-> async move
   1)
+f (())
+.push (()) xs

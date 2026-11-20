@@ -46,9 +46,15 @@ fn fixtures() -> PathBuf {
 const NOT_PARSEABLE: [&str; 1] = ["lexical.vlt"];
 
 /// Every `.vlt` in the repository that is meant to parse.
+///
+/// The fixture inputs are included because they are where the non-canonical
+/// spellings live: the corpora above are already canonical, so a printer that
+/// mangles a redundant parenthesis never meets one there. G16, G17 and G18
+/// were all of that kind.
 fn sources() -> Vec<PathBuf> {
   let mut found = Vec::new();
   for dir in [
+    fixtures(),
     root().join("examples"),
     root().join("crates/voltaic-cli/tests/ui"),
     root().join("crates/voltaic-cli/tests/lint"),
@@ -151,10 +157,20 @@ fn meaning(expr: &Expr) -> String {
 /// rebuilding means thirty-one match arms in a test file that would then have
 /// to be kept in step with the AST — a second copy of the AST is a worse
 /// liability than a scanner.
+///
+/// Except around a unit. `f (())` passes `()` and `f ()` passes nothing, so
+/// there the `Paren` *is* the meaning, and stripping it made this property
+/// blind to the formatter printing one as the other (heimdall's G16).
 fn strip_parens(text: &str) -> String {
   const NEEDLE: &str = "Paren { inner: ";
   let mut out = text.to_string();
-  while let Some(at) = out.find(NEEDLE) {
+  let mut from = 0;
+  while let Some(found) = out[from..].find(NEEDLE) {
+    let at = from + found;
+    if out[at + NEEDLE.len()..].starts_with("Unit {") {
+      from = at + NEEDLE.len();
+      continue;
+    }
     let open = at + "Paren ".len();
     let Some(close) = matching_brace(&out, open) else {
       break;

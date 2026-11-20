@@ -82,5 +82,9 @@ main =
     n + 1
   ap = f (move \-> async move
     1)
+  -- Heimdall's G16: `f (())` passes the unit value and `f ()` passes nothing,
+  -- so the parentheses around a unit argument are never redundant.
+  aq = f (())
+  ar = .push (()) xs
   println! \-> "#{a}"
   ()

@@ -125,10 +125,17 @@ expr_text expr required indent source = case expr of
 
 export(crate) argument : &Expr -> usize -> &str -> String
 argument expr indent source = case expr of
+  Expr::Paren { inner, .. } | is_unit inner -> String::from "(())"
   Expr::Paren { inner, .. } | stands_alone inner -> argument inner indent source
   Expr::Paren { inner, .. } -> format! \-> "(#{(expr_text inner 0 indent source)})"
   _ | stands_alone expr -> expr_text expr 0 indent source
   _ -> format! \-> "(#{(expr_text expr 0 indent source)})"
+
+export(crate) is_unit : &Expr -> bool
+is_unit expr = case expr of
+  Expr::Unit { .. } -> true
+  Expr::Paren { inner, .. } -> is_unit inner
+  _ -> false
 
 export(crate) stands_alone : &Expr -> bool
 stands_alone expr = case expr of
