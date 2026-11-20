@@ -52,7 +52,12 @@ instance Container Square
 -- An inherent `instance`: no class name, so no `for`. The receiver is marked
 -- the same way here, which is what makes one notation serve both forms.
 instance Square
-  perimeter : &self -> f64
+  -- An associated constant keeps its `export` and its attributes, the way a
+  -- method does.
+  -- | How many corners a square has.
+  #[doc(alias = "vertices")]
+  export const CORNERS : u32 = 4
+  export perimeter : &self -> f64
   perimeter self = 4.0 * self.side
 
 -- A trait named by path needs no import: the class head takes `::`.
@@ -75,4 +80,5 @@ main =
   println! \-> "#{Square::SIDES}"
   println! \-> "#{Circle::SIDES}"
   println! \-> "#{s}"
+  println! \-> "#{Square::CORNERS}"
   ()

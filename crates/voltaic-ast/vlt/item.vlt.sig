@@ -30,6 +30,7 @@ ClassMember.generics field
 ClassMember.value field
 ClassMember.leading field
 ClassMember.ty field
+ClassMember.visibility field
 ClassMember.0 field
 Clause.patterns field
 Clause.body field

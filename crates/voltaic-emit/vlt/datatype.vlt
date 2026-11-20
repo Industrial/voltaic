@@ -375,12 +375,13 @@ emit_member out m indent =
       if value is Some ty
         .push_str (&format! \-> " = #{ty.text}") out
       .push_str ";\n" out
-    ClassMember::AssocConst { name, ty, value, leading } ->
+    ClassMember::AssocConst { name, ty, value, visibility, leading } ->
       .unmark out
       emit_trivia out leading indent
       .mark name.span out
       pad out indent
-      .push_str (&format! \-> "const #{name.text}: #{ty.text}") out
+      vis = .rust_text visibility
+      .push_str (&format! \-> "#{vis}const #{name.text}: #{ty.text}") out
       if value is Some v
         .push_str (&format! \-> " = #{emit_expr v indent}") out
       .push_str ";\n" out

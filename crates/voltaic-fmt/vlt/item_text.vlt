@@ -305,7 +305,7 @@ member_text member indent source =
         Some ty -> format! \-> " = #{ty.text}"
         None -> String::new ()
       format! \-> "#{out}#{pad}type #{name.text}#{params}#{defined}"
-    ClassMember::AssocConst { name, ty, value, leading } ->
+    ClassMember::AssocConst { name, ty, value, visibility, leading } ->
       mut out = String::new ()
       for trivium in leading
         .push_str (&trivia_text trivium indent) out
@@ -313,7 +313,7 @@ member_text member indent source =
       assigned = case value of
         Some v -> format! \-> " = #{(expr_text v 0 indent source)}"
         None -> String::new ()
-      format! \-> "#{out}#{pad}const #{name.text} : #{ty.text}#{assigned}"
+      format! \-> "#{out}#{pad}#{(visibility_text visibility)}const #{name.text} : #{ty.text}#{assigned}"
     ClassMember::Method decl ->
       mut out = String::new ()
       for trivium in &decl.leading

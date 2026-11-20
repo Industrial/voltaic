@@ -86,7 +86,7 @@ class_member p ctx =
     else
       None
     (.newline_with_trailing "expected a line break after the associated constant" p)?
-    return Ok (ClassMember::AssocConst { name = assoc, ty, value, leading })
+    return Ok (ClassMember::AssocConst { name = assoc, ty, value, visibility = member_visibility, leading })
   reserved = .reserved ctx
   guard &(.peek p).kind is TokenKind::Ident peeked else
     return Err (ParseError::r#with Code::ExpectedName (.to_string "expected a member's name") (.peek_span p))

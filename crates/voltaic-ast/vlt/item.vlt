@@ -50,7 +50,7 @@ export data ClassDecl { export name Ident, export params Vec<Ident>, export supe
 
 export data ClassMember
   = AssocType { name Ident, generics Option<String>, value Option<TypeExpr>, leading Vec<Trivia> }
-  | AssocConst { name Ident, ty TypeExpr, value Option<Expr>, leading Vec<Trivia> }
+  | AssocConst { name Ident, ty TypeExpr, value Option<Expr>, visibility Visibility, leading Vec<Trivia> }
   | Method FnDecl
   deriving (Debug, Clone, PartialEq, Eq)
 
