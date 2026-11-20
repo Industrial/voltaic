@@ -91,5 +91,9 @@ main =
   ba = ((x)?).len ()
   bb = (x?)? .len ()
   bc = (risky?)?
+  -- G18: `t.0.0` is two tuple indices, as rustc reads it, so dropping the
+  -- parentheses of `(t.0).0` must print something the lexer reads that way.
+  bd = (t.0).0
+  be = t.1.0
   println! \-> "#{a}"
   ()

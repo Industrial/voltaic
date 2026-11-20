@@ -215,8 +215,10 @@ scan_number cur =
   .eat_while (\c -> .is_ascii_digit c || c == '_') cur
 
   mut is_float = false
+  before = .slice (0, start) cur
+  is_tuple_index = .ends_with '.' before && !.ends_with ".." before
 
-  if .peek cur == Some '.' && .is_some_and (\c -> .is_ascii_digit c) (.peek_at 1 cur)
+  if !is_tuple_index && .peek cur == Some '.' && .is_some_and (\c -> .is_ascii_digit c) (.peek_at 1 cur)
     is_float := true
     .bump cur
     .eat_while (\c -> .is_ascii_digit c || c == '_') cur
@@ -287,6 +289,19 @@ test "leaves a method call alone"
   called = scan_number_probe "1.abs()"
   assert_eq! \-> called.0 \-> TokenKind::Int (.into "1")
   assert_eq! \-> called.1 \-> 1
+
+test "reads a tuple index after a dot as an integer"
+  mut cur = Cursor::new "t.0.1"
+  .reset_to 2 cur
+  index = .expect "should scan the index" (scan_number (&mut cur))
+  assert_eq! \-> index \-> TokenKind::Int (.into "0")
+  assert_eq! \-> .pos cur \-> 3
+
+test "still reads a float after a range"
+  mut cur = Cursor::new "0..0.5"
+  .reset_to 3 cur
+  bound = .expect "should scan the bound" (scan_number (&mut cur))
+  assert_eq! \-> bound \-> TokenKind::Float (.into "0.5")
 
 test "rejects a radix prefix with no digits"
   mut cur = Cursor::new "0x"
