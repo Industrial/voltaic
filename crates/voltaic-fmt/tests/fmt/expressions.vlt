@@ -86,5 +86,10 @@ main =
   -- so the parentheses around a unit argument are never redundant.
   aq = f (())
   ar = .push (()) xs
+  -- G17: a receiver ending in `?` cannot be glued to a `.` (`?.` is retired)
+  -- or to another `?` (`??` is the coalescing operator).
+  ba = ((x)?).len ()
+  bb = (x?)? .len ()
+  bc = (risky?)?
   println! \-> "#{a}"
   ()

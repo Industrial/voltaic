@@ -42,3 +42,6 @@ f (move \-> async move
   1)
 f (())
 .push (()) xs
+x? .len ()
+(x?)? .len ()
+(risky?)?

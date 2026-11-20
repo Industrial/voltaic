@@ -25,10 +25,14 @@ expr_text expr required indent source = case expr of
   Expr::Dot { recv, name, args, .. } ->
     head = receiver recv indent source
     printed : Vec<String> = (args.iter ().map (\arg -> argument arg indent source)).collect ()
-    if no_real_arguments args
-      format! \-> "#{head}.#{name.text} ()"
+    gap = if .ends_with '?' head
+      " "
     else
-      format! \-> "#{head}.#{name.text} #{(.join " " printed)}"
+      ""
+    if no_real_arguments args
+      format! \-> "#{head}#{gap}.#{name.text} ()"
+    else
+      format! \-> "#{head}#{gap}.#{name.text} #{(.join " " printed)}"
   Expr::Field { recv, name, .. } ->
     head = receiver recv indent source
     gap = if .ends_with '?' head
@@ -87,7 +91,12 @@ expr_text expr required indent source = case expr of
   Expr::Record { head, fields, .. } -> record_text head fields indent source
   Expr::Comprehension { element, qualifiers, .. } ->
     comprehension_text element qualifiers indent source
-  Expr::Try { inner, .. } -> format! \-> "#{(receiver inner indent source)}?"
+  Expr::Try { inner, .. } ->
+    head = receiver inner indent source
+    if .ends_with '?' head
+      format! \-> "(#{head})?"
+    else
+      format! \-> "#{head}?"
   Expr::Unit { .. } -> String::from "()"
   Expr::Section { section, .. } -> section_text section indent source
   Expr::Bool { value, .. } -> .to_string value
