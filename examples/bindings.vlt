@@ -19,6 +19,13 @@ LIMIT = 1024
 GREETING : &'static str
 GREETING = "hello"
 
+-- An attribute makes it a function even so: Rust attributes such as
+-- `#[component]` or `#[inline]` are written for functions, and on a `const`
+-- they would be an error or would mean something else.
+#[allow(non_snake_case)]
+BANNER : &'static str
+BANNER = "attributed"
+
 -- A literal body under a **lower-case** name stays a function, and plan 59
 -- §11.8 is why: `const block` earns `non_upper_case_globals`, and this corpus
 -- requires rustc to emit nothing. The case decides the item, as it already
@@ -56,6 +63,7 @@ main : ()
 main =
   println! \-> "#{LIMIT}"
   println! \-> "#{GREETING}"
+  println! \-> "#{BANNER}"
   println! \-> "#{block}"
   println! \-> "#{inner::depth}"
   -- The case only a run catches. `built` prints once per call, so this prints

@@ -164,7 +164,8 @@ classify decl =
     return None
   guard &clause.body is ClauseBody::Plain block else
     return Some BindingKind::Called
-  shared = .is_empty clause.wheres && .len block.stmts == 1 && is_shareable (&block.stmts[0].expr) && is_upper_case (&decl.name.text)
+  attributed = .any (\t -> t.kind == voltaic_ast::TriviaKind::Attribute) (.iter decl.leading)
+  shared = !attributed && .is_empty clause.wheres && .len block.stmts == 1 && is_shareable (&block.stmts[0].expr) && is_upper_case (&decl.name.text)
   if shared
     return Some BindingKind::Shared
   Some BindingKind::Called
