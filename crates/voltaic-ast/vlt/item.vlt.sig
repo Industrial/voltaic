@@ -73,6 +73,7 @@ ErrorVariant.name field
 ErrorVariant.fields field
 ErrorVariant.from field
 ErrorVariant.message field
+ErrorVariant.leading field
 ErrorVariant.span field
 ErrorsDecl.name field
 ErrorsDecl.variants field

@@ -9,6 +9,7 @@ enum Oops {
     Bad(u32),
 }
 
+#[allow(unused_imports)]
 use Oops::*;
 
 impl std::fmt::Display for Oops {

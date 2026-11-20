@@ -189,7 +189,7 @@ error_variant p =
       return Err (ParseError::expected "expected the variant's `Display` message, as a string literal" (.peek_span p))
   .advance p
   (.newline_with_trailing "expected a line break after the variant" p)?
-  Ok (ErrorVariant { name = read.0, fields = read.1, from = read.2, message, span = (start, (.prev_span p).1) })
+  Ok (ErrorVariant { name = read.0, fields = read.1, from = read.2, message, leading = Vec::new (), span = (start, (.prev_span p).1) })
 
 export(crate) errors_decl : &mut Parser -> Vec<Trivia> -> usize -> Visibility -> Result<ErrorsDecl, ParseError>
 errors_decl p leading start visibility =

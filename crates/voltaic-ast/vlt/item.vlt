@@ -88,7 +88,7 @@ export data DataDecl { export name Ident, export generics Vec<String>, export co
 export data DeriveTemplate { export name Ident, export body InstanceDecl, export span Span, export leading Vec<Trivia> }
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data ErrorVariant { export name Ident, export fields Vec<TypeExpr>, export from bool, export message String, export span Span }
+export data ErrorVariant { export name Ident, export fields Vec<TypeExpr>, export from bool, export message String, export leading Vec<Trivia>, export span Span }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data ErrorsDecl { export name Ident, export variants Vec<ErrorVariant>, export visibility Visibility, export span Span, export leading Vec<Trivia> }

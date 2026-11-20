@@ -38,6 +38,7 @@ fn describe(n: i32) -> String {
         Negative(u32),
     }
 
+    #[allow(unused_imports)]
     use Bad::*;
 
     impl std::fmt::Display for Bad {

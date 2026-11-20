@@ -101,7 +101,7 @@ payload_types fields = case fields of
 export(crate) as_variant : &Constructor -> voltaic_ast::ErrorVariant
 as_variant c =
   shown = .unwrap_or_default (.cloned (.as_ref c.message))
-  voltaic_ast::ErrorVariant { name = .clone c.name, fields = payload_types (&c.fields), from = false, message = shown, span = c.span }
+  voltaic_ast::ErrorVariant { name = .clone c.name, fields = payload_types (&c.fields), from = false, message = shown, leading = .clone c.leading, span = c.span }
 
 export(crate) as_errors : &DataDecl -> ErrorsDecl
 as_errors d =
@@ -209,6 +209,7 @@ emit_errors out d indent =
   .push_str (&format! \-> "#{vis}enum #{name} {\n") out
   for v in &d.variants
     .mark v.span out
+    emit_trivia out (&v.leading) (indent + RUST_INDENT)
     pad out (indent + RUST_INDENT)
     .push_str (&v.name.text) out
     if !.is_empty v.fields
@@ -219,6 +220,8 @@ emit_errors out d indent =
   .unmark out
   pad out indent
   .push_str "}\n\n" out
+  pad out indent
+  .push_str "#[allow(unused_imports)]\n" out
   pad out indent
   .push_str (&format! \-> "use #{name}::*;\n\n") out
   pad out indent

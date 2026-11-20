@@ -11,11 +11,14 @@
 
 #[derive(Debug)]
 enum ConfigError {
+    /// A key the configuration does not set. A variant's doc comment reaches
+    /// the enum as `///`, exactly as it does on a plain `data`.
     Missing(String),
     Invalid(String, u32),
     Closed,
 }
 
+#[allow(unused_imports)]
 use ConfigError::*;
 
 impl std::fmt::Display for ConfigError {

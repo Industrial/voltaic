@@ -14,6 +14,7 @@ enum ConfigError {
     Parse(std::num::ParseIntError),
 }
 
+#[allow(unused_imports)]
 use ConfigError::*;
 
 impl std::fmt::Display for ConfigError {

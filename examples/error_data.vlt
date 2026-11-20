@@ -10,6 +10,8 @@
 -- both forms are exercised until row 99 wave 4 deletes the keyword.
 
 data ConfigError
+  -- | A key the configuration does not set. A variant's doc comment reaches
+  -- | the enum as `///`, exactly as it does on a plain `data`.
   = Missing String "missing key: #{0}"
   | Invalid String u32 "invalid value #{0} at line #{1}"
   | Closed "closed"
