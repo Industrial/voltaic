@@ -122,6 +122,14 @@ spelling is doc 18 §4's `\\` form with no `move` marker either, and adding one 
 inventing surface rather than implementing it. A future that must own its captures is
 written with an `async fn` taking them by value.
 
+**Reversed 2026-11-20 (leaf v3-async-move).** This paragraph's premise no longer holds:
+`Lambda.is_move` shipped, so a move closure is `move \-> e` and the surface *does* have a
+`move` marker. The workaround also fails where heimdall needs it:
+`use_resource(move || async move { … })` and `from_async(move || async move { … })` call
+a closure that has to return a `'static` (and `Send`) future, and an `async fn` cannot be
+that closure's body. `async move` with an indented block now emits `async move { … }`.
+Doc 03 §14.3 records the amendment, including the tension with doc 87 §6.
+
 ---
 
 ## 2. Admission tests (doc 03 §2)
@@ -203,7 +211,8 @@ expectation, and the gate.
 - **A concurrent-await construct** — `join`, `select`, `race`. Declined by doc 03 §14.3 for
   §11.3's reason: every joining form in Rust comes from a runtime crate, and Voltaic may not
   inject a dependency the author never declared.
-- **`async move`**, per §1.5.
+- **`async move`**, per §1.5. *Reversed 2026-11-20: shipped by leaf v3-async-move; see
+  §1.5's note.*
 - **Async traits**, `async` closures, and `impl Future` return types. None is in doc 03
   §14.3's two sentences, and `async` closures stabilised only recently; a form with no
   specification has no agreed meaning here.
@@ -236,7 +245,7 @@ to decline providing.
 | 2 | The example brings its own `block_on` | Add a runtime dependency, or declare the row unprovable by running | Doc 03 §14.3's claim *is* that the runtime is the user's. Writing one in nine lines demonstrates the claim; adding `tokio` would contradict §2's second admission test |
 | 3 | `async` and `const` may both be written | Reject the pair in Voltaic | rustc rejects it, and AGENTS.md says every check rustc can make, rustc makes |
 | 4 | `async` blocks reach `prefix` like `do` and `try` | A statement form | §7.2's `do` and §12.4's `try` are both expressions and this is the third of the same shape. A statement form would need a second node for no gain |
-| 5 | No `async move` | Add it alongside | Doc 03 §14.3 does not have it, and doc 18 §4's lambda has no `move` marker either. Inventing one here is surface design, not implementation |
+| 5 | No `async move` | Add it alongside | Doc 03 §14.3 does not have it, and doc 18 §4's lambda has no `move` marker either. Inventing one here is surface design, not implementation. **Reversed 2026-11-20:** lambdas now carry `move` (`Lambda.is_move`), and heimdall's `use_resource` / `from_async` need a `'static` future inside a closure, where an `async fn` cannot stand; see §1.5 |
 
 ---
 
@@ -325,3 +334,10 @@ meaning.
 The temptation here was `async move`, because a future that outlives its scope wants it. The
 answer is an `async fn` taking its captures by value, which costs a signature and invents
 nothing.
+
+**Reversed 2026-11-20.** It no longer invents anything: `move` is in the surface on
+lambdas, and doc 03 §14.3 now specifies `async move`. The `async fn` answer also stops
+working inside a closure, which is exactly where heimdall needs the owning future
+(`use_resource(move || async move { … })`). Doc 87 §6 still lists the `async` block
+modifier for deletion in generation 2, so this reversal holds for generation 1 and is
+an input to that decision, not a resolution of it.

@@ -667,6 +667,9 @@ module.exports = grammar({
 					":",
 					"=",
 					"?",
+					// `impl Future<Output = T> + Send + 'static`, which was an
+					// `ERROR` at the `+` until the `async_move_block` probe wrote one.
+					"+",
 				),
 			),
 
@@ -1234,7 +1237,8 @@ module.exports = grammar({
 		// `do` — reserved, and the production of no rule. Named here because
 		// `reserved` needs a token to point at; see the note beside it.
 		reserved_word: (_) => "do",
-		async_block: ($) => seq("async", $.statement_block),
+		// `async move` owns its captures; doc 03 §14.3, amended 2026-11-20.
+		async_block: ($) => seq("async", optional("move"), $.statement_block),
 		// Plan 45 leaf 2. The fourth construct of this shape.
 		unsafe_block: ($) => seq("unsafe", $.statement_block),
 		try_block: ($) => seq("try", $.statement_block),
@@ -1335,8 +1339,10 @@ module.exports = grammar({
 		lambda: ($) =>
 			prec.left(
 				seq(
-					"\\",
+					// `move` precedes the backslash, as `lambda` in the
+					// parser reads it: `move \-> e`.
 					optional("move"),
+					"\\",
 					// `repeat` rather than `repeat1`: the **nullary** lambda is
 					// reachable in the surface and was an `ERROR` node here,
 					// invisibly, because it appeared in no corpus file. Plan 59
@@ -1348,7 +1354,15 @@ module.exports = grammar({
 						repeat(choice($.identifier, $.parenthesized_pattern, "mut")),
 					),
 					"->",
-					field("body", $._expression),
+					// A block modifier is a lambda body too: `move \-> async move`
+					// with the block indented beneath, the shape `use_resource` and
+					// `from_async` take. `_expression` cannot reach one, nor a
+					// bare indented block — `move \->` with a clone above the
+					// `async move`, which is the Dioxus idiom.
+					field(
+						"body",
+						choice($._expression, $._block_expression, $.block_expression),
+					),
 				),
 			),
 

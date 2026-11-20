@@ -11,7 +11,7 @@ ladder_condition : &mut Parser -> Result<Condition, ParseError> ! fail ParseErro
 condition_operand : &mut Parser -> Result<ConditionOperand, ParseError> ! fail ParseError + panic @ p owned
 control_flow : &mut Parser -> Result<Option<Expr>, ParseError> ! fail ParseError + panic @ p owned
 holds_a_pattern_test : &Parser -> bool -> &TokenKind -> bool @ p shared, one_operand shared, marker shared
-modified_block : &mut Parser -> Keyword -> usize -> Result<Expr, ParseError> ! fail ParseError @ p shared, kw shared, start shared
+modified_block : &mut Parser -> Keyword -> usize -> Result<Expr, ParseError> ! fail ParseError @ p owned, kw shared, start shared
 qualifiers : &mut Parser -> Result<Vec<Qualifier>, ParseError> ! fail ParseError @ p shared
 reaches_a_draw_arrow : &Parser -> bool @ p shared
 reaches_a_fat_arrow : &Parser -> Option<Span> ! none @ p shared

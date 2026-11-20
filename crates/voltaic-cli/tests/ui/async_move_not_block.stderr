@@ -1,0 +1,6 @@
+error[VLT0101]: expected a line break and an indented body after `async move`
+  --> async_move_not_block.vlt:7:21
+  |
+7 |   work = async move 1
+  |                     ^
+

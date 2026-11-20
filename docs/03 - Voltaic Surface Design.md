@@ -1790,6 +1790,19 @@ pass through and the runtime is the user's own dependency. A concurrent-await co
 declined for the dependency reason of §11.3: every joining form in Rust comes from a
 runtime crate.
 
+**Amended 2026-11-20: `async move` is in the surface.** `async move` with an indented block
+emits `async move { … }`, a block that owns its captures. Doc 31 §1.5 left it out on the
+premise that a lambda has no `move` marker either; that premise is false now that
+`Lambda.is_move` has shipped (`move \-> e`). What reopened it is a real need: heimdall
+writes `use_resource(move || async move { … })` and `from_async(move || async move { … })`,
+where the future must be `'static` (and `Send`). Doc 31's workaround, an `async fn` taking
+its captures by value, cannot be the body of a closure the framework calls. `async move`
+on anything but an indented block is a parse error that names `async move`. This is in
+tension with doc 87 §6, which lists `async` as a block modifier among the constructs
+generation 2 deletes; if that deletion lands, `async move` goes with it, and the reason
+written here is the one generation 2 has to answer. `tests/probes/id_effect/async_move_block.vlt`
+is the running case; an example joins `examples/async.vlt` with the next seed refresh.
+
 ### 14.4 Traits and implementations
 
 Doc 01 §17.4 specifies trait signatures only. Four forms were unreachable, which together

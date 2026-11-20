@@ -1,7 +1,7 @@
 -- leaf: v3
 -- gap: G3
--- `use_resource(move || async move { ... })`, checked under rustc against a
--- stub with Dioxus's `'static` bounds.
+-- `use_resource(move || { let owned = s.clone(); async move { ... } })`, the
+-- Dioxus idiom, checked under rustc against a stub with its `'static` bounds.
 rust """
   pub struct Resource<T>(core::marker::PhantomData<T>);
   pub fn use_resource<T, F, Fut>(_f: F) -> Resource<T>
@@ -15,5 +15,7 @@ rust """
 
 export lengths : String -> Resource<usize>
 lengths s =
-  use_resource (move \-> async move
-    s.clone ().len ())
+  use_resource (move \->
+    owned = s.clone ()
+    async move
+      owned.len ())

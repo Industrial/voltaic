@@ -219,11 +219,16 @@ holds_a_pattern_test p one_operand marker =
 export(crate) modified_block : &mut Parser -> Keyword -> usize -> Result<Expr, ParseError>
 modified_block p kw start =
   .advance p
+  is_move = case kw of
+    Keyword::Async -> .eat_keyword Keyword::Move p
+    _ -> false
+  if is_move && !.check (&TokenKind::Newline) p
+    return Err (ParseError::expected "expected a line break and an indented body after `async move`" (.peek_span p))
   word = .text kw
   body = (.statement_block (&format! \-> "expected an indented `#{word}` body") p)?
   span = (start, (.prev_span p).1)
   case kw of
-    Keyword::Async -> Ok (Expr::AsyncBlock { body, span })
+    Keyword::Async -> Ok (Expr::AsyncBlock { body, is_move, span })
     Keyword::Unsafe -> Ok (Expr::UnsafeBlock { body, span })
     Keyword::Try -> Ok (Expr::TryBlock { body, span })
     _ ->

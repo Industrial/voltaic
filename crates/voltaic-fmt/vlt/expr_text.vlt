@@ -96,8 +96,12 @@ expr_text expr required indent source = case expr of
   Expr::Block { label, body, .. } -> case label of
     Some name -> format! \-> "'#{name}\n#{(block_text body (indent + 1) source)}"
     None -> block_text body (indent + 1) source
-  Expr::AsyncBlock { body, .. } ->
-    format! \-> "async\n#{(block_text body (indent + 1) source)}"
+  Expr::AsyncBlock { body, is_move, .. } ->
+    marker = if *is_move
+      "async move"
+    else
+      "async"
+    format! \-> "#{marker}\n#{(block_text body (indent + 1) source)}"
   Expr::UnsafeBlock { body, .. } ->
     format! \-> "unsafe\n#{(block_text body (indent + 1) source)}"
   Expr::TryBlock { body, .. } ->

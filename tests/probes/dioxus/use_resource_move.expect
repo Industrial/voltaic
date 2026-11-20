@@ -1,1 +1,2 @@
-use_resource(move || async move
+use_resource(move || {
+async move {

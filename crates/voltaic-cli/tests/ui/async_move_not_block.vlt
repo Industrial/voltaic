@@ -1,0 +1,8 @@
+-- `async move` with its body on the same line. Like `async`, the modifier
+-- takes an indented block and nothing else, and the diagnostic names
+-- `async move` rather than the generic line-break message.
+
+main : ()
+main =
+  work = async move 1
+  ()

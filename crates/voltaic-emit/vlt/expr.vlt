@@ -261,9 +261,13 @@ emit_expr e indent = case e of
   Expr::TryBlock { body, .. } ->
     _bind = BindScope::enter BindMode::Question
     try_block body indent
-  Expr::AsyncBlock { body, .. } ->
+  Expr::AsyncBlock { body, is_move, .. } ->
     _bind = BindScope::enter BindMode::Await
-    format! \-> "async #{emit_block (&None) body indent}"
+    marker = if *is_move
+      "async move"
+    else
+      "async"
+    format! \-> "#{marker} #{emit_block (&None) body indent}"
   Expr::BindBlock { method, body, .. } -> bind_block method (&body.stmts) indent
   Expr::UnsafeBlock { body, .. } -> emit_unsafe_block body indent
   Expr::Tuple { items, .. } ->

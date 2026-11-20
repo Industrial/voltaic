@@ -78,5 +78,9 @@ main =
   -- mangling has nowhere to hide.
   am = move \x -> x + 1
   an = f (move \-> 1)
+  ao = async move
+    n + 1
+  ap = f (move \-> async move
+    1)
   println! \-> "#{a}"
   ()

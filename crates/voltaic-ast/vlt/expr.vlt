@@ -16,7 +16,7 @@ export data Expr
   | Path { text String, span Span }
   | Lambda { params Vec<crate::Param>, body Box<Expr>, is_move bool, span Span }
   | MethodRef { name Ident, span Span }
-  | AsyncBlock { body crate::Block, span Span }
+  | AsyncBlock { body crate::Block, is_move bool, span Span }
   | UnsafeBlock { body crate::Block, span Span }
   | TryBlock { body crate::Block, span Span }
   | BindBlock { method crate::Ident, body crate::Block, span Span }

@@ -1,0 +1,95 @@
+================================================================
+an async move block
+================================================================
+
+spawnable : String -> impl Future<Output = usize> + Send + 'static
+spawnable s = async move
+  s.len ()
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    (identifier)
+    (signature_type
+      (type_identifier)
+      (identifier)
+      (type_identifier)
+      (type_identifier)
+      (identifier)
+      (type_identifier)
+      (lifetime)))
+  (equation
+    (identifier)
+    (identifier)
+    (async_block
+      (statement_block
+        (expression_statement
+          (identifier)
+          (operator)
+          (identifier)
+          (parenthesized))))))
+
+================================================================
+a move lambda whose body is an async move block, inside parentheses
+================================================================
+
+measured s =
+  from_async (move \-> async move
+    s.len ())
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (identifier)
+    (expression_statement
+      (identifier)
+      (parenthesized
+        (lambda
+          (async_block
+            (statement_block
+              (expression_statement
+                (identifier)
+                (operator)
+                (identifier)
+                (parenthesized)))))))))
+
+================================================================
+a move lambda whose body is a bare block ending in async move
+================================================================
+
+lengths s =
+  use_resource (move \->
+    owned = s.clone ()
+    async move
+      owned.len ())
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (identifier)
+    (expression_statement
+      (identifier)
+      (parenthesized
+        (lambda
+          (block_expression
+            (statement_block
+              (binding
+                (pattern_run
+                  (identifier))
+                (identifier)
+                (operator)
+                (identifier)
+                (parenthesized))
+              (expression_statement
+                (async_block
+                  (statement_block
+                    (expression_statement
+                      (identifier)
+                      (operator)
+                      (identifier)
+                      (parenthesized))))))))))))

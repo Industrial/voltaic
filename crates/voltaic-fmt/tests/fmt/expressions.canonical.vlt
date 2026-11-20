@@ -36,3 +36,7 @@ f (\q -> q + 1)
 f x
 move \x -> x + 1
 f (move \-> 1)
+async move
+  n + 1
+f (move \-> async move
+  1)

@@ -3439,7 +3439,23 @@
             "named": true
           },
           {
+            "type": "async_block",
+            "named": true
+          },
+          {
+            "type": "bind_block",
+            "named": true
+          },
+          {
+            "type": "block_expression",
+            "named": true
+          },
+          {
             "type": "boolean",
+            "named": true
+          },
+          {
+            "type": "case_expression",
             "named": true
           },
           {
@@ -3519,7 +3535,15 @@
             "named": true
           },
           {
+            "type": "try_block",
+            "named": true
+          },
+          {
             "type": "type_identifier",
+            "named": true
+          },
+          {
+            "type": "unsafe_block",
             "named": true
           },
           {
