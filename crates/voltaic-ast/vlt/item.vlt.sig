@@ -26,16 +26,16 @@ ClassDecl.visibility field
 ClassDecl.span field
 ClassDecl.leading field
 ClassMember.name field
+ClassMember.generics field
+ClassMember.value field
 ClassMember.leading field
 ClassMember.ty field
-ClassMember.value field
 ClassMember.0 field
 Clause.patterns field
 Clause.body field
 Clause.wheres field
 Clause.span field
 Clause.trailing field
-Clause.leading field
 ClauseBody.0 field
 ClauseBody.plain method
 ConstDecl.name field
@@ -50,7 +50,6 @@ Constraint.var field
 Constraint.span field
 Constructor.name field
 Constructor.fields field
-Constructor.field_visibility field
 Constructor.message field
 Constructor.leading field
 Constructor.span field
@@ -73,7 +72,6 @@ ErrorVariant.name field
 ErrorVariant.fields field
 ErrorVariant.from field
 ErrorVariant.message field
-ErrorVariant.leading field
 ErrorVariant.span field
 ErrorsDecl.name field
 ErrorsDecl.variants field

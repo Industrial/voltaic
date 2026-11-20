@@ -1,0 +1,53 @@
+================================================================
+a class declares associated types, and an instance defines them
+================================================================
+
+class Container
+  type Item
+  type Pair<T>
+  first : &self -> Self::Item
+
+instance Container Square
+  type Item = f64
+  type Pair<T> = (T, T)
+  first self = self.side
+
+----------------------------------------------------------------
+
+(source_file
+  (class_declaration
+    (type_identifier)
+    (block
+      (type_alias
+        (type_identifier))
+      (type_alias
+        (type_identifier)
+        (type_identifier))
+      (signature
+        (identifier)
+        (signature_type
+          (identifier)
+          (type_identifier)
+          (type_identifier)))))
+  (instance_declaration
+    (type_identifier)
+    (type_identifier)
+    (block
+      (type_alias
+        (type_identifier)
+        (type_expression
+          (identifier)))
+      (type_alias
+        (type_identifier)
+        (type_identifier)
+        (type_expression
+          (type_expression
+            (type_identifier))
+          (type_expression
+            (type_identifier))))
+      (equation
+        (identifier)
+        (identifier)
+        (identifier)
+        (operator)
+        (identifier)))))

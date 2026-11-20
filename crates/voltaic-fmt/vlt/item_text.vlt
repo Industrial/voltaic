@@ -295,12 +295,16 @@ export(crate) member_text : &ClassMember -> usize -> &str -> String
 member_text member indent source =
   pad = indent_text indent
   case member of
-    ClassMember::AssocType { name, leading } ->
+    ClassMember::AssocType { name, generics, value, leading } ->
       mut out = String::new ()
       for trivium in leading
         .push_str (&trivia_text trivium indent) out
         .push '\n' out
-      format! \-> "#{out}#{pad}type #{name.text}"
+      params = .map_or "" String::as_str (.as_ref generics)
+      defined = case value of
+        Some ty -> format! \-> " = #{ty.text}"
+        None -> String::new ()
+      format! \-> "#{out}#{pad}type #{name.text}#{params}#{defined}"
     ClassMember::AssocConst { name, ty, value, leading } ->
       mut out = String::new ()
       for trivium in leading

@@ -61,8 +61,20 @@ class_member p ctx =
   if .check (&TokenKind::Kw Keyword::Type) p
     .advance p
     assoc = (.ident "expected a name after `type`" p)?
+    generics = if .check (&TokenKind::Lt) p
+      opened = .peek_span p
+      guard angle_group p is Some text else
+        return Err (ParseError::expected "this associated type's generic parameters are not closed" opened)
+      Some text
+    else
+      None
+    value = if .check (&TokenKind::Eq) p
+      .advance p
+      Some (capture_type p "expected the associated type's definition" TypeStop::Greedy)?
+    else
+      None
     (.newline_with_trailing "expected a line break after the associated type" p)?
-    return Ok (ClassMember::AssocType { name = assoc, leading })
+    return Ok (ClassMember::AssocType { name = assoc, generics, value, leading })
   if .check (&TokenKind::Kw Keyword::Const) p
     .advance p
     assoc = (.ident "expected a name after `const`" p)?
@@ -163,6 +175,12 @@ given_clause p =
   .advance p
   if !.check (&TokenKind::Lt) p
     return Err $ ParseError::with_help Code::BoundClauseShape "expected `<` after `given`" "`given` carries Rust's own generic parameter list, verbatim and in angle brackets: `given <const N: usize>`, `given <T: Display, I: IntoIterator<Item = T>>`" (.peek_span p)
+  guard angle_group p is Some text else
+    return Err $ ParseError::with_help Code::BoundClauseShape "this `given` clause is not closed" "a `given` clause runs from `<` to the `>` that matches it, on one line, and the spine follows it" opened
+  Ok (Some text)
+
+export(crate) angle_group : &mut Parser -> Option<String>
+angle_group p =
   mut depth : i32 = 0
   mut text = String::new ()
   loop
@@ -171,7 +189,7 @@ given_clause p =
       TokenKind::Newline or TokenKind::Indent or TokenKind::Dedent or TokenKind::Eof -> true
       _ -> false
     if at_end
-      return Err $ ParseError::with_help Code::BoundClauseShape "this `given` clause is not closed" "a `given` clause runs from `<` to the `>` that matches it, on one line, and the spine follows it" opened
+      return None
     case kind of
       TokenKind::Lt -> depth += 1
       TokenKind::Gt -> depth -= 1
@@ -184,7 +202,7 @@ given_clause p =
     .advance p
     if depth <= 0
       break
-  Ok (Some text)
+  Some text
 
 export(crate) instance_decl : &mut Parser -> Vec<Trivia> -> usize -> Result<InstanceDecl, ParseError>
 instance_decl p leading start =

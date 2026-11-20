@@ -34,6 +34,21 @@ instance Shape Circle
   const SIDES : u32 = 0
   area self = 3.0 * self.radius * self.radius
 
+-- A class can leave a type for its instances to choose, and an instance
+-- chooses it with `type Name = <a Rust type>`, written verbatim. A generic
+-- associated type carries its parameters the way Rust spells them.
+class Container
+  -- | What the container holds.
+  type Item
+  type Pair<T>
+  first : &self -> Self::Item
+
+instance Container Square
+  -- | A square holds its side.
+  type Item = f64
+  type Pair<T> = (T, T)
+  first self = self.side
+
 -- An inherent `instance`: no class name, so no `for`. The receiver is marked
 -- the same way here, which is what makes one notation serve both forms.
 instance Square
@@ -52,6 +67,7 @@ main =
   println! \-> "#{(.area s)}"
   println! \-> "#{(.describe s)}"
   println! \-> "#{(.perimeter s)}"
+  println! \-> "#{(.first s)}"
   println! \-> "#{(.area c)}"
   println! \-> "#{(.describe c)}"
   -- An associated constant, reached through the type. A tight `::` is a path

@@ -326,8 +326,12 @@ module.exports = grammar({
 				optional($.visibility),
 				"type",
 				field("name", $.type_identifier),
-				"=",
-				field("type", $.type_expression),
+				// An associated type in a `class` or `instance` body: generic
+				// parameters as Rust spells them, and a definition that only an
+				// `instance` supplies. The compiler refuses a top-level alias with
+				// no `=`; this rule does not need to.
+				optional($._angle_group),
+				optional(seq("=", field("type", $.type_expression))),
 				$._newline,
 			),
 

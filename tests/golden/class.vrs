@@ -50,6 +50,25 @@ impl Shape for Circle {
     }
 }
 
+// A class can leave a type for its instances to choose, and an instance
+// chooses it with `type Name = <a Rust type>`, written verbatim. A generic
+// associated type carries its parameters the way Rust spells them.
+trait Container {
+    /// What the container holds.
+    type Item;
+    type Pair<T>;
+    fn first(&self) -> Self::Item;
+}
+
+impl Container for Square {
+    /// A square holds its side.
+    type Item = f64;
+    type Pair<T> = (T, T);
+    fn first(&self) -> Self::Item {
+        self.side
+    }
+}
+
 // An inherent `instance`: no class name, so no `for`. The receiver is marked
 // the same way here, which is what makes one notation serve both forms.
 impl Square {
@@ -71,6 +90,7 @@ fn main() {
     println!("{}", s.area());
     println!("{}", s.describe());
     println!("{}", s.perimeter());
+    println!("{}", s.first());
     println!("{}", c.area());
     println!("{}", c.describe());
     // An associated constant, reached through the type. A tight `::` is a path

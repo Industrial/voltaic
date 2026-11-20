@@ -365,12 +365,16 @@ emit_instance out i indent =
 export(crate) emit_member : &mut Sink<'_> -> &ClassMember -> usize -> ()
 emit_member out m indent =
   case m of
-    ClassMember::AssocType { name, leading } ->
+    ClassMember::AssocType { name, generics, value, leading } ->
       .unmark out
       emit_trivia out leading indent
       .mark name.span out
       pad out indent
-      .push_str (&format! \-> "type #{name.text};\n") out
+      params = .map_or "" String::as_str (.as_ref generics)
+      .push_str (&format! \-> "type #{name.text}#{params}") out
+      if value is Some ty
+        .push_str (&format! \-> " = #{ty.text}") out
+      .push_str ";\n" out
     ClassMember::AssocConst { name, ty, value, leading } ->
       .unmark out
       emit_trivia out leading indent
