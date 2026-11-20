@@ -51,7 +51,6 @@ impl Tally for Counter {
     }
     fn bump(&mut self) {
         self.value += 1;
-        ();
     }
     fn total(self) -> u32 {
         self.value
@@ -114,5 +113,4 @@ fn main() {
     println!("{}", m.times(wide));
     let narrow: u32 = 2;
     println!("{}", m.times(narrow));
-    ();
 }

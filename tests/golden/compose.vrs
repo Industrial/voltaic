@@ -15,7 +15,7 @@ fn trimmed(s: &str) -> &str {
 }
 
 fn wrap(s: &str) -> String {
-    format!("[{}]", s)
+    format!("[{s}]")
 }
 
 fn shout(s: String) -> String {
@@ -88,5 +88,4 @@ fn main() {
     println!("{}", wide(deep()));
     println!("{}", lengths([" a ", "bb"].to_vec()));
     println!("{}", best(Some("  hi  ")).unwrap_or(0));
-    ();
 }

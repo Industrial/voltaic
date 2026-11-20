@@ -52,5 +52,4 @@ fn main() {
     let q = Qid(7);
     let l = Label(Box::from("seven"));
     println!("{} {}", q.0, l.0);
-    ();
 }

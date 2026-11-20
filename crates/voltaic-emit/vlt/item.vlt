@@ -33,14 +33,30 @@ import voltaic_ast::Item
 import voltaic_ast::ModuleDecl
 import voltaic_ast::Param
 import voltaic_ast::Signature
+import voltaic_ast::Stmt
 import voltaic_ast::TestDecl
 import voltaic_ast::TypeAlias
 import voltaic_ast::TypeApp
 
+export(crate) without_unit_tail : &[Stmt] -> bool -> &[Stmt]
+without_unit_tail stmts tail =
+  guard .split_last stmts is Some split else
+    return stmts
+  last = split.0
+  bare = case &last.expr of
+    Expr::Unit { .. } -> .is_empty last.leading && .is_none last.trailing
+    _ -> false
+  draws = .any (\s -> case &s.expr of
+    Expr::Draw { .. } -> true
+    _ -> false) (.iter stmts)
+  if tail || !bare || draws || .is_empty split.1
+    return stmts
+  split.1
+
 export(crate) emit_body : &mut Sink<'_> -> &ClauseBody -> usize -> bool -> bool -> ()
 emit_body out body indent tail joinable =
   case body of
-    ClauseBody::Plain block -> emit_stmts out (&block.stmts) indent tail
+    ClauseBody::Plain block -> emit_stmts out (without_unit_tail (&block.stmts) tail) indent tail
     ClauseBody::Guarded guards -> emit_guards out guards indent tail joinable
   ()
 

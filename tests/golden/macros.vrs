@@ -36,13 +36,13 @@ fn main() {
     // One argument, and Voltaic's own interpolation splices it: this reaches Rust
     // as `println!("{} {}", a, b)`, two arguments where the author wrote one.
     // That is why the commonest macros take exactly one here — plan 64 §1.3.
-    println!("{} {}", a, b);
+    println!("{a} {b}");
 
     // **A capability the language did not have.** `eprint "x"` used to emit
     // `eprint("x")`, a call to a function no program defines, so there was no
     // way to write to stderr at all and a diagnostic-emitting program could not
     // exist. It needs no special case — it arrives by the general path.
-    eprintln!("to stderr: {}", a);
+    eprintln!("to stderr: {a}");
 
     // A string literal reaching a macro is a **format string**, so a brace the
     // author wrote prints as a brace: `{}` is literal and `#{}` is the hole.
@@ -59,14 +59,14 @@ fn main() {
     assert!(a < b);
 
     // `format!` is the same call in expression position.
-    let joined = format!("{}-{}", a, b);
-    println!("{}", joined);
+    let joined = format!("{a}-{b}");
+    println!("{joined}");
 
     // The panic family, as the macros they always were. Three were emitter
     // special cases on a bare name until plan 64; `todo!` is now the spelling
     // and `todo` is `VLT0118`.
     let guarded = if a > b { unreachable!() } else { a + b };
-    println!("{}", guarded);
+    println!("{guarded}");
 
     // A multi-line argument, closed by layout. Plan 64 §11.1 owed a probe here
     // and the probe answered no work: plan 55 leaf 1 made an indented block an
@@ -76,13 +76,12 @@ fn main() {
         let second = b * 10;
         first + second
     });
-    println!("{}", sum);
+    println!("{sum}");
 
     // The escape hatch, for input that is **not a Voltaic expression**. A
     // token-stream DSL's tokens *are* its input, so no value-passing shape can
     // carry them — plan 64 §1.4. Plan 45 leaf 1 shipped the `"""` string form
     // as an item; leaf 4 added this expression position and the layout body.
     let hatched = [1, 2, 3].iter().copied().max().unwrap_or(0);
-    println!("{}", hatched);
-    ();
+    println!("{hatched}");
 }

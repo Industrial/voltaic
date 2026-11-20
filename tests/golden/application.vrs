@@ -11,18 +11,18 @@
 // the wrong operand still compiles and prints a different number.
 
 fn show(n: i32) -> String {
-    format!("{}", n)
+    format!("{n}")
 }
 
 fn twice(s: String) -> String {
-    format!("{}{}", s, s)
+    format!("{s}{s}")
 }
 
 // `$` is **lower** than every operator, so the sum is the argument and not
 // just the `1`. Written with parentheses this is `print (1 + 2)`; the point
 // of `$` is that it does not need them.
 fn sum_of(a: i32, b: i32) -> String {
-    format!("{} + {}", a, b)
+    format!("{a} + {b}")
 }
 
 // `$` is **right**-associative, so this is `twice (show 7)` and never
@@ -69,5 +69,4 @@ fn main() {
     println!("{}", nested());
     println!("{}", chained());
     println!("{}", evens_doubled([1, 2, 3, 4, 5, 6].to_vec()));
-    ();
 }

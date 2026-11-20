@@ -72,5 +72,4 @@ fn main() {
     println!("{}", grade(10));
     println!("{}", grade(90));
     println!("{}", evens(10));
-    ();
 }

@@ -86,13 +86,10 @@ fn main() {
     _ = pick(1, 2);
 
     println!(
-        "{} {:?} {:?} {} {} {}",
+        "{} {trimmed:?} {:?} {} {shifted} {}",
         owned.len(),
-        trimmed,
         (&counts).get(&"a"),
         both(3, 4),
-        shifted,
         floor(-3)
     );
-    ();
 }

@@ -79,5 +79,4 @@ fn main() {
     println!("{}", area(3.0, 4.0));
     println!("{}", largest(Some(3)));
     println!("{}", summed((3, 4)));
-    ();
 }

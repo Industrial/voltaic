@@ -39,5 +39,4 @@ fn main() {
     println!("{} {}", describe(Some(1)), describe(None));
     println!("{} {}", classify(Ok(1), 0), classify(Err(2), 500));
     println!("{}", doubled(Some(21)));
-    ();
 }

@@ -22,7 +22,6 @@ fn classify(n: i32) {
     } else {
         println!("zero");
     }
-    ();
 }
 
 // The same `if` as a function's whole body, which is where it carries a
@@ -88,13 +87,11 @@ fn bracketed(n: i32) -> String {
 // one line, which this deliberately is not. Argument position is still
 // argument position, which is what this function is a witness for.
 fn show(s: &str) {
-    println!("{}", s);
-    ();
+    println!("{s}");
 }
 
 fn bracketed_block(n: i32) {
     show(if n > 9 { "big" } else { "small" });
-    ();
 }
 
 // Negating a compound condition needs **parentheses**. This is the case the run
@@ -122,9 +119,8 @@ fn settle() -> i32 {
 // would otherwise bind tighter.
 fn count_up() {
     for c in 1..4 {
-        println!("{}", c);
+        println!("{c}");
     }
-    ();
 }
 
 // A label goes before the keyword and reaches a `break` in a nested loop —
@@ -208,7 +204,7 @@ fn swapped() -> String {
     let mut a = 1;
     let mut b = 2;
     (a, b) = (b, a);
-    format!("{}{}", a, b)
+    format!("{a}{b}")
 }
 
 // The non-numeric conditional update. `out += "big"` would append rather than
@@ -326,5 +322,4 @@ fn main() {
     println!("{}", compounded());
     println!("{}", shadowed());
     println!("{}", ordered());
-    ();
 }

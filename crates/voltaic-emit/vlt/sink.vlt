@@ -36,11 +36,26 @@ format_template parts indent =
     case part of
       StrInterpPart::Text text -> .push_str (&double_braces text) template
       StrInterpPart::Interp { expr, spec } ->
+        bare = unparen expr
+        emitted = emit_expr bare indent
+        named = case bare of
+          Expr::Ident _ -> inlinable (&emitted)
+          _ -> false
+        shown = if named
+          .clone emitted
+        else
+          String::new ()
         case spec of
-          Some s -> .push_str (&format! \-> "{:#{s}}") template
-          None -> .push_str "{}" template
-        .push (emit_expr (unparen expr) indent) args
+          Some s -> .push_str (&format! \-> "{#{shown}:#{s}}") template
+          None -> .push_str (&format! \-> "{#{shown}}") template
+        if !named
+          .push emitted args
   (template, args)
+
+export(crate) inlinable : &str -> bool
+inlinable text =
+  starts_well = .is_some_and (\c -> c.is_alphabetic () || c == '_') (.next (.chars text))
+  starts_well && text != "self" && text != "_" && .all (\c -> c.is_alphanumeric () || c == '_') (.chars text)
 
 export(crate) holes : &[Expr] -> Vec<usize>
 holes args =

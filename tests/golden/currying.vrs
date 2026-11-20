@@ -33,7 +33,7 @@ fn one_of_two() -> i32 {
 // case above and fails. Two parameters are still missing, so two are bound,
 // and `__vlt_2` is why `SECTION_PARAM` had to become a generator.
 fn tagged(tag: &str, a: i32, b: i32) -> String {
-    format!("{} {} {}", tag, a, b)
+    format!("{tag} {a} {b}")
 }
 
 fn one_of_three() -> String {
@@ -91,5 +91,4 @@ fn main() {
     println!("{}", joined());
     println!("{}", sectioned());
     println!("{}", partial());
-    ();
 }

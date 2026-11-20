@@ -41,10 +41,9 @@ const fn scaled(n: u32) -> u32 {
 }
 
 fn main() {
-    println!("{}", MAX);
-    println!("{}", GREETING);
-    println!("{}", LIMIT);
+    println!("{MAX}");
+    println!("{GREETING}");
+    println!("{LIMIT}");
     println!("{}", square(7));
     println!("{}", scaled(4));
-    ();
 }

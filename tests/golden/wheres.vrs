@@ -111,5 +111,4 @@ fn main() {
     println!("{}", mixed(10));
     println!("{}", offsets(1));
     println!("{} {}", clamped(7), clamped(500));
-    ();
 }

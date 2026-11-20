@@ -103,5 +103,4 @@ fn main() {
     println!("{} {}", bits_of("abc"), bits_of(""));
     println!("{} {}", trimmed_width("  a  "), trimmed_width("xyz"));
     println!("{}", bumped());
-    ();
 }

@@ -1,5 +1,4 @@
 // The smallest Voltaic program.
 fn main() {
     println!("hello");
-    ();
 }

@@ -17,7 +17,7 @@
 // parser over those tokens. So arithmetic, field access and application all
 // work, and none of them is a special case.
 fn sum_line(a: i32, b: i32) -> String {
-    format!("{} + {} = {}", a, b, a + b)
+    format!("{a} + {b} = {}", a + b)
 }
 
 // Rust's format-spec grammar is carried inside the interpolation and copied
@@ -28,20 +28,20 @@ fn sum_line(a: i32, b: i32) -> String {
 // `1.5` with the spec prints `1.50`; a dropped spec prints `1.5`. That is the
 // difference the run catches and the text cannot.
 fn money(amount: f64) -> String {
-    format!("total: {:.2}", amount)
+    format!("total: {amount:.2}")
 }
 
 // Three specs that are not width or precision, to make the "every spec"
 // claim mean something.
 fn shapes(n: i32) -> String {
-    format!("|{:>5}|{:05}|{:#x}|", n, n, n)
+    format!("|{n:>5}|{n:05}|{n:#x}|")
 }
 
 // A brace the author wrote and an interpolation in the **same** template.
 // These are the two things the old code confused: doubling the author's brace
 // is right, and doubling the interpolation's was the defect.
 fn braces(n: i32) -> String {
-    format!("{{}} is not a hole, but {} is", n)
+    format!("{{}} is not a hole, but {n} is")
 }
 
 // An interpolation may hold a string literal of its own, because the lexer is
@@ -108,5 +108,4 @@ fn main() {
     println!("{}", block());
     // A string with no interpolation takes the path it always took.
     println!("plain, unchanged");
-    ();
 }

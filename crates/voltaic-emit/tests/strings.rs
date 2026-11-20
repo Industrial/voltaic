@@ -17,16 +17,20 @@ fn vrs(src: &str) -> String {
 /// The body of `fn main`, dedented.
 fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
-  // writes one and the `();` it emits is dropped again — these assertions are
+  // writes one, and the emitter drops a bare unit tail — these assertions are
   // about `src`.
   let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
-  let mut lines: Vec<&str> = out
+  let lines: Vec<&str> = out
     .lines()
     .skip(1)
     .take_while(|l| *l != "}")
     .map(|l| l.strip_prefix("    ").unwrap_or(l))
     .collect();
-  assert_eq!(lines.pop(), Some("();"), "{out}");
+  assert_ne!(
+    lines.last(),
+    Some(&"();"),
+    "the unit tail is not emitted: {out}"
+  );
   lines.join("\n")
 }
 
@@ -36,7 +40,7 @@ fn body(src: &str) -> String {
 fn an_interpolation_becomes_a_format_hole() {
   assert_eq!(
     body("  s = \"hello #{name}\"\n"),
-    "let s = format!(\"hello {}\", name);"
+    "let s = format!(\"hello {name}\");"
   );
 }
 
@@ -87,16 +91,16 @@ fn an_interpolation_may_hold_a_string_literal() {
 #[test]
 fn a_format_spec_is_copied_verbatim() {
   for (vlt, want) in [
-    ("#{x:.2}", "{:.2}"),
-    ("#{x:?}", "{:?}"),
-    ("#{x:>8}", "{:>8}"),
-    ("#{x:05}", "{:05}"),
-    ("#{x:#x}", "{:#x}"),
-    ("#{x:+e}", "{:+e}"),
+    ("#{x:.2}", "{x:.2}"),
+    ("#{x:?}", "{x:?}"),
+    ("#{x:>8}", "{x:>8}"),
+    ("#{x:05}", "{x:05}"),
+    ("#{x:#x}", "{x:#x}"),
+    ("#{x:+e}", "{x:+e}"),
   ] {
     assert_eq!(
       body(&format!("  s = \"{vlt}\"\n")),
-      format!("let s = format!(\"{want}\", x);"),
+      format!("let s = format!(\"{want}\");"),
       "{vlt}"
     );
   }
@@ -108,7 +112,7 @@ fn a_format_spec_is_copied_verbatim() {
 fn a_nonsense_spec_is_passed_to_rustc() {
   assert_eq!(
     body("  s = \"#{x:nonsense}\"\n"),
-    "let s = format!(\"{:nonsense}\", x);"
+    "let s = format!(\"{x:nonsense}\");"
   );
 }
 
@@ -122,7 +126,7 @@ fn a_nonsense_spec_is_passed_to_rustc() {
 fn an_authors_brace_doubles_and_an_interpolation_does_not() {
   assert_eq!(
     body("  s = \"{} is not a hole, but #{n} is\"\n"),
-    "let s = format!(\"{{}} is not a hole, but {} is\", n);"
+    "let s = format!(\"{{}} is not a hole, but {n} is\");"
   );
 }
 
@@ -130,7 +134,7 @@ fn an_authors_brace_doubles_and_an_interpolation_does_not() {
 fn several_interpolations_fill_several_holes() {
   assert_eq!(
     body("  s = \"#{a}-#{b}-#{c}\"\n"),
-    "let s = format!(\"{}-{}-{}\", a, b, c);"
+    "let s = format!(\"{a}-{b}-{c}\");"
   );
 }
 
@@ -143,7 +147,7 @@ fn several_interpolations_fill_several_holes() {
 fn print_of_an_interpolation_is_println_with_that_template() {
   assert_eq!(
     body("  println! \\-> \"hi #{name}\"\n"),
-    "println!(\"hi {}\", name);"
+    "println!(\"hi {name}\");"
   );
 }
 
@@ -236,7 +240,7 @@ fn a_triple_quoted_block_emits_one_dedented_rust_string() {
 fn a_triple_quoted_block_interpolates() {
   assert_eq!(
     body("  s = \"\"\"\n    hello #{name}\n    \"\"\"\n"),
-    "let s = format!(\"hello {}\", name);"
+    "let s = format!(\"hello {name}\");"
   );
 }
 

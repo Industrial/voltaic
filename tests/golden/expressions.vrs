@@ -11,29 +11,28 @@
 fn main() {
     // 2 + (3 * 4) = 14, not (2 + 3) * 4 = 20
     let precedence = 2 + 3 * 4;
-    println!("{}", precedence);
+    println!("{precedence}");
     // Left-associative: (10 - 3) - 2 = 5, not 10 - (3 - 2) = 9
     let associativity = 10 - 3 - 2;
-    println!("{}", associativity);
+    println!("{associativity}");
     // Parentheses override: (2 + 3) * 4 = 20
     let overridden = (2 + 3) * 4;
-    println!("{}", overridden);
+    println!("{overridden}");
     // Comparison is looser than arithmetic: (1 + 1) == 2
     let compared = 1 + 1 == 2;
-    println!("{}", compared);
+    println!("{compared}");
     // `&&` is looser than `==`: (1 == 1) && (2 == 2)
     let conjoined = 1 == 1 && 2 == 2;
-    println!("{}", conjoined);
+    println!("{conjoined}");
     // Shifts bind looser than arithmetic: 1 << (1 + 1) = 4
     let shifted = 1 << 1 + 1;
-    println!("{}", shifted);
+    println!("{shifted}");
     // Unary binds tighter than binary: (-3) + 10 = 7
     let negated = -3 + 10;
-    println!("{}", negated);
+    println!("{negated}");
     // A typed binding, a method call, and a path
     let total: i32 = 40 + 2;
-    println!("{}", total);
+    println!("{total}");
     println!("{}", "done".len());
     println!("{}", i32::max(1, 9));
-    ();
 }

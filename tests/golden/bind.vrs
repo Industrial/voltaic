@@ -90,5 +90,4 @@ fn main() {
     println!("{}", doubled().value);
     println!("{:?}", checked());
     println!("{:?}", lone());
-    ();
 }

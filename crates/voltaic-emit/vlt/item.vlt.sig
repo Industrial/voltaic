@@ -1,4 +1,5 @@
 # voltaic 2 signature sidecar — generated, do not edit
+without_unit_tail : &[Stmt] -> bool -> &[Stmt] @ stmts owned, tail shared
 emit_body : &mut Sink<'_> -> &ClauseBody -> usize -> bool -> bool -> () @ out shared, body shared, indent shared, tail shared, joinable shared
 emit_clauses : &mut Sink<'_> -> &FnDecl -> usize -> () @ out shared, f shared, base shared
 emit_const : &mut Sink<'_> -> &ConstDecl -> usize -> () @ out shared, c shared, indent shared
@@ -8,7 +9,7 @@ generics : &TypeApp -> &[Constraint] -> String @ target shared, constraints shar
 emit_import : &mut Sink<'_> -> &ImportDecl -> usize -> () @ out shared, i shared, indent shared
 emit_inline_rust : &mut Sink<'_> -> &InlineRust -> usize -> () @ out shared, r shared, indent shared
 is_shareable : &Expr -> bool @ body shared
-emit : &mut Sink<'_> -> usize -> ?186 -> () @ __vlt_a1 shared, __vlt_a2 shared, self shared
+emit : &mut Sink<'_> -> usize -> ?192 -> () @ __vlt_a1 shared, __vlt_a2 shared, self shared
 emit_item : &mut Sink<'_> -> &Item -> usize -> () @ out shared, item shared, indent shared
 emit : &mut Sink<'_> -> usize -> Item -> () @ out owned, indent owned, self owned
 emit : &mut Sink<'_> -> usize -> FnDecl -> () @ out owned, indent owned, self owned

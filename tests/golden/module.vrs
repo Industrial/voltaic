@@ -67,7 +67,6 @@ fn main() {
     // called here so rustc has nothing to say about either.
     let mut buffer: String = String::new();
     println!("{}", write_ok(&mut buffer).is_ok());
-    ();
 }
 
 #[cfg(test)]

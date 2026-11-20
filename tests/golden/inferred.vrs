@@ -24,5 +24,4 @@ fn quadrupled(n: u64) -> u64 {
 
 fn main() {
     println!("{}", quadrupled(3));
-    ();
 }

@@ -63,5 +63,4 @@ fn main() {
     println!("{}", added((Some(3), Some(4))));
     println!("{}", added((None, Some(4))));
     println!("{}", holds_origin(Some((0, 0))));
-    ();
 }

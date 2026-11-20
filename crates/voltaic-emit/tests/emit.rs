@@ -15,7 +15,7 @@ fn vrs(src: &str) -> String {
 fn emits_the_hello_slice() {
   assert_eq!(
     vrs("-- The smallest Voltaic program.\nmain : ()\nmain =\n  println! \\-> \"hello\"\n  ()\n"),
-    "// The smallest Voltaic program.\nfn main() {\n    println!(\"hello\");\n    ();\n}\n"
+    "// The smallest Voltaic program.\nfn main() {\n    println!(\"hello\");\n}\n"
   );
 }
 
@@ -49,7 +49,7 @@ fn emission_is_deterministic() {
 fn separates_items_with_one_blank_line() {
   assert_eq!(
     vrs("a : ()\na =\n  println! \\-> \"1\"\n  ()\nb : ()\nb =\n  println! \\-> \"2\"\n  ()\n"),
-    "fn a() {\n    println!(\"1\");\n    ();\n}\n\nfn b() {\n    println!(\"2\");\n    ();\n}\n"
+    "fn a() {\n    println!(\"1\");\n}\n\nfn b() {\n    println!(\"2\");\n}\n"
   );
 }
 

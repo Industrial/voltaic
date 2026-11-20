@@ -40,7 +40,7 @@ fn one_draw_arrow_wraps_what_follows() {
     out,
     "fn main() {\n    \
      pool.with_connection(|conn| {\n        \
-     println!(\"{}\", conn);\n        \
+     println!(\"{conn}\");\n        \
      ();\n    \
      });\n}\n",
     "{out}"
@@ -59,7 +59,7 @@ fn two_draw_arrows_nest() {
     "fn main() {\n    \
      pool.with_connection(|conn| {\n        \
      conn.transaction(|tx| {\n            \
-     println!(\"{}\", tx);\n            \
+     println!(\"{tx}\");\n            \
      ();\n        \
      });\n    \
      });\n}\n",

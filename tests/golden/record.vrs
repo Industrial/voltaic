@@ -36,5 +36,4 @@ fn main() {
     // is last, and reaches Rust as `..q`. `p` was moved into `r` above.
     let s = Point { y: 7, ..q };
     println!("{} {}", s.x, s.y);
-    ();
 }

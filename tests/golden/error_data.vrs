@@ -37,7 +37,7 @@ impl std::error::Error for ConfigError {}
 // a bare `write!` — which is what makes `Closed` cheaper to write here than the
 // hand-rolled `impl` it replaces.
 fn shown(e: &ConfigError) -> String {
-    format!("{}", e)
+    format!("{e}")
 }
 
 // The `Error` impl is what makes this usable as a `Box<dyn Error>`, and it is
@@ -57,5 +57,4 @@ fn main() {
     println!("{}", shown(&Invalid(String::from("x"), 12)));
     println!("{}", shown(&Closed));
     println!("{}", boxed(Closed));
-    ();
 }

@@ -69,12 +69,11 @@ fn main() {
     // Bound rather than interpolated so the `) [ «int» ]` run stays visible to
     // `construct_coverage` — see the note in `examples/expressions.vlt`.
     let first = row()[0];
-    println!("{}", first);
+    println!("{first}");
     println!("{}", growable().len());
     println!("{}", grid()[1][0]);
     println!("{}", lists().len());
     println!("{}", total());
     let kept = drained((1..4).collect());
     println!("{}", kept.len());
-    ();
 }

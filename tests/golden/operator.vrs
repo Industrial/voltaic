@@ -45,18 +45,17 @@ pub fn main() {
     let b = set(&[2, 3]);
     let c = set(&[9]);
     let joined = merge(merge(a, b), c);
-    println!("{:?}", joined);
+    println!("{joined:?}");
     // `9 <-> 4 <-> 2` right-associates to `diff 9 (diff 4 2)` = 7. The
     // left-associative reading would be `diff (diff 9 4) 2` = 3.
     let stepped = diff(9, diff(4, 2));
-    println!("{}", stepped);
+    println!("{stepped}");
     // Every user operator binds looser than arithmetic — `Fixity::powers` has
     // the interleave table — so this is `diff 9 (2 + 3)` = 4, not
     // `diff 9 2 + 3` = 10.
     let mixed = diff(9, 2 + 3);
-    println!("{}", mixed);
+    println!("{mixed}");
     // Non-associative, used once, which is legal.
     let larger = u32::max(7, 4);
-    println!("{}", larger);
-    ();
+    println!("{larger}");
 }

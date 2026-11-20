@@ -69,5 +69,4 @@ fn main() {
     println!("{} {} {}", n.label, s.ratio, t.kind);
     println!("{} {}", (&r.at).is_absolute(), g.id);
     println!("{}", p == Point { x: 1, y: 2 });
-    ();
 }

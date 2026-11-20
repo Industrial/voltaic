@@ -106,9 +106,8 @@ fn main() {
     println!("{}", shout("hi"));
     println!("{}", total(nums));
     println!("{}", width("abcd"));
-    println!("{}", n);
+    println!("{n}");
     println!("{}", longer("ab", "cde"));
     println!("{}", trimmed(str::trim));
     println!("{}", (&9).describe());
-    ();
 }

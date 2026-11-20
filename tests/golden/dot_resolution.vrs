@@ -67,5 +67,4 @@ fn main() {
     println!("{} {} {}", held(&c), reached(&c), summed(&c));
     let v: Vec<u64> = Vec::new();
     println!("{}", counted(&v));
-    ();
 }

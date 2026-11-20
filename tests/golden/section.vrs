@@ -25,7 +25,7 @@ fn main() {
     // Bound rather than interpolated so the `( «int» - )` run stays visible
     // to `construct_coverage` — see the note in `examples/expressions.vlt`.
     let flipped: i32 = (1..4).map(|__vlt_1| 10 - __vlt_1).sum();
-    println!("{}", flipped);
+    println!("{flipped}");
 
     // A comparison, which lowers to the **method** form because an adaptor
     // hands its closure a reference and `&i32 > 1` does not compile.
@@ -67,5 +67,4 @@ fn main() {
     // `(- 1)` is negation, always. Doc 18 §4 declines the subtraction section,
     // which retires doc 03 decision 50's adjacency rule.
     println!("{}", -1);
-    ();
 }

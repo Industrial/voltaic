@@ -66,7 +66,7 @@ pub fn escaped() -> String {
 fn main() {
     println!("{}", low_half(65537));
     let n = unsafe { unsafe_double(21) };
-    println!("{}", n);
+    println!("{n}");
     println!("{}", r#type());
     println!("{}", raw_pattern());
     // `escaped ().len ()` used to read as `escaped(().len())`: the argument of
@@ -75,6 +75,5 @@ fn main() {
     // the spelling to be ambiguous about.
     println!("{}", escaped().len());
     let d = unsafe { abs(-7) };
-    println!("{}", d);
-    ();
+    println!("{d}");
 }

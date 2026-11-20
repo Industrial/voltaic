@@ -76,11 +76,10 @@ fn describe(n: i32) -> String {
 
     let shade = if lifted > LIMIT { Deep } else { Pale };
 
-    format!("{} {} {} {:?}", shade.name(), LIMIT, Negative(2), shade)
+    format!("{} {LIMIT} {} {shade:?}", shade.name(), Negative(2))
 }
 
 fn main() {
     println!("{}", describe(9));
     println!("{}", describe(1));
-    ();
 }

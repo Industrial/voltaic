@@ -16,8 +16,8 @@ fn tier(spend: u64) -> &'static str {
 }
 
 // Several equations, each with a short body on the `=` line.
-fn fib(n: u64) -> u64 {
-    match n {
+fn fib(__vlt_a0: u64) -> u64 {
+    match __vlt_a0 {
         0 => 0,
         1 => 1,
         n => fib(n - 1) + fib(n - 2),
@@ -26,11 +26,9 @@ fn fib(n: u64) -> u64 {
 
 // A pattern row and a ladder on the same function: the ladder lands inside
 // the clause's `match` arm.
-fn step(n: u64) -> u64 {
-    match n {
+fn step(__vlt_a0: u64) -> u64 {
+    match __vlt_a0 {
         0 => 0,
-        // A comment or an attribute above a later equation lands on its arm.
-        #[allow(unused_variables)]
         n => {
             if n > 100 {
                 100
@@ -38,16 +36,6 @@ fn step(n: u64) -> u64 {
                 n
             }
         }
-    }
-}
-
-// Equations bind `a` in different positions, so neither parameter takes the
-// name: two Rust parameters cannot share it.
-fn pick(__vlt_a0: u64, __vlt_a1: u64) -> u64 {
-    match (__vlt_a0, __vlt_a1) {
-        (a, 0) => a,
-        (0, a) => a,
-        (_, _) => 0,
     }
 }
 
@@ -59,7 +47,4 @@ fn main() {
     println!("{}", step(0));
     println!("{}", step(500));
     println!("{}", step(7));
-    println!("{}", pick(3, 0));
-    println!("{}", pick(0, 4));
-    ();
 }

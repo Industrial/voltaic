@@ -107,14 +107,13 @@ pub fn main() {
     // `Display` from the template and `Debug` from Rust's own derive, out of the
     // same `deriving` list — which is the property §1.3 asked for: a template is
     // a name in that list and nothing else.
-    println!("{} m of {}", width, name);
-    println!("{:?}", width);
+    println!("{width} m of {name}");
+    println!("{width:?}");
     let zero = Meters::zero();
-    println!("zero is {} m", zero);
+    println!("zero is {zero} m");
     // Two declarations of different widths, one template. The two-field case
     // would pass with a substitution that handled only `Field0`; the three-field
     // case is what proves the repetition is a loop.
     println!("{}", (&Point { x: 1, y: 2 }).labelled());
     println!("{}", (&Triple { a: 3, b: 4, c: 5 }).labelled());
-    ();
 }

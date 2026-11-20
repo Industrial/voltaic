@@ -110,5 +110,4 @@ fn main() {
     // this — `succ` is.
     target.age = succ(target.age);
     println!("{}", target.age);
-    ();
 }

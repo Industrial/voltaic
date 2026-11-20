@@ -69,5 +69,4 @@ fn main() {
         graded(1, 1)
     );
     println!("{} {}", reported(7), reported(900));
-    ();
 }

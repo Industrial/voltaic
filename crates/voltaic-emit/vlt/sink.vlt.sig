@@ -1,6 +1,7 @@
 # voltaic 2 signature sidecar — generated, do not edit
 double_braces : &str -> String @ literal shared
 format_template : &[StrInterpPart] -> usize -> (String, Vec<String>) @ parts shared, indent shared
+inlinable : &str -> bool @ text shared
 holes : &[Expr] -> Vec<usize> @ args shared
 emit_inline_comment : &mut Sink<'_> -> Option<&Trivia> -> () @ out unique, trivia shared
 nest : &[(&str, &Expr)] -> &[String] -> &str -> usize -> bool -> (String, Vec<String>) @ draws shared, guards shared, item shared, base owned, nested shared

@@ -16,16 +16,20 @@ fn vrs(src: &str) -> String {
 /// is about rather than as a whole file.
 fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
-  // writes one and the `();` it emits is dropped again — these assertions are
+  // writes one, and the emitter drops a bare unit tail — these assertions are
   // about `src`.
   let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
-  let mut lines: Vec<&str> = out
+  let lines: Vec<&str> = out
     .lines()
     .skip(1)
     .take_while(|l| *l != "}")
     .map(|l| l.strip_prefix("    ").unwrap_or(l))
     .collect();
-  assert_eq!(lines.pop(), Some("();"), "{out}");
+  assert_ne!(
+    lines.last(),
+    Some(&"();"),
+    "the unit tail is not emitted: {out}"
+  );
   lines.join("\n")
 }
 
@@ -35,7 +39,7 @@ fn body(src: &str) -> String {
 fn a_pattern_test_in_an_if_emits_if_let() {
   assert_eq!(
     body("  if x is Some v\n    println! \\-> \"#{v}\"\n"),
-    "if let Some(v) = x {\n    println!(\"{}\", v);\n}"
+    "if let Some(v) = x {\n    println!(\"{v}\");\n}"
   );
 }
 
@@ -60,7 +64,7 @@ fn the_pattern_stays_on_the_left() {
 fn a_let_chain_is_one_flat_condition() {
   assert_eq!(
     body("  if x is Some v && v > 2\n    println! \\-> \"#{v}\"\n"),
-    "if let Some(v) = x\n    && v > 2\n{\n    println!(\"{}\", v);\n}"
+    "if let Some(v) = x\n    && v > 2\n{\n    println!(\"{v}\");\n}"
   );
 }
 
@@ -72,7 +76,7 @@ fn a_let_chain_takes_an_else() {
     body(
       "  if x is Some v && v > 2\n    println! \\-> \"#{v}\"\n  else\n    println! \\-> \"#{0}\"\n"
     ),
-    "if let Some(v) = x\n    && v > 2\n{\n    println!(\"{}\", v);\n} else {\n    println!(\"{}\", 0);\n}"
+    "if let Some(v) = x\n    && v > 2\n{\n    println!(\"{v}\");\n} else {\n    println!(\"{}\", 0);\n}"
   );
 }
 
@@ -82,7 +86,7 @@ fn a_let_chain_takes_an_else() {
 fn a_chain_may_hold_a_pattern_test_anywhere() {
   assert_eq!(
     body("  if n > 0 && x is Some v && v > n\n    println! \\-> \"#{v}\"\n"),
-    "if n > 0\n    && let Some(v) = x\n    && v > n\n{\n    println!(\"{}\", v);\n}"
+    "if n > 0\n    && let Some(v) = x\n    && v > n\n{\n    println!(\"{v}\");\n}"
   );
 }
 
@@ -93,7 +97,7 @@ fn a_chain_may_hold_a_pattern_test_anywhere() {
 fn a_two_operand_chain_with_the_let_last_stays_on_one_line() {
   assert_eq!(
     body("  if n > 0 && x is Some v\n    println! \\-> \"#{v}\"\n"),
-    "if n > 0 && let Some(v) = x {\n    println!(\"{}\", v);\n}"
+    "if n > 0 && let Some(v) = x {\n    println!(\"{v}\");\n}"
   );
 }
 
@@ -103,7 +107,7 @@ fn a_two_operand_chain_with_the_let_last_stays_on_one_line() {
 fn a_pattern_test_in_a_while_emits_while_let() {
   assert_eq!(
     body("  while .pop stack is Some v\n    println! \\-> \"#{v}\"\n"),
-    "while let Some(v) = stack.pop() {\n    println!(\"{}\", v);\n}"
+    "while let Some(v) = stack.pop() {\n    println!(\"{v}\");\n}"
   );
 }
 

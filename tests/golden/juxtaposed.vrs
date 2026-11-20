@@ -71,5 +71,4 @@ fn main() {
         area(&Shape::Circle(2.0)),
         area(&Shape::Square(3.0))
     );
-    ();
 }

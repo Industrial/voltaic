@@ -20,16 +20,20 @@ fn vrs(src: &str) -> String {
 /// is about rather than as a whole file.
 fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
-  // writes one and the `();` it emits is dropped again — these assertions are
+  // writes one, and the emitter drops a bare unit tail — these assertions are
   // about `src`.
   let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
-  let mut lines: Vec<&str> = out
+  let lines: Vec<&str> = out
     .lines()
     .skip(1)
     .take_while(|l| *l != "}")
     .map(|l| l.strip_prefix("    ").unwrap_or(l))
     .collect();
-  assert_eq!(lines.pop(), Some("();"), "{out}");
+  assert_ne!(
+    lines.last(),
+    Some(&"();"),
+    "the unit tail is not emitted: {out}"
+  );
   lines.join("\n")
 }
 
@@ -123,7 +127,7 @@ fn until_is_refused_with_its_replacement_named() {
 fn for_draws_from_its_source_with_in() {
   assert_eq!(
     body("  for x in xs\n    println! \\-> \"#{x}\"\n"),
-    "for x in xs {\n    println!(\"{}\", x);\n}"
+    "for x in xs {\n    println!(\"{x}\");\n}"
   );
 }
 
@@ -133,7 +137,7 @@ fn for_draws_from_its_source_with_in() {
 fn for_over_a_range_needs_no_special_case() {
   assert_eq!(
     body("  for c in 1 .. 4\n    println! \\-> \"#{c}\"\n"),
-    "for c in 1..4 {\n    println!(\"{}\", c);\n}"
+    "for c in 1..4 {\n    println!(\"{c}\");\n}"
   );
 }
 

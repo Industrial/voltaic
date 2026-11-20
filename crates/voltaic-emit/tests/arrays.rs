@@ -15,17 +15,21 @@ fn vrs(src: &str) -> String {
 /// The body of `fn main`, dedented.
 fn body(src: &str) -> String {
   // Plan 55 §1.6 requires a `()`-returning body to end in `()`, so the wrapper
-  // writes one and the `();` it emits is dropped again — these assertions are
-  // about `src`, and the `pop` is what keeps the unit tail asserted rather
+  // writes one, and the emitter drops a bare unit tail — these assertions are
+  // about `src`, and the `assert_ne!` keeps the dropped tail asserted rather
   // than merely tolerated.
   let out = vrs(&format!("main : ()\nmain =\n{src}  ()\n"));
-  let mut lines: Vec<&str> = out
+  let lines: Vec<&str> = out
     .lines()
     .skip(1)
     .take_while(|l| *l != "}")
     .map(|l| l.strip_prefix("    ").unwrap_or(l))
     .collect();
-  assert_eq!(lines.pop(), Some("();"), "{out}");
+  assert_ne!(
+    lines.last(),
+    Some(&"();"),
+    "the unit tail is not emitted: {out}"
+  );
   lines.join("\n")
 }
 
