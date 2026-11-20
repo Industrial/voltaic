@@ -49,6 +49,19 @@ add a b = a + b
 -- §8.3's lowering; plan 61 added the other half, which is sorting them into
 -- dependency order. This comment used to say that moving them was *the whole*
 -- of it — one of five copies of a sentence that was true when it was written.
+rust """
+  macro_rules! pair {
+      ($t:ty) => {
+          ($t, $t)
+      };
+  }
+"""
+
+-- A lowercase name directly followed by `!` is a macro in type position, not
+-- a type variable: `pair![u8]` must not become a generic `PAIR`.
+summed : pair![u8] -> u8
+summed p = p.0 + p.1
+
 area : f64 -> f64 -> f64
 area w h = scaled
   where
@@ -62,4 +75,5 @@ main =
   println! \-> "#{(first "borrowed")}"
   println! \-> "#{(area 3.0 4.0)}"
   println! \-> "#{(largest (Some 3))}"
+  println! \-> "#{(summed (3, 4))}"
   ()

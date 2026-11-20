@@ -1,0 +1,23 @@
+================================================================
+a macro in type position
+================================================================
+
+run : Effect<(), AppError, caps![Db, Clock]> -> ()
+run program = drive program
+
+----------------------------------------------------------------
+
+(source_file
+  (signature
+    (identifier)
+    (signature_type
+      (type_identifier)
+      (type_identifier)
+      (identifier)
+      (type_identifier)
+      (type_identifier)))
+  (equation
+    (identifier)
+    (identifier)
+    (identifier)
+    (identifier)))

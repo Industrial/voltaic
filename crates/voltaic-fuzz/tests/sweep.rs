@@ -290,8 +290,8 @@ fn the_generated_rust_always_parses() {
     "only {checked} inputs reached the emitter, which is too few to mean \
      anything"
   );
-  // The two fence-carrying corpus files contribute nine inputs each, and most of
-  // those 18 still hold the introducer: in the rest the mutation ate it, so the
+  // The three fence-carrying corpus files contribute nine inputs each, and most of
+  // those 27 still hold the introducer: in the rest the mutation ate it, so the
   // body is lexed as ordinary source and is judged normally. That is the skip's
   // own safety argument, as a number — asserted so that a corpus losing its
   // inline Rust, or a skip that silently widened, shows up here rather than as a
@@ -308,14 +308,15 @@ fn the_generated_rust_always_parses() {
   // draw** — and an exact count turns every reformatting into a false failure
   // here. The bounds keep both signals an exact count had: fewer than 12 means
   // the corpus lost its inline Rust or the traversal stopped reaching it, and
-  // more than 18 is impossible unless the skip widened past the fence-carrying
-  // inputs, since 2 files × 9 mutations is all there are.
+  // more than 27 is impossible unless the skip widened past the fence-carrying
+  // inputs, since 3 files × 9 mutations is all there are. The third file is
+  // `examples/generic.vlt`, whose `pair!` hatch is G15's type-position macro.
   assert!(
-    (12..=18).contains(&fenced),
-    "expected 12 to 18 fence-carrying inputs to be skipped, not {fenced}. Below \
+    (12..=27).contains(&fenced),
+    "expected 12 to 27 fence-carrying inputs to be skipped, not {fenced}. Below \
      12 the corpus has lost its inline Rust or the sweep stopped reaching it; \
-     above 18 the skip is excusing something that carries no fence, because 18 \
-     is every input the two fence-carrying files produce."
+     above 27 the skip is excusing something that carries no fence, because 27 \
+     is every input the three fence-carrying files produce."
   );
 }
 

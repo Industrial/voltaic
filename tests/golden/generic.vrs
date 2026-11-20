@@ -54,6 +54,18 @@ fn add(a: i32, b: i32) -> i32 {
 // §8.3's lowering; plan 61 added the other half, which is sorting them into
 // dependency order. This comment used to say that moving them was *the whole*
 // of it — one of five copies of a sentence that was true when it was written.
+macro_rules! pair {
+    ($t:ty) => {
+        ($t, $t)
+    };
+}
+
+// A lowercase name directly followed by `!` is a macro in type position, not
+// a type variable: `pair![u8]` must not become a generic `PAIR`.
+fn summed(p: pair![u8]) -> u8 {
+    p.0 + p.1
+}
+
 fn area(w: f64, h: f64) -> f64 {
     let base = w * h;
     let scaled = base * 2.0;
@@ -66,5 +78,6 @@ fn main() {
     println!("{}", first("borrowed"));
     println!("{}", area(3.0, 4.0));
     println!("{}", largest(Some(3)));
+    println!("{}", summed((3, 4)));
     ();
 }

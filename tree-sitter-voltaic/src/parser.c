@@ -6305,7 +6305,8 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
           lookahead == '\r' ||
           lookahead == ' ') SKIP(62);
       if (('0' <= lookahead && lookahead <= '9')) ADVANCE(272);
-      if (('&' <= lookahead && lookahead <= '*') ||
+      if (lookahead == '!' ||
+          ('&' <= lookahead && lookahead <= '*') ||
           lookahead == ',' ||
           (';' <= lookahead && lookahead <= '?') ||
           lookahead == '[' ||

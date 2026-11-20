@@ -327,7 +327,8 @@ type_vars types =
       is_lifetime = start > 0 && chars[start - 1] == '\''
       after_colons = start >= 2 && chars[start - 2] == ':' && chars[start - 1] == ':'
       before_colons = .get i chars == Some (&':') && .get (i + 1) chars == Some (&':')
-      if after_colons || before_colons
+      names_a_macro = .get i chars == Some (&'!')
+      if after_colons || before_colons || names_a_macro
         continue
       if is_lifetime
         if word != "static" && word != "_"

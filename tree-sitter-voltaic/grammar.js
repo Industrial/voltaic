@@ -679,6 +679,8 @@ module.exports = grammar({
 					// `impl Future<Output = T> + Send + 'static`, which was an
 					// `ERROR` at the `+` until the `async_move_block` probe wrote one.
 					"+",
+					// A macro in type position, `caps![Db, Clock]`.
+					"!",
 				),
 			),
 
