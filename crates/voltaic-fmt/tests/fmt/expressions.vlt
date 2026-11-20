@@ -95,5 +95,7 @@ main =
   -- parentheses of `(t.0).0` must print something the lexer reads that way.
   bd = (t.0).0
   be = t.1.0
+  -- G20: a lambda whose parameter is the unit pattern.
+  bf = .map (\() -> 1) xs
   println! \-> "#{a}"
   ()

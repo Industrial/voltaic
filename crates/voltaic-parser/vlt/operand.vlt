@@ -142,7 +142,14 @@ lambda p =
   (.expect (&TokenKind::Backslash) "expected `\\` to open a lambda" p)?
   mut params = Vec::new ()
   while !.check (&TokenKind::Arrow) p && !.at_eof p
-    name = (.ident "expected a lambda parameter name" p)?
+    unit = .check (&TokenKind::LParen) p && .is_some_and (\t -> t.kind == TokenKind::RParen) (.peek_at 1 p)
+    name = if unit
+      opened = (.peek_span p).0
+      .advance p
+      .advance p
+      Ident { text = String::from "()", span = (opened, (.prev_span p).1) }
+    else
+      (.ident "expected a lambda parameter name" p)?
     ty = if .check (&TokenKind::Colon) p
       .advance p
       Some (capture_type p "expected a type after `:`" TypeStop::Greedy)?
