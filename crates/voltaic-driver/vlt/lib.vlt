@@ -57,6 +57,7 @@ export import migrate::transpile
 export import realign::realign
 export import remap::RustcMessage
 export import remap::remap
+export import remap::remap_file
 export import resolve::upstream
 export import resolve::workspace_above
 export import visit::Pass

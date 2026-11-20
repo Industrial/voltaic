@@ -1,0 +1,13 @@
+import alpha::double
+
+export quadruple : i32 -> i32
+quadruple n = double (double n)
+
+export label : i32 -> String
+label n = double n
+
+rust """
+  pub fn hatched() -> u32 {
+      "not a number"
+  }
+"""

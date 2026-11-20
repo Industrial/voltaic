@@ -5,12 +5,8 @@ import voltaic_diag::Span
 
 export remap : &RustcMessage -> &SourceMap -> &str -> &str -> &str -> &str -> Diagnostic
 remap message map vlt_path vlt_source vrs_path vrs_source =
-  code = DiagnosticCode::Foreign $ .unwrap_or_else (\-> .clone message.level) $ .clone message.code
-
-  severity = if message.level == "warning"
-    voltaic_diag::Severity::Warning
-  else
-    voltaic_diag::Severity::Error
+  code = code_of message
+  severity = severity_of message
 
   case .origin message.line map of
     Some origin ->
@@ -20,6 +16,41 @@ remap message map vlt_path vlt_source vrs_path vrs_source =
       offset = generated_offset vrs_source message.line message.col
       note = format! \-> "this is on a line Voltaic generated, so it has no place in your source; see #{vrs_path}:#{message.line}:#{message.col}"
       Diagnostic { code, severity, message = .clone message.message, span = (offset, offset + 1), related = Vec::new (), help = Some note, path = .to_string vrs_path, source = .to_string vrs_source }
+
+code_of : &RustcMessage -> DiagnosticCode
+code_of message = DiagnosticCode::Foreign $ .unwrap_or_else (\-> .clone message.level) $ .clone message.code
+
+severity_of : &RustcMessage -> voltaic_diag::Severity
+severity_of message =
+  if message.level == "warning"
+    return voltaic_diag::Severity::Warning
+  voltaic_diag::Severity::Error
+
+export remap_file : &RustcMessage -> &SourceMap -> &str -> &str -> Option<Diagnostic>
+remap_file message map vlt_path vlt_source =
+  origin = (.origin message.line map)?
+  shifted = .map_col message.col origin
+  offset = .unwrap_or_else (\-> .unwrap_or 0 (char_offset vlt_source origin.src_line 1)) $ .or_else (\-> char_offset vlt_source origin.src_line origin.src_col) $ char_offset vlt_source origin.src_line shifted
+  n = .len vlt_source
+  width = .map_or 0 char::len_utf8 (.next (.chars vlt_source[offset .. n]))
+  Some (Diagnostic { code = code_of message, severity = severity_of message, message = .clone message.message, span = (offset, offset + width), related = Vec::new (), help = None, path = .to_string vlt_path, source = .to_string vlt_source })
+
+#[cfg(test)]
+parsed_map : SourceMap
+parsed_map = .expect "the fixture map parses" $ voltaic_diag::parse_map "voltaic-map 1 p.vlt\n1 1 1 1\n2 2 3 5\n3 -\n"
+
+test "a parsed map narrows by line and column alone"
+  d = .expect "line 2 is mapped" $ remap_file (&message_at 2 7) (&parsed_map ()) "p.vlt" VLT
+  assert_eq! \-> d.path \-> "p.vlt"
+  assert_eq! \-> &VLT[d.span.0 .. d.span.1] \-> "+"
+  assert_eq! \-> .text d.code \-> "E0277"
+
+test "a parsed map clamps a column past the line"
+  d = .expect "line 2 is mapped" $ remap_file (&message_at 2 99) (&parsed_map ()) "p.vlt" VLT
+  assert_eq! \-> voltaic_diag::line_col VLT d.span.0 \-> (2, 3)
+
+test "a parsed map declines a synthetic line"
+  assert! \-> .is_none (remap_file (&message_at 3 1) (&parsed_map ()) "p.vlt" VLT)
 
 #[cfg(test)]
 const VLT : &str = "add = (a: i32, b: i32): i32 ->\n  a + \"x\"\n"

@@ -625,6 +625,38 @@ of the first original character on it. The re-alignment is per line, like the ma
 itself; a formatted line with no matched character is recorded as synthetic, so it
 declines to resolve rather than resolving wrongly.
 
+### 8.6 cargo's errors are reported against the `.vlt`
+
+```
+voltaic cargo-check [--plain] [cargo check arguments…]
+```
+
+`voltaic check` compiles one file with bare rustc; a tree written by `gen` is
+compiled by cargo, whose errors would otherwise point at generated `.rs`.
+`cargo-check` runs `cargo check --message-format=json <arguments…>` in the
+current directory, keeps each `compiler-message` at level `error` or `warning`,
+and remaps its **primary span** through the `<file>.rs.map` beside the generated
+file, rendering the result with the same renderer as every other command.
+`--plain` is the only argument it keeps; everything else is forwarded in order.
+cargo has no `--plain`, so the two cannot collide.
+
+Paths are resolved in two steps. cargo's `file_name` is relative to the
+workspace root, so it is joined to the **nearest ancestor of the message's
+`manifest_path`** under which it exists, falling back to the current directory.
+The map header's source path is whatever `gen` recorded — workspace-relative
+under `--workspace` — so it is joined to the **nearest ancestor of the generated
+file** under which it exists, then tried against the current directory. A file
+with no map, or a map whose source cannot be found, is reported against the Rust
+file, unremapped; a line the map records as synthetic is reported against the
+Rust file with a note saying so. A span inside a `rust` hatch lands on the
+hatch's first line, because every line of a hatch maps there. The column is
+clamped to the line.
+
+The exit code is **cargo's own** — 101 for a compile error — not a flat 1. cargo's
+own stderr lines (`error: could not compile …`) follow the diagnostics, its
+indented progress lines dropped; when there was no compiler message at all, its
+stderr is forwarded whole, so a manifest error reads exactly as cargo wrote it.
+
 ---
 
 ## 9. Surface inventory

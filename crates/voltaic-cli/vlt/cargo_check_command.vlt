@@ -1,0 +1,197 @@
+import voltaic_diag::Diagnostic
+import voltaic_diag::DiagnosticCode
+import voltaic_driver::RustcMessage
+import voltaic_driver::map_beside
+import serde_json::Value
+import std::path::Path
+import std::path::PathBuf
+import std::process::Command
+
+export(crate) data CargoCheckArgs { export(crate) forwarded Vec<String>, export(crate) plain bool }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export(crate) data Reported
+  = Located Diagnostic
+  | Loose String
+  deriving (Debug, Clone)
+
+export(crate) parse_cargo_check_args : &[String] -> CargoCheckArgs
+parse_cargo_check_args args =
+  plain = .any (\a -> a == "--plain") (.iter args)
+  forwarded : Vec<String> = (args.iter ().filter (\a -> .as_str a != "--plain")).cloned ().collect ()
+  CargoCheckArgs { forwarded, plain }
+
+export(crate) cargo_check_command : &[String] -> Result<(), String>
+cargo_check_command args =
+  parsed = parse_cargo_check_args args
+  cargo = (.ok_or_else (\-> .to_string "error: no cargo found. `voltaic cargo-check` runs `cargo check`, so it needs the Rust toolchain on PATH.") (cargo_path ()))?
+  here = (.map_err (\e -> format! \-> "error: cannot read the current directory: #{e}") (std::env::current_dir ()))?
+  shown_cargo = cargo.display ().to_string ()
+  invoked = (((Command::new (&cargo)).args (["check", "--message-format=json"])).args (&parsed.forwarded)).output ()
+  out = (.map_err (\e -> format! \-> "error: cannot run #{shown_cargo}: #{e}") invoked)?
+
+  stdout = String::from_utf8_lossy (&out.stdout)
+  mut diagnostics : Vec<Diagnostic> = Vec::new ()
+  mut loose : Vec<String> = Vec::new ()
+  for line in .lines stdout
+    case compiler_message line (&here) of
+      Some (Reported::Located found) -> diagnostics.push found
+      Some (Reported::Loose text) -> loose.push text
+      None -> ()
+
+  if !.is_empty diagnostics
+    rendered = voltaic_diag::render (&diagnostics) parsed.plain
+    eprintln! \-> "#{rendered}"
+  for text in &loose
+    eprint! \-> "#{text}"
+
+  stderr = String::from_utf8_lossy (&out.stderr)
+  if .is_empty diagnostics && .is_empty loose
+    eprint! \-> "#{stderr}"
+  else
+    for line in .lines stderr
+      if !.starts_with ' ' line
+        eprintln! \-> "#{line}"
+
+  if .success out.status
+    return Ok ()
+  std::process::exit $ .unwrap_or 1 (.code out.status)
+
+export(crate) compiler_message : &str -> &Path -> Option<Reported>
+compiler_message line here =
+  value : Value = (.ok (serde_json::from_str line))?
+  if .as_deref (text_at (&value) "reason") != Some "compiler-message"
+    return None
+  message = (.get "message" value)?
+  level = (text_at message "level")?
+  if level != "error" && level != "warning"
+    return None
+
+  primary = .and_then (\spans -> .find (\s -> is_primary s) (.iter spans)) (.and_then (\s -> .as_array s) (.get "spans" message))
+  guard primary is Some span else
+    said = .unwrap_or_default (text_at message "message")
+    if .starts_with "aborting due to" said || .ends_with "emitted" said
+      return None
+    rendered = .unwrap_or_else (\-> format! \-> "#{level}: #{said}\n") (text_at message "rendered")
+    return Some (Reported::Loose rendered)
+
+  file = (text_at span "file_name")?
+  manifest = text_at (&value) "manifest_path"
+  generated = resolve_rust (&file) (.map Path::new (.as_deref manifest)) here
+  code = .and_then (\c -> text_at c "code") (.get "code" message)
+  rustc = RustcMessage { path = generated.display ().to_string (), line = number_at span "line_start", col = number_at span "column_start", level = .clone level, code, message = .unwrap_or_default (text_at message "message") }
+  help = help_of message
+
+  if mapped (&rustc) (&generated) here is Some found
+    mut located = found
+    located.help := help
+    return Some (Reported::Located located)
+
+  start = number_at span "byte_start"
+  end = .max (start + 1) (number_at span "byte_end")
+  note = if .is_file (map_beside (&generated))
+    Some (.to_string "this is on a line Voltaic generated, so it has no place in your source")
+  else
+    help
+  severity = if level == "warning"
+    voltaic_diag::Severity::Warning
+  else
+    voltaic_diag::Severity::Error
+  source = .unwrap_or_default (std::fs::read_to_string (&generated))
+  Some (Reported::Located (Diagnostic { code = DiagnosticCode::Foreign (.unwrap_or_else (\-> .clone level) (.clone rustc.code)), severity, message = rustc.message, span = (start, end), related = Vec::new (), help = note, path = shown (&generated) here, source }))
+
+text_at : &Value -> &str -> Option<String>
+text_at value key = .map String::from (.and_then (\x -> .as_str x) (.get key value))
+
+number_at : &Value -> &str -> usize
+number_at value key = .unwrap_or 0 $ .and_then (\n -> .ok (usize::try_from n)) $ .and_then (\x -> .as_u64 x) $ .get key value
+
+is_primary : &Value -> bool
+is_primary span = .and_then (\x -> .as_bool x) (.get "is_primary" span) == Some true
+
+help_of : &Value -> Option<String>
+help_of message =
+  children = (.and_then (\c -> .as_array c) (.get "children" message))?
+  found = (.find (\c -> .as_deref (text_at c "level") == Some "help") (.iter children))?
+  text_at found "message"
+
+export(crate) resolve_rust : &str -> Option<&Path> -> &Path -> PathBuf
+resolve_rust file manifest here =
+  named = Path::new file
+  if .is_absolute named
+    return .to_path_buf named
+  if manifest is Some at
+    for dir in .ancestors at
+      candidate = .join named dir
+      if .is_file candidate
+        return candidate
+  .join named here
+
+mapped : &RustcMessage -> &Path -> &Path -> Option<Diagnostic>
+mapped message generated here =
+  text = (.ok (std::fs::read_to_string (map_beside generated)))?
+  map = (.ok (voltaic_diag::parse_map (&text)))?
+  vlt = (source_of (&map.source_path) generated here)?
+  vlt_source = (.ok (std::fs::read_to_string (&vlt)))?
+  voltaic_driver::remap_file message (&map) (&shown (&vlt) here) (&vlt_source)
+
+export(crate) source_of : &str -> &Path -> &Path -> Option<PathBuf>
+source_of recorded generated here =
+  named = Path::new recorded
+  for dir in .skip 1 (.ancestors generated)
+    candidate = .join named dir
+    if .is_file candidate
+      return Some candidate
+  candidate = .join named here
+  if .is_file candidate
+    return Some candidate
+  None
+
+shown : &Path -> &Path -> String
+shown path here =
+  if .strip_prefix here path is Ok rel
+    return rel.display ().to_string ()
+  path.display ().to_string ()
+
+export(crate) cargo_path : Option<PathBuf>
+cargo_path =
+  from_env = ((std::env::var_os "CARGO").map PathBuf::from).into_iter ()
+  sibling = ((voltaic_driver::rustc_path ()).and_then (\r -> .map (\d -> .join "cargo" d) (.parent r))).into_iter ()
+  from_path = (std::env::var_os "PATH").into_iter ().flat_map (\paths ->
+    dirs : Vec<PathBuf> = ((std::env::split_paths (&paths)).map (\dir -> .join "cargo" dir)).collect ()
+    dirs)
+  ((from_env.chain sibling).chain from_path).find (\candidate -> is_real_cargo candidate)
+
+export(crate) is_real_cargo : &Path -> bool
+is_real_cargo candidate =
+  if !.is_file candidate
+    return false
+  probed = ((Command::new candidate).arg "--version").output ()
+  .is_ok_and (\o -> .success o.status && .starts_with "cargo " (String::from_utf8_lossy (&o.stdout))) probed
+
+test "the plain flag is voltaic's and is not forwarded"
+  args = vec! \-> .to_string "-p" \-> .to_string "beta" \-> .to_string "--plain"
+  parsed = parse_cargo_check_args (.as_slice args)
+  assert! \-> parsed.plain
+  assert_eq! \-> parsed.forwarded \-> vec! \-> .to_string "-p" \-> .to_string "beta"
+
+test "everything else is forwarded in order"
+  args = vec! \-> .to_string "--workspace" \-> .to_string "--all-targets"
+  parsed = parse_cargo_check_args (.as_slice args)
+  assert! \-> !parsed.plain
+  assert_eq! \-> parsed.forwarded \-> args
+
+test "a line that is not a compiler message is skipped"
+  here = Path::new "/"
+  assert! \-> .is_none (compiler_message "{\"reason\":\"build-finished\",\"success\":false}" here)
+  assert! \-> .is_none (compiler_message "not json" here)
+
+test "an absolute rust path is kept"
+  assert_eq! \-> resolve_rust "/x/y.rs" None (Path::new "/") \-> PathBuf::from "/x/y.rs"
+
+test "a relative rust path with nothing found falls back to the current directory"
+  assert_eq! \-> resolve_rust "nowhere/y.rs" None (Path::new "/base") \-> PathBuf::from "/base/nowhere/y.rs"
+
+test "rejects a program that is not cargo"
+  assert! \-> !is_real_cargo (Path::new "/bin/sh")
+  assert! \-> !is_real_cargo (Path::new "/nonexistent/cargo")

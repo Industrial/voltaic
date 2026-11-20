@@ -165,8 +165,8 @@ emit_import out i indent =
 
 export(crate) emit_inline_rust : &mut Sink<'_> -> &InlineRust -> usize -> ()
 emit_inline_rust out r indent =
-  .mark r.span out
   emit_trivia out (&r.leading) indent
+  .mark r.span out
   for text in .lines r.code
     if .is_empty (.trim text)
       .push '\n' out

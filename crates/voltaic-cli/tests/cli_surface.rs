@@ -33,12 +33,22 @@
 //! resolution (§8.3) sees them, and sweeping outputs whose source was deleted.
 //! `gen` is that loop, written once,
 //! with `--check` for CI.
+//!
+//! # `cargo-check` is the ninth
+//!
+//! `check` compiles one file with bare rustc; a crate written by `gen` is
+//! compiled by cargo, whose errors otherwise point at generated `.rs`.
+//! `cargo-check` runs cargo's check with `--message-format=json` and the
+//! caller's arguments, and remaps each primary span through the `.rs.map`
+//! beside it, so a workspace gets the `.vlt` locations one file does. `--plain`
+//! is the one flag it keeps for itself; cargo has none of that name.
 
 use std::process::Command;
 
-/// The surface, written out: doc 01 §27's six, plus doc 86 §8.1's `sig` and §8.5's `gen`.
+/// The surface, written out: doc 01 §27's six, doc 86 §8.1's `sig`, §8.5's `gen`, and `cargo-check`.
 const SURFACE: &[&str] = &[
   "build",
+  "cargo-check",
   "check",
   "fmt",
   "gen",
@@ -72,7 +82,7 @@ fn the_surface_is_exactly_doc_01_section_27() {
   }
 
   // And nothing else. Every `voltaic <word>` line in the usage must name one of
-  // the eight — a ninth would show up here.
+  // the nine — a tenth would show up here.
   for line in help.lines().filter(|l| l.starts_with("  voltaic ")) {
     let named = line.trim_start().trim_start_matches("voltaic ");
     let name = named.split_whitespace().next().unwrap_or_default();

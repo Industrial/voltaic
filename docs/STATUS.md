@@ -33,21 +33,21 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Crate | `src` | `tests` |
 |---|---:|---:|
-| `voltaic-ast` | 1731 | 0 |
+| `voltaic-ast` | 1722 | 0 |
 | `voltaic-bench` | 355 | 217 |
-| `voltaic-cli` | 1416 | 14413 |
+| `voltaic-cli` | 2107 | 14963 |
 | `voltaic-diag` | 1055 | 0 |
-| `voltaic-driver` | 3707 | 316 |
-| `voltaic-emit` | 4133 | 4647 |
-| `voltaic-fmt` | 1639 | 1660 |
+| `voltaic-driver` | 4172 | 316 |
+| `voltaic-emit` | 3975 | 4647 |
+| `voltaic-fmt` | 1607 | 1569 |
 | `voltaic-fuzz` | 65 | 378 |
-| `voltaic-lattice` | 6016 | 1335 |
-| `voltaic-lexer` | 2439 | 1312 |
+| `voltaic-lattice` | 6013 | 1335 |
+| `voltaic-lexer` | 2208 | 1196 |
 | `voltaic-lsp` | 880 | 756 |
 | `voltaic-mcp` | 464 | 776 |
-| `voltaic-parser` | 6045 | 787 |
+| `voltaic-parser` | 6033 | 787 |
 | `voltaic-seed` | 146 | 1130 |
-| **total** | **30091** | **27727** |
+| **total** | **30802** | **28070** |
 
 ---
 
@@ -68,27 +68,28 @@ A generation with no seed has been **retired**, which row 102 §3.1 permits only
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.vlt` | 54 | the CI-checked source of truth for what works |
-| `tests/golden/*.vrs` | 53 | the generated Rust, as exact text |
+| `examples/*.vlt` | 53 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 52 | the generated Rust, as exact text |
 | `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
 | `crates/voltaic-cli/tests/lint/*.vlt` | 8 | the warning a questionable program gets |
 | `crates/voltaic-cli/tests/run/*.stdout` | 3 | what a program prints |
 | `crates/voltaic-cli/tests/explain/*.why` | 6 | the constraint chain behind an inference |
 | `crates/voltaic-cli/tests/sidecar/*.sig` | 2 | the published signature, as exact text |
-| `tests/unreachable/*.vlt` | 7 | the gaps below, asserted to **still fail** |
+| `tests/unreachable/*.vlt` | 8 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**54 examples and 53 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "54 examples, all green" would be rounding up by exactly one file.
+**53 examples and 52 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "53 examples, all green" would be rounding up by exactly one file.
 
 ---
 
 ## Gaps
 
-8 Rust constructs a Voltaic program cannot express. Read out of `docs/GRAMMAR.md`'s `UNREACHABLE` rows rather than listed again here, so the two cannot disagree; each has a fixture that the gate asserts **still fails**, so closing a gap breaks the build until both documents are updated.
+9 Rust constructs a Voltaic program cannot express. Read out of `docs/GRAMMAR.md`'s `UNREACHABLE` rows rather than listed again here, so the two cannot disagree; each has a fixture that the gate asserts **still fails**, so closing a gap breaks the build until both documents are updated.
 
 | Construct | Fixture |
 |---|---|
 | Macro definitions | `tests/unreachable/macro_def.vlt` |
+| Macro invocation with a non-expression argument | `tests/unreachable/macro_item_argument.vlt` |
 | Raw borrows `&raw const`, `&raw mut` | `tests/unreachable/raw_borrow.vlt` |
 | `as` casts | `tests/unreachable/as_cast.vlt` |
 | `extern "C" fn` (export) | `tests/unreachable/extern_fn_abi.vlt` |
