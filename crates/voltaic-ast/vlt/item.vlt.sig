@@ -50,6 +50,7 @@ Constraint.var field
 Constraint.span field
 Constructor.name field
 Constructor.fields field
+Constructor.field_visibility field
 Constructor.message field
 Constructor.leading field
 Constructor.span field

@@ -22,6 +22,7 @@ import voltaic_ast::Ident
 import voltaic_ast::InstanceDecl
 import voltaic_ast::TypeApp
 import voltaic_ast::TypeExpr
+import voltaic_ast::Visibility
 
 export(crate) emit_class : &mut Sink<'_> -> &ClassDecl -> usize -> ()
 emit_class out c indent =
@@ -145,7 +146,10 @@ emit_data out d indent =
     else
       "struct"
     .push_str (&format! \-> "#{vis}#{keyword} #{d.name.text}#{params}") out
-    emit_fields out fields indent true
+    shown : &[Visibility] = case .first d.constructors of
+      Some c -> .as_slice c.field_visibility
+      None -> &[]
+    emit_fields out fields shown indent true
     emit_templates out (&templated) d indent
     return ()
   pad out indent
@@ -156,7 +160,7 @@ emit_data out d indent =
     emit_trivia out (&c.leading) (indent + RUST_INDENT)
     pad out (indent + RUST_INDENT)
     .push_str (&c.name.text) out
-    emit_fields out (&c.fields) (indent + RUST_INDENT) false
+    emit_fields out (&c.fields) (.as_slice c.field_visibility) (indent + RUST_INDENT) false
   .unmark out
   pad out indent
   .push_str "}\n" out
@@ -265,8 +269,29 @@ emit_errors out d indent =
   .unmark out
   ()
 
-export(crate) emit_fields : &mut Sink<'_> -> &ConstructorFields -> usize -> bool -> ()
-emit_fields out fields indent top =
+export(crate) unparenthesised : &str -> &str
+unparenthesised text =
+  guard .strip_prefix "(" text is Some rest else
+    return text
+  guard .strip_suffix ")" rest is Some inner else
+    return text
+  if .is_empty (.trim inner)
+    return text
+  mut depth : i32 = 0
+  for ch in .chars inner
+    case ch of
+      '(' or '<' or '[' -> depth += 1
+      ')' or '>' or ']' ->
+        depth -= 1
+        if depth < 0
+          return text
+      _ | ch == ',' && depth == 0 ->
+        return text
+      _ -> ()
+  inner
+
+export(crate) emit_fields : &mut Sink<'_> -> &ConstructorFields -> &[Visibility] -> usize -> bool -> ()
+emit_fields out fields visibilities indent top =
   case fields of
     ConstructorFields::Unit ->
       closer = if top
@@ -275,7 +300,9 @@ emit_fields out fields indent top =
         ",\n"
       .push_str closer out
     ConstructorFields::Tuple types ->
-      texts : Vec<&str> = (types.iter ().map (\t -> .as_str t.text)).collect ()
+      texts : Vec<String> = (types.iter ().enumerate ().map (\pair ->
+        vis = .map_or (String::new ()) Visibility::rust_text (.get pair.0 visibilities)
+        format! \-> "#{vis}#{(unparenthesised (&pair.1.text))}")).collect ()
       joined = .join ", " texts
       .push_str (&format! \-> "(#{joined})") out
       closer = if top

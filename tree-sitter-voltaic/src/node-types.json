@@ -5479,6 +5479,10 @@
         {
           "type": "type_identifier",
           "named": true
+        },
+        {
+          "type": "visibility",
+          "named": true
         }
       ]
     }

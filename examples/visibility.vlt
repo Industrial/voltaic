@@ -19,6 +19,12 @@
 export data Point { export x f64, y f64 }
   deriving (Debug)
 
+-- A tuple field takes its marker inside parentheses, and a parenthesised
+-- field type is emitted without the parentheses rustc would warn about.
+export newtype Qid = Qid (export u64)
+
+export newtype Label = Label (Box<str>)
+
 export(crate) type Depth = f64
 
 -- The marker belongs to the **declaration**, so it goes on the signature
@@ -36,4 +42,7 @@ main =
   println! \-> "#{p.x}"
   println! \-> "#{(area (&p))}"
   println! \-> "#{(double (area (&p)))}"
+  q = Qid 7
+  l = Label (Box::from "seven")
+  println! \-> "#{q.0} #{l.0}"
   ()

@@ -146,9 +146,13 @@ constructor_head constructor indent = case &constructor.fields of
   ConstructorFields::Unit -> .clone constructor.name.text
   ConstructorFields::Tuple types ->
     mut out = .clone constructor.name.text
-    for ty in types
+    for pair in .enumerate (.iter types)
       .push ' ' out
-      .push_str (&ty.text) out
+      vis = .map_or (String::new ()) visibility_text (.get pair.0 constructor.field_visibility)
+      if .is_empty vis
+        .push_str (&pair.1.text) out
+      else
+        .push_str (&format! \-> "(#{vis}#{pair.1.text})") out
     out
   ConstructorFields::Record fields ->
     printed : Vec<String> = (fields.iter ().map (\field ->

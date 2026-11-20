@@ -1561,6 +1561,9 @@ module.exports = grammar({
 				// A tuple type, and `()` — the unit type, and the commonest return
 				// type in the corpus.
 				seq("(", optional(sep1($.type_expression, ",")), ")"),
+				// A tuple field's own marker, `Qid (export u64)`: the parentheses
+				// hold one visibility and one type.
+				seq("(", $.visibility, $.type_expression, ")"),
 				// An array or a slice: `[u8; 4]`, `[i32]`.
 				seq(
 					"[",

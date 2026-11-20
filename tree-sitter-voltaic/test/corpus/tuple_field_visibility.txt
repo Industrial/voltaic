@@ -1,0 +1,18 @@
+================================================================
+a tuple field carrying its own visibility
+================================================================
+
+export newtype Qid = Qid (export u64)
+
+----------------------------------------------------------------
+
+(source_file
+  (data_declaration
+    (visibility)
+    (type_identifier)
+    (constructor
+      (type_identifier)
+      (type_expression
+        (visibility)
+        (type_expression
+          (identifier))))))

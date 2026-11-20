@@ -29,9 +29,9 @@ export(crate) constructor : &mut Parser -> Vec<voltaic_lexer::Trivia> -> Result<
 constructor p leading =
   start = (.peek_span p).0
   name = (.ident "expected a constructor name" p)?
-  fields = (constructor_fields p)?
+  shape = (constructor_fields p)?
   message = (trailing_message p)?
-  Ok (Constructor { name, fields, message, leading, span = (start, (.prev_span p).1) })
+  Ok (Constructor { name, fields = shape.0, field_visibility = shape.1, message, leading, span = (start, (.prev_span p).1) })
 
 export(crate) trailing_message : &mut Parser -> Result<Option<String>, ParseError>
 trailing_message p = case &(.peek p).kind of
@@ -41,7 +41,7 @@ trailing_message p = case &(.peek p).kind of
     Ok (Some owned)
   _ -> Ok None
 
-export(crate) constructor_fields : &mut Parser -> Result<ConstructorFields, ParseError>
+export(crate) constructor_fields : &mut Parser -> Result<(ConstructorFields, Vec<Visibility>), ParseError>
 constructor_fields p =
   if .check (&TokenKind::LBrace) p
     .advance p
@@ -57,13 +57,22 @@ constructor_fields p =
       .advance p
     .skip_layout p
     (.expect (&TokenKind::RBrace) "expected `}` to close the record" p)?
-    return Ok (ConstructorFields::Record fields)
+    return Ok (ConstructorFields::Record fields, Vec::new ())
   mut types = Vec::new ()
+  mut visibilities = Vec::new ()
   while starts_a_field_type (&(.peek p).kind)
-    .push (capture_type p "expected a field type" TypeStop::Atom)? types
+    marked = .check (&TokenKind::LParen) p && .is_some_and (\t -> t.kind == TokenKind::Kw Keyword::Export) (.peek_at 1 p)
+    if marked
+      .advance p
+      .push (visibility p)? visibilities
+      .push (capture_type p "expected a field type" TypeStop::Greedy)? types
+      (.expect (&TokenKind::RParen) "expected `)` to close the field" p)?
+    else
+      .push Visibility::Private visibilities
+      .push (capture_type p "expected a field type" TypeStop::Atom)? types
   if .is_empty types
-    return Ok ConstructorFields::Unit
-  Ok $ ConstructorFields::Tuple types
+    return Ok (ConstructorFields::Unit, visibilities)
+  Ok (ConstructorFields::Tuple types, visibilities)
 
 export(crate) data_decl : &mut Parser -> Vec<Trivia> -> usize -> Visibility -> Result<DataDecl, ParseError>
 data_decl p leading start visibility =
@@ -89,13 +98,13 @@ data_decl p leading start visibility =
       continue
     if .is_empty constructors && starts_a_field_type (&(.peek p).kind)
       row_leading = .peek_leading p
-      fields = (constructor_fields p)?
-      .push (Constructor { name = .clone name, fields, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
+      shape = (constructor_fields p)?
+      .push (Constructor { name = .clone name, fields = shape.0, field_visibility = shape.1, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
       continue
     if .check (&TokenKind::LBrace) p && .is_empty constructors
       row_leading = .peek_leading p
-      fields = (constructor_fields p)?
-      .push (Constructor { name = .clone name, fields, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
+      shape = (constructor_fields p)?
+      .push (Constructor { name = .clone name, fields = shape.0, field_visibility = shape.1, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
       continue
     if .check (&TokenKind::Eq) p || .check (&TokenKind::Or) p
       row_leading = .peek_leading p
