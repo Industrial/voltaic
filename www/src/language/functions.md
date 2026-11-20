@@ -82,8 +82,17 @@ and left the prefix form alone: generation 1 chose receiver-last because it was
 the only way to make partial application and pipelines share a spelling
 *without types*, and inference removed that constraint.
 
-A method whose name is a Voltaic keyword is unspellable, which is the one sharp
-edge here.
+A library names its own members, so a member may be named after a Voltaic
+keyword: after `.` and after `::` only a name can stand, and any keyword but
+`await` is read as one there.
+
+```voltaic
+{{#include ../../../examples/keyword_members.vlt}}
+```
+
+A member or path segment that Rust reserves is written as Rust's raw
+identifier, so `e.type ()` reaches rustc as `e.r#type()`. A keyword as a
+*bare* name, such as a binder called `of`, is still refused.
 
 ## The receiver in a signature
 

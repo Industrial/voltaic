@@ -15,6 +15,8 @@ kind_of : &str -> BindingTable -> Option<BindingKind> ! none @ name shared, self
 classify : &FnDecl -> Option<BindingKind> ! none @ decl shared
 is_upper_case : &str -> bool @ name shared
 binding_text : &str -> String @ name owned
+member_word : &str -> String @ name owned
+path_word : &str -> String @ name owned
 emit_bind : &Option<Pattern> -> &Expr -> usize -> String @ pattern shared, value shared, indent shared
 emit_where_locals : &mut Sink<'_> -> &[Stmt] -> usize -> () @ out shared, wheres shared, indent shared
 one_tail_expression : &Clause -> bool -> Option<&Stmt> ! none @ clause shared, tail shared

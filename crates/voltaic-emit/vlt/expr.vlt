@@ -4,6 +4,7 @@ import crate::binding::BindingScope
 import crate::binding::BindingTable
 import crate::binding::bind_block
 import crate::binding::binding_text
+import crate::binding::member_word
 import crate::control::ascribed_list
 import crate::control::assert_call
 import crate::control::catch_fallback
@@ -66,7 +67,7 @@ emit_dot recv name args indent =
     return closure (&params) (&body)
   head = receiver recv indent
   listed = expr_list args indent
-  format! \-> "#{head}.#{name.text}(#{listed})"
+  format! \-> "#{head}.#{(member_word (&name.text))}(#{listed})"
 
 export(crate) emit_application : &Expr -> &[Expr] -> usize -> String
 emit_application callee args indent =
@@ -312,9 +313,9 @@ emit_expr e indent = case e of
   Expr::Field { recv, name, span } ->
     head = receiver recv indent
     if crate::method::MethodScope::is_method (*span)
-      format! \-> "#{head}.#{name.text}()"
+      format! \-> "#{head}.#{(member_word (&name.text))}()"
     else
-      format! \-> "#{head}.#{name.text}"
+      format! \-> "#{head}.#{(member_word (&name.text))}"
   Expr::Dot { recv, name, args, .. } -> emit_dot recv name args indent
   Expr::Index { recv, index, .. } ->
     head = receiver recv indent
@@ -412,11 +413,11 @@ export(crate) method_ref : &Ident -> &[Expr] -> usize -> String
 method_ref name args indent =
   guard .split_last args is Some split else
     param = closure_param 0
-    body = format! \-> "#{param}.#{name.text}()"
+    body = format! \-> "#{param}.#{(member_word (&name.text))}()"
     return closure (&[param]) (&body)
   recv = receiver split.0 indent
   rest = expr_list split.1 indent
-  format! \-> "#{recv}.#{name.text}(#{rest})"
+  format! \-> "#{recv}.#{(member_word (&name.text))}(#{rest})"
 
 export(crate) missing_arity : &Expr -> &[Expr] -> Option<usize>
 missing_arity callee args =
@@ -442,12 +443,12 @@ emit_over selector function place indent =
 
 export(crate) pipeline : &Expr -> &Expr -> usize -> String
 pipeline lhs rhs indent = case unparen rhs of
-  Expr::MethodRef { name, .. } -> format! \-> "#{receiver lhs indent}.#{name.text}()"
+  Expr::MethodRef { name, .. } -> format! \-> "#{receiver lhs indent}.#{(member_word (&name.text))}()"
   Expr::Call { callee, args, .. } -> case unparen callee of
     Expr::MethodRef { name, .. } ->
       recv = receiver lhs indent
       listed = expr_list args indent
-      format! \-> "#{recv}.#{name.text}(#{listed})"
+      format! \-> "#{recv}.#{(member_word (&name.text))}(#{listed})"
     other ->
       mut supplied : Vec<String> = (args.iter ().map (\a -> emit_expr a indent)).collect ()
       .push (emit_expr lhs indent) supplied

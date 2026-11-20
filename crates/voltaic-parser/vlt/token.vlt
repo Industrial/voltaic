@@ -4,6 +4,7 @@ import crate::expr::parse_expr
 import crate::item::rewritten
 import crate::parser::Parser
 import voltaic_ast::Expr
+import voltaic_ast::Ident
 import voltaic_ast::InlineRust
 import voltaic_ast::Signature
 import voltaic_ast::Stmt
@@ -44,6 +45,14 @@ inline_rust p leading start =
 
 export(crate) is_word : char -> bool
 is_word ch = .is_alphanumeric ch || ch == '_'
+
+export(crate) member_name : &mut Parser -> &str -> Result<Ident, ParseError>
+member_name p message =
+  if &(.peek p).kind is TokenKind::Kw kw && kw.text () != "await"
+    found = Ident { text = .to_string (kw.text ()), span = .peek_span p }
+    .advance p
+    return Ok found
+  .ident message p
 
 export(crate) reserved_word : &mut Parser -> ParseError
 reserved_word p =

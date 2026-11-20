@@ -3,6 +3,7 @@ expr_from_tokens : &[Token] -> Span -> Result<Expr, ParseError> ! fail ParseErro
 flush_word : &mut String -> &mut String -> &str -> &str -> () @ out shared, word shared, var shared, subject shared
 inline_rust : &mut Parser -> Vec<Trivia> -> usize -> Result<InlineRust, ParseError> ! fail ParseError + panic @ p shared, leading shared, start owned
 is_word : char -> bool @ ch shared
+member_name : &mut Parser -> &str -> Result<Ident, ParseError> ! fail ParseError @ p owned, message owned
 reserved_word : &mut Parser -> ParseError @ p shared
 rust_hatch : &mut Parser -> Result<(String, Span), ParseError> ! fail ParseError @ p shared
 rust_string_body : &str -> String @ text shared

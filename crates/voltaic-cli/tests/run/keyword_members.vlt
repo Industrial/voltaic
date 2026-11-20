@@ -1,0 +1,36 @@
+-- Members named after Voltaic keywords, defined in Rust the way a library
+-- defines them. `type` is also Rust's, so it must reach rustc as `r#type`;
+-- `union` is only contextual in Rust and must stay bare.
+rust """
+  pub struct Effect;
+  impl Effect {
+      pub fn catch(&self) -> u32 {
+          1
+      }
+      pub fn with(&self) -> u32 {
+          2
+      }
+      pub fn union(&self) -> u32 {
+          3
+      }
+      pub fn r#type(&self) -> u32 {
+          4
+      }
+      pub fn of(n: u32) -> u32 {
+          n
+      }
+  }
+"""
+
+main : ()
+main =
+  e = Effect
+  total = e.catch () + e.with () + e.union ()
+  println! \-> "#{total}"
+  typed = e.type ()
+  println! \-> "#{typed}"
+  received = .with e
+  println! \-> "#{received}"
+  made = Effect::of 5
+  println! \-> "#{made}"
+  ()

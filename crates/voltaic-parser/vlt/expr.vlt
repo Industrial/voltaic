@@ -17,6 +17,7 @@ import crate::signature::TypeStop
 import crate::signature::capture_type
 import crate::support::PREFIX_POWER
 import crate::support::binary_power
+import crate::token::member_name
 import crate::token::rust_hatch
 import crate::token::rust_string_body
 import voltaic_ast::BinaryOp
@@ -184,7 +185,7 @@ postfix p lhs =
       index_name = Ident { text = .clone digits, span = .peek_span p }
       .advance p
       return Ok (Ok (Expr::Field { recv = Box::new lhs, name = index_name, span = (start, (.prev_span p).1) }))
-    name = (.ident "expected a field name or a tuple index after `.`" p)?
+    name = (member_name p "expected a field name or a tuple index after `.`")?
     if .check (&TokenKind::LParen) p && !(.peek p).ws_before
       return Err (method_call_syntax (&name.text) (start, name.span.1))
     return Ok (Ok (Expr::Field { recv = Box::new lhs, name, span = (start, (.prev_span p).1) }))
@@ -321,7 +322,7 @@ prefix p =
       Ok $ Expr::Ident $ Ident { text = .to_string "Self", span }
     TokenKind::Dot ->
       .advance p
-      name = (.ident "expected a method name after `.`" p)?
+      name = (member_name p "expected a method name after `.`")?
       span = (start, name.span.1)
       Ok (Expr::MethodRef { name, span })
     TokenKind::Ident _ -> macro_call p

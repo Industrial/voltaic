@@ -177,7 +177,20 @@ is_upper_case name =
 export(crate) binding_text : &str -> String
 binding_text name = case BindingScope::kind_of name of
   Some (BindingKind::Called) -> format! \-> "#{(voltaic_ast::rust_word name)}()"
-  _ -> voltaic_ast::rust_word name
+  _ -> path_word name
+
+export(crate) member_word : &str -> String
+member_word name =
+  if name == "union"
+    return .to_string name
+  voltaic_ast::rust_word name
+
+export(crate) path_word : &str -> String
+path_word name =
+  if !.contains "::" name
+    return voltaic_ast::rust_word name
+  words : Vec<String> = ((.split "::" name).map member_word).collect ()
+  .join "::" words
 
 export(crate) emit_bind : &Option<Pattern> -> &Expr -> usize -> String
 emit_bind pattern value indent =

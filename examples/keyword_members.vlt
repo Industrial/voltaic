@@ -1,0 +1,15 @@
+-- A member is named by its library, not by Voltaic, so a keyword is a name
+-- wherever only a name can stand: after `.` and after `::`. `or` is a Voltaic
+-- keyword and `Option::or` is a method, so all three spellings of a call reach
+-- it. id_effect's `Effect::catch` and `Schedule::union` are the same case.
+main : ()
+main =
+  first = Some 1
+  fallback = Some 2
+  chosen = first.or fallback
+  println! \-> "#{(chosen.unwrap ())}"
+  headed = .or fallback None
+  println! \-> "#{(headed.unwrap ())}"
+  pathed = Option::or None fallback
+  println! \-> "#{(pathed.unwrap ())}"
+  ()

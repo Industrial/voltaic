@@ -12,6 +12,7 @@ import crate::signature::capture_type
 import crate::signature::rust_generic
 import crate::support::above_bitor
 import crate::token::expr_from_tokens
+import crate::token::member_name
 import crate::token::rust_string_body
 import crate::token::token_text
 import voltaic_ast::BinaryOp
@@ -107,11 +108,10 @@ constructor_path p =
   .advance p
   while .check (&TokenKind::ColonColon) p
     .advance p
-    guard &(.peek p).kind is TokenKind::Ident next else
+    guard (member_name p "expected a name after `::`").ok () is Some next else
       break
     .push_str "::" text
-    .push_str next text
-    .advance p
+    .push_str (&next.text) text
   Some text
 
 export(crate) field_init : &mut Parser -> Result<FieldInit, ParseError>
@@ -256,7 +256,7 @@ path_or_ident p =
     if separator.0 > tight_through
       return Err (ParseError::r#with Code::SpacedPathSeparator "`::` joins a path, so it takes no space before it — write `:` to annotate a type, or close up the `::` to name a path" separator)
     .advance p
-    next = (.ident "expected a name after `::`" p)?
+    next = (member_name p "expected a name after `::`")?
     .push_str "::" text
     .push_str (&next.text) text
     tight_through := next.span.1
