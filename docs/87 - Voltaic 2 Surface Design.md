@@ -115,6 +115,23 @@ Several equations become a `match`; a `|` ladder becomes an `if`/`else if` chain
 ladder inside an equation lands inside that clause's arm. All exactly as generation 1
 lowered them — this part was already right and is carried over without change.
 
+**Parameter names** (leaf v5, gap G4). The `match` scrutinises the Rust parameters, so
+each parameter needs one name. Position *i* takes the first lower-case binder any
+equation writes there — `fib 0 = 0; fib n = …` is `fn fib(n: u64)`, and a Dioxus
+`Badge 0 = …; Badge count = …` keeps its `count` prop — **but only if every other
+equation either binds that same name in that position or never mentions it.** That
+condition is what stops an arm reading a name it did not bind: lending `count` to the
+parameter would let `pick 0 n = n + count` silently read the scrutinee, so instead the
+parameter falls back to `__vlt_aN` and rustc reports the stray `count` as `E0425`
+(`crates/voltaic-cli/tests/check/clause_scope.vlt`). The check is a token scan over each
+equation, so it is conservative: any mention at all, even a field named `count`, keeps
+the generated name. A name bound in two different positions is lent to neither, which
+also rules out `E0415` (`pick` in `examples/guards.vlt`).
+
+A **required class member** has a signature and no equation, so it has no source names
+at all, and its parameters stay `__vlt_a0`, `__vlt_a1`, … — renumbered so the receiver is
+first. That is the one place generated parameter names remain by design.
+
 `otherwise` is deleted. The catch-all is `_`, which is already the wildcard pattern,
 so the language has one spelling for "anything" instead of two.
 
@@ -628,6 +645,30 @@ attributes are consumed by the emitter and never reach rustc. The set is:
 `#[voltaic::opaque]` is new and is the sidecar's pressure valve: a `pub` definition
 whose inferred type is an implementation detail can refuse to publish it, at the cost
 of being uncallable across the crate boundary.
+
+**Where an attribute may go** (leaf v5). An attribute is leading trivia on the construct
+below it, and Voltaic interprets none of them, so `#[cfg(…)]` works wherever the
+construct below reaches the Rust as something an attribute can sit on. A comment in
+the same place is kept the same way.
+
+| Above | `#[cfg]` / any attribute | Lands on |
+|---|---|---|
+| an `import` | works | the `use` |
+| an item: signature, `data`, `class`, `instance`, `module`, `const` | works | the item |
+| a statement | works | the statement |
+| a `case` arm | works | the `match` arm |
+| an equation that becomes a `match` arm: any equation after the first, or the first below a signature when the function has several equations or a refutable pattern | works | that arm, so `#[cfg]` removes the equation |
+| the only equation below a signature, binding every parameter | **`VLT0103`**, *"attributes go above the signature"* — there is no arm to carry it | — |
+| a class's `type` or `const` member | works | the associated item |
+| a class or instance method | works | the method |
+
+An attribute also decides one classification: a parameterless binding with an
+attribute is **always a function**, never the `const` an all-caps name with a literal
+body would otherwise become, because attributes such as `#[component]` and `#[inline]`
+are written for functions (`BANNER` in `examples/bindings.vlt`). The use site is still
+the bare name, which emits a call — so a function *item* passed as a value, such as
+`dioxus::launch App`, emits `launch(App())` and still needs the nullary lambda `\ -> App` or an explicit
+path.
 
 ---
 
