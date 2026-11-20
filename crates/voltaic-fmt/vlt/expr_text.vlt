@@ -64,6 +64,7 @@ expr_text expr required indent source = case expr of
     else
       case .as_ref naked of
         Expr::Unary { .. } -> expr_text naked 0 indent source
+        _ | reaches_right inner -> expr_text inner 0 indent source
         _ -> operand inner u8::MAX indent source
     format! \-> "#{(.rust_text op)}#{printed}"
   Expr::Paren { inner, .. } ->
@@ -230,7 +231,9 @@ stored expr = case expr of
 export(crate) macro_call_text : &str -> &[Expr] -> usize -> &str -> String
 macro_call_text name args indent source =
   mut out = format! \-> "#{name}!"
-  for arg in args
+  for pair in args.iter ().enumerate ()
+    arg = pair.1
+    more = pair.0 + 1 < .len args
     hangs = case arg of
       Expr::Block { label = None, .. } -> true
       _ -> false
@@ -238,7 +241,11 @@ macro_call_text name args indent source =
       .push_str " \\->\n" out
     else
       .push_str " \\-> " out
-    .push_str (&expr_text arg 0 indent source) out
+    printed = expr_text arg 0 indent source
+    if more && !hangs && open_on_the_right arg
+      .push_str (&format! \-> "(#{printed})") out
+    else
+      .push_str (&printed) out
   out
 
 export(crate) operand : &Expr -> u8 -> usize -> &str -> String
@@ -279,6 +286,7 @@ power_of expr = case expr of
     Some powers.0
   Expr::Call { is_dollar = true, .. } -> Some 0
   Expr::Call { .. } -> Some u8::MAX
+  Expr::MacroCall { .. } or Expr::Unary { .. } | reaches_right expr -> Some 0
   Expr::MacroCall { .. } or Expr::MacroVerbatim { .. } or Expr::RustHatch { .. } -> Some u8::MAX
   Expr::Field { .. } or Expr::Index { .. } or Expr::Unary { .. } or Expr::Try { .. } or Expr::MethodRef { .. } -> Some u8::MAX
   Expr::Path { .. } or Expr::Ident _ or Expr::SelfField { .. } or Expr::SelfType { .. } -> Some u8::MAX
@@ -290,6 +298,23 @@ power_of expr = case expr of
   Expr::Dot { .. } -> Some u8::MAX
   Expr::Binding _ or Expr::Item { .. } or Expr::Return { .. } or Expr::Draw { .. } or Expr::Await { .. } or Expr::Assign { .. } or Expr::Over { .. } -> None
   Expr::Guard { .. } or Expr::While { .. } or Expr::For { .. } or Expr::Loop { .. } or Expr::Break { .. } or Expr::Continue { .. } -> None
+
+export(crate) reaches_right : &Expr -> bool
+reaches_right expr = case expr of
+  Expr::MacroCall { args, .. } -> !.is_empty args
+  Expr::Unary { operand = inner, .. } -> case .as_ref inner of
+    Expr::Paren { inner = within, .. } -> case .as_ref within of
+      Expr::Unary { .. } -> reaches_right within
+      _ -> false
+    other -> reaches_right other
+  _ -> false
+
+export(crate) open_on_the_right : &Expr -> bool
+open_on_the_right expr = case expr of
+  Expr::Call { args, is_dollar = true, .. } | .len args == 1 -> open_on_the_right (&args[0])
+  Expr::Lambda { body, .. } -> open_on_the_right body
+  Expr::Paren { inner, .. } -> can_drop_paren inner 0 && open_on_the_right inner
+  _ -> reaches_right expr
 
 export(crate) deref_text : &Expr -> &'static str
 deref_text e = case e of

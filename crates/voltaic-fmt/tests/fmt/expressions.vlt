@@ -97,5 +97,16 @@ main =
   be = t.1.0
   -- G20: a lambda whose parameter is the unit pattern.
   bf = .map (\() -> 1) xs
+  -- G26: a macro call with arguments reaches as far right as it can, so as
+  -- anything but the last argument or operand it keeps its parentheses —
+  -- and a bare macro name applied by juxtaposition takes those arguments.
+  bg = assert_eq! \-> env! "CARGO_PKG_NAME" \-> "x"
+  bh = assert_eq! \-> (env! \-> "CARGO_PKG_NAME") \-> "x"
+  bi = (format! \-> "{}" \-> 1) + s
+  bj = s + format! \-> "{}" \-> 1
+  bk = .push_str (&format! \-> "{}" \-> 1) out
+  bl = (&format! \-> "{}" \-> 1) == s
+  bm = assert_eq! \-> f (&format! \-> "{}" \-> 1) \-> "\\-> 1"
+  bn = assert_eq! \-> (f $ vec! \-> 1) \-> 2
   println! \-> "#{a}"
   ()

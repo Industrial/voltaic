@@ -1,6 +1,7 @@
 # voltaic 2 signature sidecar — generated, do not edit
 expr_text : &Expr -> u8 -> usize -> &str -> String @ expr owned, required owned, indent owned, source owned
 argument : &Expr -> usize -> &str -> String @ expr owned, indent owned, source owned
+is_unit : &Expr -> bool @ expr shared
 stands_alone : &Expr -> bool @ expr shared
 can_drop_paren : &Expr -> u8 -> bool ! none @ inner owned, required shared
 comma_list : &[Expr] -> usize -> &str -> String @ items shared, indent shared, source shared
@@ -14,6 +15,8 @@ macro_call_text : &str -> &[Expr] -> usize -> &str -> String @ name shared, args
 operand : &Expr -> u8 -> usize -> &str -> String @ expr owned, required owned, indent owned, source owned
 pipeline_text : &Expr -> &Expr -> usize -> &str -> String @ lhs shared, rhs shared, indent shared, source shared
 power_of : &Expr -> Option<u8> ! none @ expr shared
+reaches_right : &Expr -> bool @ expr shared
+open_on_the_right : &Expr -> bool @ expr owned
 deref_text : &Expr -> &str @ e shared
 receiver : &Expr -> usize -> &str -> String @ expr owned, indent owned, source owned
 no_real_arguments : &[Expr] -> bool @ args shared

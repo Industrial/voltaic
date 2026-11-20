@@ -42,6 +42,7 @@ application p =
     span = ((.span head).0, (.prev_span p).1)
     built = case head of
       Expr::Field { recv, name, .. } -> Expr::Dot { recv, name, args, span }
+      Expr::MacroCall { name, args = bare, .. } | .is_empty bare -> Expr::MacroCall { name, args, span }
       other -> Expr::Call { callee = Box::new other, args, is_dollar = false, span }
     head := built
     loop
