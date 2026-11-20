@@ -1,0 +1,2 @@
+view : Element
+view = rsx! { div ( "hello" } }

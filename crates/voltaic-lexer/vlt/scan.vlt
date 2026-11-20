@@ -458,6 +458,104 @@ scan_rust_block cur base =
   .reset_to stop cur
   Some $ dedent_block $ .slice (body_start, stop) cur
 
+export(crate) scan_token_tree : &mut Cursor<'_> -> Result<(), LexError>
+scan_token_tree cur =
+  start = .pos cur
+  mut closers : Vec<char> = Vec::new ()
+  loop
+    at = .pos cur
+    ch = case .bump cur of
+      Some c -> c
+      None ->
+        return Err (LexError { code = Code::UnbalancedDelimiter, help = Some (.to_string "close the macro body with its matching delimiter"), message = .to_string "unbalanced delimiter: this macro body is never closed", span = (start, start + 1) })
+    case ch of
+      '(' -> .push ')' closers
+      '[' -> .push ']' closers
+      '{' -> .push '}' closers
+      ')' or ']' or '}' ->
+        expected = .pop closers
+        if expected != Some ch
+          wanted = .map_or (.to_string "nothing") (\c -> format! \-> "`#{c}`") expected
+          return Err (LexError { code = Code::UnbalancedDelimiter, help = Some (format! \-> "expected #{wanted} here"), message = format! \-> "unbalanced delimiter: `#{ch}` closes nothing open in this macro body", span = (at, at + 1) })
+        if .is_empty closers
+          return Ok ()
+      '"' -> (skip_rust_string cur at)?
+      '\'' -> skip_rust_quote cur
+      '/' | .peek cur == Some '/' ->
+        .eat_while (!= '\n') cur
+        ()
+      '/' | .peek cur == Some '*' -> (skip_rust_block_comment cur at)?
+      c | is_ident_start c -> (skip_rust_word cur at)?
+      _ -> ()
+
+skip_rust_string : &mut Cursor<'_> -> usize -> Result<(), LexError>
+skip_rust_string cur start =
+  loop
+    case .bump cur of
+      Some '\\' ->
+        .bump cur
+        ()
+      Some '"' ->
+        return Ok ()
+      Some _ -> ()
+      None ->
+        return Err (LexError { code = Code::UnterminatedString, help = None, message = .to_string "unterminated string in a macro body", span = (start, start + 1) })
+
+skip_rust_quote : &mut Cursor<'_> -> ()
+skip_rust_quote cur =
+  if .peek cur == Some '\\'
+    .bump cur
+    .bump cur
+    .eat_while (\c -> c != '\'' && c != '\n') cur
+    .eat "'" cur
+    return ()
+  if .peek_at 1 cur == Some '\''
+    .bump cur
+    .bump cur
+  ()
+
+skip_rust_block_comment : &mut Cursor<'_> -> usize -> Result<(), LexError>
+skip_rust_block_comment cur start =
+  .bump cur
+  mut depth : i32 = 1
+  while depth > 0
+    if .eat "/*" cur
+      depth += 1
+      continue
+    if .eat "*/" cur
+      depth -= 1
+      continue
+    if .is_none (.bump cur)
+      return Err (LexError { code = Code::UnterminatedFence, help = Some (.to_string "close it with `*/`"), message = .to_string "unterminated `/* */` comment in a macro body", span = (start, start + 2) })
+  Ok ()
+
+skip_rust_word : &mut Cursor<'_> -> usize -> Result<(), LexError>
+skip_rust_word cur start =
+  .eat_while is_ident_continue cur
+  word = .slice (start, .pos cur) cur
+  raw = word == "r" || word == "br" || word == "cr"
+  quoted = word == "b" || word == "c"
+  if quoted && .eat "\"" cur
+    return skip_rust_string cur start
+  if word == "b" && .eat "'" cur
+    skip_rust_quote cur
+    return Ok ()
+  if !raw
+    return Ok ()
+  mut hashes : usize = 0
+  while .peek_at hashes cur == Some '#'
+    hashes += 1
+  if .peek_at hashes cur != Some '"'
+    return Ok ()
+  for _step in 0 ..= hashes
+    .bump cur
+  pad = .repeat hashes "#"
+  closing = format! \-> "\"#{pad}"
+  while !.eat (&closing) cur
+    if .is_none (.bump cur)
+      return Err (LexError { code = Code::UnterminatedRawString, help = None, message = format! \-> "unterminated raw string in a macro body; expected closing `#{closing}`", span = (start, start + 1) })
+  Ok ()
+
 export(crate) scan_string : &mut Cursor -> Result<TokenKind, LexError>
 scan_string cur =
   start = .pos cur

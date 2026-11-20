@@ -1,0 +1,34 @@
+-- Verbatim macro bodies: `name! { … }`, `name!( … )`, `name![ … ]`, and an
+-- indented block under a bare `name!` at the end of a line. The body is Rust,
+-- copied through as one token, so a macro whose input is not a Voltaic
+-- expression — a pattern, an item, a DSL like `rsx!` — is reachable without
+-- the inline-Rust hatch.
+--
+-- Inside a body nothing is Voltaic: `--`, `~` and `#{…}` mean what Rust says
+-- they mean, and a `//` comment is a Rust comment that reaches the `.vrs`.
+-- Rust takes any of the three brackets after any macro, so `format! { … }` is as
+-- good a witness for the braced form as `rsx!` would be.
+main : ()
+main =
+  -- The bracket kind is preserved: `vec![…]`, `matches!(…)`, `format! {…}`.
+  sizes = vec![1, 2, 3]
+  ready = matches!(Some(3), Some(n) if n > 2)
+  braced = format! { "{}{}", 4, 5 }
+  n = .len sizes
+  m = .len braced
+  println! \-> "#{n} #{ready} #{m}"
+
+  -- An item, which `\->` cannot carry because an argument is an expression.
+  thread_local! { static MODE: std::cell::Cell<u8> = const { std::cell::Cell::new(7) }; }
+  mode = .get MODE
+  println! \-> "#{mode}"
+
+  -- The indented form becomes `format! { … }`, its comment kept.
+  indented = format!
+    // a Rust comment inside the body
+    "{}-{}",
+    6,
+    7
+  k = .len indented
+  println! \-> "#{k}"
+  ()

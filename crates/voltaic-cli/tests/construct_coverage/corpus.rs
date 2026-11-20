@@ -86,6 +86,9 @@ fn spell(token: &Token, text: &str) -> String {
     TokenKind::Char(_) => "«char»",
     TokenKind::Byte(_) => "«byte»",
     TokenKind::Label(_) => "«label»",
+    // A verbatim macro body spans Rust, for the same reason a string spans
+    // text: spelling it by its source would put its contents in the haystack.
+    TokenKind::MacroBody { .. } => "«macrobody»",
     TokenKind::Newline => "«nl»",
     TokenKind::Indent => "«indent»",
     TokenKind::Dedent => "«dedent»",

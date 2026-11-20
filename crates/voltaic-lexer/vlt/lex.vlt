@@ -17,6 +17,7 @@ import crate::scan::scan_raw_ident
 import crate::scan::scan_raw_string
 import crate::scan::scan_rust_block
 import crate::scan::scan_string
+import crate::scan::scan_token_tree
 import crate::scan::trim_comment
 import voltaic_diag::Code
 
@@ -74,8 +75,12 @@ instance (Lexer 'a)
     start = .pos self.cur
     kind = (.scan_token self)?
     opens_a_rust_block = kind == TokenKind::Kw Keyword::Rust
+    opens_a_macro_body = kind == TokenKind::Bang && !ws && .is_some_and (\t -> .is_ident t.kind && t.span.1 == start) (.last self.toks)
     .track_delims (&kind) start self
     .push kind (start, .pos self.cur) ws self
+
+    if opens_a_macro_body
+      return .scan_macro_body self
 
     if opens_a_rust_block
       base = *.expect "the base level is never popped" (.last self.indents)
@@ -84,6 +89,32 @@ instance (Lexer 'a)
         Some code ->
           .push (TokenKind::RustBlock code) (body_start, .pos self.cur) true self
         None -> ()
+    Ok ()
+
+  scan_macro_body : &mut self -> Result<(), LexError>
+  scan_macro_body self =
+    mark = .mark self.cur
+    spaced = .eat_spaces self.cur > 0
+    opener = case .peek self.cur of
+      Some '{' -> Some '{'
+      Some '(' -> Some '('
+      Some '[' -> Some '['
+      _ -> None
+    if opener is Some open
+      at = .pos self.cur
+      (scan_token_tree (&mut self.cur))?
+      end = .pos self.cur
+      text = self.cur.slice (at, end)
+      code = (.unwrap_or "" (.get (1 .. .len text - 1) text)).to_string ()
+      .push (TokenKind::MacroBody { open, code, indented = false }) (at, end) spaced self
+      return Ok ()
+    .reset_to mark self.cur
+    base = *.expect "the base level is never popped" (.last self.indents)
+    body_start = .pos self.cur
+    if scan_rust_block (&mut self.cur) base is Some code
+      .push (TokenKind::MacroBody { open = '{', code, indented = true }) (body_start, .pos self.cur) true self
+    else
+      .reset_to body_start self.cur
     Ok ()
 
   scan_token : &mut self -> Result<TokenKind, LexError>

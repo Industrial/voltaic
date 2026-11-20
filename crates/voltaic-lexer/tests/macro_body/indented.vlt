@@ -1,0 +1,7 @@
+view =
+  rsx!
+    div {
+      -- not a Voltaic comment
+      "hello"
+    }
+done = 1

@@ -1,0 +1,7 @@
+error[VLT0012]: unbalanced delimiter: `}` closes nothing open in this macro body
+  --> macro_body_mismatched.vlt:2:29
+  |
+2 | view = rsx! { div ( "hello" } }
+  |                             ^
+  = help: expected `)` here
+

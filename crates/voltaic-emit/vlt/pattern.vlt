@@ -25,7 +25,7 @@ emit_templates out named d indent =
 
 export(crate) expanded_template : &DeriveTemplate -> &DataDecl -> usize -> String
 expanded_template template d indent =
-  mut inner = Sink::new ""
+  mut inner = Sink::nested ""
   emit_instance (&mut inner) (&template.body) indent
   finished = .finish "" inner
   mut out = .replace "Target" (.as_str d.name.text) (.as_str finished.0)

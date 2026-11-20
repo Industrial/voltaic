@@ -309,6 +309,10 @@ fn token_class(kind: &TokenKind) -> Option<&'static str> {
     // run instead of being highlighted as if it were Voltaic.
     TokenKind::RustBlock(_) => Some(STRING),
 
+    // Row v2's verbatim macro body is the same thing in macro position: Rust,
+    // copied through, so one opaque run for the same reason.
+    TokenKind::MacroBody { .. } => Some(STRING),
+
     TokenKind::UserOp(_)
     | TokenKind::Eq
     | TokenKind::Arrow

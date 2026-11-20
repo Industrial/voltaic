@@ -886,6 +886,14 @@ const WITNESSES: &[Covers] = &[
     witness: Witness::Toks(&["«id»", "!", "\\", "->"]),
   },
   Covers {
+    row: "Macro invocation with a non-expression argument",
+    // Row v2's verbatim body: the lexer's one `MacroBody` token right after a
+    // name's `!`, in any of its four spellings. A `!` before anything else is
+    // either the `\\->` form above or negation.
+    spelling: "`thread_local! { static MODE: … }`",
+    witness: Witness::Toks(&["«id»", "!", "«macrobody»"]),
+  },
+  Covers {
     row: "Nested fn items",
     // A **signature line inside a `where` block**: `where`, the off-side
     // rule's own `Newline` and `Indent`, then a name followed by `:`. No

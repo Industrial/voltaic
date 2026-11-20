@@ -1,0 +1,18 @@
+-- Verbatim macro bodies through the formatter. The body is Rust and is
+-- printed as it was written; only the gap before the bracket is canonical.
+items : Vec<u32>
+items = vec! [1, 2, 3]
+
+ready : bool
+ready = matches!(Some(3), Some(n) if n > 2)
+
+view : Element
+view = rsx!{ div { class: "card", "hello" } }
+
+later : String -> Element
+later name =
+  rsx!
+    div {
+      // a Rust comment, -- not a Voltaic one
+      "hello {name}"
+    }

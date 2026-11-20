@@ -53,6 +53,7 @@ export data TokenKind
   | AmpColon
   | Backslash
   | RustBlock String
+  | MacroBody { open char, code String, indented bool }
   | Dollar
   | At
   | AtAt
@@ -93,6 +94,11 @@ instance TokenKind
   export(crate) is_structural : &self -> bool
   is_structural self = case self of
     Indent or Dedent or Newline -> true
+    _ -> false
+
+  export(crate) is_ident : &self -> bool
+  is_ident self = case self of
+    Ident _ -> true
     _ -> false
 
   export(crate) continues_line : &self -> bool

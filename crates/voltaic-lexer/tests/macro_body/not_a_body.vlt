@@ -1,0 +1,7 @@
+a = !(b)
+c = f !(d)
+e = vec! \-> 1
+g =
+  unreachable!
+
+h = 1

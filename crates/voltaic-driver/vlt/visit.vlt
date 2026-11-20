@@ -226,7 +226,7 @@ descend e step = case e of
     for a in .iter_mut args
       rewrite_expr a step
     ()
-  Expr::Path { .. } or Expr::MethodRef { .. } or Expr::StrLit { .. } or Expr::RawLit { .. } or Expr::Unit { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::SelfField { .. } or Expr::SelfType { .. } or Expr::Ident _ or Expr::Continue { .. } or Expr::RustHatch { .. } -> ()
+  Expr::Path { .. } or Expr::MethodRef { .. } or Expr::StrLit { .. } or Expr::RawLit { .. } or Expr::Unit { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::SelfField { .. } or Expr::SelfType { .. } or Expr::Ident _ or Expr::Continue { .. } or Expr::RustHatch { .. } or Expr::MacroVerbatim { .. } -> ()
 
 export apply_pass : &mut Expr -> Pass -> ()
 apply_pass e pass = case pass of

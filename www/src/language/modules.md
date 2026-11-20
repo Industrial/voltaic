@@ -36,6 +36,26 @@ Rust's attributes, passed through. The exceptions are Voltaic's own
 Macro *invocation* uses `\->` to introduce a token stream. Macro *definition*
 has no Voltaic surface and is reached through the inline-Rust fence.
 
+### Verbatim bodies
+
+```voltaic
+{{#include ../../../examples/macro_bodies.vlt}}
+```
+
+When a macro's input is not a Voltaic expression — a pattern, an item, a
+DSL like `rsx!` — write its body in Rust. A bracket right after `name!`
+(`{`, `(` or `[`, spaces allowed between) opens a body that runs to its
+matching closer, and a bare `name!` at the end of a line takes the indented
+block under it as one, emitted as `name! { … }`. The body is copied through
+as written, its bracket kind kept, and each of its lines maps back to its own
+line for diagnostics.
+
+Nothing inside is Voltaic. `--`, `~` and `#{…}` are Rust text there, a `//`
+or `/* */` comment is a Rust comment that reaches the generated code, and
+brackets are balanced the way Rust balances them: a bracket inside a string,
+a raw string, a char or a comment does not count. An unclosed body is
+`VLT0012`, reported at its opener.
+
 ## Module-scope bindings
 
 A binding at module scope is an error (`VLT0019`-family), because Rust has no

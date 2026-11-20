@@ -57,6 +57,9 @@ Expr.pattern field
 Expr.source field
 Expr.binder field
 Expr.code field
+Expr.open field
+Expr.indented field
+Expr.body_span field
 Expr.span method
 Expr.is_statement_form method
 Expr.is_control_flow method

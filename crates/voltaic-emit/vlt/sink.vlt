@@ -156,13 +156,100 @@ rust_hatch_text code indent =
     .push_str text out
   out
 
+export(crate) macro_verbatim : &str -> char -> &str -> bool -> usize -> usize -> String
+macro_verbatim name open body indented at indent =
+  close = case open of
+    '(' -> ')'
+    '[' -> ']'
+    _ -> '}'
+  mut out = if open == '{'
+    format! \-> "#{name}! {"
+  else
+    format! \-> "#{name}!#{open}"
+  if indented
+    for pair in .enumerate (.lines body)
+      .push '\n' out
+      if !.is_empty (.trim pair.1)
+        .push_str (&line_origin at (pair.0 + 1)) out
+        pad_to (&mut out) (indent + RUST_INDENT)
+        .push_str (.trim_end pair.1) out
+    .push '\n' out
+    pad_to (&mut out) indent
+    .push close out
+    return out
+  rows : Vec<&str> = .collect (.split '\n' body)
+  last = .len rows - 1
+  mut common = usize::MAX
+  for pair in .enumerate (.iter rows)
+    if pair.0 > 0 && (pair.0 == last || !.is_empty (.trim pair.1))
+      common := .min common (.len pair.1 - .len (.trim_start_matches ' ' pair.1))
+  for pair in .enumerate (.iter rows)
+    if pair.0 == 0
+      if last == 0
+        .push_str pair.1 out
+      else
+        .push_str (.trim_end pair.1) out
+      continue
+    .push '\n' out
+    text = .trim pair.1
+    if .is_empty text && pair.0 != last
+      continue
+    .push_str (&line_origin at pair.0) out
+    width = .len pair.1 - .len (.trim_start_matches ' ' pair.1)
+    pad_to (&mut out) (indent + width - .min width common)
+    .push_str text out
+  .push close out
+  out
+
+test "a one-line body keeps its bracket and its spacing"
+  braced = macro_verbatim "rsx" '{' " div {} " false 0 0
+  wanted = .to_string "rsx! { div {} }"
+  assert_eq! \-> braced \-> wanted
+  assert_eq! \-> macro_verbatim "vec" '[' "1, 2" false 0 0 \-> "vec![1, 2]"
+  assert_eq! \-> macro_verbatim "m" '(' "a" false 0 0 \-> "m!(a)"
+
+export(crate) const LINE_ORIGIN : char = '\u{E000}'
+
+export(crate) const LINE_ORIGIN_END : char = '\u{E001}'
+
+export(crate) line_origin : usize -> usize -> String
+line_origin at breaks = format! \-> "#{LINE_ORIGIN}#{at}:#{breaks}#{LINE_ORIGIN_END}"
+
+export(crate) resolve_origin : &str -> &str -> Option<usize>
+resolve_origin source marker =
+  parts : Vec<&str> = .collect (.split ':' marker)
+  first = (.first parts)?
+  second = (.get 1 parts)?
+  at : usize = (.ok (.parse first))?
+  breaks : usize = (.ok (.parse second))?
+  bytes = .as_bytes source
+  mut pos = at
+  mut seen = 0
+  while seen < breaks && pos < .len bytes
+    if bytes[pos] == b'\n'
+      seen += 1
+    pos += 1
+  while pos < .len bytes && bytes[pos] == b' '
+    pos += 1
+  if seen < breaks
+    return None
+  Some pos
+
+test "a body line resolves to its first non-space"
+  assert_eq! \-> resolve_origin "x { a\n    b\n}" "2:1" \-> Some 10
+  assert_eq! \-> resolve_origin "x { a\n    b\n}" "2:2" \-> Some 12
+  assert_eq! \-> resolve_origin "x { a" "2:1" \-> None
+
 export(crate) const RUST_INDENT : usize = 4
 
-export(crate) data Sink { out String, source &'a str, current Option<Span>, origins Vec<Option<Origin>> }
+export(crate) data Sink { out String, source &'a str, current Option<Span>, origins Vec<Option<Origin>>, nested bool, pinned Option<usize> }
 
 instance (Sink 'a)
   export(crate) new : &'a str -> Self
-  new source = Sink { out = String::new (), source, current = None, origins = Vec::new () }
+  new source = Sink { out = String::new (), source, current = None, origins = Vec::new (), nested = false, pinned = None }
+
+  export(crate) nested : &'a str -> Self
+  nested source = Sink { out = String::new (), source, current = None, origins = Vec::new (), nested = true, pinned = None }
 
   export(crate) mark : Span -> &mut self -> ()
   mark span self =
@@ -205,7 +292,9 @@ instance (Sink 'a)
 
   close_line : &mut self -> ()
   close_line self =
-    origin = .and_then (\span -> .origin_of span self) self.current
+    origin = case .take self.pinned of
+      Some at -> .origin_of (at, at) self
+      None -> .and_then (\span -> .origin_of span self) self.current
     .push origin self.origins
     ()
 
@@ -228,10 +317,25 @@ instance (Sink 'a)
       return .count (.chars text) + 1
     .count (.chars text) - .count (.chars trimmed) + 1
 
+  take_origin : &str -> &mut self -> ()
+  take_origin part self =
+    mut rest = part
+    while .find LINE_ORIGIN rest is Some open
+      .push_str (&rest[0 .. open]) self.out
+      after = &rest[open + .len_utf8 LINE_ORIGIN .. .len rest]
+      close = .unwrap_or 0 (.find LINE_ORIGIN_END after)
+      self.pinned := resolve_origin self.source (&after[0 .. close])
+      rest := &after[close + .len_utf8 LINE_ORIGIN_END .. .len after]
+    .push_str rest self.out
+    ()
+
   write_text : &str -> &mut self -> ()
   write_text s self =
     for part in .split_inclusive '\n' s
-      .push_str part self.out
+      if !self.nested && .contains LINE_ORIGIN part
+        .take_origin part self
+      else
+        .push_str part self.out
       if .ends_with '\n' part
         .pop self.out
         .close_line self

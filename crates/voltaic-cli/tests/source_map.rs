@@ -16,7 +16,7 @@ use voltaic_diag::{SourceMap, parse_map, render_map};
 /// `lexical.vlt` is excluded for the reason plan 02 recorded: it exercises the
 /// lexer with constructs the parser does not yet accept, so it has no
 /// generated output to map.
-const EXAMPLES: &[&str] = &["hello", "phase1", "expressions", "comments"];
+const EXAMPLES: &[&str] = &["hello", "phase1", "expressions", "comments", "macro_bodies"];
 
 fn emit(example: &str) -> (String, String, SourceMap) {
   let path = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -136,6 +136,57 @@ fn phase1_tail_expression_maps_to_its_source_line() {
     "the premise of this test is that generated line 4 is the tail expression"
   );
   assert_eq!(map.resolve(4, 5), Some((5, 3)));
+}
+
+/// A verbatim macro body maps **line by line**, not to the line its head is on.
+///
+/// The `rust` hatch maps every line it emits to the hatch's first line, which
+/// is tolerable for a block nobody debugs. A macro body is where a DSL's
+/// errors land — `rsx!` reports against the line inside it — so each emitted
+/// body line carries its own `.vlt` offset to the sink.
+///
+/// ```text
+/// macro_bodies.vlt                              macro_bodies.vrs
+/// 27  indented = format!                    26      let indented = format! {
+/// 28    // a Rust comment inside the body   27          // a Rust comment …
+/// 29    "{}-{}",                            28          "{}-{}",
+/// ```
+#[test]
+fn each_line_of_a_macro_body_maps_to_its_own_source_line() {
+  let (source, rust, map) = emit("macro_bodies");
+  let src_lines: Vec<&str> = source.lines().collect();
+  let body = ["// a Rust comment inside the body", "\"{}-{}\",", "6,", "7"];
+  let mut checked = 0;
+  for (i, line) in rust.lines().enumerate() {
+    let text = line.trim();
+    if !body.contains(&text) {
+      continue;
+    }
+    let origin = map.origin(i + 1).expect("a body line has an origin");
+    let src_line = src_lines[origin.src_line - 1];
+    assert_eq!(
+      src_line.trim(),
+      text,
+      "generated line {} maps to source line {} ({src_line:?})",
+      i + 1,
+      origin.src_line
+    );
+    assert_eq!(
+      src_line
+        .chars()
+        .skip(origin.src_col - 1)
+        .collect::<String>(),
+      text,
+      "the column points at the text, not at the indentation"
+    );
+    checked += 1;
+  }
+  assert_eq!(
+    checked,
+    body.len(),
+    "every body line was found in the output"
+  );
+  assert_eq!(map.resolve(27, 9), Some((28, 5)));
 }
 
 /// Criterion 4: the sidecar round-trips.

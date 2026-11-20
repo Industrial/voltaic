@@ -4,6 +4,7 @@ offset_by : usize -> LexError -> LexError ! mut self @ base shared, self owned
 new : &str -> Lexer @ src owned
 run : Lexer -> Result<Vec<Token>, LexError> ! fail LexError + mut last + mut self @ self owned
 step : Lexer -> Result<(), LexError> ! fail LexError + mut last + mut self @ self owned
+scan_macro_body : Lexer -> Result<(), LexError> ! fail LexError + mut self @ self unique
 scan_token : Lexer -> Result<TokenKind, LexError> ! fail LexError @ self shared
 scan_hash : Lexer -> Result<bool, LexError> ! fail LexError + mut self @ self unique
 scan_dashes : Lexer -> Result<bool, LexError> ! fail LexError + mut self @ self unique
@@ -31,6 +32,7 @@ Lexer.at_line_start field
 Lexer.new method
 Lexer.run method
 Lexer.step method
+Lexer.scan_macro_body method
 Lexer.scan_token method
 Lexer.scan_hash method
 Lexer.scan_dashes method

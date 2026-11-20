@@ -72,6 +72,7 @@ expr_text expr required indent source = case expr of
     lambda_text params body (*is_move) indent source
   Expr::MacroCall { name, args, .. } -> macro_call_text name args indent source
   Expr::RustHatch { code, .. } -> rust_hatch_text code indent
+  Expr::MacroVerbatim { name, open, body, indented, .. } -> macro_verbatim_text name (*open) body (*indented) indent
   Expr::Ascribe { inner, ty, .. } ->
     format! \-> "#{(operand inner 0 indent source)} : #{ty.text}"
   Expr::StrLit { .. } or Expr::RawLit { .. } or Expr::Num { .. } or Expr::Char { .. } or Expr::StrInterp { .. } -> literal_text expr source
@@ -262,7 +263,7 @@ power_of expr = case expr of
     Some powers.0
   Expr::Call { is_dollar = true, .. } -> Some 0
   Expr::Call { .. } -> Some u8::MAX
-  Expr::MacroCall { .. } or Expr::RustHatch { .. } -> Some u8::MAX
+  Expr::MacroCall { .. } or Expr::MacroVerbatim { .. } or Expr::RustHatch { .. } -> Some u8::MAX
   Expr::Field { .. } or Expr::Index { .. } or Expr::Unary { .. } or Expr::Try { .. } or Expr::MethodRef { .. } -> Some u8::MAX
   Expr::Path { .. } or Expr::Ident _ or Expr::SelfField { .. } or Expr::SelfType { .. } -> Some u8::MAX
   Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } -> Some u8::MAX
@@ -329,6 +330,27 @@ rust_hatch_text code indent =
       .push_str (&pad) out
       .push_str line out
   out
+
+export(crate) macro_verbatim_text : &str -> char -> &str -> bool -> usize -> String
+macro_verbatim_text name open body indented indent =
+  if indented
+    pad = indent_text $ indent + 1
+    mut out = format! \-> "#{name}!"
+    for line in .lines body
+      .push '\n' out
+      if !.is_empty (.trim line)
+        .push_str (&pad) out
+        .push_str line out
+    return out
+  close = case open of
+    '(' -> ')'
+    '[' -> ']'
+    _ -> '}'
+  gap = if open == '{'
+    " "
+  else
+    ""
+  format! \-> "#{name}!#{gap}#{open}#{body}#{close}"
 
 export(crate) section_text : &Section -> usize -> &str -> String
 section_text section indent source = case section of

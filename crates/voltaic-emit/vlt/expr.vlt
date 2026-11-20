@@ -24,6 +24,7 @@ import crate::sink::double_braces
 import crate::sink::emit_trivia
 import crate::sink::format_template
 import crate::sink::holes
+import crate::sink::macro_verbatim
 import crate::sink::pad_to
 import crate::sink::rust_escapes
 import crate::sink::rust_hatch_text
@@ -351,6 +352,7 @@ emit_expr e indent = case e of
     format! \-> "#{left} #{operator}= #{right}"
   Expr::MacroCall { name, args, .. } -> macro_call name args indent
   Expr::RustHatch { code, .. } -> rust_hatch_text code indent
+  Expr::MacroVerbatim { name, open, body, indented, body_span, .. } -> macro_verbatim name (*open) body (*indented) body_span.0 indent
   Expr::Await { pattern = None, value, .. } -> format! \-> "#{receiver (unparen value) indent}.await"
   Expr::If { .. } or Expr::While { .. } or Expr::For { .. } or Expr::Loop { .. } -> control_text e indent
   Expr::Binding _ -> unlowerable "a binding"

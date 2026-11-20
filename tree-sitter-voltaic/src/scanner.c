@@ -51,6 +51,10 @@ enum TokenType {
   // token here that is not about indentation, and it is here for the same
   // reason the others are — a regex cannot count.
   FENCED_COMMENT,
+  // A line break inside a verbatim macro body's brackets, row v2. Not a
+  // layout token: it touches no width, and is offered only where none of the
+  // three above is valid, so the indent stack never sees a Rust body's lines.
+  TOKEN_TREE_BREAK,
 };
 
 // The enclosing indent widths, outermost first. Index 0 is always 0 — column
@@ -169,9 +173,11 @@ static bool consume_fence(TSLexer *lexer, bool skip) {
 // Everything is skipped rather than consumed into the token, so all three
 // tokens come out zero-width, which is what lets the grammar place them
 // between constructs rather than inside them.
-static bool skip_to_content(TSLexer *lexer, uint16_t *width, bool *crossed_a_line) {
+static bool skip_to_content(TSLexer *lexer, uint16_t *width, bool *crossed_a_line,
+                            bool *past_a_brace) {
   *width = 0;
   *crossed_a_line = false;
+  *past_a_brace = false;
   while (true) {
     if (lexer->lookahead == '\n') {
       *crossed_a_line = true;
@@ -210,7 +216,11 @@ static bool skip_to_content(TSLexer *lexer, uint16_t *width, bool *crossed_a_lin
     }
     if (lexer->lookahead == '{') {
       if (!consume_fence(lexer, true)) {
-        // A bare `{`, which is a record's brace and real content.
+        // A bare `{`, which is a record's brace and real content. It has been
+        // consumed by the look at its second character, so the lookahead is
+        // now what *follows* it, and the caller must not read that as the
+        // line's first content: `div {}` would see the `}` and close a block.
+        *past_a_brace = true;
         return true;
       }
       continue;
@@ -275,7 +285,23 @@ bool tree_sitter_voltaic_external_scanner_scan(void *payload, TSLexer *lexer,
   // knowing about brackets: inside `(`…`)` the grammar expects none of them,
   // so the newline falls through to `extras` as ordinary whitespace.
   if (!valid_symbols[NEWLINE] && !valid_symbols[INDENT] && !valid_symbols[DEDENT]) {
-    return false;
+    // Inside a macro body's brackets a line break is a leaf of the tree, and
+    // nothing else: `extras` holds no newline, so without this token the first
+    // line break inside `rsx! {` would be an error.
+    if (!valid_symbols[TOKEN_TREE_BREAK]) {
+      return false;
+    }
+    bool crossed = false;
+    while (lexer->lookahead == '\n' || lexer->lookahead == '\r' || is_space(lexer->lookahead)) {
+      crossed = crossed || lexer->lookahead == '\n';
+      lexer->advance(lexer, true);
+    }
+    if (!crossed) {
+      return false;
+    }
+    lexer->mark_end(lexer);
+    lexer->result_symbol = TOKEN_TREE_BREAK;
+    return true;
   }
 
   // At the end of the file every open block closes, one token per call.
@@ -290,7 +316,8 @@ bool tree_sitter_voltaic_external_scanner_scan(void *payload, TSLexer *lexer,
 
   uint16_t width = 0;
   bool crossed_a_line = false;
-  bool found = skip_to_content(lexer, &width, &crossed_a_line);
+  bool past_a_brace = false;
+  bool found = skip_to_content(lexer, &width, &crossed_a_line, &past_a_brace);
   if (!crossed_a_line) {
     // A closing delimiter ends every block its bracket opened — plan 65
     // leaf 1, and the fourth reader of the surface change doc 04's fifth
@@ -316,7 +343,7 @@ bool tree_sitter_voltaic_external_scanner_scan(void *payload, TSLexer *lexer,
     // `seq($._expression, $._newline)`, and emitting the DEDENT alone left a
     // `(MISSING _newline)` in the tree, which `tree-sitter test` reports and
     // `tree-sitter parse` does not print because `_newline` is hidden.
-    if (scanner->len > 1 &&
+    if (scanner->len > 1 && !past_a_brace &&
         (lexer->lookahead == ')' || lexer->lookahead == ']' ||
          lexer->lookahead == '}')) {
       if (valid_symbols[NEWLINE]) {

@@ -3700,6 +3700,33 @@
     }
   },
   {
+    "type": "macro_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "rust_char",
+          "named": true
+        },
+        {
+          "type": "rust_comment",
+          "named": true
+        },
+        {
+          "type": "rust_token",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "macro_call",
     "named": true,
     "fields": {
@@ -3805,6 +3832,16 @@
           },
           {
             "type": "user_operator",
+            "named": true
+          }
+        ]
+      },
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "macro_body",
             "named": true
           }
         ]
@@ -5943,6 +5980,18 @@
   {
     "type": "rust",
     "named": false
+  },
+  {
+    "type": "rust_char",
+    "named": true
+  },
+  {
+    "type": "rust_comment",
+    "named": true
+  },
+  {
+    "type": "rust_token",
+    "named": true
   },
   {
     "type": "self_expression",

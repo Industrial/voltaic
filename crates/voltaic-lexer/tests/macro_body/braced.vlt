@@ -1,0 +1,3 @@
+view = rsx! { div { "a } in a string", '}', r#"a "} raw"#, b'{', x: &'a str, /* { /* } */ */ } // }
+}
+done = 1

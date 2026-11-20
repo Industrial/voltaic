@@ -1,5 +1,6 @@
 # voltaic 2 signature sidecar — generated, do not edit
 is_structural : TokenKind -> bool @ self shared
+is_ident : TokenKind -> bool @ self shared
 continues_line : TokenKind -> bool @ self shared
 Token.kind field
 Token.span field
@@ -11,7 +12,11 @@ TokenKind.parts field
 TokenKind.raw field
 TokenKind.text field
 TokenKind.hashes field
+TokenKind.open field
+TokenKind.code field
+TokenKind.indented field
 TokenKind.is_structural method
+TokenKind.is_ident method
 TokenKind.continues_line method
 StrPart.0 field
 StrPart.tokens field

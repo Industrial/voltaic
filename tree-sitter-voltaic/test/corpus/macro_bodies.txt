@@ -1,0 +1,122 @@
+================================================================
+verbatim macro bodies, each bracket kind
+================================================================
+
+items = vec! [1, 2, 3]
+ready = matches!(Some(3), Some(n) if n > 2)
+view = rsx! { div { class: "card", '}', "a } b" } }
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (macro_call
+      (identifier)
+      (macro_body
+        (rust_token)
+        (rust_token)
+        (rust_token))))
+  (equation
+    (identifier)
+    (macro_call
+      (identifier)
+      (macro_body
+        (rust_token)
+        (rust_token)
+        (rust_token)
+        (rust_token)
+        (rust_token)
+        (rust_token)
+        (rust_token)
+        (rust_token)
+        (rust_token))))
+  (equation
+    (identifier)
+    (macro_call
+      (identifier)
+      (macro_body
+        (rust_token)
+        (rust_token)
+        (string)
+        (rust_token)
+        (rust_char)
+        (rust_token)
+        (string)))))
+
+================================================================
+a braced body across lines
+================================================================
+
+view =
+  rsx! {
+    div {
+      // a Rust comment
+      "hello"
+    }
+  }
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (expression_statement
+      (macro_call
+        (identifier)
+        (macro_body
+          (rust_token)
+          (rust_comment)
+          (string))))))
+
+================================================================
+an indented body under a bare macro name
+================================================================
+
+view =
+  rsx!
+    div {}
+    p {}
+done = 1
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (expression_statement
+      (macro_call
+        (identifier)
+        (macro_body
+          (rust_token)
+          (rust_token)))))
+  (equation
+    (identifier)
+    (number)))
+
+================================================================
+a bare macro before a dedent is not a body
+================================================================
+
+f =
+  if c
+    unreachable!
+  else
+    1
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (if_statement
+      (condition
+        (identifier))
+      (statement_block
+        (expression_statement
+          (macro_call
+            (identifier))))
+      (else_clause
+        (statement_block
+          (expression_statement
+            (number)))))))

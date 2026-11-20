@@ -226,14 +226,14 @@ export(crate) control_text : &Expr -> usize -> String
 control_text expr indent =
   if expr is Expr::If { condition, then_block, r#otherwise, .. } && one_line_if condition then_block (.as_ref r#otherwise) indent is Some text
     return text
-  mut inner = Sink::new ""
+  mut inner = Sink::nested ""
   emit_control (&mut inner) expr indent true
   finished = .finish "" inner
   finished.0.trim_start ().trim_end ().to_string ()
 
 export(crate) emit_block : &Option<String> -> &Block -> usize -> String
 emit_block label body indent =
-  mut inner = Sink::new ""
+  mut inner = Sink::nested ""
   emit_stmts (&mut inner) (&body.stmts) (indent + RUST_INDENT) true
   finished = .finish "" inner
   prefix = label_prefix label
@@ -501,7 +501,7 @@ emit_stmt out stmt indent tail =
 
 export(crate) try_block : &Block -> usize -> String
 try_block body indent =
-  mut inner = Sink::new ""
+  mut inner = Sink::nested ""
   emit_stmts (&mut inner) (&body.stmts) (indent + RUST_INDENT) true
   finished = .finish "" inner
   mut out = .to_string "(|| {\n"

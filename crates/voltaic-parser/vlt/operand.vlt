@@ -169,6 +169,11 @@ macro_call p =
     other ->
       unreachable! \-> "a macro head is a name or a path, not #{other:?}"
   start = (.span head).0
+  if &(.peek p).kind is TokenKind::MacroBody { open, code, indented }
+    body_span = .peek_span p
+    verbatim = Expr::MacroVerbatim { name, open = *open, body = .clone code, indented = *indented, body_span, span = (start, body_span.1) }
+    .advance p
+    return Ok verbatim
   mut args = Vec::new ()
   while .check (&TokenKind::Backslash) p && .is_some_and (\t -> t.kind == TokenKind::Arrow) (.peek_at 1 p)
     .advance p

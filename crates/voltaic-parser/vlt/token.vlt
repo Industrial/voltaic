@@ -127,6 +127,12 @@ token_text kind = case kind of
     format! \-> "b#{ch:?}"
   TokenKind::Str { raw, .. } -> .clone raw
   TokenKind::Label name -> format! \-> "'#{name}"
+  TokenKind::MacroBody { open, code, .. } ->
+    close = case open of
+      '(' -> ')'
+      '[' -> ']'
+      _ -> '}'
+    format! \-> "#{open}#{code}#{close}"
   TokenKind::ColonColon -> .to_string "::"
   TokenKind::Lt -> .to_string "<"
   TokenKind::Gt -> .to_string ">"

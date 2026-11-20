@@ -26,7 +26,13 @@ module.exports = grammar({
 
 	// The off-side rule, from `src/scanner.c`. Nothing else can produce these:
 	// tree-sitter's lexer has no notion of a column.
-	externals: ($) => [$._newline, $._indent, $._dedent, $._fenced_comment],
+	externals: ($) => [
+		$._newline,
+		$._indent,
+		$._dedent,
+		$._fenced_comment,
+		$._token_tree_break,
+	],
 
 	// Horizontal space and comments are invisible everywhere. A **newline** is
 	// not in this list, which is what makes the scanner's job possible: a
@@ -80,6 +86,9 @@ module.exports = grammar({
 	// declaring it is more honest than a precedence that would silently prefer
 	// one reading.
 	conflicts: ($) => [
+		// Row v2: whether an indented macro body ends its statement is decided by
+		// the token after its `_dedent`, so both readings are carried that far.
+		[$.macro_body, $._macro_block_call],
 		[$._expression, $.section],
 		[$._expression_part, $.section],
 		[$._item, $._statement],
@@ -702,6 +711,13 @@ module.exports = grammar({
 						field("body", $._block_expression),
 						optional($.where_clause),
 					),
+					// Row v2: `view = rsx!` with the body indented under it, which ends
+					// on its own `_dedent` as a block expression does.
+					seq(
+						"=",
+						field("body", alias($._macro_block_call, $.macro_call)),
+						optional($.where_clause),
+					),
 					// A clause's indented body is a **statement list**, and that is
 					// token-for-token a bare `block_expression`. Plan 55 leaf 7 kept
 					// the two apart by keeping `block_expression` out of
@@ -851,6 +867,8 @@ module.exports = grammar({
 						// same way: `value_or_ladder` is called from `try_binding` alone,
 						// so the grammar accepts the set the parser accepts.
 						$.ladder_expression,
+						// Row v2: an indented macro body ends on its own `_dedent`.
+						alias($._macro_block_call, $.macro_call),
 					),
 				),
 			),
@@ -1015,7 +1033,13 @@ module.exports = grammar({
 			),
 
 		expression_statement: ($) =>
-			choice(seq($._expression, $._newline), $._block_expression),
+			choice(
+				seq($._expression, $._newline),
+				$._block_expression,
+				// Row v2: an indented macro body ends on its own `_dedent`, as a block
+				// does, so as the last statement of a block it takes no `_newline`.
+				alias($._macro_block_call, $.macro_call),
+			),
 
 		// A condition is one or more operands joined by `&&`, where an operand
 		// may be a pattern test — `Some v = o`. Kept as a rule rather than folded
@@ -1323,20 +1347,76 @@ module.exports = grammar({
 				seq(
 					field("name", choice($.identifier, $.path, $.type_identifier)),
 					token.immediate("!"),
-					repeat(
-						seq(
-							"\\",
-							"->",
-							// A block is named here for the reason `binding` names it:
-							// `$._expression` excludes it, because a bare block opens with
-							// an `_indent` and including it in the juxtaposition run gives
-							// GLR two readings of every indented body. A position that can
-							// take one says so.
-							field("argument", choice($._expression, $.block_expression)),
+					choice(
+						field("body", $.macro_body),
+						repeat(
+							seq(
+								"\\",
+								"->",
+								// A block is named here for the reason `binding` names it:
+								// `$._expression` excludes it, because a bare block opens with
+								// an `_indent` and including it in the juxtaposition run gives
+								// GLR two readings of every indented body. A position that can
+								// take one says so.
+								field("argument", choice($._expression, $.block_expression)),
+							),
 						),
 					),
 				),
 			),
+
+		// Row v2's verbatim body: `name! { … }`, `name! ( … )`, `name! [ … ]`, or
+		// an indented block under a bare `name!`. The compiler lexes it as one
+		// Rust token tree and copies it through, so nothing inside is Voltaic;
+		// here it is a balanced tree of opaque leaves, which is what an editor
+		// needs to fold it and to keep a `}` in a string from closing it. The
+		// indented form opens on `_indent` and not `_newline`: the scanner emits
+		// an `_indent` directly where one is valid, as after `async`, so a bare
+		// `unreachable!` before a dedent still takes its `_newline` and ends.
+		macro_body: ($) =>
+			choice(
+				seq("{", repeat($._token_tree), "}"),
+				seq("(", repeat($._token_tree), ")"),
+				seq("[", repeat($._token_tree), "]"),
+				$._indented_macro_body,
+			),
+
+		_indented_macro_body: ($) =>
+			seq($._indent, repeat1(choice($._token_tree, $._newline)), $._dedent),
+
+		_macro_block_call: ($) =>
+			seq(
+				field("name", choice($.identifier, $.path, $.type_identifier)),
+				token.immediate("!"),
+				field("body", alias($._indented_macro_body, $.macro_body)),
+			),
+
+		_token_tree: ($) =>
+			choice(
+				seq("{", repeat($._token_tree), "}"),
+				seq("(", repeat($._token_tree), ")"),
+				seq("[", repeat($._token_tree), "]"),
+				$.string,
+				$.rust_comment,
+				$.rust_char,
+				$.rust_token,
+				$._token_tree_break,
+			),
+
+		rust_comment: (_) =>
+			token(
+				prec(
+					2,
+					choice(
+						seq("//", /[^\n]*/),
+						seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/"),
+					),
+				),
+			),
+
+		rust_char: (_) => token(prec(1, /'([^'\\\n]|\\[^'\n]+)'/)),
+
+		rust_token: (_) => token(prec(-1, /[^\s(){}\[\]"]+/)),
 
 		lambda: ($) =>
 			prec.left(

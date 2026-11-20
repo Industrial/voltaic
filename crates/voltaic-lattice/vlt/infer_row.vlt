@@ -57,6 +57,7 @@ expr_row_with e known = case e of
     if .contains (&.as_str name) IO_MACROS
       found := .join (&Row::single Effect::Performs) found
     found
+  Expr::MacroVerbatim { name, .. } | .contains (&.as_str name) IO_MACROS -> Row::single Effect::Performs
   Expr::Assign { target, value, .. } ->
     region = root_of target
     .join (&Row::single (Effect::Mutates region)) (.join (&expr_row_with value known) (expr_row_with target known))
