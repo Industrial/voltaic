@@ -4,6 +4,7 @@ is_fallible : Effect -> bool @ self shared
 error_type : Effect -> Option<&Ty> ! none @ self shared
 region : Effect -> Option<&str> ! none @ self shared
 fmt : Effect -> &mut Formatter<'_> -> Result @ self shared, f shared
+ALPHABET : usize
 Effect.0 field
 Effect.label method
 Effect.is_fallible method

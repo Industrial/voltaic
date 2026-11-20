@@ -13,3 +13,4 @@ prefix : &mut Parser -> Result<Expr, ParseError> ! fail ParseError @ p owned
 starts_argument : &TokenKind -> bool @ kind shared
 unary_op : &mut Parser -> Option<UnaryOp> ! none @ p shared
 user_rung : &Parser -> Option<(Ident, Fixity, u8, u8, String, u8)> ! none @ p shared
+ABOVE_AND_AND : u8

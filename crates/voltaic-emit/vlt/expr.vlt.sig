@@ -32,6 +32,8 @@ ident : &str -> Expr @ text owned
 paren : Expr -> Expr @ inner owned
 emit_with_map : &Program -> &str -> &str -> (String, SourceMap) @ program shared, source shared, source_path owned
 wraps_as_receiver : &Expr -> bool ! none @ e shared
+CHAIN_WIDTH : usize
+FN_CALL_WIDTH : usize
 ArityScope.previous field
 ArityScope.enter method
 ArityScope.arity_of method

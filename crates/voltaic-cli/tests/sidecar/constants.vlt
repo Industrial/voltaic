@@ -1,0 +1,10 @@
+-- An exported `const` or `static` is published API exactly as a function is,
+-- so its sidecar row carries its type. A private one is not published.
+export const CEILING : u32 = 10
+
+export static GREETING : &'static str = "hello"
+
+const HIDDEN : u32 = 1
+
+export ceiling : u32 -> u32
+ceiling n = n + CEILING + HIDDEN

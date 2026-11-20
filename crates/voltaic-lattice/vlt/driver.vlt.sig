@@ -9,6 +9,7 @@ receiver_owner : &Store -> &Outcome -> Span -> Option<String> ! none @ store sha
 owner_of : &Ty -> Option<String> ! none @ resolved shared
 is_contradiction : &Store -> &Failure -> bool @ store shared, failure shared
 arrow_of : &[Ty] -> &Ty -> Ty @ args shared, result shared
+MAX_ROUNDS : u32
 Failure.at field
 Failure.mismatch field
 Outcome.substitution field

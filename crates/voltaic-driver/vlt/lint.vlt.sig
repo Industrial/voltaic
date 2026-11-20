@@ -23,6 +23,8 @@ walk_item : &Item -> &mut dyn ProgramWalk -> () @ item shared, walk shared
 walk_member : &ClassMember -> &mut dyn ProgramWalk -> () @ member shared, walk shared
 walk_program : &Program -> &mut dyn ProgramWalk -> () @ program shared, walk shared
 walk_stmts : &[Stmt] -> &mut dyn ProgramWalk -> () @ stmts shared, walk shared
+SHADOW_HELP : &str
+UNWRAP_MESSAGE : &str
 PragmaWalk.lint field
 PragmaWalk.found field
 PragmaWalk.item method

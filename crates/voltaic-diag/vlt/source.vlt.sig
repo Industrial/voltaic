@@ -11,6 +11,7 @@ parse_map : &str -> Result<SourceMap, String> ! fail String @ text shared
 sample_origin : Origin
 sample_map : SourceMap
 sample : SourceMap
+VERSION : u32
 Origin.span field
 Origin.src_line field
 Origin.src_col field

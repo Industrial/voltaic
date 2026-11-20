@@ -4,6 +4,7 @@ matches : &str -> Command -> bool @ arg shared, self shared
 not_yet : Command -> Option<String> ! none @ self shared
 lookup : &str -> Option<&Command> ! none @ arg shared
 usage : String
+COMMANDS : &[Command]
 Command.name field
 Command.summary field
 Command.state field

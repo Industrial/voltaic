@@ -33,21 +33,21 @@ doc 02's, taken from Emerald: *none of this is rounded up*.
 
 | Crate | `src` | `tests` |
 |---|---:|---:|
-| `voltaic-ast` | 1728 | 0 |
-| `voltaic-bench` | 353 | 217 |
-| `voltaic-cli` | 1394 | 14355 |
-| `voltaic-diag` | 1042 | 0 |
-| `voltaic-driver` | 3671 | 316 |
-| `voltaic-emit` | 4026 | 4647 |
-| `voltaic-fmt` | 1604 | 1569 |
-| `voltaic-fuzz` | 62 | 379 |
-| `voltaic-lattice` | 6001 | 1335 |
-| `voltaic-lexer` | 2193 | 1196 |
-| `voltaic-lsp` | 875 | 756 |
-| `voltaic-mcp` | 458 | 776 |
-| `voltaic-parser` | 6089 | 787 |
-| `voltaic-seed` | 140 | 1130 |
-| **total** | **29636** | **27463** |
+| `voltaic-ast` | 1729 | 0 |
+| `voltaic-bench` | 355 | 217 |
+| `voltaic-cli` | 1794 | 14792 |
+| `voltaic-diag` | 1055 | 0 |
+| `voltaic-driver` | 4111 | 316 |
+| `voltaic-emit` | 4015 | 4647 |
+| `voltaic-fmt` | 1643 | 1569 |
+| `voltaic-fuzz` | 65 | 378 |
+| `voltaic-lattice` | 6034 | 1335 |
+| `voltaic-lexer` | 2208 | 1196 |
+| `voltaic-lsp` | 880 | 756 |
+| `voltaic-mcp` | 464 | 776 |
+| `voltaic-parser` | 6088 | 787 |
+| `voltaic-seed` | 146 | 1130 |
+| **total** | **30587** | **27899** |
 
 ---
 
@@ -68,17 +68,17 @@ A generation with no seed has been **retired**, which row 102 §3.1 permits only
 
 | Corpus | Files | What it asserts |
 |---|---:|---|
-| `examples/*.vlt` | 53 | the CI-checked source of truth for what works |
-| `tests/golden/*.vrs` | 52 | the generated Rust, as exact text |
-| `crates/voltaic-cli/tests/ui/*.vlt` | 58 | the diagnostic a bad program gets |
+| `examples/*.vlt` | 54 | the CI-checked source of truth for what works |
+| `tests/golden/*.vrs` | 53 | the generated Rust, as exact text |
+| `crates/voltaic-cli/tests/ui/*.vlt` | 57 | the diagnostic a bad program gets |
 | `crates/voltaic-cli/tests/lint/*.vlt` | 8 | the warning a questionable program gets |
-| `crates/voltaic-cli/tests/run/*.stdout` | 3 | what a program prints |
+| `crates/voltaic-cli/tests/run/*.stdout` | 4 | what a program prints |
 | `crates/voltaic-cli/tests/explain/*.why` | 6 | the constraint chain behind an inference |
-| `crates/voltaic-cli/tests/sidecar/*.sig` | 2 | the published signature, as exact text |
+| `crates/voltaic-cli/tests/sidecar/*.sig` | 3 | the published signature, as exact text |
 | `tests/unreachable/*.vlt` | 8 | the gaps below, asserted to **still fail** |
 | `benchmarks/pairs/*.vlt` | 10 | generated and hand-written Rust, as identical IR |
 
-**53 examples and 52 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "53 examples, all green" would be rounding up by exactly one file.
+**54 examples and 53 goldens is not an error.** `examples/lexical.vlt` deliberately does not parse — it is the error-path example, and `benchmarks/REPORT.md` excludes it from the throughput sweep for the same reason. Reporting "54 examples, all green" would be rounding up by exactly one file.
 
 ---
 

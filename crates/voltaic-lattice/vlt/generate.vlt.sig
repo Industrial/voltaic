@@ -4,6 +4,7 @@ declared : Inferred -> Option<Ty> ! none @ self owned
 self_free : &Ty -> &Inferred -> Ty @ t owned, definition shared
 find : &str -> Report -> Option<&Inferred> ! none @ name shared, self shared
 walk : &Program -> Report @ program shared
+published_constants : &Program -> Vec<(String, Ty)> @ program shared
 infer_all : &Program -> &[(String, Ty)] -> (Store, Vec<Inferred>) @ program shared, globals shared
 grown_globals : &[Inferred] -> &crate::driver::Outcome -> &[(String, Ty)] -> Vec<(String, Ty)> @ definitions shared, outcome shared, globals shared
 raise_receivers : &mut [Inferred] -> &Program -> () @ definitions shared, program shared
@@ -29,6 +30,8 @@ binary_type : BinaryOp -> Ty -> Ty -> voltaic_ast::Span -> &mut Store -> Ty @ op
 is_comparison : BinaryOp -> bool @ op shared
 is_arithmetic : BinaryOp -> bool @ op shared
 lookup : &str -> &mut Store -> &[(String, Ty)] -> Ty @ name shared, store owned, env shared
+GLOBAL_ROUNDS : u32
+ROW_ROUNDS : u32
 Inferred.name field
 Inferred.ty field
 Inferred.row field
@@ -43,4 +46,5 @@ Inferred.declared method
 Report.store field
 Report.definitions field
 Report.known field
+Report.constants field
 Report.find method

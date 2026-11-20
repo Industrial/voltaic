@@ -11,6 +11,7 @@ collect_holes : &mut Vec<Variable> -> Ty -> () @ out shared, self shared
 congruent : &Ty -> &Ty -> bool @ left shared, right shared
 same_name : &str -> &str -> bool @ left shared, right owned
 fmt : Ty -> &mut Formatter<'_> -> Result @ self shared, f shared
+ARROW : &str
 Ty.0 field
 Ty.name field
 Ty.args field

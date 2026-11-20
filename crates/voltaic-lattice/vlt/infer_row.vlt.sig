@@ -8,3 +8,6 @@ expr_row_with : &Expr -> &[(String, Row)] -> Row @ e shared, known owned
 called : &str -> &[(String, Row)] -> Row @ name shared, known shared
 root_of : &Expr -> String @ target shared
 fail_of : &Ty -> Option<Effect> ! none @ declared shared
+IO_MACROS : &[&str]
+PANICKING : &[&str]
+NO_CALLEES : &[(String, Row)]

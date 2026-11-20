@@ -31,7 +31,7 @@ self_free t definition =
     return annotation::with_owner t target
   .clone t
 
-export data Report { export store Store, export definitions Vec<Inferred>, export known crate::declarations::Declarations }
+export data Report { export store Store, export definitions Vec<Inferred>, export known crate::declarations::Declarations, export constants Vec<(String, Ty)> }
   deriving (Debug, Clone)
 
 instance Report
@@ -58,7 +58,16 @@ walk program =
   mut definitions = built.1
   raise_receivers (.as_mut_slice definitions) program
   raise_rows (.as_mut_slice definitions) program
-  Report { store, definitions, known }
+  constants = published_constants program
+  Report { store, definitions, known, constants }
+
+published_constants : &Program -> Vec<(String, Ty)>
+published_constants program =
+  mut found = Vec::new ()
+  for item in .iter program.items
+    if item is Item::Const c && is_published (&c.visibility)
+      found.push (.clone c.name.text, annotation::read (&c.ty))
+  found
 
 infer_all : &Program -> &[(String, Ty)] -> (Store, Vec<Inferred>)
 infer_all program globals =

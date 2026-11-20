@@ -75,6 +75,8 @@ of_report found outcome =
   mut rows = Vec::new ()
   for definition in .iter found.definitions
     rows.push (Published { name = .clone definition.name, judgement = judgement_of definition outcome })
+  for constant in .iter found.constants
+    rows.push (Published { name = .clone constant.0, judgement = .to_string constant.1 })
   mut members : Vec<Member> = Vec::new ()
   for m in .iter found.known.members
     row = Member { owner = .clone m.owner, name = .clone m.name, is_field = m.kind == crate::declarations::MemberKind::Field }

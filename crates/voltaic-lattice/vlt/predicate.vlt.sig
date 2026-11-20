@@ -16,6 +16,7 @@ compare : Term -> Comparison -> Term -> Predicate @ left shared, op shared, righ
 mentions : Predicate -> Vec<String> @ self shared
 collect_mentions : &mut Vec<String> -> Predicate -> () @ out shared, self shared
 fmt : Predicate -> &mut Formatter<'_> -> Result @ self shared, f shared
+LEN : &str
 Term.weights field
 Term.constant field
 Term.literal method

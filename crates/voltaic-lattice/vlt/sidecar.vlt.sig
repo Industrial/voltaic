@@ -15,6 +15,7 @@ read_sidecar : &str -> Sidecar @ text shared
 compare : &Sidecar -> &Sidecar -> Vec<Change> @ before shared, after shared
 unwritten : &Report -> &crate::driver::Outcome -> Vec<Unwritten> @ found shared, outcome owned
 breaking : &[Change] -> usize @ every shared
+HEADER : &str
 Published.name field
 Published.judgement field
 Member.owner field

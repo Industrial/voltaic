@@ -25,3 +25,4 @@ record_text : &Expr -> &[FieldInit] -> Option<&Expr> -> usize -> &str -> String 
 rust_hatch_text : &str -> usize -> String @ code shared, indent shared
 macro_verbatim_text : &str -> char -> &str -> bool -> usize -> String @ name shared, open shared, body shared, indented shared, indent shared
 section_text : &Section -> usize -> &str -> String @ section shared, indent shared, source shared
+PIPELINE_WIDTH : usize

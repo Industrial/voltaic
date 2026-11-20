@@ -26,3 +26,5 @@ split_format_spec : &str -> (&str, Option<&str>) @ body owned
 trim_comment : &str -> String @ rest shared
 verbatim_triple : &str -> Option<String> ! none @ raw shared
 dedent_triple_body : &str -> String @ body shared
+ASSIGNABLE_OPERATORS : &[&str]
+OPERATOR_TABLE : &[(&str, TokenKind)]

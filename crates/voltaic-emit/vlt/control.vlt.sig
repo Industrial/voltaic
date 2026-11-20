@@ -24,3 +24,4 @@ try_block : &Block -> usize -> String @ body shared, indent shared
 two_armed : &[Guard] -> usize -> Option<String> ! none @ guards shared, indent shared
 unlowerable : &str -> String @ what shared
 emit_unsafe_block : &Block -> usize -> String @ body shared, indent shared
+SINGLE_LINE_IF_ELSE_MAX_WIDTH : usize
