@@ -41,8 +41,10 @@ everything o =
     return 0
   assert! \-> total > 0
   kind = case o of
+    -- The literals first.
     Some 1 or Some 2 -> "small"
-    Some v | v > 9 -> "big"
+    #[allow(unused_variables)]
+    Some v | v > 9 -> "big"   -- a guard
     _ -> "none"
   nested = 'search
     for c in 1 .. 20

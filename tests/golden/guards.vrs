@@ -29,6 +29,8 @@ fn fib(n: u64) -> u64 {
 fn step(n: u64) -> u64 {
     match n {
         0 => 0,
+        // A comment or an attribute above a later equation lands on its arm.
+        #[allow(unused_variables)]
         n => {
             if n > 100 {
                 100

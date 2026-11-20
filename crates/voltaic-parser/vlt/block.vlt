@@ -56,6 +56,7 @@ block_expr p label start =
 
 export(crate) case_arm : &mut Parser -> Result<CaseArm, ParseError>
 case_arm p =
+  leading = .peek_leading p
   start = (.peek_span p).0
   pattern = (pattern_alt p)?
   ty = if .check (&TokenKind::Colon) p
@@ -70,8 +71,9 @@ case_arm p =
     None
   (.expect (&TokenKind::Arrow) "expected `->` after a `case` pattern" p)?
   body = (arm_body p)?
-  (.newline_with_trailing "expected a line break after a `case` arm" p)?
-  Ok (CaseArm { pattern, ty, r#guard = arm_guard, body, span = (start, (.prev_span p).1) })
+  span = (start, (.prev_span p).1)
+  trailing = (.newline_with_trailing "expected a line break after a `case` arm" p)?
+  Ok (CaseArm { pattern, ty, r#guard = arm_guard, body, span, leading, trailing })
 
 export(crate) case_of : &mut Parser -> Result<Expr, ParseError>
 case_of p =

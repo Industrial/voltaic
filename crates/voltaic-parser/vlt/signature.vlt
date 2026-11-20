@@ -19,6 +19,7 @@ import voltaic_diag::Code
 import voltaic_diag::Span
 import voltaic_lexer::Keyword
 import voltaic_lexer::TokenKind
+import voltaic_lexer::TriviaKind
 
 export(crate) can_end_a_type : &TokenKind -> bool
 can_end_a_type kind = case kind of
@@ -99,13 +100,13 @@ clause row name returns_unit p =
     rungs = (.guards p)?
     (.expect (&TokenKind::Dedent) "expected the guard list to end" p)?
     wheres = (where_locals (&row) p)?
-    return Ok (Clause { patterns = row, body = ClauseBody::Guarded rungs, wheres, span = (start, (.prev_span p).1), trailing = None })
+    return Ok (Clause { patterns = row, body = ClauseBody::Guarded rungs, wheres, span = (start, (.prev_span p).1), trailing = None, leading = Vec::new () })
   (.expect (&TokenKind::Eq) "expected `=` after the equation's parameters, or an indented `|` guard list" p)?
   if !.check (&TokenKind::Newline) p
     body = (.inline_body p)?
     trailing = (.newline_with_trailing "expected a line break after the body" p)?
     wheres = (where_locals (&row) p)?
-    return Ok (Clause { patterns = row, body = ClauseBody::Plain body, wheres, span = (start, (.prev_span p).1), trailing })
+    return Ok (Clause { patterns = row, body = ClauseBody::Plain body, wheres, span = (start, (.prev_span p).1), trailing, leading = Vec::new () })
   trailing = (.newline_with_trailing "expected a line break after `=`" p)?
   (.expect_with Code::EmptyBody (&TokenKind::Indent) "expected an indented body" p)?
   reported = .len p.r#errors
@@ -113,7 +114,7 @@ clause row name returns_unit p =
   if returns_unit && .len p.r#errors == reported
     (unit_tail name (&block))?
   wheres = (where_locals (&row) p)?
-  Ok (Clause { patterns = row, body = ClauseBody::Plain (.clone block), wheres, span = (start, (.prev_span p).1), trailing })
+  Ok (Clause { patterns = row, body = ClauseBody::Plain (.clone block), wheres, span = (start, (.prev_span p).1), trailing, leading = Vec::new () })
 
 export(crate) rust_generic : &str -> String
 rust_generic name =
@@ -166,6 +167,17 @@ lend_names sig clauses ranges p =
     .push (.clone chosen) taken
     sig.params[i].name.text := chosen
   ()
+
+export(crate) sole_equation_attributes : &[Clause] -> Result<(), ParseError>
+sole_equation_attributes clauses =
+  guard clauses is [only] else
+    return Ok ()
+  if !.all Pattern::is_irrefutable (.iter only.patterns)
+    return Ok ()
+  guard .find (\t -> t.kind == TriviaKind::Attribute) (.iter only.leading) is Some attribute else
+    return Ok ()
+  message = .to_string "an attribute above an equation goes on that equation's `match` arm, and a single equation that binds every parameter has no arm: attributes go above the signature"
+  Err (ParseError::r#with Code::ExpectedName message attribute.span)
 
 export(crate) lendable : &str -> usize -> &[Clause] -> &[(usize, usize)] -> &Parser -> bool
 lendable name i clauses ranges p =

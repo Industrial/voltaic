@@ -116,7 +116,7 @@ collect program =
             ClassMember::AssocConst { name, .. } ->
               found.requirements.push (Requirement { class_name = .clone c.name.text, name = .clone name.text })
               ()
-            ClassMember::AssocType _ -> ()
+            ClassMember::AssocType { .. } -> ()
         ()
       Item::Instance block ->
         owner = .clone block.target.head.text

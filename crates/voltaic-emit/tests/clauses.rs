@@ -15,8 +15,8 @@ fn vrs(src: &str) -> String {
 #[test]
 fn three_clauses_become_one_match() {
   let out = vrs("fib : u64 -> u64\nfib 0 = 0\nfib 1 = 1\nfib n = fib (n - 1)\n");
-  assert!(out.contains("fn fib(__vlt_a0: u64) -> u64 {"), "{out}");
-  assert!(out.contains("match __vlt_a0 {"), "{out}");
+  assert!(out.contains("fn fib(n: u64) -> u64 {"), "{out}");
+  assert!(out.contains("match n {"), "{out}");
   assert!(out.contains("0 => 0,"), "{out}");
   assert!(out.contains("1 => 1,"), "{out}");
   assert!(out.contains("n => fib(n - 1)"), "{out}");

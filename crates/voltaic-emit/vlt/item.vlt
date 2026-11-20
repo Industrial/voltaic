@@ -49,6 +49,7 @@ emit_clauses out f base =
   tail = !.returns_unit f.sig
   simple = .len f.clauses == 1 && .all voltaic_ast::Pattern::is_irrefutable (.iter f.clauses[0].patterns)
   if simple
+    emit_trivia out (&f.clauses[0].leading) (base + RUST_INDENT)
     emit_where_locals out (&f.clauses[0].wheres) (base + RUST_INDENT)
     joinable = .is_empty f.clauses[0].wheres
     emit_body out (&f.clauses[0].body) (base + RUST_INDENT) tail joinable

@@ -1,0 +1,4 @@
+#[inline]
+double : u32 -> u32
+#[cfg(unix)]
+double n = n * 2

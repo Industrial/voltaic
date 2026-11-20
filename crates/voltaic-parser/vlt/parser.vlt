@@ -27,6 +27,7 @@ import crate::signature::TypeStop
 import crate::signature::capture_type
 import crate::signature::clause
 import crate::signature::lend_names
+import crate::signature::sole_equation_attributes
 import crate::signature::signature_from
 import crate::signature::signature_only
 import crate::signature::signature_unsigned
@@ -255,6 +256,7 @@ instance (Parser 'a)
         _ -> false
       if ends_on_a_new_name && !same_name
         break
+      equation_leading = .peek_leading self
       again = (.ident "expected the equation to repeat the name" self)?
       if again.text != name.text
         message = format! \-> "this equation defines `#{again.text}`, but the signature above it is for `#{name.text}`"
@@ -265,9 +267,12 @@ instance (Parser 'a)
       returns_unit = .returns_unit built
       if .is_none sig
         sig := Some built
-      .push (clause row (&name) returns_unit self)? clauses
+      mut equation = (clause row (&name) returns_unit self)?
+      equation.leading := equation_leading
+      .push equation clauses
       .push (from, .position self) ranges
       .skip_separators self
+    (sole_equation_attributes (&clauses))?
     mut settled = .unwrap_or_else (\-> signature_only spine (name.span.0, (.prev_span self).1)) sig
     lend_names (&mut settled) (&clauses) (&ranges) self
     settled.r#given := .clone head.r#given
@@ -300,6 +305,10 @@ instance (Parser 'a)
         _ -> false
       if !same_name && (ends_on_a_new_name || !.is_empty clauses)
         break
+      equation_leading = if .is_empty clauses
+        Vec::new ()
+      else
+        .peek_leading self
       again = (.ident "expected the equation to repeat the name" self)?
       if again.text != name.text
         message = format! \-> "this equation defines `#{again.text}`, but the one above it defines `#{name.text}`"
@@ -312,7 +321,9 @@ instance (Parser 'a)
       built = signature_unsigned (&row) (again.span.0, (.prev_span self).1)
       if .is_none sig
         sig := Some built
-      .push (clause row (&name) false self)? clauses
+      mut equation = (clause row (&name) false self)?
+      equation.leading := equation_leading
+      .push equation clauses
       .push (from, .position self) ranges
       .skip_separators self
     mut settled = .unwrap_or_else (\-> signature_unsigned (&[]) (name.span.0, (.prev_span self).1)) sig

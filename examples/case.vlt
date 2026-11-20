@@ -7,8 +7,11 @@
 
 label : u32 -> &'static str
 label age = case age of
+  -- A comment and an attribute above an arm, and a comment after one, all
+  -- reach the Rust: they are trivia, never discarded.
   n | n > 65 -> "senior"
-  18..=64 -> "adult"
+  #[allow(unreachable_patterns)]
+  18..=64 -> "adult"  -- the working years
   13 or 14 or 15 -> "young"
   0..13 -> "child"
   _ -> "teen"

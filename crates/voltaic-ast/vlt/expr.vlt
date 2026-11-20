@@ -190,7 +190,7 @@ instance BinaryOp
     Ge -> Some Le
     _ -> None
 
-export data CaseArm { export pattern Pattern, export ty Option<crate::TypeExpr>, export r#guard Option<crate::Condition>, export body Expr, export span Span }
+export data CaseArm { export pattern Pattern, export ty Option<crate::TypeExpr>, export r#guard Option<crate::Condition>, export body Expr, export span Span, export leading Vec<voltaic_lexer::Trivia>, export trailing Option<voltaic_lexer::Trivia> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data FieldInit { export name Ident, export value Option<Expr>, export span Span }

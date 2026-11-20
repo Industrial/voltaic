@@ -32,6 +32,10 @@ import voltaic_ast::TypeExpr
 
 export(crate) emit_arm : &mut Sink<'_> -> &Clause -> &str -> usize -> bool -> ()
 emit_arm out clause arm indent tail =
+  if !.is_empty clause.leading
+    .unmark out
+    emit_trivia out (&clause.leading) indent
+    .mark clause.span out
   collapsed = .filter (\_ -> .is_empty clause.wheres) $ one_tail_expression clause tail
   if collapsed is Some stmt
     .mark stmt.span out
@@ -114,6 +118,11 @@ emit_case scrutinee arms indent =
   head = emit_expr (unparen scrutinee) indent
   mut out = format! \-> "match #{head} {\n"
   for arm in arms
+    if !.is_empty arm.leading
+      mut inner = Sink::new ""
+      emit_trivia (&mut inner) (&arm.leading) (indent + RUST_INDENT)
+      finished = .finish "" inner
+      .push_str (&finished.0) out
     .push_str (&arm_pad) out
     .push_str (&pattern_text (&arm.pattern)) out
     if &arm.r#guard is Some row
@@ -143,6 +152,11 @@ emit_case scrutinee arms indent =
       _ -> false
     if !is_block && .is_none arm.ty
       .push ',' out
+    if &arm.trailing is Some t && t.kind == voltaic_ast::TriviaKind::LineComment
+      .push_str " //" out
+      if !.is_empty t.text
+        .push ' ' out
+        .push_str (&t.text) out
     .push '\n' out
   .push_str (&close_pad) out
   .push '}' out

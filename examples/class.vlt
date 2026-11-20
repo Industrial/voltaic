@@ -16,6 +16,7 @@ data Circle { radius f64 }
 -- `self` in a type marks the receiver — doc 18 §2.5, plan 67. The class
 -- itself names no variable for the implementing type: that is `Self`.
 class Shape
+  -- A comment above an associated constant reaches the trait.
   const SIDES : u32
   area : &self -> f64
   -- A default method, which is an ordinary equation: anything a function's

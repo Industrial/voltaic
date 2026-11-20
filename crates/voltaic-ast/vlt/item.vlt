@@ -49,12 +49,12 @@ export data ClassDecl { export name Ident, export params Vec<Ident>, export supe
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data ClassMember
-  = AssocType Ident
-  | AssocConst { name Ident, ty TypeExpr, value Option<Expr> }
+  = AssocType { name Ident, leading Vec<Trivia> }
+  | AssocConst { name Ident, ty TypeExpr, value Option<Expr>, leading Vec<Trivia> }
   | Method FnDecl
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Clause { export patterns Vec<Pattern>, export body ClauseBody, export wheres Vec<crate::Stmt>, export span Span, export trailing Option<Trivia> }
+export data Clause { export patterns Vec<Pattern>, export body ClauseBody, export wheres Vec<crate::Stmt>, export span Span, export trailing Option<Trivia>, export leading Vec<Trivia> }
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data ClauseBody

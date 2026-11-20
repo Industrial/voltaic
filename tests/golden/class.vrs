@@ -22,6 +22,7 @@ struct Circle {
 // `self` in a type marks the receiver — doc 18 §2.5, plan 67. The class
 // itself names no variable for the implementing type: that is `Self`.
 trait Shape {
+    // A comment above an associated constant reaches the trait.
     const SIDES: u32;
     fn area(&self) -> f64;
     // A default method, which is an ordinary equation: anything a function's

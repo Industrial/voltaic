@@ -62,11 +62,19 @@ case_arm_text arm indent source =
     None -> String::new ()
   pad = indent_text indent
   pattern = pattern_text (&arm.pattern)
+  mut lines : Vec<String> = Vec::new ()
+  for trivium in &arm.leading
+    .push (trivia_text trivium indent) lines
+  comment = case &arm.trailing of
+    Some trailing -> format! \-> "  #{(.trim_start (trivia_text trailing 0))}"
+    None -> String::new ()
   head = format! \-> "#{pad}#{pattern}#{ty}#{r#guard} ->"
-  case &arm.body of
+  arm_text = case &arm.body of
     Expr::Block { label = None, body, .. } ->
-      format! \-> "#{head}\n#{(block_text body (indent + 1) source)}"
-    body -> format! \-> "#{head} #{(expr_text body 0 indent source)}"
+      format! \-> "#{head}#{comment}\n#{(block_text body (indent + 1) source)}"
+    body -> format! \-> "#{head} #{(expr_text body 0 indent source)}#{comment}"
+  .push arm_text lines
+  .join "\n" lines
 
 export(crate) code_text : &Expr -> usize -> &str -> String
 code_text expr indent source =

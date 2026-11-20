@@ -335,11 +335,15 @@ emit_instance out i indent =
 export(crate) emit_member : &mut Sink<'_> -> &ClassMember -> usize -> ()
 emit_member out m indent =
   case m of
-    ClassMember::AssocType name ->
+    ClassMember::AssocType { name, leading } ->
+      .unmark out
+      emit_trivia out leading indent
       .mark name.span out
       pad out indent
       .push_str (&format! \-> "type #{name.text};\n") out
-    ClassMember::AssocConst { name, ty, value } ->
+    ClassMember::AssocConst { name, ty, value, leading } ->
+      .unmark out
+      emit_trivia out leading indent
       .mark name.span out
       pad out indent
       .push_str (&format! \-> "const #{name.text}: #{ty.text}") out
