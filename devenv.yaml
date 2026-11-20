@@ -6,12 +6,3 @@ imports:
 nixpkgs:
   permittedUnfreePackages:
     - claude-code
-inputs:
-  definitively:
-    url: github:Industrial/definitively/definitively-v0.4.1
-    flake: true
-    inputs:
-      nixpkgs:
-        follows: nixpkgs
-      nixpkgs-unstable:
-        follows: nixpkgs-unstable
