@@ -1,0 +1,24 @@
+================================================================
+an instance whose class is named by path
+================================================================
+
+instance std::fmt::Display Pt
+  fmt : &self -> u8
+  fmt self = 0
+
+----------------------------------------------------------------
+
+(source_file
+  (instance_declaration
+    (path)
+    (type_identifier)
+    (block
+      (signature
+        (identifier)
+        (signature_type
+          (identifier)
+          (identifier)))
+      (equation
+        (identifier)
+        (identifier)
+        (number)))))

@@ -287,7 +287,13 @@ type_app p =
   grouped = .check (&TokenKind::LParen) p
   if grouped
     .advance p
-  head = (.ident "expected a type name" p)?
+  mut head = (.ident "expected a type name" p)?
+  while .check (&TokenKind::ColonColon) p && !(.peek p).ws_before
+    .advance p
+    segment = (.ident "expected a name after `::`" p)?
+    .push_str "::" head.text
+    .push_str (&segment.text) head.text
+    head.span.1 := segment.span.1
   mut args = Vec::new ()
   loop
     if .try_ident p is Some named

@@ -446,7 +446,7 @@ module.exports = grammar({
 				// enforce what the parser refuses.
 				optional($.given_binder),
 				optional($.constraints),
-				field("target", repeat1(choice($.type_identifier, $.identifier))),
+				field("target", repeat1(choice($.type_identifier, $.identifier, $.path))),
 				choice($.block, $._newline),
 			),
 
