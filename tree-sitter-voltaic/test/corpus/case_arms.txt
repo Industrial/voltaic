@@ -1,0 +1,26 @@
+================================================================
+an attribute above a case arm
+================================================================
+
+platform n = case n of
+  #[cfg(target_arch = "wasm32")]
+  0 -> 10
+  _ -> n
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (identifier)
+    (case_expression
+      (identifier)
+      (attribute)
+      (case_arm
+        (pattern_run
+          (number))
+        (number))
+      (case_arm
+        (pattern_run
+          (wildcard))
+        (identifier)))))

@@ -72,6 +72,8 @@ CaseArm.ty field
 CaseArm.r#guard field
 CaseArm.body field
 CaseArm.span field
+CaseArm.leading field
+CaseArm.trailing field
 FieldInit.name field
 FieldInit.value field
 FieldInit.span field

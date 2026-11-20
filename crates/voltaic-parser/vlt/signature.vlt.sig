@@ -4,6 +4,9 @@ capture_type : &mut Parser -> &str -> TypeStop -> Result<TypeExpr, ParseError> !
 clause : Vec<Pattern> -> &Ident -> bool -> &mut Parser -> Result<Clause, ParseError> ! fail ParseError + panic @ row owned, name shared, returns_unit shared, p shared
 rust_generic : &str -> String @ name owned
 signature_from : &[TypeExpr] -> &[Pattern] -> Span -> Result<Signature, ParseError> ! fail ParseError @ spine shared, bound shared, span owned
+lend_names : &mut Signature -> &[Clause] -> &[(usize, usize)] -> &Parser -> () @ sig unique, clauses shared, ranges shared, p shared
+sole_equation_attributes : &[Clause] -> Result<(), ParseError> ! fail ParseError @ clauses shared
+lendable : &str -> usize -> &[Clause] -> &[(usize, usize)] -> &Parser -> bool @ name shared, i shared, clauses shared, ranges shared, p shared
 signature_unsigned : &[Pattern] -> Span -> Signature @ bound shared, span shared
 ty : &str -> TypeExpr @ text owned
 id : &str -> Pattern @ text owned

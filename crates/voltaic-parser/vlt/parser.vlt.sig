@@ -12,8 +12,8 @@ peeked_name : &str -> Parser -> Result<Ident, ParseError> ! fail ParseError @ me
 signature_head : &Ident -> Parser -> Result<SignatureHead, ParseError> ! fail ParseError + mut self + panic @ name shared, self owned
 record_head : &str -> &str -> &SignatureHead -> Parser -> () @ class_name shared, member shared, head shared, self shared
 borrowed_head : &str -> &str -> Parser -> Option<SignatureHead> ! none @ class_name shared, member shared, self shared
-equations : Ident -> Vec<Trivia> -> usize -> &SignatureHead -> &[String] -> bool -> Parser -> Result<FnDecl, ParseError> ! fail ParseError + mut settled @ name shared, leading shared, start owned, head shared, reserved shared, ends_on_a_new_name shared, self unique
-unsigned_equations : Ident -> Vec<Trivia> -> usize -> &[String] -> bool -> Parser -> Result<FnDecl, ParseError> ! fail ParseError @ name shared, leading shared, start owned, reserved shared, ends_on_a_new_name shared, self unique
+equations : Ident -> Vec<Trivia> -> usize -> &SignatureHead -> &[String] -> bool -> Parser -> Result<FnDecl, ParseError> ! fail ParseError + mut settled @ name shared, leading shared, start owned, head shared, reserved shared, ends_on_a_new_name shared, self owned
+unsigned_equations : Ident -> Vec<Trivia> -> usize -> &[String] -> bool -> Parser -> Result<FnDecl, ParseError> ! fail ParseError @ name shared, leading shared, start owned, reserved shared, ends_on_a_new_name shared, self owned
 statements : Parser -> Result<Block, ParseError> ! fail ParseError + panic @ self owned
 indented_block : Code -> &str -> Parser -> Result<Block, ParseError> ! fail ParseError + mut self + panic @ code shared, message shared, self owned
 statement_block : &str -> Parser -> Result<Block, ParseError> ! fail ParseError + mut self + panic @ message owned, self owned
@@ -44,6 +44,7 @@ advance : Parser -> () ! mut self @ self unique
 expect : &TokenKind -> &str -> Parser -> Result<(), ParseError> ! fail ParseError + mut self @ kind owned, message owned, self owned
 expect_with : Code -> &TokenKind -> &str -> Parser -> Result<(), ParseError> ! fail ParseError + mut self @ code owned, kind shared, message owned, self owned
 eat_keyword : Keyword -> Parser -> bool ! mut self @ kw shared, self unique
+mentions : &str -> (usize, usize) -> Parser -> bool @ name shared, range shared, self shared
 position : Parser -> usize @ self shared
 rewind : usize -> Parser -> () ! mut self @ mark shared, self unique
 try_ident : Parser -> Option<Ident> ! none + mut self @ self unique
@@ -104,6 +105,7 @@ Parser.advance method
 Parser.expect method
 Parser.expect_with method
 Parser.eat_keyword method
+Parser.mentions method
 Parser.position method
 Parser.rewind method
 Parser.try_ident method

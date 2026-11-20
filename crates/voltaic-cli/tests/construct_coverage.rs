@@ -653,6 +653,15 @@ const WITNESSES: &[Covers] = &[
     spelling: "`describe Origin = \"the origin\"`",
     witness: Witness::Toks(&["«id»", "«id»", "=", "«str»"]),
   },
+  Covers {
+    row: "Parameter names of a multi-equation function",
+    // A literal equation followed, on the next line, by the same name with a
+    // binder: `fib 0 = 0` then `fib n = …`, which is the shape whose
+    // parameter now borrows `n` from the later equation. The name check is
+    // the emitted Rust's, asserted by `tests/golden/guards.vrs`.
+    spelling: "`fib 0 = 0` then `fib n = fib (n - 1) + fib (n - 2)`",
+    witness: Witness::Toks(&["«id»", "«int»", "=", "«int»", "«nl»", "«id»", "«id»", "="]),
+  },
   // --- plan 85's application hole ---
   //
   // Each witness names a *shape* rather than the token, because a bare `_` is

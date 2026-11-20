@@ -1191,7 +1191,9 @@ module.exports = grammar({
 				field("scrutinee", $._expression),
 				"of",
 				$._indent,
-				repeat1($.case_arm),
+				// Leaf v5: an arm may carry attributes, which reach the `match`
+				// arm — `#[cfg(…)]` above an arm removes it.
+				repeat1(seq(repeat($.attribute), $.case_arm)),
 				$._dedent,
 			),
 
