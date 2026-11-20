@@ -1,0 +1,124 @@
+import voltaic_diag::Origin
+import voltaic_diag::SourceMap
+
+const WINDOW : usize = 48
+
+const AGREE : usize = 6
+
+data Mark { ch char, line usize, col usize }
+  deriving (Debug, Clone, Copy)
+
+marks : &str -> Vec<Mark>
+marks text =
+  mut found = Vec::new ()
+  for numbered in .enumerate (.lines text)
+    line = numbered.0 + 1
+    for indexed in .enumerate (.chars numbered.1)
+      if !.is_whitespace indexed.1
+        found.push (Mark { ch = indexed.1, line, col = indexed.0 + 1 })
+  found
+
+agree : &[Mark] -> usize -> &[Mark] -> usize -> bool
+agree old i new j =
+  mut k = 0
+  while k < AGREE
+    if i + k >= .len old || j + k >= .len new
+      return i + k >= .len old && j + k >= .len new
+    if old[i + k].ch != new[j + k].ch
+      return false
+    k += 1
+  true
+
+resync : &[Mark] -> usize -> &[Mark] -> usize -> Option<(usize, usize)>
+resync old i new j =
+  mut total = 1
+  while total <= 2 * WINDOW
+    mut skip_old = 0
+    while skip_old <= total
+      skip_new = total - skip_old
+      if skip_old <= WINDOW && skip_new <= WINDOW && agree old (i + skip_old) new (j + skip_new)
+        return Some (skip_old, skip_new)
+      skip_old += 1
+    total += 1
+  None
+
+shifted : &SourceMap -> Option<(usize, usize, usize)> -> Option<Origin>
+shifted map entry =
+  aligned = entry?
+  found = (.origin aligned.0 map)?
+  gen_col = if aligned.2 + found.gen_col > aligned.1
+    aligned.2 + found.gen_col - aligned.1
+  else
+    1
+  Some (Origin { span = found.span, src_line = found.src_line, src_col = found.src_col, gen_col })
+
+export realign : &str -> &str -> &str -> Option<String>
+realign before after map =
+  parsed = (.ok (voltaic_diag::parse_map map))?
+  old = marks before
+  new = marks after
+  mut first : Vec<Option<(usize, usize, usize)>> = Vec::new ()
+  mut i = 0
+  mut j = 0
+  while i < .len old && j < .len new
+    if old[i].ch == new[j].ch
+      line = new[j].line
+      if line > .len first
+        while .len first + 1 < line
+          first.push None
+        first.push (Some (old[i].line, old[i].col, new[j].col))
+      i += 1
+      j += 1
+    else
+      case resync (&old) i (&new) j of
+        Some skips ->
+          i += skips.0
+          j += skips.1
+        None ->
+          i += 1
+          j += 1
+  lines = .count (.lines after)
+  while .len first < lines
+    first.push None
+  origins : Vec<Option<Origin>> = (first.into_iter ().map (\entry -> shifted (&parsed) entry)).collect ()
+  Some (voltaic_diag::render_map (&SourceMap::new (.clone parsed.source_path) origins))
+
+#[cfg(test)]
+sample_before : &'static str
+sample_before = "fn f(a: u32, b: u32) -> u32 { a + b }\nfn g() {}\n"
+
+#[cfg(test)]
+sample_after : &'static str
+sample_after = "fn f(a: u32, b: u32) -> u32 {\n    a + b\n}\nfn g() {}\n"
+
+#[cfg(test)]
+sample_map : &'static str
+sample_map = "voltaic-map 1 a.vlt\n1 1 1 1\n2 4 1 1\n"
+
+test "a line split by the formatter keeps its source line"
+  found = .expect "the map parses" $ realign (sample_before ()) (sample_after ()) (sample_map ())
+  parsed = .expect "the result parses" $ voltaic_diag::parse_map (&found)
+  assert_eq! \-> .len parsed \-> 4
+  assert_eq! \-> .resolve 1 1 parsed \-> Some (1, 1)
+  assert_eq! \-> .map (\o -> o.src_line) (.origin 2 parsed) \-> Some 1
+  assert_eq! \-> .resolve 4 1 parsed \-> Some (4, 1)
+
+test "an unformatted text keeps its map"
+  found = .expect "the map parses" $ realign (sample_before ()) (sample_before ()) (sample_map ())
+  assert_eq! \-> found \-> sample_map ()
+
+test "a synthetic line stays synthetic"
+  synthetic = "voltaic-map 1 a.vlt\n1 -\n2 4 1 1\n"
+  found = .expect "the map parses" $ realign (sample_before ()) (sample_after ()) synthetic
+  parsed = .expect "the result parses" $ voltaic_diag::parse_map (&found)
+  assert_eq! \-> .synthetic_lines parsed \-> vec! \-> 1 \-> 2 \-> 3
+
+test "an inserted comma does not lose the alignment"
+  old = "f(a,\n  b)\ng()\n"
+  new = "f(a,\n  b,)\ng()\n"
+  three = "voltaic-map 1 a.vlt\n1 1 1 1\n2 2 1 1\n3 3 1 1\n"
+  found = .expect "the map parses" $ realign old new three
+  assert_eq! \-> found \-> three
+
+test "a map that does not parse is declined"
+  assert_eq! \-> realign "a" "a" "nonsense" \-> None

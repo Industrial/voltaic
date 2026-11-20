@@ -24,14 +24,24 @@
 //! §2.3 made it a condition of the charter reversal. A seventh subcommand that
 //! the specification requires is a different thing from a seventh that someone
 //! wanted.
+//!
+//! # `gen` is the eighth, and it paid them too
+//!
+//! Its authority is **doc 86 §8.5**. `build` transpiles one file; a crate is a
+//! tree, and a downstream project otherwise needs its own shell loop to walk one
+//! — mirroring directories, writing sidecars before builds so cross-crate
+//! resolution (§8.3) sees them, and sweeping outputs whose source was deleted.
+//! `gen` is that loop, written once,
+//! with `--check` for CI.
 
 use std::process::Command;
 
-/// The surface, written out: doc 01 §27's six, plus doc 86 §8.1's `sig`.
+/// The surface, written out: doc 01 §27's six, plus doc 86 §8.1's `sig` and §8.5's `gen`.
 const SURFACE: &[&str] = &[
   "build",
   "check",
   "fmt",
+  "gen",
   "sig",
   "watch",
   "--version",
@@ -62,7 +72,7 @@ fn the_surface_is_exactly_doc_01_section_27() {
   }
 
   // And nothing else. Every `voltaic <word>` line in the usage must name one of
-  // the seven — an eighth would show up here.
+  // the eight — a ninth would show up here.
   for line in help.lines().filter(|l| l.starts_with("  voltaic ")) {
     let named = line.trim_start().trim_start_matches("voltaic ");
     let name = named.split_whitespace().next().unwrap_or_default();

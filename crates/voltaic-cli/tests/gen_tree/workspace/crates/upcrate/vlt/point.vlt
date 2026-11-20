@@ -1,0 +1,5 @@
+data Point = Point { x : f64, y : f64 }
+
+instance Point
+  export depth : &self -> f64
+  depth self = self.y

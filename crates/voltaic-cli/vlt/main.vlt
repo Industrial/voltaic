@@ -2,6 +2,7 @@ import std::process::ExitCode
 
 module build_command
 module fmt_command
+module gen_command
 module run
 module sig_command
 module watch_command

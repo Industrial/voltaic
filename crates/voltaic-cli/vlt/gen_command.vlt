@@ -1,0 +1,218 @@
+import crate::run::usage
+import crate::sig_command::built
+import crate::sig_command::sidecar_path
+import voltaic_driver::Emitted
+import voltaic_driver::map_beside
+import std::io::Write as _
+import std::path::Path
+import std::path::PathBuf
+import std::process::Command
+import std::process::Stdio
+
+export(crate) data GenArgs { export(crate) dirs Option<(PathBuf, PathBuf)>, export(crate) workspace bool, export(crate) check bool, export(crate) rustfmt bool, export(crate) plain bool }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export(crate) data Job { export(crate) src PathBuf, export(crate) out PathBuf, export(crate) base Option<PathBuf> }
+  deriving (Debug, Clone, PartialEq, Eq)
+
+export(crate) data Tally { export(crate) written usize, export(crate) removed usize, export(crate) unchanged usize, export(crate) drift Vec<String> }
+  deriving (Debug, Clone, Default, PartialEq, Eq)
+
+export(crate) parse_gen_args : &[String] -> Result<GenArgs, String>
+parse_gen_args args =
+  mut paths : Vec<PathBuf> = Vec::new ()
+  mut workspace = false
+  mut check = false
+  mut rustfmt = false
+  mut plain = false
+  for arg in args
+    case .as_str arg of
+      "--workspace" -> workspace := true
+      "--check" -> check := true
+      "--rustfmt" -> rustfmt := true
+      "--plain" -> plain := true
+      flag | .starts_with '-' flag ->
+        help = usage ()
+        return Err (format! \-> "error: unknown flag `#{flag}`\n\n#{help}")
+      path -> paths.push (PathBuf::from path)
+  if workspace
+    if !.is_empty paths
+      return Err (.to_string "error: `gen --workspace` takes no paths; it finds the workspace above the current directory")
+    return Ok (GenArgs { dirs = None, workspace, check, rustfmt, plain })
+  if .len paths != 2
+    help = usage ()
+    return Err (format! \-> "error: gen needs a source directory and an output directory, or --workspace\n\n#{help}")
+  Ok (GenArgs { dirs = Some (.clone paths[0], .clone paths[1]), workspace, check, rustfmt, plain })
+
+export(crate) gen_command : &[String] -> Result<(), String>
+gen_command args =
+  parsed = (parse_gen_args args)?
+  planned = (jobs (&parsed))?
+  mut tally = Tally::default ()
+
+  for job in &planned
+    for rel in voltaic_driver::vlt_tree (&job.src)
+      source = .join rel job.src
+      sidecar = (built (&source))?
+      text = voltaic_lattice::render_sidecar (&sidecar)
+      (settle (&sidecar_path (&source)) (&text) parsed.check (&mut tally))?
+    for stale in voltaic_driver::orphan_sidecars (&job.src)
+      (sweep (&job.src) (&stale) parsed.check (&mut tally))?
+
+  mut diagnostics = Vec::new ()
+  mut warnings = Vec::new ()
+  for job in &planned
+    for rel in voltaic_driver::vlt_tree (&job.src)
+      source = .join (&rel) job.src
+      target = .join (.with_extension "rs" rel) job.out
+      if job.src == job.out && .is_file target && !.is_file (map_beside (&target))
+        shown = target.display ().to_string ()
+        return Err (format! \-> "error: refusing to overwrite #{shown}: it has no .rs.map beside it, so voltaic did not write it")
+      label = shown_under (&source) (.as_deref job.base)
+      case voltaic_driver::emit_file (&source) (&label) of
+        Err found -> .extend found diagnostics
+        Ok emitted ->
+          .extend (.clone emitted.warnings) warnings
+          (write_pair (&target) (&emitted) parsed.rustfmt parsed.check (&mut tally))?
+
+  if !.is_empty warnings
+    rendered = voltaic_diag::render (&warnings) parsed.plain
+    eprint! \-> "#{rendered}"
+  if !.is_empty diagnostics
+    return Err (voltaic_diag::render (&diagnostics) parsed.plain)
+
+  for job in &planned
+    for stale in voltaic_driver::orphans (&job.src) (&job.out)
+      (sweep (&job.out) (&stale) parsed.check (&mut tally))?
+
+  summary tally parsed.check
+
+summary : Tally -> bool -> Result<(), String>
+summary tally check =
+  if !check
+    println! \-> "gen: #{tally.written} written, #{tally.removed} removed, #{tally.unchanged} unchanged"
+    return Ok ()
+  if .is_empty tally.drift
+    println! \-> "gen: up to date, #{tally.unchanged} checked"
+    return Ok ()
+  count = .len tally.drift
+  indented : Vec<String> = (tally.drift.iter ().map (\p -> format! \-> "  #{p}")).collect ()
+  listed = .join "\n" indented
+  Err $ format! \-> "error: #{count} generated path(s) out of date:\n#{listed}\nrun `voltaic gen` without --check to update them"
+
+export(crate) jobs : &GenArgs -> Result<Vec<Job>, String>
+jobs parsed =
+  if .clone parsed.dirs is Some pair
+    return Ok (vec! \-> Job { src = pair.0, out = pair.1, base = None })
+  here = (.map_err (\e -> format! \-> "error: cannot read the current directory: #{e}") (std::env::current_dir ()))?
+  root = (.ok_or_else (\-> .to_string "error: --workspace found no directory holding both crates/ and Cargo.toml above this one") (voltaic_driver::workspace_above (&here)))?
+  workspace_jobs (&root)
+
+export(crate) workspace_jobs : &Path -> Result<Vec<Job>, String>
+workspace_jobs root =
+  listing = .join "crates" root
+  shown = listing.display ().to_string ()
+  entries = (.map_err (\e -> format! \-> "error: cannot read #{shown}: #{e}") (std::fs::read_dir (&listing)))?
+  mut crates : Vec<PathBuf> = ((entries.flatten ().map (\e -> .path e)).filter (\p -> .is_dir p)).collect ()
+  .sort crates
+  mut planned = Vec::new ()
+  for dir in crates
+    vlt = .join "vlt" dir
+    if .is_dir vlt
+      planned.push (Job { src = vlt, out = .join "src" dir, base = Some (.to_path_buf root) })
+    tests = .join "tests" dir
+    if .is_dir tests
+      planned.push (Job { src = .clone tests, out = tests, base = Some (.to_path_buf root) })
+  Ok planned
+
+shown_under : &Path -> Option<&Path> -> String
+shown_under source base =
+  if base is Some root && .strip_prefix root source is Ok rel
+    return rel.display ().to_string ()
+  source.display ().to_string ()
+
+write_pair : &Path -> &Emitted -> bool -> bool -> &mut Tally -> Result<(), String>
+write_pair target emitted rustfmt check tally =
+  if !rustfmt
+    (settle target (&emitted.r#rust) check tally)?
+    return settle (&map_beside target) (&emitted.map) check tally
+  pretty = (formatted target (&emitted.r#rust))?
+  shown = target.display ().to_string ()
+  map = (.ok_or_else (\-> format! \-> "error: the map emitted for #{shown} does not parse") (voltaic_driver::realign (&emitted.r#rust) (&pretty) (&emitted.map)))?
+  (settle target (&pretty) check tally)?
+  settle (&map_beside target) (&map) check tally
+
+settle : &Path -> &str -> bool -> &mut Tally -> Result<(), String>
+settle target content check tally =
+  if !voltaic_driver::differs target content
+    tally.unchanged += 1
+    return Ok ()
+  shown = target.display ().to_string ()
+  if check
+    state = if .exists target
+      "stale"
+    else
+      "missing"
+    tally.drift.push (format! \-> "#{state}: #{shown}")
+    return Ok ()
+  (.map_err (\e -> format! \-> "error: cannot write #{shown}: #{e}") (voltaic_driver::write_changed target content))?
+  tally.written += 1
+  Ok ()
+
+sweep : &Path -> &Path -> bool -> &mut Tally -> Result<(), String>
+sweep root stale check tally =
+  shown = stale.display ().to_string ()
+  if check
+    tally.drift.push (format! \-> "orphaned: #{shown}")
+    return Ok ()
+  (.map_err (\e -> format! \-> "error: cannot remove #{shown}: #{e}") (std::fs::remove_file stale))?
+  voltaic_driver::prune root stale
+  tally.removed += 1
+  Ok ()
+
+formatted : &Path -> &str -> Result<String, String>
+formatted target text =
+  parent = .unwrap_or (Path::new "") (.parent target)
+  dir = if .is_empty (.as_os_str parent)
+    Path::new "."
+  else
+    parent
+  shown = target.display ().to_string ()
+  (.map_err (\e -> format! \-> "error: cannot create the directory for #{shown}: #{e}") (std::fs::create_dir_all dir))?
+  spawned = ((((((Command::new "rustfmt").args (["--edition", "2024", "--emit", "stdout"])).current_dir dir).stdin (Stdio::piped ())).stdout (Stdio::piped ())).stderr (Stdio::piped ())).spawn ()
+  mut child = (.map_err (\e -> format! \-> "error: cannot run rustfmt: #{e}") spawned)?
+  mut pipe = (.ok_or_else (\-> .to_string "error: rustfmt took no input") (.take child.stdin))?
+  (.map_err (\e -> format! \-> "error: cannot send #{shown} to rustfmt: #{e}") (.write_all (.as_bytes text) pipe))?
+  drop pipe
+  out = (.map_err (\e -> format! \-> "error: rustfmt did not finish #{shown}: #{e}") (.wait_with_output child))?
+  if !.success out.status
+    stderr = String::from_utf8_lossy (&out.stderr)
+    return Err (format! \-> "error: rustfmt refused #{shown}:\n#{stderr}")
+  .map_err (\e -> format! \-> "error: rustfmt wrote something other than UTF-8 for #{shown}: #{e}") (String::from_utf8 out.stdout)
+
+test "gen takes a source and an output"
+  args = vec! \-> .to_string "vlt" \-> .to_string "src"
+  parsed = .expect "should parse" (parse_gen_args (.as_slice args))
+  assert_eq! \-> parsed.dirs \-> Some (PathBuf::from "vlt", PathBuf::from "src")
+  assert! \-> !parsed.check && !parsed.rustfmt && !parsed.workspace
+
+test "gen takes the workspace instead of paths"
+  args = vec! \-> .to_string "--workspace" \-> .to_string "--check" \-> .to_string "--rustfmt"
+  parsed = .expect "should parse" (parse_gen_args (.as_slice args))
+  assert_eq! \-> parsed.dirs \-> None
+  assert! \-> parsed.workspace && parsed.check && parsed.rustfmt
+
+test "gen refuses paths beside the workspace flag"
+  args = vec! \-> .to_string "--workspace" \-> .to_string "vlt"
+  parsed = parse_gen_args (.as_slice args)
+  assert! \-> .contains "takes no paths" (.unwrap_err parsed)
+
+test "gen refuses a lone directory"
+  args = vec! \-> .to_string "vlt"
+  parsed = parse_gen_args (.as_slice args)
+  assert! \-> .contains "needs a source directory" (.unwrap_err parsed)
+
+test "gen refuses an unknown flag"
+  args = vec! \-> .to_string "--nope"
+  parsed = parse_gen_args (.as_slice args)
+  assert! \-> .contains "unknown flag" (.unwrap_err parsed)

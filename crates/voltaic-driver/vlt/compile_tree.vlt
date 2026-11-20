@@ -1,0 +1,133 @@
+import crate::check::diagnose
+import crate::check::io_diagnostic
+import crate::compile_dir::Compiled
+import voltaic_diag::Diagnostic
+import std::path::Path
+import std::path::PathBuf
+
+export data Emitted { export r#rust String, export map String, export warnings Vec<Diagnostic> }
+  deriving (Debug, Clone)
+
+export emit_file : &Path -> &str -> Result<Emitted, Vec<Diagnostic>>
+emit_file source label =
+  text = (.map_err (\e -> vec! \-> io_diagnostic label (format! \-> "cannot read #{label}: #{e}")) (std::fs::read_to_string source))?
+  mut program = (.map_err (\failure -> diagnose source (&text) (&failure)) (voltaic_parser::parse_source (&text)))?
+  analysis = crate::annotate::analyse_at (&mut program) source
+  if !.is_empty analysis.open
+    return Err (crate::annotate::refusals source (&text) (.as_slice analysis.open))
+  warnings = crate::lint::lint source (&text) (Some (&program))
+  scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
+  emitted = voltaic_emit::emit_with_map (&program) (&text) label
+  drop scope
+  Ok (Emitted { r#rust = emitted.0, map = voltaic_diag::render_map (&emitted.1), warnings })
+
+export compile_tree : &Path -> &Path -> Result<Compiled, Vec<Diagnostic>>
+compile_tree src out =
+  mut compiled = Compiled::default ()
+  mut diagnostics = Vec::new ()
+  for rel in vlt_tree src
+    source = .join (&rel) src
+    target = .join (.with_extension "rs" rel) out
+    label = source.display ().to_string ()
+    case emit_file (&source) (&label) of
+      Ok emitted ->
+        case settle (&target) (&emitted) of
+          Ok () ->
+            .push source compiled.inputs
+            .push target compiled.outputs
+          Err found -> .extend found diagnostics
+      Err reported -> .extend reported diagnostics
+  if !.is_empty diagnostics
+    return Err diagnostics
+  for stale in orphans src out
+    _dropped = .ok $ std::fs::remove_file (&stale)
+    prune out (&stale)
+  Ok compiled
+
+settle : &Path -> &Emitted -> Result<(), Vec<Diagnostic>>
+settle target emitted =
+  shown = target.display ().to_string ()
+  (.map_err (\e -> vec! \-> io_diagnostic (&shown) (format! \-> "cannot write #{shown}: #{e}")) (write_changed target (&emitted.r#rust)))?
+  sidecar = map_beside target
+  sidecar_shown = sidecar.display ().to_string ()
+  (.map_err (\e -> vec! \-> io_diagnostic (&shown) (format! \-> "cannot write #{sidecar_shown}: #{e}")) (write_changed (&sidecar) (&emitted.map)))?
+  Ok ()
+
+export map_beside : &Path -> PathBuf
+map_beside target =
+  mut name = .to_os_string (.as_os_str target)
+  name.push ".map"
+  PathBuf::from name
+
+export differs : &Path -> &str -> bool
+differs target content = !.is_ok_and (\old -> old == .as_bytes content) (std::fs::read target)
+
+export write_changed : &Path -> &str -> std::io::Result<bool>
+write_changed target content =
+  if !differs target content
+    return Ok false
+  if .parent target is Some dir
+    (std::fs::create_dir_all dir)?
+  (std::fs::write target content)?
+  Ok true
+
+export vlt_tree : &Path -> Vec<PathBuf>
+vlt_tree root =
+  mut found = Vec::new ()
+  mut files = Vec::new ()
+  gather root ".vlt" (&mut files)
+  for path in files
+    if .strip_prefix root path is Ok rel
+      found.push (.to_path_buf rel)
+  .sort found
+  found
+
+export orphans : &Path -> &Path -> Vec<PathBuf>
+orphans src out =
+  mut maps = Vec::new ()
+  gather out ".rs.map" (&mut maps)
+  .sort maps
+  mut found = Vec::new ()
+  for map in maps
+    guard .strip_prefix out map is Ok rel else
+      continue
+    source = .join (.with_extension "vlt" (.with_extension "" rel)) src
+    if .is_file source
+      continue
+    generated = .with_extension "" map
+    if .is_file generated
+      found.push generated
+    found.push (.clone map)
+  found
+
+export orphan_sidecars : &Path -> Vec<PathBuf>
+orphan_sidecars src =
+  mut sigs = Vec::new ()
+  gather src ".vlt.sig" (&mut sigs)
+  .sort sigs
+  (sigs.into_iter ().filter (\p -> !.is_file (.with_extension "" p))).collect ()
+
+export prune : &Path -> &Path -> ()
+prune root removed =
+  mut dir = .to_path_buf removed
+  while .pop dir
+    if dir == root || !.starts_with root dir
+      return ()
+    if .is_err (std::fs::remove_dir (&dir))
+      return ()
+  ()
+
+gather : &Path -> &str -> &mut Vec<PathBuf> -> ()
+gather dir suffix into =
+  guard std::fs::read_dir dir is Ok entries else
+    return ()
+  for entry in .flatten entries
+    path = .path entry
+    if .is_some_and (\n -> .starts_with '.' (.to_string_lossy n)) (.file_name path)
+      continue
+    if .is_dir path
+      gather (&path) suffix into
+      continue
+    if .ends_with suffix (.to_string_lossy path)
+      into.push path
+  ()

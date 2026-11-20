@@ -1,0 +1,7 @@
+import upcrate::Point
+
+reach : &Point -> f64
+reach p = p.depth
+
+read : &Point -> f64
+read p = p.x

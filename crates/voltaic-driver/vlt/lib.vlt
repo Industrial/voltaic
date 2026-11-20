@@ -2,10 +2,12 @@ module cache
 module check
 module classify
 module compile_dir
+module compile_tree
 module annotate
 module judge
 module lint
 module migrate
+module realign
 module remap
 module resolve
 module visit
@@ -33,6 +35,16 @@ export import check::rustc_path
 export import compile_dir::Compiled
 export import compile_dir::compile_dir
 export import compile_dir::compile_dir_with
+export import compile_tree::Emitted
+export import compile_tree::compile_tree
+export import compile_tree::differs
+export import compile_tree::emit_file
+export import compile_tree::map_beside
+export import compile_tree::orphan_sidecars
+export import compile_tree::orphans
+export import compile_tree::prune
+export import compile_tree::vlt_tree
+export import compile_tree::write_changed
 export import judge::judge
 export import judge::judgements
 export import lint::lint
@@ -42,9 +54,11 @@ export import migrate::apply
 export import migrate::first_difference
 export import migrate::gate
 export import migrate::transpile
+export import realign::realign
 export import remap::RustcMessage
 export import remap::remap
 export import resolve::upstream
+export import resolve::workspace_above
 export import visit::Pass
 export import visit::apply_pass
 export import visit::descend

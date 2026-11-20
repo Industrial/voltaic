@@ -1,0 +1,6 @@
+module outer
+
+main : ()
+main =
+  println! \-> "#{outer::inner::deepest::VALUE}"
+  ()

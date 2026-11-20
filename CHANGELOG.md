@@ -11,6 +11,15 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`voltaic gen`**, the eighth subcommand (doc 86 §8.5): transpile a whole
+  `.vlt` tree to mirrored `.rs` + `.rs.map`, or every crate with `--workspace`.
+  Sidecars are written before builds, unchanged outputs are not rewritten,
+  outputs of deleted sources are swept, `--check` exits 1 listing what would
+  change, and `--rustfmt` formats each output and re-aligns its map. The driver
+  gains `compile_tree`, and `compile_dir` no longer rewrites a cache hit.
+
 ## [0.2.0] - 2026-11-14
 
 Generation 2: an inference engine, and the surface contraction it pays for.

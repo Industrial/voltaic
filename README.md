@@ -288,6 +288,7 @@ Then:
 cargo run -p voltaic-cli -- build examples/hello.vlt   # -> examples/hello.vrs
 cargo run -p voltaic-cli -- check examples/hello.vlt   # run rustc, report against the .vlt
 cargo run -p voltaic-cli -- fmt   examples/hello.vlt   # the canonical formatter
+cargo run -p voltaic-cli -- gen   src/ out/            # a whole tree; --workspace, --check
 ```
 
 Diagnostics are reported against the `.vlt` you wrote, with 1-based line and column in

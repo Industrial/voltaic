@@ -581,6 +581,50 @@ place where inferring the API is better than writing it.
 `.unwrap`, by name and without types. `#[voltaic::allow(must)]` is consumed by the
 emitter and never reaches rustc.
 
+### 8.5 A tree is generated in one command
+
+```
+voltaic gen <src> <out> [--check] [--rustfmt] [--plain]
+voltaic gen --workspace [--check] [--rustfmt] [--plain]
+```
+
+`voltaic gen` transpiles a whole tree: every `<rel>.vlt` under `<src>` becomes
+`<rel>.rs` and `<rel>.rs.map` under `<out>`, subdirectories mirrored, so `module`
+declarations resolve through the ordinary `a.rs` + `a/b.rs` layout. `--workspace`,
+run from anywhere inside a workspace, maps every `crates/*/vlt` to `crates/*/src`
+and every `crates/*/tests/**/*.vlt` to the `.rs` beside it.
+
+It runs in three passes, in this order, because §8.3 makes the order load-bearing:
+
+1. **Sidecars.** Every source's `<file>.vlt.sig` is written first — what
+   `voltaic sig --emit` writes — since a downstream crate resolves against its
+   upstream's sidecars, not its source.
+2. **Builds.** Each file is parsed, linted (warnings are printed, as `build`
+   prints them) and emitted. The compile cache is bypassed: its key does not
+   include upstream sidecars, so a cache hit could replay a stale resolution, and
+   no `.voltaic-cache` is left in the output. An output whose bytes would not
+   change is **not rewritten**, so its mtime is stable and cargo rebuilds nothing
+   downstream of it.
+3. **Sweep.** A `<rel>.rs.map` whose `<rel>.vlt` is gone is removed with its
+   `<rel>.rs`, as is a `.vlt.sig` with no `.vlt`, and any directory that leaves
+   empty. **Only an output with a map beside it is ever removed**, so a
+   hand-written `.rs` is never touched. For the same reason, an in-place
+   `tests/` source whose `.rs` exists without a map is refused rather than
+   overwritten.
+
+`--check` writes nothing. It exits 1 and lists every path as `stale:`,
+`missing:` or `orphaned:` if any pass would change anything, sidecars included,
+and exits 0 otherwise.
+
+`--rustfmt` pipes each output through `rustfmt --edition 2024`, run from the
+output's directory so the nearest `rustfmt.toml` applies, and **re-aligns the
+map** rather than leaving it pointing at the unformatted text: non-whitespace
+characters are matched between the two texts, resyncing across the commas and
+parentheses rustfmt inserts or removes, and each formatted line takes the origin
+of the first original character on it. The re-alignment is per line, like the map
+itself; a formatted line with no matched character is recorded as synthetic, so it
+declines to resolve rather than resolving wrongly.
+
 ---
 
 ## 9. Surface inventory
