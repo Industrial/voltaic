@@ -334,9 +334,20 @@ record_literal p head =
   start = (.span head).0
   (.expect (&TokenKind::LBrace) "expected `{` to open a record" p)?
   mut fields = Vec::new ()
+  mut base : Option<Box<Expr>> = None
   loop
     .skip_layout p
     if .check (&TokenKind::RBrace) p
+      break
+    if .check (&TokenKind::DotDot) p
+      .push (ParseError::with_help Code::ExpectedToken "functional update is spelled `...base`, not `..base`" "the spread entry reuses `...`: write `P { x = 1, ...p }`, which emits Rust's `P { x: 1, ..p }` (doc 03 §9.1)" (.peek_span p)) p.r#errors
+    if .check (&TokenKind::DotDotDot) p || .check (&TokenKind::DotDot) p
+      .advance p
+      spread = (parse_expr p 0)?
+      base := Some (Box::new spread)
+      .skip_layout p
+      if !.check (&TokenKind::RBrace) p
+        return Err $ ParseError::with_help Code::ExpectedToken "a record's spread entry must be last" "`...base` supplies every field not written before it, so it closes the record: `Point { x = 99, ...p }` (doc 03 §9.1)" (.peek_span p)
       break
     .push (field_init p)? fields
     .skip_layout p
@@ -345,7 +356,7 @@ record_literal p head =
     .advance p
   .skip_layout p
   (.expect (&TokenKind::RBrace) "expected `}` to close the record" p)?
-  Ok (Expr::Record { head = Box::new head, fields, span = (start, (.prev_span p).1) })
+  Ok (Expr::Record { head = Box::new head, fields, base, span = (start, (.prev_span p).1) })
 
 export(crate) section : &mut Parser -> usize -> Result<Option<Expr>, ParseError>
 section p start =

@@ -89,7 +89,7 @@ expr_text expr required indent source = case expr of
   Expr::List { items, .. } -> format! \-> "[#{(comma_list items indent source)}]"
   Expr::ArrayRepeat { value, count, .. } ->
     format! \-> "[#{(expr_text value 0 indent source)}; #{(expr_text count 0 indent source)}]"
-  Expr::Record { head, fields, .. } -> record_text head fields indent source
+  Expr::Record { head, fields, base, .. } -> record_text head fields (.as_deref base) indent source
   Expr::Comprehension { element, qualifiers, .. } ->
     comprehension_text element qualifiers indent source
   Expr::Try { inner, .. } ->
@@ -352,13 +352,15 @@ takes_a_postfix expr = case expr of
   Expr::Call { .. } -> false
   _ -> false
 
-export(crate) record_text : &Expr -> &[FieldInit] -> usize -> &str -> String
-record_text head fields indent source =
-  if .is_empty fields
+export(crate) record_text : &Expr -> &[FieldInit] -> Option<&Expr> -> usize -> &str -> String
+record_text head fields base indent source =
+  if .is_empty fields && .is_none base
     return format! \-> "#{(receiver head indent source)} {}"
-  printed : Vec<String> = (fields.iter ().map (\field -> case &field.value of
+  mut printed : Vec<String> = (fields.iter ().map (\field -> case &field.value of
     Some value -> format! \-> "#{field.name.text} = #{(expr_text value 0 indent source)}"
     None -> .clone field.name.text)).collect ()
+  if base is Some spread
+    .push (format! \-> "...#{(expr_text spread 0 indent source)}") printed
   format! \-> "#{(receiver head indent source)} { #{(.join ", " printed)} }"
 
 export(crate) rust_hatch_text : &str -> usize -> String

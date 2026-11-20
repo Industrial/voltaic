@@ -1,0 +1,7 @@
+error[VLT0101]: functional update is spelled `...base`, not `..base`
+  --> rust_struct_update.vlt:7:22
+  |
+7 | moved p = P { x = 1, ..p }
+  |                      ^^
+  = help: the spread entry reuses `...`: write `P { x = 1, ...p }`, which emits Rust's `P { x: 1, ..p }` (doc 03 §9.1)
+

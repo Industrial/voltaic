@@ -161,10 +161,12 @@ descend e step = case e of
   Expr::ArrayRepeat { value, count, .. } ->
     rewrite_expr value step
     rewrite_expr count step
-  Expr::Record { head, fields, .. } ->
+  Expr::Record { head, fields, base, .. } ->
     rewrite_expr head step
     for f in .iter_mut fields
       rewrite_field f step
+    if base is Some spread
+      rewrite_expr spread step
     ()
   Expr::List { items, .. } ->
     for i in .iter_mut items

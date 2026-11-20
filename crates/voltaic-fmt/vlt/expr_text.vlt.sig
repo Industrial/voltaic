@@ -21,7 +21,7 @@ deref_text : &Expr -> &str @ e shared
 receiver : &Expr -> usize -> &str -> String @ expr owned, indent owned, source owned
 no_real_arguments : &[Expr] -> bool @ args shared
 takes_a_postfix : &Expr -> bool @ expr shared
-record_text : &Expr -> &[FieldInit] -> usize -> &str -> String @ head shared, fields shared, indent shared, source shared
+record_text : &Expr -> &[FieldInit] -> Option<&Expr> -> usize -> &str -> String @ head shared, fields shared, base shared, indent shared, source shared
 rust_hatch_text : &str -> usize -> String @ code shared, indent shared
 macro_verbatim_text : &str -> char -> &str -> bool -> usize -> String @ name shared, open shared, body shared, indented shared, indent shared
 section_text : &Section -> usize -> &str -> String @ section shared, indent shared, source shared

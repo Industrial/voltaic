@@ -243,7 +243,7 @@ emit_expr e indent = case e of
     value = .unwrap_or_else (\-> emit_expr bare (indent + RUST_INDENT)) (ascribed_list bare ty (indent + RUST_INDENT))
     format! \-> "{\n#{inner_pad}let __vlt_t: #{ty.text} = #{value};\n#{inner_pad}__vlt_t\n#{close_pad}}"
   Expr::Section { section, .. } -> emit_section section indent
-  Expr::Record { head, fields, .. } -> emit_record head fields indent
+  Expr::Record { head, fields, base, .. } -> emit_record head fields (.as_deref base) indent
   Expr::Case { scrutinee, arms, .. } -> emit_case scrutinee arms indent
   Expr::Ladder { rows, .. } -> crate::control::emit_ladder rows indent
   Expr::Block { label, body, .. } -> emit_block label body indent

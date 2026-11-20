@@ -31,5 +31,10 @@ fn main() {
     };
     println!("{}", r.x);
     println!("{}", r.y);
+
+    // Doc 03 §9.1's spread entry, when the source does name the type: `...q`
+    // is last, and reaches Rust as `..q`. `p` was moved into `r` above.
+    let s = Point { y: 7, ..q };
+    println!("{} {}", s.x, s.y);
     ();
 }

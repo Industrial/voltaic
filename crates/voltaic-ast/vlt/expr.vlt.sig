@@ -41,6 +41,7 @@ Expr.items field
 Expr.count field
 Expr.head field
 Expr.fields field
+Expr.base field
 Expr.element field
 Expr.qualifiers field
 Expr.condition field

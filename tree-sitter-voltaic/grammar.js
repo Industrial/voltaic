@@ -1523,10 +1523,18 @@ module.exports = grammar({
 					// form over a binding, which `examples/record.vlt` writes.
 					field("path", choice($.type_identifier, $.path, $.identifier)),
 					"{",
-					optional(sep1($.record_literal_field, ",")),
+					// Doc 03 §9.1's spread entry, `...base`, is last when present.
+					optional(
+						choice(
+							seq(sep1($.record_literal_field, ","), optional(seq(",", $.record_spread))),
+							$.record_spread,
+						),
+					),
 					"}",
 				),
 			),
+
+		record_spread: ($) => seq("...", field("base", $._expression)),
 
 		record_literal_field: ($) =>
 			seq(

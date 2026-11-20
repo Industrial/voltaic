@@ -1,0 +1,18 @@
+================================================================
+a record literal ending in a spread entry
+================================================================
+
+s = Point { y = 7, ...q }
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (record_literal
+      (type_identifier)
+      (record_literal_field
+        (identifier)
+        (number))
+      (record_spread
+        (identifier)))))

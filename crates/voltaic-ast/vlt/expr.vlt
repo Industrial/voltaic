@@ -26,7 +26,7 @@ export data Expr
   | Tuple { items Vec<Expr>, span Span }
   | ArrayRepeat { value Box<Expr>, count Box<Expr>, span Span }
   | RawLit { text String, span Span }
-  | Record { head Box<Expr>, fields Vec<FieldInit>, span Span }
+  | Record { head Box<Expr>, fields Vec<FieldInit>, base Option<Box<Expr>>, span Span }
   | List { items Vec<Expr>, span Span }
   | Comprehension { element Box<Expr>, qualifiers Vec<Qualifier>, span Span }
   | If { condition crate::Condition, then_block crate::Block, r#otherwise Option<crate::Block>, span Span }

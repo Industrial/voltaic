@@ -23,7 +23,7 @@ is_receiver : &Param -> bool @ param shared
 receiver_name : &Param -> String @ param shared
 receiver : &mut Signature -> () ! mut sig @ sig unique
 receiver_text : &str -> Option<String> ! none @ ty shared
-record_literal : &mut Parser -> Expr -> Result<Expr, ParseError> ! fail ParseError + panic @ p shared, head owned
+record_literal : &mut Parser -> Expr -> Result<Expr, ParseError> ! fail ParseError + panic @ p owned, head owned
 section : &mut Parser -> usize -> Result<Option<Expr>, ParseError> ! fail ParseError + panic @ p shared, start owned
 try_await : &mut Parser -> Result<Option<Expr>, ParseError> ! fail ParseError + panic @ p shared
 ungrouped : &str -> String @ text owned

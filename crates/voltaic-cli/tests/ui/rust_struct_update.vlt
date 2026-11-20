@@ -1,0 +1,7 @@
+-- Rust's `..base` is not Voltaic's spelling of functional update: doc 03
+-- §9.1's spread entry reuses `...`. Before the spread existed this was
+-- "expected a field name", which named nothing the author could act on.
+data P { x u32, y u32 }
+
+moved : P -> P
+moved p = P { x = 1, ..p }

@@ -166,11 +166,13 @@ walk_expr e found escaping =
       walk_expr recv found false
       for a in .iter args
         walk_expr a found escaping
-    Expr::Record { head, fields, .. } ->
+    Expr::Record { head, fields, base, .. } ->
       walk_expr head found false
       for f in .iter fields
         if .as_ref f.value is Some held
           walk_expr held found true
+      if base is Some spread
+        walk_expr spread found true
     Expr::Tuple { items, .. } ->
       for item in .iter items
         walk_expr item found true

@@ -74,6 +74,9 @@ operands e = case e of
     (parts.iter ().filter_map (\p -> case p of
       StrInterpPart::Interp { expr, .. } -> Some expr
       StrInterpPart::Text _ -> None)).collect ()
-  Expr::Record { fields, .. } ->
-    (fields.iter ().filter_map (\f -> .as_ref f.value)).collect ()
+  Expr::Record { fields, base, .. } ->
+    mut found : Vec<&Expr> = (fields.iter ().filter_map (\f -> .as_ref f.value)).collect ()
+    if base is Some spread
+      .push (.as_ref spread) found
+    found
   _ -> Vec::new ()

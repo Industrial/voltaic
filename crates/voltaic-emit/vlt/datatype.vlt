@@ -422,11 +422,11 @@ one_field f indent = case &f.value of
   Some _ -> format! \-> "#{f.name.text}: #{field_value f indent}"
   None -> .clone f.name.text
 
-export(crate) emit_record : &Expr -> &[FieldInit] -> usize -> String
-emit_record head fields indent =
+export(crate) emit_record : &Expr -> &[FieldInit] -> Option<&Expr> -> usize -> String
+emit_record head fields rest indent =
   inner_pad = .repeat (indent + RUST_INDENT) " "
   close_pad = .repeat indent " "
-  if !names_a_constructor head
+  if !names_a_constructor head && .is_none rest
     base = emit_expr (unparen head) (indent + RUST_INDENT)
     mut updated = format! \-> "{\n#{inner_pad}let mut __vlt_r = #{base};\n"
     for f in fields
@@ -435,9 +435,11 @@ emit_record head fields indent =
     .push_str (&format! \-> "#{inner_pad}__vlt_r\n#{close_pad}}") updated
     return updated
   head_text = emit_expr (unparen head) indent
-  if .is_empty fields
+  if .is_empty fields && .is_none rest
     return head_text
-  texts : Vec<String> = (fields.iter ().map (\f -> one_field f indent)).collect ()
+  mut texts : Vec<String> = (fields.iter ().map (\f -> one_field f indent)).collect ()
+  if rest is Some spread
+    .push (format! \-> "..#{(emit_expr spread indent)}") texts
   joined = .join ", " texts
   if .len joined <= STRUCT_LIT_WIDTH && !.contains '\n' joined
     return format! \-> "#{head_text} { #{joined} }"
@@ -445,6 +447,8 @@ emit_record head fields indent =
   for f in fields
     one = one_field f (indent + RUST_INDENT)
     .push_str (&format! \-> "#{inner_pad}#{one},\n") text
+  if rest is Some spread
+    .push_str (&format! \-> "#{inner_pad}..#{(emit_expr spread (indent + RUST_INDENT))}\n") text
   .push_str (&format! \-> "#{close_pad}}") text
   text
 

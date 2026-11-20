@@ -17,4 +17,4 @@ emit_instance : &mut Sink<'_> -> &InstanceDecl -> usize -> () @ out shared, i sh
 emit_member : &mut Sink<'_> -> &ClassMember -> usize -> () @ out shared, m shared, indent shared
 names_a_constructor : &Expr -> bool @ head shared
 one_field : &FieldInit -> usize -> String @ f shared, indent shared
-emit_record : &Expr -> &[FieldInit] -> usize -> String @ head shared, fields shared, indent shared
+emit_record : &Expr -> &[FieldInit] -> Option<&Expr> -> usize -> String @ head shared, fields shared, rest shared, indent shared
