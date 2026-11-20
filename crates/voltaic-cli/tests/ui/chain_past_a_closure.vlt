@@ -1,0 +1,7 @@
+-- A link with arguments ends a method chain, so `.collect` here attaches to
+-- the closure argument. That used to transpile to
+-- `xs.into_iter().map((|x| x * 2).collect, ())`, which only rustc refused.
+-- A closure has no fields, so the reading can never be meant: the parser
+-- refuses it and names the bracketing that continues the chain instead.
+doubled : Vec<u32> -> Vec<u32>
+doubled xs = xs.into_iter ().map (\x -> x * 2).collect ()

@@ -306,21 +306,25 @@ fn a_zero_argument_chain_composes_without_parentheses() {
 /// parentheses honest.
 ///
 /// `xs.map (\a -> …)` as a receiver must be parenthesised: a following
-/// `.collect` would otherwise attach to the lambda's closing paren and become an
-/// argument to `map`. That is not the unit case — `(g x).y` is a real
-/// expression — so there is nothing type-free to decline, and the parenthesis
-/// stays. Hence `takes_a_postfix` is `false` for a `Dot` **with** arguments and
-/// `true` for one without.
+/// `.collect` would otherwise attach to the lambda's closing paren. That is not
+/// the unit case — `(g x).y` is a real expression — so the parenthesis stays.
+/// Hence `takes_a_postfix` is `false` for a `Dot` **with** arguments and `true`
+/// for one without.
+///
+/// What changed is the unbracketed form's fate. It used to transpile to
+/// `.map((|a| *a + 1).collect, ())` and leave the refusal to rustc; a closure
+/// has no fields, so the parser now refuses it as `VLT0115`
+/// (`tests/ui/chain_past_a_closure`).
 #[test]
 fn a_dot_with_arguments_still_needs_its_parenthesis() {
-  let bare = support::transpile_source(
-    "chain_bare",
+  let bare = voltaic_parser::parse_source(
     "f : &Vec<u64> -> Vec<u64>\nf xs = (xs.iter ()).map (\\a -> *a + 1).collect ()\n",
-  );
+  )
+  .expect_err("a `.name` continuing a closure argument should be refused");
   assert!(
-    bare.contains(".collect, ())"),
+    format!("{bare:?}").contains("MethodCallSyntax"),
     "unparenthesised, the `.collect` belongs to the lambda — which is why the \
-     printer brackets a Dot that carries arguments: {bare}"
+     printer brackets a Dot that carries arguments: {bare:?}"
   );
   let bracketed = support::transpile_source(
     "chain_bracketed",

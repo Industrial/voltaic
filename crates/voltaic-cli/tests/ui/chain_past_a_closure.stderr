@@ -1,0 +1,7 @@
+error[VLT0115]: this `.` continues a closure, not the call it is an argument of
+  --> chain_past_a_closure.vlt:7:48
+  |
+7 | doubled xs = xs.into_iter ().map (\x -> x * 2).collect ()
+  |                                                ^^^^^^^
+  = help: a link with arguments ends a method chain, so the next `.name` attaches to its last argument — here a closure, which has no fields. Bracket the call the chain should continue: `(xs.into_iter ().map (\x -> x * 2)).collect ()`
+

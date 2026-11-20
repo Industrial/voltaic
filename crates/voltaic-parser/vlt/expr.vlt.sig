@@ -1,5 +1,7 @@
 # voltaic 2 signature sidecar — generated, do not edit
 application : &mut Parser -> Result<Expr, ParseError> ! fail ParseError @ p shared
+is_closure : &Expr -> bool @ e shared
+field_of_a_closure : &Expr -> Option<Span> ! none @ e shared
 atom : &mut Parser -> Result<Expr, ParseError> ! fail ParseError @ p shared
 binary_op : &mut Parser -> Option<BinaryOp> ! none @ p shared
 digit_precedence : &str -> Option<u8> ! none @ text shared
