@@ -1,0 +1,1 @@
+effect! { let a = ~succeed::<i64, String, ()>(age + 1); a }

@@ -1,0 +1,5 @@
+rsx! {
+div {
+// a Rust comment inside the body
+class: "card",
+"hello {name}"

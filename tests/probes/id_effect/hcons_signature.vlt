@@ -1,0 +1,4 @@
+-- leaf: v0
+-- An `HCons` environment in a signature.
+provide : Effect<u32, E, HCons<Tagged<DbKey, Db>, HNil>> -> Db -> Effect<u32, E, HNil>
+provide program db = program.provide (db)

@@ -1,0 +1,4 @@
+effect! {
+let db = ~Db;
+let user = ~db.find(id);
+user

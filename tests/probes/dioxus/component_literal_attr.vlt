@@ -1,0 +1,5 @@
+-- leaf: v5
+-- An attributed upper-case binding with a literal body is a function, not a const.
+#[component]
+Title : &'static str
+Title = "voltaic"

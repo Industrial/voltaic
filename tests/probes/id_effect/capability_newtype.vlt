@@ -1,0 +1,12 @@
+-- leaf: v9
+-- gap: G7
+-- An `Arc<dyn Trait>` capability newtype, checked under rustc.
+import std::sync::Arc
+
+export class Clock
+  now : &self -> u64
+
+export newtype ClockCap = ClockCap (Arc<dyn Clock + Send + Sync>)
+
+export read_clock : &ClockCap -> u64
+read_clock cap = cap.0.now ()

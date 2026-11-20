@@ -1,0 +1,4 @@
+-- leaf: v9
+-- gap: G7
+-- A public field on a tuple newtype.
+export newtype Qid = Qid (export u64)

@@ -1,0 +1,11 @@
+-- leaf: v2
+-- gap: G2
+-- An indented body under `name!` becomes `name! { ... }`, comments kept.
+view : String -> Element
+view name =
+  rsx!
+    div {
+      // a Rust comment inside the body
+      class: "card",
+      "hello {name}"
+    }

@@ -1,0 +1,7 @@
+-- leaf: v9
+-- gap: G10
+-- `..` as an argument.
+export drain_all : Vec<u32> -> Vec<u32>
+drain_all v =
+  mut w = v
+  w.drain (..).collect ()

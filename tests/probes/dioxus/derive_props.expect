@@ -1,0 +1,3 @@
+#[derive(Props, Clone, PartialEq)]
+pub struct HelloProps
+pub name: String,

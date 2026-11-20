@@ -1,0 +1,5 @@
+-- leaf: v9
+-- gap: G6
+-- A method chain whose middle link takes an argument.
+export doubled : Vec<u32> -> Vec<u32>
+doubled xs = xs.into_iter ().map (\x -> x * 2).collect ()

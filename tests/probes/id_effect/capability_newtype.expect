@@ -1,0 +1,1 @@
+pub struct ClockCap(Arc<dyn Clock + Send + Sync>);

@@ -1,0 +1,18 @@
+-- leaf: v5
+-- `#[cfg(target_arch = "wasm32")]` on an import, an item, a statement and a
+-- case arm.
+#[cfg(target_arch = "wasm32")]
+import std::rc::Rc
+
+#[cfg(target_arch = "wasm32")]
+export on_web : u32
+on_web = 1
+
+export platform : u32 -> u32
+platform n =
+  #[cfg(target_arch = "wasm32")]
+  println! \-> "web"
+  case n of
+    #[cfg(target_arch = "wasm32")]
+    0 -> 10
+    _ -> n

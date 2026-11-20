@@ -1,0 +1,7 @@
+-- leaf: v0
+-- The 0.2.0 workaround: the whole component body in an item-level hatch.
+rust """
+  pub fn Card() -> Element {
+      rsx! { div { "hello" } }
+  }
+"""

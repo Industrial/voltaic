@@ -1,0 +1,8 @@
+-- leaf: v9
+-- gap: G14
+-- The documented doc-comment spelling, `-- |`, becomes `///`.
+-- | The tier for a spend.
+export tier : u64 -> &'static str
+tier spend
+  | spend > 1_000 = "gold"
+  | _ = "basic"

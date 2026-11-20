@@ -169,6 +169,16 @@ tasks:
     options:
       cache: false
       outputStyle: buffer-only-failure
+  probes:
+    description: 'Print the red/green matrix of the heimdall probe corpus (red allowed)'
+    command: './scripts/probes.sh'
+    inputs:
+      - 'scripts/probes.sh'
+      - 'tests/probes/**/*'
+      - 'crates/*/src/**/*'
+    options:
+      cache: false
+      outputStyle: stream
   bench:
     description: 'Run benchmarks (no-op if no benches)'
     command: 'bash'

@@ -1,0 +1,5 @@
+-- leaf: v9
+-- gap: G15
+-- `caps!` in type position: types are verbatim text.
+run : Effect<(), AppError, caps![Db, Clock]> -> ()
+run program = drive program

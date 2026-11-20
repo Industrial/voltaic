@@ -1,0 +1,7 @@
+-- leaf: v9
+-- gap: G8
+-- Variant docs on the error-data shape survive.
+-- | Errors.
+export data ApiError
+  -- | Not found.
+  = NotFound u64 "no row #{0}"

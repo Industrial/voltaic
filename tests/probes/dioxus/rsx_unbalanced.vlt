@@ -1,0 +1,4 @@
+-- leaf: v2
+-- An unbalanced brace in a verbatim body is a `.vlt`-located error.
+view : Element
+view = rsx! { div { "hello" }

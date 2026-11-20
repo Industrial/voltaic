@@ -1,0 +1,5 @@
+-- leaf: v5
+-- A component whose prop name must survive: Dioxus reads `name`.
+#[component]
+Hello : String -> Element
+Hello name = greet name

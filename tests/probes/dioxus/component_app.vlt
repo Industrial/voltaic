@@ -1,0 +1,5 @@
+-- leaf: v5
+-- A PascalCase component with no props and a non-literal body.
+#[component]
+App : Element
+App = render_root ()

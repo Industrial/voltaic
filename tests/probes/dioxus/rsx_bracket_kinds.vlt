@@ -1,0 +1,7 @@
+-- leaf: v2
+-- The bracket kind of a verbatim body is preserved.
+items : Vec<u32>
+items = vec! [1, 2, 3]
+
+ready : bool
+ready = matches! (Some(3), Some(n) if n > 2)

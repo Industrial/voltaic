@@ -1,0 +1,4 @@
+-- leaf: v3
+-- `async move` must be followed by an indented block.
+export bad : String -> impl std::future::Future<Output = usize>
+bad s = async move s.len ()

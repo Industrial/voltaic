@@ -1,0 +1,1 @@
+xs.into_iter().map(|x| x * 2).collect()

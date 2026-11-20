@@ -1,0 +1,5 @@
+-- leaf: v2
+-- gap: G2
+-- An `effect!` body, `~` binds and all, is copied through verbatim.
+older : i64 -> Effect<i64, String, ()>
+older age = effect! { let a = ~succeed::<i64, String, ()>(age + 1); a }

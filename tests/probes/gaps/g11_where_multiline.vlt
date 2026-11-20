@@ -1,0 +1,10 @@
+-- leaf: v9
+-- gap: G11
+-- `where` after a multi-line body.
+export ratio : u64 -> u64 -> Option<u64>
+ratio num den =
+  if den == 0
+    return None
+  Some scaled
+  where
+    scaled = num * 100 / den

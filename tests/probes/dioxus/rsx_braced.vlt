@@ -1,0 +1,5 @@
+-- leaf: v2
+-- gap: G2
+-- A braced macro body is copied through verbatim.
+view : Element
+view = rsx! { div { class: "card", "hello" } }

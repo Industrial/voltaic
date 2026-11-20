@@ -1,0 +1,6 @@
+-- leaf: v3
+-- gap: G3
+-- A bare `async move` block owning its capture.
+export spawnable : String -> impl std::future::Future<Output = usize> + Send + 'static
+spawnable s = async move
+  s.len ()

@@ -1,0 +1,4 @@
+-- leaf: v5
+-- Props structs derive Props, Clone and PartialEq.
+#[derive(Props, Clone, PartialEq)]
+export data HelloProps { export name String, export count u32 }

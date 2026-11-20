@@ -1,0 +1,7 @@
+-- leaf: v5
+-- gap: G4
+-- Several equations must keep the prop name rather than `__vlt_a0`.
+#[component]
+Badge : u32 -> Element
+Badge 0 = render_empty ()
+Badge count = render_count count

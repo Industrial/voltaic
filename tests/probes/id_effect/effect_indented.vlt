@@ -1,0 +1,9 @@
+-- leaf: v2
+-- gap: G2
+-- The indented form of an `effect!` body.
+load : u64 -> Effect<User, DbError, R>
+load id =
+  effect!
+    let db = ~Db;
+    let user = ~db.find(id);
+    user

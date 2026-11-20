@@ -1,0 +1,1 @@
+fn provide(program: Effect<u32, E, HCons<Tagged<DbKey, Db>, HNil>>, db: Db) -> Effect<u32, E, HNil>

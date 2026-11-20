@@ -1,0 +1,2 @@
+pub fn Card() -> Element {
+rsx! { div { "hello" } }

@@ -42,7 +42,7 @@ cd "$(dirname "$0")"
 # - `crates/voltaic-cli/tests/check/syntax.vlt` — a deliberate parse error. The
 #   other nine files in that directory are canonical and are **not** excluded,
 #   which is why this is a file and not a directory.
-EXCLUDE='^(crates/voltaic-cli/tests/ui|tests/unreachable|crates/voltaic-fmt/tests/fmt|crates/voltaic-mcp/tests/fixtures)/|^examples/lexical\.vlt$|^crates/voltaic-cli/tests/check/syntax\.vlt$'
+EXCLUDE='^(crates/voltaic-cli/tests/ui|tests/unreachable|tests/probes|crates/voltaic-fmt/tests/fmt|crates/voltaic-mcp/tests/fixtures)/|^examples/lexical\.vlt$|^crates/voltaic-cli/tests/check/syntax\.vlt$'
 
 mapfile -t FILES < <(git ls-files '*.vlt' | grep -vE "$EXCLUDE")
 

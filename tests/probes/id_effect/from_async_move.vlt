@@ -1,0 +1,19 @@
+-- leaf: v3
+-- gap: G3
+-- `from_async(move || async move { ... })`, checked under rustc against a
+-- stub with `'static + Send` bounds.
+rust """
+  pub struct Eff<T>(core::marker::PhantomData<T>);
+  pub fn from_async<T, F, Fut>(_f: F) -> Eff<T>
+  where
+      F: FnOnce() -> Fut + Send + 'static,
+      Fut: core::future::Future<Output = T> + Send + 'static,
+  {
+      Eff(core::marker::PhantomData)
+  }
+"""
+
+export measured : String -> Eff<usize>
+measured s =
+  from_async (move \-> async move
+    s.len ())
