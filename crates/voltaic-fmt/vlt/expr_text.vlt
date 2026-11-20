@@ -149,6 +149,7 @@ is_unit expr = case expr of
 
 export(crate) stands_alone : &Expr -> bool
 stands_alone expr = case expr of
+  Expr::RawLit { text, .. } | text == ".." -> false
   Expr::Ident _ or Expr::Path { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } or Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } -> true
   Expr::Unit { .. } or Expr::Tuple { .. } or Expr::Section { .. } -> true
   Expr::Paren { .. } -> true
@@ -290,6 +291,7 @@ power_of expr = case expr of
   Expr::MacroCall { .. } or Expr::MacroVerbatim { .. } or Expr::RustHatch { .. } -> Some u8::MAX
   Expr::Field { .. } or Expr::Index { .. } or Expr::Unary { .. } or Expr::Try { .. } or Expr::MethodRef { .. } -> Some u8::MAX
   Expr::Path { .. } or Expr::Ident _ or Expr::SelfField { .. } or Expr::SelfType { .. } -> Some u8::MAX
+  Expr::RawLit { text, .. } | text == ".." -> None
   Expr::StrLit { .. } or Expr::StrInterp { .. } or Expr::RawLit { .. } or Expr::Num { .. } or Expr::Bool { .. } or Expr::Char { .. } -> Some u8::MAX
   Expr::Tuple { .. } or Expr::List { .. } or Expr::ArrayRepeat { .. } or Expr::Unit { .. } -> Some u8::MAX
   Expr::Paren { inner, .. } -> power_of inner

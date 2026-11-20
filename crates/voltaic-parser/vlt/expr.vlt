@@ -41,7 +41,7 @@ application p =
     while starts_argument (&(.peek p).kind)
       arg = (atom p)?
       if field_of_a_closure (&arg) is Some at
-        return Err $ ParseError::with_help Code::MethodCallSyntax "this `.` continues a closure, not the call it is an argument of" "a link with arguments ends a method chain, so the next `.name` attaches to its last argument — here a closure, which has no fields. Bracket the call the chain should continue: `(xs.into_iter ().map (\\x -> x * 2)).collect ()`" at
+        return Err $ ParseError::with_help Code::MethodCallSyntax "this `.` continues an argument, not the call it is an argument of" "a link with arguments ends a method chain, so the next `.name` attaches to its last argument — here a closure or `..`, which has no fields. Bracket the call the chain should continue: `(xs.into_iter ().map (\\x -> x * 2)).collect ()`" at
       .push arg args
     span = ((.span head).0, (.prev_span p).1)
     built = case head of
@@ -57,16 +57,17 @@ application p =
           break
   Ok head
 
-export(crate) is_closure : &Expr -> bool
-is_closure e = case e of
+export(crate) has_no_fields : &Expr -> bool
+has_no_fields e = case e of
   Expr::Lambda { .. } -> true
-  Expr::Paren { inner, .. } -> is_closure (.as_ref inner)
+  Expr::RawLit { text, .. } -> text == ".."
+  Expr::Paren { inner, .. } -> has_no_fields (.as_ref inner)
   _ -> false
 
 export(crate) field_of_a_closure : &Expr -> Option<Span>
 field_of_a_closure e = case e of
   Expr::Field { recv, name, .. } ->
-    if is_closure (.as_ref recv)
+    if has_no_fields (.as_ref recv)
       Some name.span
     else
       field_of_a_closure (.as_ref recv)
@@ -272,6 +273,13 @@ prefix p =
       if .check (&TokenKind::RParen) p
         .advance p
         return Ok (Expr::Unit { span = (start, (.prev_span p).1) })
+      full_range = .check (&TokenKind::DotDot) p && .is_some_and (\t -> t.kind == TokenKind::RParen) (.peek_at 1 p)
+      if full_range
+        dots = .peek_span p
+        .advance p
+        .advance p
+        everything = Expr::RawLit { text = .to_string "..", span = dots }
+        return Ok (Expr::Paren { inner = Box::new everything, span = (start, (.prev_span p).1) })
       sectioned = (section p start)?
       if sectioned is Some found
         return Ok found

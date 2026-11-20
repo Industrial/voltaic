@@ -57,6 +57,13 @@ fn total() -> usize {
     zeros().len() + row().len() + growable().len()
 }
 
+// `(..)` is the full range, an argument like any other. A link with arguments
+// ends a method chain, so the call it continues is bracketed.
+fn drained(v: Vec<u32>) -> Vec<u32> {
+    let mut w = v;
+    w.drain(..).collect()
+}
+
 fn main() {
     println!("{}", zeros().len());
     // Bound rather than interpolated so the `) [ «int» ]` run stays visible to
@@ -67,5 +74,7 @@ fn main() {
     println!("{}", grid()[1][0]);
     println!("{}", lists().len());
     println!("{}", total());
+    let kept = drained((1..4).collect());
+    println!("{}", kept.len());
     ();
 }

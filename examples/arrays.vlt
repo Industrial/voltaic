@@ -45,6 +45,13 @@ lists = [[0u8; 2], [1u8; 2]] : Vec<[u8; 2]>
 total : usize
 total = .len (zeros ()) + .len (row ()) + .len (growable ())
 
+-- `(..)` is the full range, an argument like any other. A link with arguments
+-- ends a method chain, so the call it continues is bracketed.
+drained : Vec<u32> -> Vec<u32>
+drained v =
+  mut w = v
+  (w.drain (..)).collect ()
+
 main : ()
 main =
   println! \-> "#{(.len (zeros ()))}"
@@ -56,4 +63,6 @@ main =
   println! \-> "#{(grid ())[1][0]}"
   println! \-> "#{(.len (lists ()))}"
   println! \-> "#{(total ())}"
+  kept = drained ((1 .. 4).collect ())
+  println! \-> "#{(.len kept)}"
   ()
