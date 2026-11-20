@@ -1,0 +1,5 @@
+-- leaf: v9
+-- gap: G18
+-- `voltaic fmt` must keep the parentheses in `(t.0).0`.
+export inner : ((u32, u32), u32) -> u32
+inner t = (t.0).0

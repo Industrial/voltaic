@@ -1,0 +1,12 @@
+-- leaf: v9
+-- gap: G24
+-- An instance defining an associated type, `type A = Self`.
+class HasSchema
+  type Schema
+  schema : &self -> u32
+
+data User { id u32 }
+
+instance HasSchema User
+  type Schema = Self
+  schema self = self.id

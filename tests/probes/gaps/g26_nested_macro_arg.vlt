@@ -1,0 +1,5 @@
+-- leaf: v9
+-- gap: G26
+-- A macro argument that is itself a macro call.
+export check : ()
+check = assert_eq! \-> env! "CARGO_PKG_NAME" \-> "x"

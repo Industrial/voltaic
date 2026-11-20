@@ -1,0 +1,7 @@
+-- leaf: v9
+-- gap: G17
+-- `voltaic fmt` must keep the parentheses in `((x)?).m ()`.
+export lengths : Option<String> -> Option<usize>
+lengths x =
+  n = ((x)?).len ()
+  Some n

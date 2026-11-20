@@ -1,0 +1,8 @@
+-- leaf: v9
+-- gap: G16
+-- `voltaic fmt` must not rewrite `f (())` into the zero-argument call `f ()`.
+export unit : () -> u32
+unit u = 1
+
+export call : u32
+call = unit (())

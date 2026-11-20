@@ -1,0 +1,14 @@
+-- leaf: v9
+-- gap: G19
+-- Methods named after Voltaic keywords: `catch`, `with`, `union`.
+rust """
+  pub struct S;
+  impl S {
+      pub fn catch(&self) -> u32 { 1 }
+      pub fn with(&self) -> u32 { 2 }
+      pub fn union(&self) -> u32 { 3 }
+  }
+"""
+
+export total : S -> u32
+total s = s.catch () + s.with () + s.union ()

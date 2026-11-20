@@ -1,0 +1,2 @@
+impl HasSchema for User
+type Schema = Self;

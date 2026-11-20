@@ -9,6 +9,7 @@
 #                   (for silent miscompiles)
 #   <name>.error    `voltaic build` must FAIL, and every non-blank line must
 #                   appear in its stderr (a negative probe)
+#   <name>.fmt      `voltaic fmt` on a copy must not change the generated Rust
 #   <name>.rustc    the generated Rust must compile with
 #                   `rustc --edition 2024 --crate-type lib`
 #
@@ -95,6 +96,17 @@ for vlt in "${probes[@]}"; do
             if ! msg="$("$rustc_bin" --edition 2024 --crate-type lib --emit=metadata \
         -o "$work/${name//\//__}.rmeta" "$out" 2>&1)"; then
                 reason="rustc: $(grep -m1 -E '^error' <<<"$msg" | cut -c1-90)"
+            fi
+        fi
+        if [ -z "$reason" ] && [ -f "$base.fmt" ]; then
+            copy="$work/${name//\//__}.fmt.vlt"
+            cp "$vlt" "$copy"
+            if ! "$voltaic" fmt "$copy" >/dev/null 2>&1; then
+                reason="voltaic fmt failed"
+            elif ! fmt_err="$("$voltaic" build "$copy" -o "$copy.rs" --plain 2>&1 >/dev/null)"; then
+                reason="after fmt: $(grep -m1 -E 'error|VLT' <<<"$fmt_err" | cut -c1-80)"
+            elif ! diff -q <(grep -v '^//' "$out") <(grep -v '^//' "$copy.rs") >/dev/null; then
+                reason="fmt changed the generated Rust: $(diff <(grep -v '^//' "$out") <(grep -v '^//' "$copy.rs") | grep -m1 '^>' | cut -c1-70)"
             fi
         fi
     fi

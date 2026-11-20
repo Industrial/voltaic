@@ -1,0 +1,8 @@
+-- leaf: v9
+-- gap: G25
+-- An associated const in an inherent instance keeps `export` and its doc.
+export data Limits { export max u32 }
+
+instance Limits
+  -- | The default ceiling.
+  export const CEILING : u32 = 10
