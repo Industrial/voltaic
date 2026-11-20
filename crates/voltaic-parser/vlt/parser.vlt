@@ -580,9 +580,8 @@ instance (Parser 'a)
   mentions name range self =
     mut i = range.0
     while i < range.1 && i < .len self.toks
-      if &self.toks[i].kind is TokenKind::Ident text
-        if text == name
-          return true
+      if &self.toks[i].kind is TokenKind::Ident text && text == name
+        return true
       i += 1
     false
   export(crate) position : &self -> usize

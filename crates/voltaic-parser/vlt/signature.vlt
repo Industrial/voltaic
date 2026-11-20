@@ -160,10 +160,9 @@ lend_names sig clauses ranges p =
   for i in 0 .. .len sig.params
     mut chosen = format! \-> "__vlt_a#{i}"
     for clause in clauses
-      if .get i clause.patterns is Some (Pattern::Binding ident)
-        if lendable (&ident.text) i clauses ranges p && !.contains (&ident.text) taken
-          chosen := .clone ident.text
-          break
+      if .get i clause.patterns is Some (Pattern::Binding ident) && lendable (&ident.text) i clauses ranges p && !.contains (&ident.text) taken
+        chosen := .clone ident.text
+        break
     .push (.clone chosen) taken
     sig.params[i].name.text := chosen
   ()
