@@ -29,15 +29,17 @@ output *is* Rust — Voltaic's answer to "where is the `Vec`" is "crates.io".
 
 ## The language, in one file
 
-This is `examples/guards.vlt`, unedited:
+This is the top of `examples/guards.vlt`, below its header comment and otherwise unedited:
 
 ```voltaic
--- A ladder, including `otherwise` as the final catch-all.
+-- A ladder, with `_` as the final catch-all — the same wildcard a `case` arm and
+-- a parameter pattern use. Row 99 wave 2 deleted `otherwise`: one spelling for
+-- one meaning, and the keyword it cost was the eleventh of fifty-eight.
 tier : u64 -> &'static str
 tier spend
   | spend > 10_000 = "platinum"
   | spend > 1_000 = "gold"
-  | otherwise = "basic"
+  | _ = "basic"
 
 -- Several equations, each with a short body on the `=` line.
 fib : u64 -> u64
@@ -46,10 +48,12 @@ fib 1 = 1
 fib n = fib (n - 1) + fib (n - 2)
 ```
 
-and this is the `.vrs` it compiles to, also unedited:
+and this is the `.vrs` it compiles to, cut at the same place:
 
 ```rust
-// A ladder, including `otherwise` as the final catch-all.
+// A ladder, with `_` as the final catch-all — the same wildcard a `case` arm and
+// a parameter pattern use. Row 99 wave 2 deleted `otherwise`: one spelling for
+// one meaning, and the keyword it cost was the eleventh of fifty-eight.
 fn tier(spend: u64) -> &'static str {
     if spend > 10_000 {
         "platinum"
