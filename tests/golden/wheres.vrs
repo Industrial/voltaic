@@ -91,6 +91,18 @@ fn offsets(n: u64) -> u64 {
     total
 }
 
+// A `where` after a **multi-line** body, at the body's own indentation. The
+// bindings are strict and emitted first, so nothing here may depend on the
+// statements above it having run.
+fn clamped(n: u64) -> u64 {
+    let ceiling = 100;
+    let margin = 1;
+    if n > ceiling {
+        return ceiling;
+    }
+    n + margin
+}
+
 fn main() {
     println!("{}", area(3.0));
     println!("{}", chain(5));
@@ -98,5 +110,6 @@ fn main() {
     println!("{}", parity(5));
     println!("{}", mixed(10));
     println!("{}", offsets(1));
+    println!("{} {}", clamped(7), clamped(500));
     ();
 }

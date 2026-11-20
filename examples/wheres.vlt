@@ -84,6 +84,18 @@ offsets n = total
     total = shifted + OFFSET
     shifted = n + OFFSET
 
+-- A `where` after a **multi-line** body, at the body's own indentation. The
+-- bindings are strict and emitted first, so nothing here may depend on the
+-- statements above it having run.
+clamped : u64 -> u64
+clamped n =
+  if n > ceiling
+    return ceiling
+  n + margin
+  where
+    ceiling = 100
+    margin = 1
+
 main : ()
 main =
   println! \-> "#{(area 3.0)}"
@@ -92,4 +104,5 @@ main =
   println! \-> "#{(parity 5)}"
   println! \-> "#{(mixed 10)}"
   println! \-> "#{(offsets 1)}"
+  println! \-> "#{(clamped 7)} #{(clamped 500)}"
   ()

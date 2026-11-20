@@ -338,7 +338,7 @@ instance (Parser 'a)
     mut stmts = Vec::new ()
     loop
       .skip_separators self
-      if .check (&TokenKind::Dedent) self || .at_eof self
+      if .check (&TokenKind::Dedent) self || .at_eof self || .check (&TokenKind::Kw Keyword::Where) self
         break
       case stmt self of
         Ok found -> .push found stmts
@@ -346,7 +346,8 @@ instance (Parser 'a)
           .push e self.r#errors
           .recover_to_stmt self
     end = (.prev_span self).1
-    (.expect (&TokenKind::Dedent) "expected the body to end" self)?
+    if !.check (&TokenKind::Kw Keyword::Where) self
+      (.expect (&TokenKind::Dedent) "expected the body to end" self)?
     if .is_empty stmts && .is_empty self.r#errors
       return Err (ParseError::r#with Code::EmptyBody "a declaration body must contain at least one statement" (start, start))
     Ok (Block { stmts, span = (start, end) })

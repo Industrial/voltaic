@@ -4,6 +4,7 @@ import crate::operand::unit_tail
 import crate::parser::Parser
 import crate::token::is_word
 import crate::token::token_text
+import crate::where_clause::where_body
 import crate::where_clause::where_locals
 import voltaic_ast::Clause
 import voltaic_ast::ClauseBody
@@ -113,7 +114,10 @@ clause row name returns_unit p =
   block = (.statements p)?
   if returns_unit && .len p.r#errors == reported
     (unit_tail name (&block))?
-  wheres = (where_locals (&row) p)?
+  wheres = if .check (&TokenKind::Kw Keyword::Where) p
+    (where_body (&row) p)?
+  else
+    (where_locals (&row) p)?
   Ok (Clause { patterns = row, body = ClauseBody::Plain (.clone block), wheres, span = (start, (.prev_span p).1), trailing, leading = Vec::new () })
 
 export(crate) rust_generic : &str -> String

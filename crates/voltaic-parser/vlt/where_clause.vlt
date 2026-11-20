@@ -53,6 +53,10 @@ where_locals params p =
   if !opens
     return Ok (Vec::new ())
   .advance p
+  where_body params p
+
+export(super) where_body : &[Pattern] -> &mut Parser -> Result<Vec<Stmt>, ParseError>
+where_body params p =
   .advance p
   (.newline_with_trailing "expected a line break after `where`" p)?
   (.expect_with Code::EmptyBody (&TokenKind::Indent) "expected indented `where` bindings" p)?
