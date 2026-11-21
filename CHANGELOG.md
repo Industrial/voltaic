@@ -11,6 +11,66 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-21
+
+`voltaic fmt` has one layout per construct, and it is the multi-line one.
+This is a minor release because it changes the canonical form: every `.vlt`
+that passed `voltaic fmt --check` under 0.2.1 and holds a pipeline or a
+record now fails it until it is formatted again. The language is unchanged.
+Every layout below already parsed.
+
+### Changed
+
+- **Every pipeline is broken, one stage per line**, whatever its width. The
+  60-column `PIPELINE_WIDTH` rule is gone, and so is joining a pipeline that
+  was written broken but fitted:
+
+  ```
+  doubled numbers = numbers
+    |> .iter
+    |> map (\n -> n * 2)
+    |> count
+  ```
+
+  A stage is formatted one level in, so a pipeline nested inside a stage
+  indents beneath it rather than at the same depth.
+- **Every record is one field per line, with trailing commas**, both declared
+  (`data`, and a constructor's `{ … }` inside a sum) and built (`P { x = 1 }`).
+  `{` stays on the header's line, `}` dedents back to the header, and a
+  `deriving` clause stays indented. A comma-first layout is reflowed:
+
+  ```
+  export data NarInfoFile {
+    export info NarInfo,
+    export url String,
+  }
+    deriving (Debug, Clone, PartialEq)
+  ```
+
+  A `...base` spread is last and takes no comma. An empty record stays `{}`.
+- Every `.vlt` in the repository is reformatted to the new layout.
+
+### Fixed
+
+- **A guard's `=` body that follows a multi-line condition stays inline.** The
+  formatter compared the guard's start with its body's, so a condition broken
+  across lines turned an inline body into an indented one on the second pass.
+  It now asks whether the body continues the `=`'s line.
+- **The tree-sitter grammar reads a line break inside brackets.** The scanner
+  had no token for one there and the internal lexer could not skip it, so
+  every record written one field per line was an `ERROR` from its first brace.
+  A new `_bracket_break` extra covers it, and an inconsistent dedent is still
+  an error. A record's last field may now take a trailing comma, too.
+- **The tree-sitter grammar reads a `where` after a broken pipeline**, at the
+  stages' own depth.
+
+### Known
+
+- A rustc error inside a broken pipeline is reported against the pipeline's
+  first line, with the whole pipeline underlined. The source map is per line
+  and the chain lowers to one Rust line, so the column that used to land on the
+  stage now has nowhere to land. `tests/check/moved_selector.vlt` records it.
+
 ## [0.2.1] - 2026-11-21
 
 What a first real downstream user needed: heimdall, a Dioxus and id_effect
