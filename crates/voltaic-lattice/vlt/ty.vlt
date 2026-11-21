@@ -7,7 +7,10 @@ export const ARROW : &str = "->"
 
 export data Ty
   = Hole Variable
-  | Con { name String, args Vec<Ty> }
+  | Con {
+    name String,
+    args Vec<Ty>,
+  }
   | Nil
   deriving (Debug, Clone, PartialEq, Eq, PartialOrd, Ord)
 
@@ -16,13 +19,22 @@ instance Ty
   hole v = Ty::Hole v
 
   export named : &str -> Self
-  named name = Ty::Con { name = .to_string name, args = Vec::new () }
+  named name = Ty::Con {
+    name = .to_string name,
+    args = Vec::new (),
+  }
 
   export applied : &str -> Vec<Ty> -> Self
-  applied name args = Ty::Con { name = .to_string name, args }
+  applied name args = Ty::Con {
+    name = .to_string name,
+    args,
+  }
 
   export arrow : Ty -> Ty -> Self
-  arrow from to = Ty::Con { name = .to_string ARROW, args = vec! \-> from \-> to }
+  arrow from to = Ty::Con {
+    name = .to_string ARROW,
+    args = vec! \-> from \-> to,
+  }
 
   export unit : Self
   unit = Ty::Nil

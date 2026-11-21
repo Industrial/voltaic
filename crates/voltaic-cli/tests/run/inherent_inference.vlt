@@ -32,7 +32,9 @@
 -- and rejected by rustc as `E0507`. It is caught rather than miscompiled,
 -- which is why this file does not contain one.
 
-data Counter { value u32 }
+data Counter {
+  value u32,
+}
 
 instance Counter
   current self = self.value
@@ -43,7 +45,9 @@ instance Counter
 
 main : ()
 main =
-  mut c = Counter { value = 1 }
+  mut c = Counter {
+    value = 1,
+  }
   .bump (&mut c)
   println! \-> "#{.current (&c)}"
   println! \-> "#{.plus 10 (&c)}"

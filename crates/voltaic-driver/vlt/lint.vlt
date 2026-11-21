@@ -21,7 +21,16 @@ import std::path::Path
 export lint : &Path -> &str -> Option<&Program> -> Vec<Diagnostic>
 lint path source program =
   shown = path.display ().to_string ()
-  warning = \code message span help -> Diagnostic { code, severity = Severity::Warning, message, span, related = Vec::new (), help = Some help, path = .clone shown, source = .to_string source }
+  warning = \code message span help -> Diagnostic {
+    code,
+    severity = Severity::Warning,
+    message,
+    span,
+    related = Vec::new (),
+    help = Some help,
+    path = .clone shown,
+    source = .to_string source,
+  }
 
   unwraps = (unwrap_call_sites source program).into_iter ().map (\span -> warning (DiagnosticCode::from Code::UnwrapUsed) (.to_string UNWRAP_MESSAGE) span (.to_string "if a panic is intended here, say so on the line above: `\#[voltaic::allow(unwrap)]`"))
 
@@ -56,7 +65,11 @@ attribute_pragma trivium_attribute_pragma = case trivium_attribute_pragma.kind o
 
 #[cfg(test)]
 trivium_attribute_pragma : TriviaKind -> &str -> Trivia
-trivium_attribute_pragma kind text = Trivia { kind, text = .to_string text, span = (0, 0) }
+trivium_attribute_pragma kind text = Trivia {
+  kind,
+  text = .to_string text,
+  span = (0, 0),
+}
 
 test "the attribute suppresses"
   assert_eq! \-> attribute_pragma (&trivium_attribute_pragma TriviaKind::Attribute "voltaic::allow(unwrap)") \-> Some Lint::Unwrap
@@ -88,7 +101,11 @@ comment_pragma trivium_comment_pragma = case trivium_comment_pragma.kind of
 
 #[cfg(test)]
 trivium_comment_pragma : TriviaKind -> &str -> Trivia
-trivium_comment_pragma kind text = Trivia { kind, text = .to_string text, span = (0, 0) }
+trivium_comment_pragma kind text = Trivia {
+  kind,
+  text = .to_string text,
+  span = (0, 0),
+}
 
 test "the pragma suppresses"
   assert_eq! \-> comment_pragma (&trivium_comment_pragma TriviaKind::LineComment "voltaic: allow unwrap") \-> Some Lint::Unwrap
@@ -128,7 +145,10 @@ line_of source offset =
   end = .min (.len source) offset
   .count (.matches '\n' source[0 .. end]) + 1
 
-export(crate) data PragmaWalk { export(crate) lint Lint, export(crate) found Vec<Span> }
+export(crate) data PragmaWalk {
+  export(crate) lint Lint,
+  export(crate) found Vec<Span>,
+}
 
 instance ProgramWalk PragmaWalk
   item : &mut self -> &Item -> ()
@@ -160,7 +180,9 @@ test "it names the shadowed binding"
 
 export(crate) shadow_sites : &Program -> Vec<(Span, String)>
 shadow_sites program =
-  mut walk = ShadowWalk { found = Vec::new () }
+  mut walk = ShadowWalk {
+    found = Vec::new (),
+  }
   walk_program program (&mut walk)
 
   ranges = suppressed_spans program Lint::Shadow
@@ -168,7 +190,9 @@ shadow_sites program =
     span = pair.0
     !.any (\r -> r.0 <= span.0 && span.1 <= r.1) (.iter ranges))).collect ()
 
-export(crate) data ShadowWalk { export(crate) found Vec<(Span, String)> }
+export(crate) data ShadowWalk {
+  export(crate) found Vec<(Span, String)>,
+}
 
 instance ProgramWalk ShadowWalk
   item : &mut self -> &Item -> ()
@@ -192,7 +216,10 @@ instance ProgramWalk ShadowWalk
 
 export(crate) suppressed_spans : &Program -> Lint -> Vec<Span>
 suppressed_spans program lint =
-  mut walk = PragmaWalk { lint, found = Vec::new () }
+  mut walk = PragmaWalk {
+    lint,
+    found = Vec::new (),
+  }
   walk_program program (&mut walk)
   walk.found
 

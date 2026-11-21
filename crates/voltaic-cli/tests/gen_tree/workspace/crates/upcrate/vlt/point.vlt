@@ -1,4 +1,7 @@
-data Point { x f64, y f64 }
+data Point {
+  x f64,
+  y f64,
+}
 
 instance Point
   export depth : &self -> f64

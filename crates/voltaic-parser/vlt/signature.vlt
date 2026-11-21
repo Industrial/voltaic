@@ -90,7 +90,10 @@ capture_type p message stop =
     .advance p
   if .is_empty text
     return Err (ParseError::r#with Code::ExpectedType message (.peek_span p))
-  Ok (TypeExpr { text = ungrouped (&text), span = (start, (.prev_span p).1) })
+  Ok (TypeExpr {
+    text = ungrouped (&text),
+    span = (start, (.prev_span p).1),
+  })
 
 export(super) clause : Vec<Pattern> -> &Ident -> bool -> &mut Parser -> Result<Clause, ParseError>
 clause row name returns_unit p =
@@ -101,13 +104,27 @@ clause row name returns_unit p =
     rungs = (.guards p)?
     (.expect (&TokenKind::Dedent) "expected the guard list to end" p)?
     wheres = (where_locals (&row) p)?
-    return Ok (Clause { patterns = row, body = ClauseBody::Guarded rungs, wheres, span = (start, (.prev_span p).1), trailing = None, leading = Vec::new () })
+    return Ok (Clause {
+      patterns = row,
+      body = ClauseBody::Guarded rungs,
+      wheres,
+      span = (start, (.prev_span p).1),
+      trailing = None,
+      leading = Vec::new (),
+    })
   (.expect (&TokenKind::Eq) "expected `=` after the equation's parameters, or an indented `|` guard list" p)?
   if !.check (&TokenKind::Newline) p
     body = (.inline_body p)?
     trailing = (.newline_with_trailing "expected a line break after the body" p)?
     wheres = (where_locals (&row) p)?
-    return Ok (Clause { patterns = row, body = ClauseBody::Plain body, wheres, span = (start, (.prev_span p).1), trailing, leading = Vec::new () })
+    return Ok (Clause {
+      patterns = row,
+      body = ClauseBody::Plain body,
+      wheres,
+      span = (start, (.prev_span p).1),
+      trailing,
+      leading = Vec::new (),
+    })
   trailing = (.newline_with_trailing "expected a line break after `=`" p)?
   (.expect_with Code::EmptyBody (&TokenKind::Indent) "expected an indented body" p)?
   reported = .len p.r#errors
@@ -118,7 +135,14 @@ clause row name returns_unit p =
     (where_body (&row) p)?
   else
     (where_locals (&row) p)?
-  Ok (Clause { patterns = row, body = ClauseBody::Plain (.clone block), wheres, span = (start, (.prev_span p).1), trailing, leading = Vec::new () })
+  Ok (Clause {
+    patterns = row,
+    body = ClauseBody::Plain (.clone block),
+    wheres,
+    span = (start, (.prev_span p).1),
+    trailing,
+    leading = Vec::new (),
+  })
 
 export(crate) rust_generic : &str -> String
 rust_generic name =
@@ -152,11 +176,33 @@ signature_from spine bound span =
     name = if lends_its_name
       case binder of
         Pattern::Binding ident -> .clone ident
-        _ -> Ident { text = format! \-> "__vlt_a#{i}", span = .span binder }
+        _ -> Ident {
+          text = format! \-> "__vlt_a#{i}",
+          span = .span binder,
+        }
     else
-      Ident { text = format! \-> "__vlt_a#{i}", span = .span binder }
-    .push (Param { name, ty = Some (.clone ty), is_mut = false, span = .span binder }) params
-  Ok (Signature { params, ret = Some (.clone ret), generics = Vec::new (), is_const = false, is_async = false, is_unsafe = false, bounds = Vec::new (), r#given = None, predicates = None, span })
+      Ident {
+        text = format! \-> "__vlt_a#{i}",
+        span = .span binder,
+      }
+    .push (Param {
+      name,
+      ty = Some (.clone ty),
+      is_mut = false,
+      span = .span binder,
+    }) params
+  Ok (Signature {
+    params,
+    ret = Some (.clone ret),
+    generics = Vec::new (),
+    is_const = false,
+    is_async = false,
+    is_unsafe = false,
+    bounds = Vec::new (),
+    r#given = None,
+    predicates = None,
+    span,
+  })
 
 export(crate) lend_names : &mut Signature -> &[Clause] -> &[(usize, usize)] -> &Parser -> ()
 lend_names sig clauses ranges p =
@@ -208,11 +254,33 @@ signature_unsigned bound span =
     name = if lends_its_name
       case binder of
         Pattern::Binding ident -> .clone ident
-        _ -> Ident { text = format! \-> "__vlt_a#{i}", span = .span binder }
+        _ -> Ident {
+          text = format! \-> "__vlt_a#{i}",
+          span = .span binder,
+        }
     else
-      Ident { text = format! \-> "__vlt_a#{i}", span = .span binder }
-    .push (Param { name, ty = None, is_mut = false, span = .span binder }) params
-  Signature { params, ret = None, generics = Vec::new (), is_const = false, is_async = false, is_unsafe = false, bounds = Vec::new (), r#given = None, predicates = None, span }
+      Ident {
+        text = format! \-> "__vlt_a#{i}",
+        span = .span binder,
+      }
+    .push (Param {
+      name,
+      ty = None,
+      is_mut = false,
+      span = .span binder,
+    }) params
+  Signature {
+    params,
+    ret = None,
+    generics = Vec::new (),
+    is_const = false,
+    is_async = false,
+    is_unsafe = false,
+    bounds = Vec::new (),
+    r#given = None,
+    predicates = None,
+    span,
+  }
 
 test "an unsigned equation takes its parameter names from its binders"
   sig = signature_unsigned (&[id "a", id "b"]) (0, 0)
@@ -231,11 +299,17 @@ test "an absent return type reads as unit, which is why annotation must precede 
 
 #[cfg(test)]
 ty : &str -> TypeExpr
-ty text = TypeExpr { text = .to_string text, span = (0, 0) }
+ty text = TypeExpr {
+  text = .to_string text,
+  span = (0, 0),
+}
 
 #[cfg(test)]
 id : &str -> Pattern
-id text = Pattern::Binding (Ident { text = .to_string text, span = (0, 0) })
+id text = Pattern::Binding (Ident {
+  text = .to_string text,
+  span = (0, 0),
+})
 
 test "pairs the spine with the binders"
   sig = .expect "should build" $ signature_from (&[ty "i32", ty "i32", ty "i32"]) (&[id "a", id "b"]) (0, 0)
@@ -267,7 +341,15 @@ test "a zero parameter function can still return something"
   assert_eq! \-> (.expect "a return type" (.as_ref sig.ret)).text \-> "u32"
   assert! \-> !.returns_unit sig
 
-export(crate) data SignatureHead { export types Vec<TypeExpr>, export bounds Vec<Constraint>, export r#given Option<String>, export predicates Option<String>, export is_const bool, export is_async bool, export is_unsafe bool }
+export(crate) data SignatureHead {
+  export types Vec<TypeExpr>,
+  export bounds Vec<Constraint>,
+  export r#given Option<String>,
+  export predicates Option<String>,
+  export is_const bool,
+  export is_async bool,
+  export is_unsafe bool,
+}
   deriving (Debug, Clone)
 
 export(crate) signature_only : &[TypeExpr] -> Span -> Signature
@@ -276,8 +358,27 @@ signature_only spine span =
   params : Vec<Param> = (split.1.iter ().enumerate ().map (\pair ->
     i = pair.0
     ty = pair.1
-    Param { name = Ident { text = format! \-> "__vlt_a#{i}", span = ty.span }, ty = Some (.clone ty), is_mut = false, span = ty.span })).collect ()
-  Signature { params, ret = Some (.clone split.0), generics = Vec::new (), is_const = false, is_async = false, is_unsafe = false, bounds = Vec::new (), r#given = None, predicates = None, span }
+    Param {
+      name = Ident {
+        text = format! \-> "__vlt_a#{i}",
+        span = ty.span,
+      },
+      ty = Some (.clone ty),
+      is_mut = false,
+      span = ty.span,
+    })).collect ()
+  Signature {
+    params,
+    ret = Some (.clone split.0),
+    generics = Vec::new (),
+    is_const = false,
+    is_async = false,
+    is_unsafe = false,
+    bounds = Vec::new (),
+    r#given = None,
+    predicates = None,
+    span,
+  }
 
 export(crate) starts_a_field_type : &TokenKind -> bool
 starts_a_field_type kind = case kind of
@@ -304,14 +405,21 @@ type_app p =
       .push named args
       continue
     if &(.peek p).kind is TokenKind::Label name
-      arg = Ident { text = format! \-> "'#{name}", span = .peek_span p }
+      arg = Ident {
+        text = format! \-> "'#{name}",
+        span = .peek_span p,
+      }
       .advance p
       .push arg args
       continue
     break
   if grouped
     (.expect (&TokenKind::RParen) "expected `)` to close the type" p)?
-  Ok (TypeApp { head, args, span = (start, (.prev_span p).1) })
+  Ok (TypeApp {
+    head,
+    args,
+    span = (start, (.prev_span p).1),
+  })
 
 export(crate) data TypeStop
   = Greedy

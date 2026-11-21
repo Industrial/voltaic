@@ -55,6 +55,10 @@ enum TokenType {
   // layout token: it touches no width, and is offered only where none of the
   // three above is valid, so the indent stack never sees a Rust body's lines.
   TOKEN_TREE_BREAK,
+  // A line break inside an ordinary bracket — a record written one field per
+  // line. An extra, so it is offered everywhere, and taken only where none of
+  // the layout tokens is valid; inside a macro body TOKEN_TREE_BREAK wins.
+  BRACKET_BREAK,
 };
 
 // The enclosing indent widths, outermost first. Index 0 is always 0 — column
@@ -288,7 +292,7 @@ bool tree_sitter_voltaic_external_scanner_scan(void *payload, TSLexer *lexer,
     // Inside a macro body's brackets a line break is a leaf of the tree, and
     // nothing else: `extras` holds no newline, so without this token the first
     // line break inside `rsx! {` would be an error.
-    if (!valid_symbols[TOKEN_TREE_BREAK]) {
+    if (!valid_symbols[TOKEN_TREE_BREAK] && !valid_symbols[BRACKET_BREAK]) {
       return false;
     }
     bool crossed = false;
@@ -300,7 +304,7 @@ bool tree_sitter_voltaic_external_scanner_scan(void *payload, TSLexer *lexer,
       return false;
     }
     lexer->mark_end(lexer);
-    lexer->result_symbol = TOKEN_TREE_BREAK;
+    lexer->result_symbol = valid_symbols[TOKEN_TREE_BREAK] ? TOKEN_TREE_BREAK : BRACKET_BREAK;
     return true;
   }
 

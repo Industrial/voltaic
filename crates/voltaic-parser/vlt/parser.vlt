@@ -63,23 +63,48 @@ parse toks src_len =
   deepest = nesting_depth toks
   if deepest > MAX_NESTING
     message = format! \-> "this input nests brackets #{deepest} deep, and the limit is #{MAX_NESTING}: deeper than that overflows the parser's stack"
-    return Err (vec! \-> ParseError { code = Code::NestingTooDeep, message, span = (0, 0), help = None })
+    return Err (vec! \-> ParseError {
+      code = Code::NestingTooDeep,
+      message,
+      span = (0, 0),
+      help = None,
+    })
   .run src_len $ Parser::new toks
 
-export(crate) data Parser { toks &'a [Token], pos usize, export(crate) r#errors Vec<ParseError>, class_heads std::collections::BTreeMap<(String, String), SignatureHead>, export(crate) fixities std::collections::BTreeMap<String, (Fixity, u8, String)> }
+export(crate) data Parser {
+  toks &'a [Token],
+  pos usize,
+  export(crate) r#errors Vec<ParseError>,
+  class_heads std::collections::BTreeMap<(String, String), SignatureHead>,
+  export(crate) fixities std::collections::BTreeMap<String, (Fixity, u8, String)>,
+}
 
 instance (Parser 'a)
   export(crate) new : &'a [Token] -> Self
-  new toks = Parser { toks, pos = 0, r#errors = Vec::new (), class_heads = std::collections::BTreeMap::new (), fixities = std::collections::BTreeMap::new () }
+  new toks = Parser {
+    toks,
+    pos = 0,
+    r#errors = Vec::new (),
+    class_heads = std::collections::BTreeMap::new (),
+    fixities = std::collections::BTreeMap::new (),
+  }
   export(crate) run : usize -> mut self -> Result<Program, Vec<ParseError>>
   run src_len self =
     items = .program self
     if .is_empty self.r#errors
-      probe = Program { items = .clone items, span = (0, src_len), trailing = Vec::new () }
+      probe = Program {
+        items = .clone items,
+        span = (0, src_len),
+        trailing = Vec::new (),
+      }
       .extend (check_callback_tails (&probe)) self.r#errors
     if .is_empty self.r#errors
       trailing = .eof_trivia self
-      return Ok (Program { items, span = (0, src_len), trailing })
+      return Ok (Program {
+        items,
+        span = (0, src_len),
+        trailing,
+      })
     Err self.r#errors
   program : &mut self -> Vec<Item>
   program self =
@@ -206,7 +231,10 @@ instance (Parser 'a)
     _ -> true
   export(crate) peeked_name : &str -> &self -> Result<Ident, ParseError>
   peeked_name message self = case &(.peek self).kind of
-    TokenKind::Ident text -> Ok (Ident { text = .clone text, span = .peek_span self })
+    TokenKind::Ident text -> Ok (Ident {
+      text = .clone text,
+      span = .peek_span self,
+    })
     _ -> Err (ParseError::r#with Code::ExpectedName (.to_string message) (.peek_span self))
   export(crate) signature_head : &Ident -> &mut self -> Result<SignatureHead, ParseError>
   signature_head name self =
@@ -226,7 +254,15 @@ instance (Parser 'a)
     spine = (parse_spine self)?
     predicates = (where_predicates self)?
     (.newline_with_trailing "expected a line break after the signature" self)?
-    Ok (SignatureHead { types = spine, bounds, r#given = binder, predicates, is_const, is_async, is_unsafe })
+    Ok (SignatureHead {
+      types = spine,
+      bounds,
+      r#given = binder,
+      predicates,
+      is_const,
+      is_async,
+      is_unsafe,
+    })
   export(crate) record_head : &str -> &str -> &SignatureHead -> &mut self -> ()
   record_head class_name member head self =
     key = (.to_string class_name, .to_string member)
@@ -283,7 +319,15 @@ instance (Parser 'a)
     settled.is_unsafe := head.is_unsafe
     end = (.prev_span self).1
     trailing = .and_then (\c -> .clone c.trailing) (.last clauses)
-    Ok (FnDecl { name, sig = settled, clauses, visibility = Visibility::Private, span = (start, end), leading, trailing })
+    Ok (FnDecl {
+      name,
+      sig = settled,
+      clauses,
+      visibility = Visibility::Private,
+      span = (start, end),
+      leading,
+      trailing,
+    })
   export(crate) unsigned_equations : Ident -> Vec<Trivia> -> usize -> &[String] -> bool -> &mut self -> Result<FnDecl, ParseError>
   unsigned_equations name leading start reserved ends_on_a_new_name self =
     if .check (&TokenKind::Eq) self && .is_some_and (\t -> t.kind != TokenKind::Newline) (.peek_at 1 self)
@@ -331,7 +375,15 @@ instance (Parser 'a)
     generalise (&mut settled) (&[]) reserved
     end = (.prev_span self).1
     trailing = .and_then (\c -> .clone c.trailing) (.last clauses)
-    Ok (FnDecl { name, sig = settled, clauses, visibility = Visibility::Private, span = (start, end), leading, trailing })
+    Ok (FnDecl {
+      name,
+      sig = settled,
+      clauses,
+      visibility = Visibility::Private,
+      span = (start, end),
+      leading,
+      trailing,
+    })
   export(crate) statements : &mut self -> Result<Block, ParseError>
   statements self =
     start = (.peek_span self).0
@@ -350,7 +402,10 @@ instance (Parser 'a)
       (.expect (&TokenKind::Dedent) "expected the body to end" self)?
     if .is_empty stmts && .is_empty self.r#errors
       return Err (ParseError::r#with Code::EmptyBody "a declaration body must contain at least one statement" (start, start))
-    Ok (Block { stmts, span = (start, end) })
+    Ok (Block {
+      stmts,
+      span = (start, end),
+    })
   export(crate) indented_block : Code -> &str -> &mut self -> Result<Block, ParseError>
   indented_block code message self =
     (.expect_with code (&TokenKind::Indent) message self)?
@@ -369,24 +424,55 @@ instance (Parser 'a)
     then_block = (.statement_block "expected an indented `if` body" self)?
     .skip_separators self
     if !.check (&TokenKind::Kw Keyword::Else) self
-      return Ok (Expr::If { condition = cond, then_block, r#otherwise = None, span = (open, (.prev_span self).1) })
+      return Ok (Expr::If {
+        condition = cond,
+        then_block,
+        r#otherwise = None,
+        span = (open, (.prev_span self).1),
+      })
     .advance self
     if .check (&TokenKind::Kw Keyword::If) self
       start = (.peek_span self).0
       nested = (.if_statement self)?
       end = (.prev_span self).1
-      only = Stmt { expr = nested, span = (start, end), leading = Vec::new (), trailing = None }
-      chained = Block { stmts = vec! \-> only, span = (start, end) }
-      return Ok (Expr::If { condition = cond, then_block, r#otherwise = Some chained, span = (open, end) })
+      only = Stmt {
+        expr = nested,
+        span = (start, end),
+        leading = Vec::new (),
+        trailing = None,
+      }
+      chained = Block {
+        stmts = vec! \-> only,
+        span = (start, end),
+      }
+      return Ok (Expr::If {
+        condition = cond,
+        then_block,
+        r#otherwise = Some chained,
+        span = (open, end),
+      })
     fallback = (.statement_block "expected an indented `else` body" self)?
-    Ok (Expr::If { condition = cond, then_block, r#otherwise = Some fallback, span = (open, (.prev_span self).1) })
+    Ok (Expr::If {
+      condition = cond,
+      then_block,
+      r#otherwise = Some fallback,
+      span = (open, (.prev_span self).1),
+    })
   export(crate) inline_body : &mut self -> Result<Block, ParseError>
   inline_body self =
     start = (.peek_span self).0
     value = (parse_expr self 0)?
     end = (.prev_span self).1
-    only = Stmt { expr = value, span = (start, end), leading = Vec::new (), trailing = None }
-    Ok (Block { stmts = vec! \-> only, span = (start, end) })
+    only = Stmt {
+      expr = value,
+      span = (start, end),
+      leading = Vec::new (),
+      trailing = None,
+    }
+    Ok (Block {
+      stmts = vec! \-> only,
+      span = (start, end),
+    })
   export(crate) opens_a_guard_list : &self -> bool
   opens_a_guard_list self = .check (&TokenKind::Newline) self && .is_some_and (\t -> t.kind == TokenKind::Indent) (.peek_at 1 self) && .is_some_and (\t -> t.kind == TokenKind::Or) (.peek_at 2 self)
   export(crate) guards : &mut self -> Result<Vec<Guard>, ParseError>
@@ -409,7 +495,11 @@ instance (Parser 'a)
       (.expect (&TokenKind::Eq) "expected `=` after a guard's condition" self)?
       body = (.inline_body self)?
       (.newline_with_trailing "expected a line break after a guard's body" self)?
-      .push (Guard { condition = cond, body, span = (start, (.prev_span self).1) }) rows
+      .push (Guard {
+        condition = cond,
+        body,
+        span = (start, (.prev_span self).1),
+      }) rows
     debug_assert! \-> !.is_empty rows \-> "`opens_a_guard_list` guarantees a first `|`"
     Ok rows
   export(crate) is_wildcard : &self -> bool
@@ -432,7 +522,11 @@ instance (Parser 'a)
     name = (.ident "expected a name after `with`" self)?
     (.expect (&TokenKind::Eq) "expected `=` after a `with` binder — doc 30 §3.3" self)?
     value = Box::new (parse_expr self 0)?
-    Ok $ Some $ Expr::Draw { name, value, span = (start, (.prev_span self).1) }
+    Ok $ Some $ Expr::Draw {
+      name,
+      value,
+      span = (start, (.prev_span self).1),
+    }
   export(crate) try_binding : &mut self -> Result<Option<Binding>, ParseError>
   try_binding self =
     is_mut = .check (&TokenKind::Kw Keyword::Mut) self
@@ -450,7 +544,14 @@ instance (Parser 'a)
     (.expect (&TokenKind::Eq) "expected `=` in a binding" self)?
     value = (.value_or_ladder self)?
     fallback = (.else_tail self)?
-    Ok $ Some $ Binding { pattern = bound, ty, value, is_mut, r#otherwise = fallback, span = (start, (.prev_span self).1) }
+    Ok $ Some $ Binding {
+      pattern = bound,
+      ty,
+      value,
+      is_mut,
+      r#otherwise = fallback,
+      span = (start, (.prev_span self).1),
+    }
   export(crate) else_tail : &mut self -> Result<Option<Block>, ParseError>
   else_tail self =
     if !.check (&TokenKind::Kw Keyword::Else) self
@@ -465,15 +566,26 @@ instance (Parser 'a)
         None
       else
         Some $ Box::new (parse_expr self 0)?
-      return Ok (Some (.one_statement (Expr::Return { value, span = (start, (.prev_span self).1) }) start self))
+      return Ok (Some (.one_statement (Expr::Return {
+        value,
+        span = (start, (.prev_span self).1),
+      }) start self))
     if (control_flow self)? is Some diverging
       return Ok (Some (.one_statement diverging start self))
     .map Some (.inline_body self)
   one_statement : Expr -> usize -> &self -> Block
   one_statement expr start self =
     end = (.prev_span self).1
-    only = Stmt { expr, span = (start, end), leading = Vec::new (), trailing = None }
-    Block { stmts = vec! \-> only, span = (start, end) }
+    only = Stmt {
+      expr,
+      span = (start, end),
+      leading = Vec::new (),
+      trailing = None,
+    }
+    Block {
+      stmts = vec! \-> only,
+      span = (start, end),
+    }
   export(crate) value_or_ladder : &mut self -> Result<Expr, ParseError>
   value_or_ladder self =
     if !.opens_a_guard_list self
@@ -483,7 +595,10 @@ instance (Parser 'a)
     .advance self
     rows = (.guards self)?
     (.expect (&TokenKind::Dedent) "expected the ladder to end" self)?
-    Ok (Expr::Ladder { rows, span = (start, (.prev_span self).1) })
+    Ok (Expr::Ladder {
+      rows,
+      span = (start, (.prev_span self).1),
+    })
   looks_like_a_binding : &self -> bool
   looks_like_a_binding self = case &(.peek self).kind of
     TokenKind::Ident _ ->
@@ -594,14 +709,20 @@ instance (Parser 'a)
   export(crate) try_ident : &mut self -> Option<Ident>
   try_ident self =
     if &(.peek self).kind is TokenKind::Ident text
-      found = Ident { text = .clone text, span = .peek_span self }
+      found = Ident {
+        text = .clone text,
+        span = .peek_span self,
+      }
       .advance self
       return Some found
     None
   export(crate) ident : &str -> &mut self -> Result<Ident, ParseError>
   ident message self =
     if &(.peek self).kind is TokenKind::Ident text
-      found = Ident { text = .clone text, span = .peek_span self }
+      found = Ident {
+        text = .clone text,
+        span = .peek_span self,
+      }
       .advance self
       return Ok found
     Err $ ParseError::r#with Code::ExpectedName message (.peek_span self)

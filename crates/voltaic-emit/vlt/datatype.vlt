@@ -101,12 +101,25 @@ payload_types fields = case fields of
 export(crate) as_variant : &Constructor -> voltaic_ast::ErrorVariant
 as_variant c =
   shown = .unwrap_or_default (.cloned (.as_ref c.message))
-  voltaic_ast::ErrorVariant { name = .clone c.name, fields = payload_types (&c.fields), from = false, message = shown, leading = .clone c.leading, span = c.span }
+  voltaic_ast::ErrorVariant {
+    name = .clone c.name,
+    fields = payload_types (&c.fields),
+    from = false,
+    message = shown,
+    leading = .clone c.leading,
+    span = c.span,
+  }
 
 export(crate) as_errors : &DataDecl -> ErrorsDecl
 as_errors d =
   variants : Vec<voltaic_ast::ErrorVariant> = (d.constructors.iter ().map as_variant).collect ()
-  ErrorsDecl { name = .clone d.name, variants, visibility = .clone d.visibility, span = d.span, leading = .clone d.leading }
+  ErrorsDecl {
+    name = .clone d.name,
+    variants,
+    visibility = .clone d.visibility,
+    span = d.span,
+    leading = .clone d.leading,
+  }
 
 export(crate) emit_data : &mut Sink<'_> -> &DataDecl -> usize -> ()
 emit_data out d indent =

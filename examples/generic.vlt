@@ -25,7 +25,10 @@
 largest : Ord t => Option<t> -> t
 largest xs = best
   where
-    best = xs |> .into_iter |> .max |> .unwrap
+    best = xs
+      |> .into_iter
+      |> .max
+      |> .unwrap
 
 -- Two variables, in order of first appearance. The second argument is
 -- discarded with `_`, whose generated parameter name begins with an

@@ -131,10 +131,15 @@ fail_of declared = case declared of
   _ -> None
 
 test "a pure body has a pure row"
-  assert! \-> .is_empty (expr_row (&Expr::Unit { span = (0, 2) }))
+  assert! \-> .is_empty (expr_row (&Expr::Unit {
+    span = (0, 2),
+  }))
 
 test "break and continue diverge"
-  assert! \-> .holds (&Effect::Diverges) (expr_row (&Expr::Continue { label = None, span = (0, 8) }))
+  assert! \-> .holds (&Effect::Diverges) (expr_row (&Expr::Continue {
+    label = None,
+    span = (0, 8),
+  }))
 
 test "a Result return type reads as a fail effect carrying its error"
   declared = Ty::applied "Result" (vec! \-> Ty::named "i32" \-> Ty::named "String")
@@ -154,15 +159,24 @@ test "the io macros are the four printing ones"
   assert! \-> !.contains (&"format") IO_MACROS \-> "format! performs no io"
 
 test "a mention of a name with no known row contributes nothing"
-  mentioned = Expr::Ident (voltaic_ast::Ident { text = .to_string "announce", span = (0, 8) })
+  mentioned = Expr::Ident (voltaic_ast::Ident {
+    text = .to_string "announce",
+    span = (0, 8),
+  })
   assert! \-> .is_empty (expr_row (&mentioned))
 
 test "a mention of a name with a known row carries that row to the caller"
-  mentioned = Expr::Ident (voltaic_ast::Ident { text = .to_string "announce", span = (0, 8) })
+  mentioned = Expr::Ident (voltaic_ast::Ident {
+    text = .to_string "announce",
+    span = (0, 8),
+  })
   known = vec! \-> (.to_string "announce", Row::single Effect::Performs)
   assert! \-> .holds (&Effect::Performs) (expr_row_with (&mentioned) (.as_slice known))
 
 test "an unrelated name in the table is not picked up"
-  mentioned = Expr::Ident (voltaic_ast::Ident { text = .to_string "quiet", span = (0, 5) })
+  mentioned = Expr::Ident (voltaic_ast::Ident {
+    text = .to_string "quiet",
+    span = (0, 5),
+  })
   known = vec! \-> (.to_string "announce", Row::single Effect::Performs)
   assert! \-> .is_empty (expr_row_with (&mentioned) (.as_slice known))

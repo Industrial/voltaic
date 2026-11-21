@@ -10,21 +10,42 @@ export data MemberKind
   | Method
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
-export data Member { export owner String, export name String, export ty Ty, export kind MemberKind }
+export data Member {
+  export owner String,
+  export name String,
+  export ty Ty,
+  export kind MemberKind,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Requirement { export class_name String, export name String }
+export data Requirement {
+  export class_name String,
+  export name String,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Alias { export name String, export ty Ty }
+export data Alias {
+  export name String,
+  export ty Ty,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Declarations { export members Vec<Member>, export requirements Vec<Requirement>, export types Vec<String>, export aliases Vec<Alias> }
+export data Declarations {
+  export members Vec<Member>,
+  export requirements Vec<Requirement>,
+  export types Vec<String>,
+  export aliases Vec<Alias>,
+}
   deriving (Debug, Clone, Default)
 
 instance Declarations
   export empty : Self
-  empty = Declarations { members = Vec::new (), requirements = Vec::new (), types = Vec::new (), aliases = Vec::new () }
+  empty = Declarations {
+    members = Vec::new (),
+    requirements = Vec::new (),
+    types = Vec::new (),
+    aliases = Vec::new (),
+  }
 
   export len : &self -> usize
   len self = .len self.members
@@ -98,11 +119,21 @@ collect program =
           case &constructor.fields of
             ConstructorFields::Record fields ->
               for field in .iter fields
-                found.members.push (Member { owner = .clone d.name.text, name = .clone field.name.text, ty = annotation::read (&field.ty), kind = MemberKind::Field })
+                found.members.push (Member {
+                  owner = .clone d.name.text,
+                  name = .clone field.name.text,
+                  ty = annotation::read (&field.ty),
+                  kind = MemberKind::Field,
+                })
               ()
             ConstructorFields::Tuple every ->
               for pair in .enumerate (.iter every)
-                found.members.push (Member { owner = .clone d.name.text, name = .to_string (format! \-> "#{pair.0}"), ty = annotation::read pair.1, kind = MemberKind::Field })
+                found.members.push (Member {
+                  owner = .clone d.name.text,
+                  name = .to_string (format! \-> "#{pair.0}"),
+                  ty = annotation::read pair.1,
+                  kind = MemberKind::Field,
+                })
               ()
             ConstructorFields::Unit -> ()
         ()
@@ -111,10 +142,16 @@ collect program =
         for member in .iter c.members
           case member of
             ClassMember::Method f ->
-              found.requirements.push (Requirement { class_name = .clone c.name.text, name = .clone f.name.text })
+              found.requirements.push (Requirement {
+                class_name = .clone c.name.text,
+                name = .clone f.name.text,
+              })
               ()
             ClassMember::AssocConst { name, .. } ->
-              found.requirements.push (Requirement { class_name = .clone c.name.text, name = .clone name.text })
+              found.requirements.push (Requirement {
+                class_name = .clone c.name.text,
+                name = .clone name.text,
+              })
               ()
             ClassMember::AssocType { .. } -> ()
         ()
@@ -122,10 +159,18 @@ collect program =
         owner = .clone block.target.head.text
         for member in .iter block.members
           if member is ClassMember::Method f && .as_ref f.sig.ret is Some written
-            found.members.push (Member { owner = .clone owner, name = .clone f.name.text, ty = annotation::read written, kind = MemberKind::Method })
+            found.members.push (Member {
+              owner = .clone owner,
+              name = .clone f.name.text,
+              ty = annotation::read written,
+              kind = MemberKind::Method,
+            })
         ()
       Item::Type a ->
-        found.aliases.push (Alias { name = .clone a.name.text, ty = annotation::read (&a.ty) })
+        found.aliases.push (Alias {
+          name = .clone a.name.text,
+          ty = annotation::read (&a.ty),
+        })
         ()
       _ -> ()
   found

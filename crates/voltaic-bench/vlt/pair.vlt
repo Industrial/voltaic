@@ -1,7 +1,12 @@
 import std::path::Path
 import std::path::PathBuf
 
-export data Pair { export stem String, export function String, export vlt PathBuf, export r#rust PathBuf }
+export data Pair {
+  export stem String,
+  export function String,
+  export vlt PathBuf,
+  export r#rust PathBuf,
+}
   deriving (Debug, Clone)
 
 export pairs : &Path -> Vec<Pair>
@@ -25,7 +30,12 @@ pairs root =
       Some f -> f
       None ->
         continue
-    found.push (Pair { stem, function, vlt = vlt_path, r#rust = rust_path })
+    found.push (Pair {
+      stem,
+      function,
+      vlt = vlt_path,
+      r#rust = rust_path,
+    })
   found
 
 export(crate) first_public_function : &str -> Option<String>

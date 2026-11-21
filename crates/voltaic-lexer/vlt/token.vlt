@@ -2,7 +2,13 @@ import crate::Span
 import crate::Trivia
 import crate::keyword::Keyword
 
-export data Token { export kind TokenKind, export span Span, export ws_before bool, export leading Vec<Trivia>, export trailing Option<Trivia> }
+export data Token {
+  export kind TokenKind,
+  export span Span,
+  export ws_before bool,
+  export leading Vec<Trivia>,
+  export trailing Option<Trivia>,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 export data TokenKind
@@ -13,8 +19,14 @@ export data TokenKind
 
   | Int String
   | Float String
-  | Str { parts Vec<StrPart>, raw String }
-  | RawStr { text String, hashes usize }
+  | Str {
+    parts Vec<StrPart>,
+    raw String,
+  }
+  | RawStr {
+    text String,
+    hashes usize,
+  }
   | ByteStr String
   | CStr String
   | Char char
@@ -53,7 +65,11 @@ export data TokenKind
   | AmpColon
   | Backslash
   | RustBlock String
-  | MacroBody { open char, code String, indented bool }
+  | MacroBody {
+    open char,
+    code String,
+    indented bool,
+  }
   | Dollar
   | At
   | AtAt
@@ -109,5 +125,8 @@ instance TokenKind
 
 export data StrPart
   = Text String
-  | Interp { tokens Vec<Token>, spec Option<String> }
+  | Interp {
+    tokens Vec<Token>,
+    spec Option<String>,
+  }
   deriving (Debug, Clone, PartialEq, Eq)

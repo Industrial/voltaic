@@ -5,7 +5,11 @@ const WINDOW : usize = 48
 
 const AGREE : usize = 6
 
-data Mark { ch char, line usize, col usize }
+data Mark {
+  ch char,
+  line usize,
+  col usize,
+}
   deriving (Debug, Clone, Copy)
 
 marks : &str -> Vec<Mark>
@@ -15,7 +19,11 @@ marks text =
     line = numbered.0 + 1
     for indexed in .enumerate (.chars numbered.1)
       if !.is_whitespace indexed.1
-        found.push (Mark { ch = indexed.1, line, col = indexed.0 + 1 })
+        found.push (Mark {
+          ch = indexed.1,
+          line,
+          col = indexed.0 + 1,
+        })
   found
 
 agree : &[Mark] -> usize -> &[Mark] -> usize -> bool
@@ -50,7 +58,12 @@ shifted map entry =
     aligned.2 + found.gen_col - aligned.1
   else
     1
-  Some (Origin { span = found.span, src_line = found.src_line, src_col = found.src_col, gen_col })
+  Some (Origin {
+    span = found.span,
+    src_line = found.src_line,
+    src_col = found.src_col,
+    gen_col,
+  })
 
 export realign : &str -> &str -> &str -> Option<String>
 realign before after map =

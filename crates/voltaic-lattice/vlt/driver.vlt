@@ -8,10 +8,18 @@ import crate::unify::unify
 
 export const MAX_ROUNDS : u32 = 16
 
-export data Failure { export at usize, export mismatch Mismatch }
+export data Failure {
+  export at usize,
+  export mismatch Mismatch,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Outcome { export substitution Substitution, export failures Vec<Failure>, export rounds u32, export deferred Vec<usize> }
+export data Outcome {
+  export substitution Substitution,
+  export failures Vec<Failure>,
+  export rounds u32,
+  export deferred Vec<usize>,
+}
   deriving (Debug, Clone)
 
 instance Outcome
@@ -44,23 +52,37 @@ solve_with store known =
       apply pair.0 pair.1 known (&mut subst) (&mut failures) (&mut deferred)
     if .len subst != before
       changed := true
-  Outcome { substitution = subst, failures, rounds, deferred }
+  Outcome {
+    substitution = subst,
+    failures,
+    rounds,
+    deferred,
+  }
 
 apply : usize -> &crate::constraint::Constraint -> &crate::declarations::Declarations -> &mut Substitution -> &mut Vec<Failure> -> &mut Vec<usize> -> ()
 apply at c known subst failures deferred =
   case &c.obligation of
     Obligation::Unify { left, right, .. } ->
       if unify (&.expand left known) (&.expand right known) subst is Err m
-        failures.push (Failure { at, mismatch = m })
+        failures.push (Failure {
+          at,
+          mismatch = m,
+        })
     Obligation::Callable { callee, args, result, .. } ->
       expected = .expand (&arrow_of (.as_slice args) result) known
       if unify (&.expand callee known) (&expected) subst is Err m
-        failures.push (Failure { at, mismatch = m })
+        failures.push (Failure {
+          at,
+          mismatch = m,
+        })
     Obligation::Member { recv, name, result, .. } ->
       resolved = .resolve recv subst
       if owner_of (&resolved) is Some owner && .member (&owner) name known is Some declared
         if unify result declared subst is Err m
-          failures.push (Failure { at, mismatch = m })
+          failures.push (Failure {
+            at,
+            mismatch = m,
+          })
       else
         deferred.push at
   ()
@@ -107,7 +129,10 @@ test "an empty store solves in one round with nothing bound"
 test "a single unify constraint is solved"
   mut s = Store::new ()
   hole = .fresh_hole s
-  .require (Obligation::Unify { left = .clone hole, right = Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
+  .require (Obligation::Unify {
+    left = .clone hole,
+    right = Ty::named "u64",
+  }) (0, 3) crate::reason::Reason::LiteralKind s
   outcome = solve (&s)
   assert! \-> .is_solved outcome
   assert_eq! \-> .resolved (&hole) outcome \-> Ty::named "u64"
@@ -115,8 +140,14 @@ test "a single unify constraint is solved"
 test "a contradiction is reported against the constraint that caused it"
   mut s = Store::new ()
   hole = .fresh_hole s
-  .require (Obligation::Unify { left = .clone hole, right = Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
-  bad = .require (Obligation::Unify { left = .clone hole, right = Ty::named "bool" }) (9, 13) crate::reason::Reason::ReturnPosition s
+  .require (Obligation::Unify {
+    left = .clone hole,
+    right = Ty::named "u64",
+  }) (0, 3) crate::reason::Reason::LiteralKind s
+  bad = .require (Obligation::Unify {
+    left = .clone hole,
+    right = Ty::named "bool",
+  }) (9, 13) crate::reason::Reason::ReturnPosition s
   outcome = solve (&s)
   assert! \-> !.is_solved outcome
   assert_eq! \-> .len outcome.failures \-> 1
@@ -134,14 +165,22 @@ test "a nullary call's expected type is just its result"
 test "a callable constraint unifies the callee against the arrow its use implies"
   mut s = Store::new ()
   callee = .fresh_hole s
-  .require (Obligation::Callable { callee = .clone callee, args = vec! \-> Ty::named "u64", result = Ty::named "bool" }) (0, 8) crate::reason::Reason::CallCallee s
+  .require (Obligation::Callable {
+    callee = .clone callee,
+    args = vec! \-> Ty::named "u64",
+    result = Ty::named "bool",
+  }) (0, 8) crate::reason::Reason::CallCallee s
   outcome = solve (&s)
   assert! \-> .is_solved outcome
   assert_eq! \-> .to_string (.resolved (&callee) outcome) \-> "u64 -> bool"
 
 test "a member constraint with no declarations is deferred rather than guessed at"
   mut s = Store::new ()
-  at = .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (0, 7) crate::reason::Reason::FieldAccess s
+  at = .require (Obligation::Member {
+    recv = Ty::named "Cursor",
+    name = .to_string "pos",
+    result = Ty::named "usize",
+  }) (0, 7) crate::reason::Reason::FieldAccess s
   outcome = solve (&s)
   assert! \-> .is_solved outcome
   assert_eq! \-> outcome.deferred \-> vec! \-> at
@@ -149,7 +188,11 @@ test "a member constraint with no declarations is deferred rather than guessed a
 test "a member constraint is discharged once the declarations are known"
   mut s = Store::new ()
   slot = .fresh_hole s
-  .require (Obligation::Member { recv = Ty::named "Point", name = .to_string "x", result = .clone slot }) (0, 7) crate::reason::Reason::FieldAccess s
+  .require (Obligation::Member {
+    recv = Ty::named "Point",
+    name = .to_string "x",
+    result = .clone slot,
+  }) (0, 7) crate::reason::Reason::FieldAccess s
   program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64, y : f64 }\n")
   known = crate::declarations::collect (&program)
   outcome = solve_with (&s) (&known)
@@ -159,7 +202,11 @@ test "a member constraint is discharged once the declarations are known"
 
 test "a member a type does not have is a reported mismatch, not a silence"
   mut s = Store::new ()
-  .require (Obligation::Member { recv = Ty::named "Point", name = .to_string "x", result = Ty::named "String" }) (0, 7) crate::reason::Reason::FieldAccess s
+  .require (Obligation::Member {
+    recv = Ty::named "Point",
+    name = .to_string "x",
+    result = Ty::named "String",
+  }) (0, 7) crate::reason::Reason::FieldAccess s
   program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64, y : f64 }\n")
   known = crate::declarations::collect (&program)
   outcome = solve_with (&s) (&known)
@@ -167,28 +214,47 @@ test "a member a type does not have is a reported mismatch, not a silence"
 
 test "the receiver's owner is readable at the access's span"
   mut s = Store::new ()
-  at = .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  at = .require (Obligation::Member {
+    recv = Ty::named "Cursor",
+    name = .to_string "pos",
+    result = Ty::named "usize",
+  }) (4, 11) crate::reason::Reason::FieldAccess s
   _ = at
   outcome = solve (&s)
   assert_eq! \-> receiver_owner (&s) (&outcome) (4, 11) \-> Some (.to_string "Cursor")
 
 test "a span with no member obligation has no owner"
   mut s = Store::new ()
-  _ = .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  _ = .require (Obligation::Member {
+    recv = Ty::named "Cursor",
+    name = .to_string "pos",
+    result = Ty::named "usize",
+  }) (4, 11) crate::reason::Reason::FieldAccess s
   outcome = solve (&s)
   assert_eq! \-> receiver_owner (&s) (&outcome) (99, 100) \-> None
 
 test "a receiver that never resolved has no owner, rather than a guess"
   mut s = Store::new ()
   hole = .fresh_hole s
-  _ = .require (Obligation::Member { recv = .clone hole, name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  _ = .require (Obligation::Member {
+    recv = .clone hole,
+    name = .to_string "pos",
+    result = Ty::named "usize",
+  }) (4, 11) crate::reason::Reason::FieldAccess s
   outcome = solve (&s)
   assert_eq! \-> receiver_owner (&s) (&outcome) (4, 11) \-> None
 
 test "the owner is seen through a reference, which is what owner_of is for"
   mut s = Store::new ()
-  borrowed = Ty::Con { name = .to_string "&", args = vec! \-> Ty::named "Cursor" }
-  _ = .require (Obligation::Member { recv = borrowed, name = .to_string "pos", result = Ty::named "usize" }) (4, 11) crate::reason::Reason::FieldAccess s
+  borrowed = Ty::Con {
+    name = .to_string "&",
+    args = vec! \-> Ty::named "Cursor",
+  }
+  _ = .require (Obligation::Member {
+    recv = borrowed,
+    name = .to_string "pos",
+    result = Ty::named "usize",
+  }) (4, 11) crate::reason::Reason::FieldAccess s
   outcome = solve (&s)
   assert_eq! \-> receiver_owner (&s) (&outcome) (4, 11) \-> Some (.to_string "Cursor")
 
@@ -196,7 +262,11 @@ test "a field read through a reference resolves to the owner's field"
   mut s = Store::new ()
   slot = .fresh_hole s
   recv = Ty::applied "&" (vec! \-> Ty::named "Point")
-  .require (Obligation::Member { recv, name = .to_string "y", result = .clone slot }) (0, 7) crate::reason::Reason::FieldAccess s
+  .require (Obligation::Member {
+    recv,
+    name = .to_string "y",
+    result = .clone slot,
+  }) (0, 7) crate::reason::Reason::FieldAccess s
   program = .expect "should parse" (voltaic_parser::parse_source "data Point = Point { x : f64, y : f64 }\n")
   known = crate::declarations::collect (&program)
   outcome = solve_with (&s) (&known)
@@ -205,8 +275,15 @@ test "a field read through a reference resolves to the owner's field"
 test "a callable obligation on a type Lattice cannot model reports nothing"
   mut s = Store::new ()
   callee = .fresh_hole s
-  .require (Obligation::Unify { left = .clone callee, right = Ty::applied "&" (vec! \-> Ty::named "dyn Fn(i32) -> i32") }) (0, 5) crate::reason::Reason::Ascribed s
-  .require (Obligation::Callable { callee = .clone callee, args = vec! \-> Ty::named "i32", result = Ty::named "i32" }) (6, 9) crate::reason::Reason::CallCallee s
+  .require (Obligation::Unify {
+    left = .clone callee,
+    right = Ty::applied "&" (vec! \-> Ty::named "dyn Fn(i32) -> i32"),
+  }) (0, 5) crate::reason::Reason::Ascribed s
+  .require (Obligation::Callable {
+    callee = .clone callee,
+    args = vec! \-> Ty::named "i32",
+    result = Ty::named "i32",
+  }) (6, 9) crate::reason::Reason::CallCallee s
   outcome = solve (&s)
   assert! \-> !.is_solved outcome \-> "the callable obligation cannot discharge"
   assert! \-> .is_empty (.contradictions (&s) outcome) \-> "a modelling gap is not a contradiction"
@@ -215,15 +292,25 @@ test "a callable obligation whose nested comparison is ground still reports noth
   mut s = Store::new ()
   callee = .fresh_hole s
   written = Ty::arrow (Ty::named "impl Fn(u64)") (Ty::named "Tally")
-  .require (Obligation::Unify { left = .clone callee, right = written }) (0, 5) crate::reason::Reason::Ascribed s
-  .require (Obligation::Callable { callee = .clone callee, args = vec! \-> Ty::named "u64", result = Ty::named "Tally" }) (6, 9) crate::reason::Reason::CallCallee s
+  .require (Obligation::Unify {
+    left = .clone callee,
+    right = written,
+  }) (0, 5) crate::reason::Reason::Ascribed s
+  .require (Obligation::Callable {
+    callee = .clone callee,
+    args = vec! \-> Ty::named "u64",
+    result = Ty::named "Tally",
+  }) (6, 9) crate::reason::Reason::CallCallee s
   outcome = solve (&s)
   assert! \-> !.is_solved outcome \-> "impl Fn(u64) is not u64 to this model"
   assert! \-> .is_empty (.contradictions (&s) outcome) \-> "the ground pair is inside Lattice's own derivation"
 
 test "two names that are the same type through an alias do not conflict"
   mut s = Store::new ()
-  .require (Obligation::Unify { left = Ty::named "Depth", right = Ty::named "f64" }) (0, 5) crate::reason::Reason::Ascribed s
+  .require (Obligation::Unify {
+    left = Ty::named "Depth",
+    right = Ty::named "f64",
+  }) (0, 5) crate::reason::Reason::Ascribed s
   program = .expect "should parse" (voltaic_parser::parse_source "type Depth = f64\n")
   known = crate::declarations::collect (&program)
   outcome = solve_with (&s) (&known)
@@ -232,8 +319,14 @@ test "two names that are the same type through an alias do not conflict"
 test "a genuine ground conflict is reported as a contradiction"
   mut s = Store::new ()
   hole = .fresh_hole s
-  .require (Obligation::Unify { left = .clone hole, right = Ty::named "u64" }) (0, 3) crate::reason::Reason::Ascribed s
-  .require (Obligation::Unify { left = .clone hole, right = Ty::named "bool" }) (9, 13) crate::reason::Reason::EquationBody s
+  .require (Obligation::Unify {
+    left = .clone hole,
+    right = Ty::named "u64",
+  }) (0, 3) crate::reason::Reason::Ascribed s
+  .require (Obligation::Unify {
+    left = .clone hole,
+    right = Ty::named "bool",
+  }) (9, 13) crate::reason::Reason::EquationBody s
   outcome = solve (&s)
   assert_eq! \-> .len (.contradictions (&s) outcome) \-> 1
 
@@ -242,7 +335,10 @@ test "the driver never exceeds its round bound"
   mut previous = .fresh_hole s
   for _step in 0 .. 64
     next = .fresh_hole s
-    .require (Obligation::Unify { left = .clone previous, right = .clone next }) (0, 1) crate::reason::Reason::EquationBody s
+    .require (Obligation::Unify {
+      left = .clone previous,
+      right = .clone next,
+    }) (0, 1) crate::reason::Reason::EquationBody s
     previous := next
   outcome = solve (&s)
   assert! \-> outcome.rounds <= MAX_ROUNDS \-> "#{outcome.rounds} rounds"
@@ -251,8 +347,14 @@ test "a chain of holes collapses to the concrete type at its end"
   mut s = Store::new ()
   first = .fresh_hole s
   middle = .fresh_hole s
-  .require (Obligation::Unify { left = .clone first, right = .clone middle }) (0, 1) crate::reason::Reason::EquationBody s
-  .require (Obligation::Unify { left = .clone middle, right = Ty::named "u64" }) (2, 3) crate::reason::Reason::LiteralKind s
+  .require (Obligation::Unify {
+    left = .clone first,
+    right = .clone middle,
+  }) (0, 1) crate::reason::Reason::EquationBody s
+  .require (Obligation::Unify {
+    left = .clone middle,
+    right = Ty::named "u64",
+  }) (2, 3) crate::reason::Reason::LiteralKind s
   outcome = solve (&s)
   assert! \-> .is_solved outcome
   assert_eq! \-> .resolved (&first) outcome \-> Ty::named "u64"

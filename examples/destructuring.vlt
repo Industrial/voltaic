@@ -10,11 +10,20 @@
 -- run time, and only on an array of more than two elements.
 
 data Point
-  = Point { x i32, y i32, label String }
+  = Point {
+    x i32,
+    y i32,
+    label String,
+  }
 
 data Shape
-  = Circle { radius i32 }
-  | Rect { w i32, h i32 }
+  = Circle {
+    radius i32,
+  }
+  | Rect {
+    w i32,
+    h i32,
+  }
 
 -- §6.5's tuple destructuring. Both bindings are used, so a lowering that
 -- bound one name to the pair fails to compile.
@@ -100,7 +109,11 @@ main =
   println! \-> "#{(inner_sum (1, (2, 3)))}"
   println! \-> "#{(ends ([1, 2, 3, 4, 5]))}"
   println! \-> "#{(tail_len ([9, 2, 3, 4, 5]))}"
-  p = Point { x = 0, y = 7, label = .to_string "o" }
+  p = Point {
+    x = 0,
+    y = 7,
+    label = .to_string "o",
+  }
   println! \-> "#{(origin_label (&p))}"
   println! \-> "#{(label_of (&p))}"
   println! \-> "#{(area (&Circle { radius = 2 }))}"

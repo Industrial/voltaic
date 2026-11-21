@@ -52,7 +52,10 @@ fill_holes args params =
       Expr::Ident i -> i.text == "_"
       _ -> false
     if is_hole
-      .push (Expr::Ident (Ident { text = .clone params[taken], span = .span arg })) filled
+      .push (Expr::Ident (Ident {
+        text = .clone params[taken],
+        span = .span arg,
+      })) filled
       taken += 1
     else
       .push (.clone arg) filled
@@ -113,13 +116,17 @@ rust """
   }
 """
 
-export(crate) data ArityScope { previous ArityTable }
+export(crate) data ArityScope {
+  previous ArityTable,
+}
 
 instance ArityScope
   export(crate) enter : ArityTable -> Self
   enter table =
     previous = .with_borrow_mut (\slot -> std::mem::replace slot table) IN_SCOPE
-    ArityScope { previous }
+    ArityScope {
+      previous,
+    }
 
   export(crate) arity_of : &str -> Option<usize>
   arity_of name = .with_borrow (\table -> .arity_of name table) IN_SCOPE
@@ -131,7 +138,9 @@ instance Drop ArityScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export(crate) data ArityTable { arities BTreeMap<String, usize> }
+export(crate) data ArityTable {
+  arities BTreeMap<String, usize>,
+}
   deriving (Debug, Clone, Default)
 
 instance ArityTable
@@ -197,9 +206,17 @@ compose op lhs rhs param indent =
   mut links = Vec::new ()
   compose_chain op lhs rhs (&mut links)
   name = closure_param param
-  mut applied = Expr::Ident (Ident { text = .clone name, span = .span lhs })
+  mut applied = Expr::Ident (Ident {
+    text = .clone name,
+    span = .span lhs,
+  })
   for function in links
-    applied := Expr::Call { callee = Box::new (.clone function), args = vec! \-> applied, is_dollar = false, span = .span function }
+    applied := Expr::Call {
+      callee = Box::new (.clone function),
+      args = vec! \-> applied,
+      is_dollar = false,
+      span = .span function,
+    }
   body = emit_expr (&applied) indent
   closure (&[name]) (&body)
 
@@ -435,9 +452,18 @@ export(crate) emit_over : &[Ident] -> &Expr -> &Expr -> usize -> String
 emit_over selector function place indent =
   mut chain = .clone place
   for name in selector
-    chain := Expr::Field { recv = Box::new chain, name = .clone name, span = .span place }
+    chain := Expr::Field {
+      recv = Box::new chain,
+      name = .clone name,
+      span = .span place,
+    }
   target = emit_expr (&chain) indent
-  applied = Expr::Call { callee = Box::new (.clone function), args = vec! \-> .clone chain, is_dollar = false, span = .span function }
+  applied = Expr::Call {
+    callee = Box::new (.clone function),
+    args = vec! \-> .clone chain,
+    is_dollar = false,
+    span = .span function,
+  }
   value = emit_expr (&applied) indent
   format! \-> "#{target} = #{value}"
 
@@ -480,7 +506,10 @@ emit_section section indent =
     op = parts.0
     hole_on_the_left = parts.1
     operand = parts.2
-    hole = Expr::Ident (Ident { text = .clone param, span = .span operand })
+    hole = Expr::Ident (Ident {
+      text = .clone param,
+      span = .span operand,
+    })
     sides = if hole_on_the_left
       (&hole, .as_ref operand)
     else
@@ -520,11 +549,17 @@ unparen expr = case expr of
 
 #[cfg(test)]
 ident : &str -> Expr
-ident text = Expr::Ident (voltaic_ast::Ident { text = .to_string text, span = (0, 0) })
+ident text = Expr::Ident (voltaic_ast::Ident {
+  text = .to_string text,
+  span = (0, 0),
+})
 
 #[cfg(test)]
 paren : Expr -> Expr
-paren inner = Expr::Paren { inner = Box::new inner, span = (0, 0) }
+paren inner = Expr::Paren {
+  inner = Box::new inner,
+  span = (0, 0),
+}
 
 test "strips one layer"
   assert_eq! \-> unparen (&paren (ident "x")) \-> &ident "x"

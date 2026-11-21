@@ -6,12 +6,18 @@ import crate::ty::Ty
 import crate::variable::Variable
 import voltaic_ast::Span
 
-export data Store { constraints Vec<Constraint>, next u32 }
+export data Store {
+  constraints Vec<Constraint>,
+  next u32,
+}
   deriving (Debug, Clone, Default)
 
 instance Store
   export new : Self
-  new = Store { constraints = Vec::new (), next = 0 }
+  new = Store {
+    constraints = Vec::new (),
+    next = 0,
+  }
 
   export fresh : &mut self -> Variable
   fresh self =
@@ -71,8 +77,14 @@ instance Store
 
 test "the index walk and the provenance walk are the same length"
   mut s = Store::new ()
-  root = .require (crate::constraint::Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (0, 3) crate::reason::Reason::LiteralKind s
-  leaf = .require_from root (crate::constraint::Obligation::Unify { left = crate::ty::Ty::named "u64", right = crate::ty::Ty::named "u64" }) (9, 12) crate::reason::Reason::ReturnPosition s
+  root = .require (crate::constraint::Obligation::Unify {
+    left = crate::ty::Ty::named "u64",
+    right = crate::ty::Ty::named "u64",
+  }) (0, 3) crate::reason::Reason::LiteralKind s
+  leaf = .require_from root (crate::constraint::Obligation::Unify {
+    left = crate::ty::Ty::named "u64",
+    right = crate::ty::Ty::named "u64",
+  }) (9, 12) crate::reason::Reason::ReturnPosition s
   assert_eq! \-> .len (.chain_indices leaf s) \-> .len (.chain leaf s)
   assert_eq! \-> .chain_indices leaf s \-> vec! \-> leaf \-> root
 
@@ -89,25 +101,47 @@ test "a fresh store is empty and hands out variables from zero"
 
 test "pushing returns the index the constraint landed at"
   mut s = Store::new ()
-  first = .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
-  second = .require (Obligation::Unify { left = Ty::named "bool", right = Ty::named "bool" }) (4, 8) Reason::GuardCondition s
+  first = .require (Obligation::Unify {
+    left = Ty::named "u64",
+    right = Ty::named "u64",
+  }) (0, 3) Reason::LiteralKind s
+  second = .require (Obligation::Unify {
+    left = Ty::named "bool",
+    right = Ty::named "bool",
+  }) (4, 8) Reason::GuardCondition s
   assert_eq! \-> first \-> 0
   assert_eq! \-> second \-> 1
   assert_eq! \-> .len s \-> 2
 
 test "every constraint in the store carries a span and a reason"
   mut s = Store::new ()
-  .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
-  .require (Obligation::Member { recv = Ty::named "Cursor", name = .to_string "pos", result = Ty::named "usize" }) (7, 10) Reason::FieldAccess s
+  .require (Obligation::Unify {
+    left = Ty::named "u64",
+    right = Ty::named "u64",
+  }) (0, 3) Reason::LiteralKind s
+  .require (Obligation::Member {
+    recv = Ty::named "Cursor",
+    name = .to_string "pos",
+    result = Ty::named "usize",
+  }) (7, 10) Reason::FieldAccess s
   for c in .all s
     assert! \-> c.provenance.span.1 >= c.provenance.span.0 \-> "#{c:?} has no span"
     assert! \-> !.is_empty (.label c.provenance.reason) \-> "#{c:?} has no reason"
 
 test "a derived constraint's chain walks back to the root"
   mut s = Store::new ()
-  root = .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
-  middle = .require_from root (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (4, 7) Reason::EquationBody s
-  leaf = .require_from middle (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (8, 11) Reason::ReturnPosition s
+  root = .require (Obligation::Unify {
+    left = Ty::named "u64",
+    right = Ty::named "u64",
+  }) (0, 3) Reason::LiteralKind s
+  middle = .require_from root (Obligation::Unify {
+    left = Ty::named "u64",
+    right = Ty::named "u64",
+  }) (4, 7) Reason::EquationBody s
+  leaf = .require_from middle (Obligation::Unify {
+    left = Ty::named "u64",
+    right = Ty::named "u64",
+  }) (8, 11) Reason::ReturnPosition s
   walked = .chain leaf s
   assert_eq! \-> .len walked \-> 3
   assert_eq! \-> walked[0].reason \-> Reason::ReturnPosition
@@ -115,7 +149,10 @@ test "a derived constraint's chain walks back to the root"
 
 test "a root constraint's chain is one long"
   mut s = Store::new ()
-  root = .require (Obligation::Unify { left = Ty::named "u64", right = Ty::named "u64" }) (0, 3) Reason::LiteralKind s
+  root = .require (Obligation::Unify {
+    left = Ty::named "u64",
+    right = Ty::named "u64",
+  }) (0, 3) Reason::LiteralKind s
   assert_eq! \-> .len (.chain root s) \-> 1
 
 test "a fresh hole uses the next variable"

@@ -47,12 +47,20 @@ bind_block p start =
   .advance p
   method = (.ident "expected a method name after `do .`" p)?
   body = (.statement_block "expected an indented `do` body" p)?
-  Ok (Expr::BindBlock { method, body, span = (start, (.prev_span p).1) })
+  Ok (Expr::BindBlock {
+    method,
+    body,
+    span = (start, (.prev_span p).1),
+  })
 
 export(crate) block_expr : &mut Parser -> Option<String> -> usize -> Result<Expr, ParseError>
 block_expr p label start =
   body = (.statement_block "expected an indented block" p)?
-  Ok (Expr::Block { label, body, span = (start, (.prev_span p).1) })
+  Ok (Expr::Block {
+    label,
+    body,
+    span = (start, (.prev_span p).1),
+  })
 
 export(crate) case_arm : &mut Parser -> Result<CaseArm, ParseError>
 case_arm p =
@@ -73,7 +81,15 @@ case_arm p =
   body = (arm_body p)?
   span = (start, (.prev_span p).1)
   trailing = (.newline_with_trailing "expected a line break after a `case` arm" p)?
-  Ok (CaseArm { pattern, ty, r#guard = arm_guard, body, span, leading, trailing })
+  Ok (CaseArm {
+    pattern,
+    ty,
+    r#guard = arm_guard,
+    body,
+    span,
+    leading,
+    trailing,
+  })
 
 export(crate) case_of : &mut Parser -> Result<Expr, ParseError>
 case_of p =
@@ -92,7 +108,11 @@ case_of p =
   (.expect (&TokenKind::Dedent) "expected the `case` arms to end" p)?
   if .is_empty arms
     return Err (ParseError::r#with Code::EmptyBody "a `case` must have at least one arm" (start, (.prev_span p).1))
-  Ok (Expr::Case { scrutinee = Box::new scrutinee, arms, span = (start, (.prev_span p).1) })
+  Ok (Expr::Case {
+    scrutinee = Box::new scrutinee,
+    arms,
+    span = (start, (.prev_span p).1),
+  })
 
 export(crate) check_callback_tails : &Program -> Vec<ParseError>
 check_callback_tails program =
@@ -117,7 +137,9 @@ ladder_condition p =
     .push (condition_operand p)? operands
   if .check (&TokenKind::OrOr) p
     return Err (ParseError::r#with Code::ExpectedToken "a condition holding a pattern test joins with `&&` only: Rust's let-chains do not admit `||`. Split the condition, or use a `case`" (.peek_span p))
-  Ok $ Condition { operands }
+  Ok $ Condition {
+    operands,
+  }
 
 export(crate) condition_operand : &mut Parser -> Result<ConditionOperand, ParseError>
 condition_operand p =
@@ -125,7 +147,10 @@ condition_operand p =
     return Ok (ConditionOperand::Expr (parse_expr p ABOVE_AND_AND)?)
   source = (parse_expr p ABOVE_AND_AND)?
   (.expect (&TokenKind::Kw Keyword::Is) "expected `is` before the pattern" p)?
-  Ok (ConditionOperand::Pattern { pattern = (pattern_alt p)?, source })
+  Ok (ConditionOperand::Pattern {
+    pattern = (pattern_alt p)?,
+    source,
+  })
 
 export(crate) control_flow : &mut Parser -> Result<Option<Expr>, ParseError>
 control_flow p =
@@ -142,18 +167,33 @@ control_flow p =
     .advance p
     cond = (condition p)?
     body = (.statement_block "expected an indented loop body" p)?
-    return Ok (Some (Expr::While { condition = cond, body, label, span = (start, (.prev_span p).1) }))
+    return Ok (Some (Expr::While {
+      condition = cond,
+      body,
+      label,
+      span = (start, (.prev_span p).1),
+    }))
   if .check (&TokenKind::Kw Keyword::For) p
     .advance p
     binder = (.ident "expected a name after `for`" p)?
     (.expect (&TokenKind::Kw Keyword::In) "expected `in` after the binder — doc 30 §3.2 writes a `for` with Rust's own word" p)?
     source = Box::new (parse_expr p 0)?
     body = (.statement_block "expected an indented loop body" p)?
-    return Ok (Some (Expr::For { binder, source, body, label, span = (start, (.prev_span p).1) }))
+    return Ok (Some (Expr::For {
+      binder,
+      source,
+      body,
+      label,
+      span = (start, (.prev_span p).1),
+    }))
   if .check (&TokenKind::Kw Keyword::Loop) p
     .advance p
     body = (.statement_block "expected an indented loop body" p)?
-    return Ok (Some (Expr::Loop { body, label, span = (start, (.prev_span p).1) }))
+    return Ok (Some (Expr::Loop {
+      body,
+      label,
+      span = (start, (.prev_span p).1),
+    }))
   if .is_some label && .check (&TokenKind::Newline) p
     return .map Some (block_expr p label start)
   if label is Some named
@@ -171,7 +211,11 @@ control_flow p =
       None
     else
       Some $ Box::new (parse_expr p 0)?
-    return Ok (Some (Expr::Break { label = break_label, value, span = (start, (.prev_span p).1) }))
+    return Ok (Some (Expr::Break {
+      label = break_label,
+      value,
+      span = (start, (.prev_span p).1),
+    }))
   if .check (&TokenKind::Kw Keyword::Continue) p
     .advance p
     continue_label = case &(.peek p).kind of
@@ -180,7 +224,10 @@ control_flow p =
         .advance p
         Some owned
       _ -> None
-    return Ok (Some (Expr::Continue { label = continue_label, span = (start, (.prev_span p).1) }))
+    return Ok (Some (Expr::Continue {
+      label = continue_label,
+      span = (start, (.prev_span p).1),
+    }))
   if .check (&TokenKind::Kw Keyword::If) p
     return .map Some (.if_statement p)
   if .check (&TokenKind::Kw Keyword::Guard) p
@@ -190,7 +237,12 @@ control_flow p =
     pattern = (pattern_alt p)?
     (.expect (&TokenKind::Kw Keyword::Else) "expected `else` — a `guard` without one is a binding, and let-else requires it" p)?
     fallback = (.statement_block "expected an indented `else` body after `guard`" p)?
-    return Ok (Some (Expr::Guard { pattern, source, r#otherwise = fallback, span = (start, (.prev_span p).1) }))
+    return Ok (Some (Expr::Guard {
+      pattern,
+      source,
+      r#otherwise = fallback,
+      span = (start, (.prev_span p).1),
+    }))
   Ok None
 
 export(crate) holds_a_pattern_test : &Parser -> bool -> &TokenKind -> bool
@@ -230,9 +282,19 @@ modified_block p kw start =
   body = (.statement_block (&format! \-> "expected an indented `#{word}` body") p)?
   span = (start, (.prev_span p).1)
   case kw of
-    Keyword::Async -> Ok (Expr::AsyncBlock { body, is_move, span })
-    Keyword::Unsafe -> Ok (Expr::UnsafeBlock { body, span })
-    Keyword::Try -> Ok (Expr::TryBlock { body, span })
+    Keyword::Async -> Ok (Expr::AsyncBlock {
+      body,
+      is_move,
+      span,
+    })
+    Keyword::Unsafe -> Ok (Expr::UnsafeBlock {
+      body,
+      span,
+    })
+    Keyword::Try -> Ok (Expr::TryBlock {
+      body,
+      span,
+    })
     _ ->
       unreachable! \-> "only `try`, `async` and `unsafe` modify a block"
 
@@ -248,7 +310,10 @@ qualifiers p =
       name = (.ident "expected a name before `in`" p)?
       .advance p
       source = (parse_expr p 0)?
-      .push (Qualifier::Draw { name, source }) found
+      .push (Qualifier::Draw {
+        name,
+        source,
+      }) found
     else
       .push (Qualifier::Guard (parse_expr p 0)?) found
     .skip_layout p
@@ -320,25 +385,46 @@ stmt p =
       taken
     else
       None
-    wrapped = Expr::Item { item = Box::new declared, span = (start, end) }
-    return Ok (Stmt { expr = wrapped, span = (start, end), leading = Vec::new (), trailing })
+    wrapped = Expr::Item {
+      item = Box::new declared,
+      span = (start, end),
+    }
+    return Ok (Stmt {
+      expr = wrapped,
+      span = (start, end),
+      leading = Vec::new (),
+      trailing,
+    })
   if opens_an_over p
     found = (over_update p start)?
     end = (.prev_span p).1
     trailing = (.newline_with_trailing "expected a line break after the statement" p)?
-    return Ok (Stmt { expr = found, span = (start, end), leading, trailing })
+    return Ok (Stmt {
+      expr = found,
+      span = (start, end),
+      leading,
+      trailing,
+    })
   flow = (control_flow p)?
   if flow is Some found
     end = (.prev_span p).1
     trailing = (.newline_with_trailing "expected a line break after the statement" p)?
-    return Ok (Stmt { expr = found, span = (start, end), leading, trailing })
+    return Ok (Stmt {
+      expr = found,
+      span = (start, end),
+      leading,
+      trailing,
+    })
   expr = if .check (&TokenKind::Kw Keyword::Return) p
     .advance p
     value = if .at_statement_end p
       None
     else
       Some $ Box::new (parse_expr p 0)?
-    Expr::Return { value, span = (start, (.prev_span p).1) }
+    Expr::Return {
+      value,
+      span = (start, (.prev_span p).1),
+    }
   else if (.try_draw p)? is Some drawn
     drawn
   else if (try_await p)? is Some awaited
@@ -350,4 +436,9 @@ stmt p =
     (assign_tail p value start)?
   end = (.prev_span p).1
   trailing = (.newline_with_trailing "expected a line break after the statement" p)?
-  Ok (Stmt { expr, span = (start, end), leading, trailing })
+  Ok (Stmt {
+    expr,
+    span = (start, end),
+    leading,
+    trailing,
+  })

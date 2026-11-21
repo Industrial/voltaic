@@ -18,7 +18,15 @@ diagnostic_from_voltaic diagnostic =
   severity = case diagnostic.severity of
     Severity::Error -> "error"
     Severity::Warning -> "warning"
-  Diagnostic { code = .text diagnostic.code, severity = .to_string severity, message = .clone diagnostic.message, path = .clone diagnostic.path, line = position.0, column = position.1, help = .clone diagnostic.help }
+  Diagnostic {
+    code = .text diagnostic.code,
+    severity = .to_string severity,
+    message = .clone diagnostic.message,
+    path = .clone diagnostic.path,
+    line = position.0,
+    column = position.1,
+    help = .clone diagnostic.help,
+  }
 
 export(crate) diagnostic_line_and_column : &str -> usize -> (usize, usize)
 diagnostic_line_and_column source offset =

@@ -65,11 +65,15 @@ rust """
   }
 """
 
-export(crate) data BindScope { previous BindMode }
+export(crate) data BindScope {
+  previous BindMode,
+}
 
 instance BindScope
   export(crate) enter : BindMode -> Self
-  enter mode = BindScope { previous = .replace mode MODE }
+  enter mode = BindScope {
+    previous = .replace mode MODE,
+  }
 
   export(crate) mode : BindMode
   mode = .get MODE
@@ -92,13 +96,17 @@ rust """
   }
 """
 
-export(crate) data BindingScope { previous BindingTable }
+export(crate) data BindingScope {
+  previous BindingTable,
+}
 
 instance BindingScope
   export(crate) enter : BindingTable -> Self
   enter table =
     previous = .with_borrow_mut (\slot -> std::mem::replace slot table) IN_SCOPE
-    BindingScope { previous }
+    BindingScope {
+      previous,
+    }
 
   export(crate) kind_of : &str -> Option<BindingKind>
   kind_of name = .with_borrow (\table -> .kind_of name table) IN_SCOPE
@@ -110,7 +118,9 @@ instance Drop BindingScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export(crate) data BindingTable { kinds BTreeMap<String, BindingKind> }
+export(crate) data BindingTable {
+  kinds BTreeMap<String, BindingKind>,
+}
   deriving (Debug, Clone, Default)
 
 instance BindingTable

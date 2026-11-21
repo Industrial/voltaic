@@ -38,7 +38,8 @@ first_word s = do .and_then
 -- `examples/comprehension.vlt` reaches this one shape too; `do` reaches every
 -- other method as well, which is §1.6's argument for keeping both.
 grid : Vec<(u64, u64)>
-grid = pairs |> .collect
+grid = pairs
+  |> .collect
   where
     pairs = do .flat_map
       x <- 1u64 .. 3
@@ -47,7 +48,9 @@ grid = pairs |> .collect
 
 -- A **user type with its own `and_then`**, which is what proves the construct
 -- is not a `Try` special case in disguise: nothing in `std` is involved.
-data Tally { value u64 }
+data Tally {
+  value u64,
+}
   deriving (Debug, Clone, Copy)
 
 instance Tally
@@ -70,8 +73,12 @@ instance Tally
 
 doubled : Tally
 doubled = do .and_then
-  n <- Tally { value = 5 }
-  Tally { value = n * 2 }
+  n <- Tally {
+    value = 5,
+  }
+  Tally {
+    value = n * 2,
+  }
 
 -- An **intermediate row with no binder** sequences, which is Haskell's `>>`:
 -- it lowers to the same method with a discarded binder, so the rows keep their

@@ -3,7 +3,11 @@ import voltaic_ast::Block
 import voltaic_ast::ClauseBody
 import voltaic_ast::Expr
 
-export data Demand { export name String, export mode Mode, export span voltaic_ast::Span }
+export data Demand {
+  export name String,
+  export mode Mode,
+  export span voltaic_ast::Span,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 export mode_of : &str -> &[voltaic_ast::Clause] -> Mode
@@ -143,10 +147,18 @@ walk_expr e found escaping =
         Mode::Owned
       else
         Mode::Shared
-      found.push (Demand { name = .clone name.text, mode, span = name.span })
+      found.push (Demand {
+        name = .clone name.text,
+        mode,
+        span = name.span,
+      })
     Expr::Assign { target, value, span, .. } ->
       if root_name target is Some name
-        found.push (Demand { name, mode = Mode::Unique, span = *span })
+        found.push (Demand {
+          name,
+          mode = Mode::Unique,
+          span = *span,
+        })
       walk_expr value found false
     Expr::Field { recv, .. } -> walk_expr recv found false
     Expr::Index { recv, index, .. } ->
@@ -218,7 +230,11 @@ root_name target = case target of
   _ -> None
 
 test "a name that is only read wants the cheapest mode"
-  demands = [Demand { name = .to_string "n", mode = Mode::Shared, span = (0, 1) }]
+  demands = [Demand {
+    name = .to_string "n",
+    mode = Mode::Shared,
+    span = (0, 1),
+  }]
   assert_eq! \-> demands[0].mode \-> Mode::Shared
 
 test "join over several demands takes the greatest"
@@ -228,7 +244,11 @@ test "join over several demands takes the greatest"
   assert_eq! \-> found \-> Mode::Unique
 
 test "a demand for a name nobody asked about does not raise the mode"
-  demands = [Demand { name = .to_string "other", mode = Mode::Owned, span = (0, 1) }]
+  demands = [Demand {
+    name = .to_string "other",
+    mode = Mode::Owned,
+    span = (0, 1),
+  }]
   mut found = Mode::least ()
   for demand in demands
     if demand.name == "n"

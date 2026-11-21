@@ -256,11 +256,19 @@ collapse_pipeline e =
     found := .to_vec (.as_slice args)
   guard named is Some name else
     return ()
-  *e := Expr::Dot { recv = .clone lhs, name, args = found, span = *span }
+  *e := Expr::Dot {
+    recv = .clone lhs,
+    name,
+    args = found,
+    span = *span,
+  }
   ()
 
 test "a leaf has no children, so descending it is a no-op"
-  mut e = Expr::Bool { value = true, span = (0, 1) }
+  mut e = Expr::Bool {
+    value = true,
+    span = (0, 1),
+  }
   before = .clone e
   rewrite_expr (&mut e) Pass::BlankNumbers
   assert_eq! \-> e \-> before

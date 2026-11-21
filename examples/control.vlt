@@ -284,7 +284,10 @@ ordered : String
 ordered =
   mut rows = [(3, 2), (1, 2), (2, 9)] : Vec<(i32, i32)>
   rows
-    |> .sort_by (\a b -> b.1 |> .cmp (&a.1) |> .then (a.0 |> .cmp (&b.0)))
+    |> .sort_by (\a b -> b.1
+      |> .cmp (&a.1)
+      |> .then (a.0
+        |> .cmp (&b.0)))
   "#{rows[1].0}#{rows[2].0}"
 
 main : ()

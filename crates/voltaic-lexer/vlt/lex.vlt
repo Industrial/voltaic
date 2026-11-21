@@ -24,7 +24,12 @@ import voltaic_diag::Code
 export lex : &str -> Result<Vec<Token>, LexError>
 lex src = .run $ Lexer::new src
 
-export data LexError { export code Code, export message String, export span Span, export help Option<String> }
+export data LexError {
+  export code Code,
+  export message String,
+  export span Span,
+  export help Option<String>,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance LexError
@@ -33,11 +38,27 @@ instance LexError
     self.span := (self.span.0 + base, self.span.1 + base)
     self
 
-export(crate) data Lexer { cur Cursor<'a>, toks Vec<Token>, indents Vec<usize>, pending Vec<Trivia>, open_delims Vec<(usize, usize)>, trailing Option<Trivia>, at_line_start bool }
+export(crate) data Lexer {
+  cur Cursor<'a>,
+  toks Vec<Token>,
+  indents Vec<usize>,
+  pending Vec<Trivia>,
+  open_delims Vec<(usize, usize)>,
+  trailing Option<Trivia>,
+  at_line_start bool,
+}
 
 instance (Lexer 'a)
   export(crate) new : &'a str -> Self
-  new src = Lexer { cur = Cursor::new src, toks = Vec::new (), indents = vec! \-> 0, pending = Vec::new (), open_delims = Vec::new (), trailing = None, at_line_start = true }
+  new src = Lexer {
+    cur = Cursor::new src,
+    toks = Vec::new (),
+    indents = vec! \-> 0,
+    pending = Vec::new (),
+    open_delims = Vec::new (),
+    trailing = None,
+    at_line_start = true,
+  }
 
   export(crate) run : mut self -> Result<Vec<Token>, LexError>
   run self =
@@ -106,13 +127,21 @@ instance (Lexer 'a)
       end = .pos self.cur
       text = self.cur.slice (at, end)
       code = (.unwrap_or "" (.get (1 .. .len text - 1) text)).to_string ()
-      .push (TokenKind::MacroBody { open, code, indented = false }) (at, end) spaced self
+      .push (TokenKind::MacroBody {
+        open,
+        code,
+        indented = false,
+      }) (at, end) spaced self
       return Ok ()
     .reset_to mark self.cur
     base = *.expect "the base level is never popped" (.last self.indents)
     body_start = .pos self.cur
     if scan_rust_block (&mut self.cur) base is Some code
-      .push (TokenKind::MacroBody { open = '{', code, indented = true }) (body_start, .pos self.cur) true self
+      .push (TokenKind::MacroBody {
+        open = '{',
+        code,
+        indented = true,
+      }) (body_start, .pos self.cur) true self
     else
       .reset_to body_start self.cur
     Ok ()
@@ -157,7 +186,12 @@ instance (Lexer 'a)
 
     start = .pos self.cur
     .bump self.cur
-    Err (LexError { code = Code::UnexpectedCharacter, help = None, message = format! \-> "unexpected character #{ch:?}", span = (start, .pos self.cur) })
+    Err (LexError {
+      code = Code::UnexpectedCharacter,
+      help = None,
+      message = format! \-> "unexpected character #{ch:?}",
+      span = (start, .pos self.cur),
+    })
 
   scan_hash : &mut self -> Result<bool, LexError>
   scan_hash self =
@@ -178,7 +212,12 @@ instance (Lexer 'a)
         ch = case .bump self.cur of
           Some c -> c
           None ->
-            return Err (LexError { code = Code::UnterminatedAttribute, help = None, message = .to_string "unterminated attribute; expected `]`", span = (start, .pos self.cur) })
+            return Err (LexError {
+              code = Code::UnterminatedAttribute,
+              help = None,
+              message = .to_string "unterminated attribute; expected `]`",
+              span = (start, .pos self.cur),
+            })
         case ch of
           '[' -> depth += 1
           ']' -> depth -= 1
@@ -211,7 +250,12 @@ instance (Lexer 'a)
           depth -= 1
           continue
         if .is_none (.bump self.cur)
-          return Err (LexError { code = Code::UnterminatedFence, help = Some (.to_string "close it with `-}`"), message = .to_string "unterminated `{- -}` comment", span = (start, .pos self.cur) })
+          return Err (LexError {
+            code = Code::UnterminatedFence,
+            help = Some (.to_string "close it with `-}`"),
+            message = .to_string "unterminated `{- -}` comment",
+            span = (start, .pos self.cur),
+          })
       end = .pos self.cur - 2
       text = (self.cur.slice (body_start, end)).trim ().to_string ()
       self.pending.push (Trivia::comment TriviaKind::FencedComment text (start, .pos self.cur))
@@ -319,7 +363,12 @@ instance (Lexer 'a)
         Some '\t' ->
           start = .pos self.cur
           .bump self.cur
-          return Err (LexError { code = Code::TabIndent, help = Some (.to_string "indent with spaces"), message = .to_string "tab in indentation; Voltaic indents with spaces", span = (start, .pos self.cur) })
+          return Err (LexError {
+            code = Code::TabIndent,
+            help = Some (.to_string "indent with spaces"),
+            message = .to_string "tab in indentation; Voltaic indents with spaces",
+            span = (start, .pos self.cur),
+          })
         _ ->
           return Ok width
 
@@ -343,7 +392,12 @@ instance (Lexer 'a)
       .pop self.indents
       .push TokenKind::Dedent at false self
     if width != *.expect "indent stack is never empty" (.last self.indents)
-      return Err (LexError { code = Code::InconsistentDedent, help = Some (.to_string "match an enclosing indentation level"), message = format! \-> "inconsistent dedent: #{width} spaces matches no enclosing indentation level", span = at })
+      return Err (LexError {
+        code = Code::InconsistentDedent,
+        help = Some (.to_string "match an enclosing indentation level"),
+        message = format! \-> "inconsistent dedent: #{width} spaces matches no enclosing indentation level",
+        span = at,
+      })
     Ok ()
 
   finish : &mut self -> Result<(), LexError>
@@ -351,7 +405,12 @@ instance (Lexer 'a)
     case .first self.open_delims of
       Some opened ->
         pos = opened.0
-        return Err (LexError { code = Code::UnbalancedDelimiter, help = Some (.to_string "add the closing delimiter"), message = .to_string "unbalanced delimiter: this is never closed", span = (pos, pos + 1) })
+        return Err (LexError {
+          code = Code::UnbalancedDelimiter,
+          help = Some (.to_string "add the closing delimiter"),
+          message = .to_string "unbalanced delimiter: this is never closed",
+          span = (pos, pos + 1),
+        })
       None -> ()
 
     self.end_of_line ()
@@ -370,7 +429,13 @@ instance (Lexer 'a)
       Vec::new ()
     else
       std::mem::take $ &mut self.pending
-    self.toks.push (Token { kind, span, ws_before, leading, trailing = None })
+    self.toks.push (Token {
+      kind,
+      span,
+      ws_before,
+      leading,
+      trailing = None,
+    })
     ()
 
   push_blank : usize -> usize -> &mut self -> ()

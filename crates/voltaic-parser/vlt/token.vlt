@@ -19,7 +19,13 @@ import voltaic_lexer::verbatim_triple
 export(crate) expr_from_tokens : &[Token] -> Span -> Result<Expr, ParseError>
 expr_from_tokens tokens span =
   mut toks = .to_vec tokens
-  .push (Token { kind = TokenKind::Eof, span, ws_before = false, leading = Vec::new (), trailing = None }) toks
+  .push (Token {
+    kind = TokenKind::Eof,
+    span,
+    ws_before = false,
+    leading = Vec::new (),
+    trailing = None,
+  }) toks
   mut p = Parser::new (&toks)
   expr = (parse_expr (&mut p) 0)?
   if !.at_eof p
@@ -41,7 +47,11 @@ export(crate) inline_rust : &mut Parser -> Vec<Trivia> -> usize -> Result<Inline
 inline_rust p leading start =
   (.expect (&TokenKind::Kw Keyword::Rust) "expected `rust`" p)?
   hatched = (rust_hatch p)?
-  Ok (InlineRust { code = hatched.0, span = (start, (.prev_span p).1), leading })
+  Ok (InlineRust {
+    code = hatched.0,
+    span = (start, (.prev_span p).1),
+    leading,
+  })
 
 export(crate) is_word : char -> bool
 is_word ch = .is_alphanumeric ch || ch == '_'
@@ -49,7 +59,10 @@ is_word ch = .is_alphanumeric ch || ch == '_'
 export(crate) member_name : &mut Parser -> &str -> Result<Ident, ParseError>
 member_name p message =
   if &(.peek p).kind is TokenKind::Kw kw && kw.text () != "await"
-    found = Ident { text = .to_string (kw.text ()), span = .peek_span p }
+    found = Ident {
+      text = .to_string (kw.text ()),
+      span = .peek_span p,
+    }
     .advance p
     return Ok found
   .ident message p

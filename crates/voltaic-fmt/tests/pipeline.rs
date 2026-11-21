@@ -1,18 +1,15 @@
-//! Doc 03 §5.3's pipeline, at both of its widths.
+//! Doc 03 §5.3's pipeline, in its one canonical layout.
 //!
 //! `|>` is the one binary operator with a layout of its own, because it is the
 //! one the lexer continues across lines: `next_line_continues` looks ahead for
 //! a line opening with `|>` and swallows it before the off-side rule can see
-//! it. So a pipeline too wide for one line has exactly one multi-line spelling
-//! that parses — one stage per continuation line, indented beneath the
-//! receiver — and the formatter had none at all, which is how it produced an
-//! 89-character line out of `examples/application.vlt`.
+//! it. So a broken pipeline has exactly one spelling that parses — one stage
+//! per continuation line, indented beneath the receiver.
 //!
-//! The width is `PIPELINE_WIDTH`, which is rustfmt's `chain_width` and the
-//! emitter's `CHAIN_WIDTH`. Both halves of the rule are asserted here, and the
-//! second is the one the corpus needs: `examples/lexical.vlt` and
-//! `examples/section.vlt` are full of short pipelines that must not be
-//! reflowed.
+//! Since 0.3.0 that is the **only** spelling the formatter writes. It used to
+//! break a pipeline only past `PIPELINE_WIDTH`, rustfmt's `chain_width`, and
+//! to join a broken one that fitted. A pipeline is a sequence of stages, and
+//! the layout now says so at every width.
 
 use std::path::PathBuf;
 
@@ -79,30 +76,32 @@ fn continuations(text: &str) -> Vec<&str> {
 }
 
 #[test]
-fn each_width_reaches_its_canonical_form() {
+fn every_pipeline_reaches_its_canonical_form() {
   let (_, printed) = formatted("pipeline");
   against_canonical("pipeline", &printed);
 }
 
-/// The two wide pipelines break, and nothing else does.
+/// Every pipeline breaks at every stage, whatever its width.
 ///
-/// Twelve continuation lines: four stages each for the two wide pipelines in
-/// `main` and four for the clause-level one, and none for either short
-/// pipeline — the one written on a line and the one the author broke anyway.
-///
-/// Nine until plan 57, when `numbers.iter ()` became `numbers |> .iter` and
-/// each wide pipeline gained a stage. The receiver is a bare name now, so the
-/// `.iter` that used to be part of it is a stage like the three after it —
-/// which is the shape the row exists to produce.
+/// Thirteen continuation lines: four for the clause-level pipeline, two for
+/// `short`, one for `single`, four for `kept` and two for `half`. Until 0.3.0
+/// only the pipelines wider than `PIPELINE_WIDTH` broke and this was twelve
+/// with the short ones at zero.
 #[test]
-fn only_a_pipeline_too_wide_for_its_line_is_broken() {
+fn every_pipeline_is_broken_at_every_stage() {
   let (_, printed) = formatted("pipeline");
   assert_eq!(
     continuations(&printed).len(),
-    12,
-    "the wide pipelines should break at every stage and the short ones not at \
-     all:\n{printed}"
+    13,
+    "every pipeline should break at every stage:\n{printed}"
   );
+  for line in printed.lines() {
+    let code = line.split("--").next().unwrap_or(line).trim_start();
+    assert!(
+      !code.contains("|>") || code.starts_with("|>"),
+      "`{line}` holds a `|>` that is not the first token of its line"
+    );
+  }
 }
 
 /// A continuation line sits one level in from the statement it continues.

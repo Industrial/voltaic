@@ -107,11 +107,25 @@ plain_one d =
 graphical_one : &Diagnostic -> String
 graphical_one d = format! \-> "#{(miette::Report::new (Reportable::new d)):?}"
 
-data Reportable { message String, code String, help Option<String>, span (usize, usize), source miette::NamedSource<String>, severity Severity }
+data Reportable {
+  message String,
+  code String,
+  help Option<String>,
+  span (usize, usize),
+  source miette::NamedSource<String>,
+  severity Severity,
+}
 
 instance Reportable
   new : &Diagnostic -> Self
-  new d = Reportable { message = .clone d.message, code = .text d.code, help = .clone d.help, span = anchor_span (&d.source) d.span, source = .with_language "Rust" (miette::NamedSource::new (&d.path) (.clone d.source)), severity = d.severity }
+  new d = Reportable {
+    message = .clone d.message,
+    code = .text d.code,
+    help = .clone d.help,
+    span = anchor_span (&d.source) d.span,
+    source = .with_language "Rust" (miette::NamedSource::new (&d.path) (.clone d.source)),
+    severity = d.severity,
+  }
 
 instance Display Reportable
   fmt : &self -> &mut Formatter<'_> -> Result

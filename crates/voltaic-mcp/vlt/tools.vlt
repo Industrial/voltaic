@@ -11,12 +11,22 @@ build request =
   mut program = case voltaic_parser::parse_source (&source) of
     Ok parsed -> parsed
     Err failure ->
-      return Ok (BuildResponse { ok = false, output = None, map = None, diagnostics = ((diagnose path (&source) (&failure)).iter ().map diagnostic_from_voltaic).collect () })
+      return Ok (BuildResponse {
+        ok = false,
+        output = None,
+        map = None,
+        diagnostics = ((diagnose path (&source) (&failure)).iter ().map diagnostic_from_voltaic).collect (),
+      })
 
   analysis = voltaic_driver::analyse_at (&mut program) (std::path::Path::new (&request.path))
   open = analysis.open
   if !.is_empty open
-    return Ok (BuildResponse { ok = false, output = None, map = None, diagnostics = ((voltaic_driver::refusals path (&source) (.as_slice open)).iter ().map diagnostic_from_voltaic).collect () })
+    return Ok (BuildResponse {
+      ok = false,
+      output = None,
+      map = None,
+      diagnostics = ((voltaic_driver::refusals path (&source) (.as_slice open)).iter ().map diagnostic_from_voltaic).collect (),
+    })
 
   diagnostics = voltaic_driver::lint path (&source) (Some (&program))
   scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
@@ -35,9 +45,16 @@ build request =
   map_shown = map_path.display ().to_string ()
   (.map_err (\e -> format! \-> "cannot write #{map_shown}: #{e}") (std::fs::write (&map_path) (voltaic_diag::render_map (&map))))?
 
-  Ok (BuildResponse { ok = true, output = Some out_shown, map = Some map_shown, diagnostics = (diagnostics.iter ().map diagnostic_from_voltaic).collect () })
+  Ok (BuildResponse {
+    ok = true,
+    output = Some out_shown,
+    map = Some map_shown,
+    diagnostics = (diagnostics.iter ().map diagnostic_from_voltaic).collect (),
+  })
 
-export data BuildRequest { export path String }
+export data BuildRequest {
+  export path String,
+}
   deriving (Debug, Clone, serde::Deserialize, schemars::JsonSchema)
 
 export data BuildResponse {
@@ -57,12 +74,20 @@ check request =
   source = (.map_err (\e -> format! \-> "cannot read #{shown}: #{e}") (std::fs::read_to_string path))?
 
   outcome = (voltaic_driver::check path (&source))?
-  Ok (CheckResponse { ok = !outcome.failed, diagnostics = (outcome.diagnostics.iter ().map diagnostic_from_voltaic).collect () })
+  Ok (CheckResponse {
+    ok = !outcome.failed,
+    diagnostics = (outcome.diagnostics.iter ().map diagnostic_from_voltaic).collect (),
+  })
 
-export data CheckRequest { export path String }
+export data CheckRequest {
+  export path String,
+}
   deriving (Debug, Clone, serde::Deserialize, schemars::JsonSchema)
 
-export data CheckResponse { export ok bool, export diagnostics Vec<Diagnostic> }
+export data CheckResponse {
+  export ok bool,
+  export diagnostics Vec<Diagnostic>,
+}
   deriving (Debug, Clone, serde::Serialize, schemars::JsonSchema)
 
 export format : &FormatRequest -> Result<FormatResponse, String>
@@ -74,12 +99,24 @@ format request =
   program = case voltaic_parser::parse_source (&source) of
     Ok parsed -> parsed
     Err failure ->
-      return Ok (FormatResponse { ok = false, formatted = None, changed = false, diagnostics = ((diagnose path (&source) (&failure)).iter ().map diagnostic_from_voltaic).collect () })
+      return Ok (FormatResponse {
+        ok = false,
+        formatted = None,
+        changed = false,
+        diagnostics = ((diagnose path (&source) (&failure)).iter ().map diagnostic_from_voltaic).collect (),
+      })
 
   formatted = voltaic_fmt::format (&program) (&source)
-  Ok (FormatResponse { ok = true, changed = formatted != source, formatted = Some formatted, diagnostics = Vec::new () })
+  Ok (FormatResponse {
+    ok = true,
+    changed = formatted != source,
+    formatted = Some formatted,
+    diagnostics = Vec::new (),
+  })
 
-export data FormatRequest { export path String }
+export data FormatRequest {
+  export path String,
+}
   deriving (Debug, Clone, serde::Deserialize, schemars::JsonSchema)
 
 export data FormatResponse {
@@ -111,13 +148,23 @@ source_map request =
   column = .unwrap_or 1 request.column
   case .resolve request.line column map of
     Some at ->
-      Ok (SourceMapResponse { source = Some (.clone map.source_path), line = Some at.0, column = Some at.1, reason = None })
+      Ok (SourceMapResponse {
+        source = Some (.clone map.source_path),
+        line = Some at.0,
+        column = Some at.1,
+        reason = None,
+      })
     None ->
       reason = if request.line == 0 || request.line > .len map
         "out-of-range: the .vrs has no such line"
       else
         "synthetic: Voltaic emitted this line and no .vlt line is behind it"
-      Ok (SourceMapResponse { source = Some (.clone map.source_path), line = None, column = None, reason = Some (.to_string reason) })
+      Ok (SourceMapResponse {
+        source = Some (.clone map.source_path),
+        line = None,
+        column = None,
+        reason = Some (.to_string reason),
+      })
 
 export data SourceMapRequest {
   export path String,

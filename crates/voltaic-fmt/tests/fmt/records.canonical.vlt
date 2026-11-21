@@ -1,0 +1,38 @@
+-- A record has one canonical layout: `{` on the header's line, one field per
+-- line with a trailing comma, and `}` back at the header's depth. A `deriving`
+-- clause stays indented beneath it.
+
+export data NarInfoFile {
+  export info NarInfo,
+  export url String,
+  export compression String,
+  export file_hash Option<String>,
+  export file_size Option<u64>,
+}
+  deriving (Debug, Clone, PartialEq)
+
+data Point {
+  x f64,
+  y f64,
+}
+
+data Shape
+  = Circle {
+    radius f64,
+  }
+  | Square f64
+
+data Empty {}
+
+main : ()
+main =
+  p = Point {
+    x = 3.0,
+    y = 4.0,
+  }
+  q = Point {
+    x = 1.0,
+    ...p
+  }
+  println! \-> "#{q.x}"
+  ()

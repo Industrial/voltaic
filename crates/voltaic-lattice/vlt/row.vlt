@@ -4,25 +4,33 @@ import std::fmt::Display
 import std::fmt::Formatter
 import std::fmt::Result
 
-export data Row { effects BTreeSet<Effect> }
+export data Row {
+  effects BTreeSet<Effect>,
+}
   deriving (Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)
 
 instance Row
   export empty : Self
-  empty = Row { effects = BTreeSet::new () }
+  empty = Row {
+    effects = BTreeSet::new (),
+  }
 
   export single : Effect -> Self
   single effect =
     mut effects = BTreeSet::new ()
     .insert effect effects
-    Row { effects }
+    Row {
+      effects,
+    }
 
   export from_effects : Vec<Effect> -> Self
   from_effects every =
     mut effects = BTreeSet::new ()
     for e in every
       .insert e effects
-    Row { effects }
+    Row {
+      effects,
+    }
 
   export is_empty : &self -> bool
   is_empty self = .is_empty self.effects
@@ -41,7 +49,9 @@ instance Row
     mut effects = .clone self.effects
     for e in .iter other.effects
       .insert (.clone e) effects
-    Row { effects }
+    Row {
+      effects,
+    }
 
   export is_subrow_of : &Row -> &self -> bool
   is_subrow_of other self = .is_subset (&other.effects) self.effects
@@ -50,7 +60,9 @@ instance Row
   without effect self =
     mut effects = .clone self.effects
     .remove effect effects
-    Row { effects }
+    Row {
+      effects,
+    }
 
   export discharge_fallible : &self -> Row
   discharge_fallible self =
@@ -58,7 +70,9 @@ instance Row
     for e in .iter self.effects
       if !.is_fallible e
         .insert (.clone e) effects
-    Row { effects }
+    Row {
+      effects,
+    }
 
   export fallible : &self -> Vec<&Effect>
   fallible self = (self.effects.iter ().filter (\e -> .is_fallible e)).collect ()

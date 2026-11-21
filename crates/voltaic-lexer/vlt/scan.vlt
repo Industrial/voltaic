@@ -31,20 +31,40 @@ scan_byte cur =
       case .bump cur of
         Some c -> c
         None ->
-          return Err (LexError { code = Code::UnterminatedByteLiteral, help = None, message = .to_string "unterminated byte literal", span = (start, .pos cur) })
+          return Err (LexError {
+            code = Code::UnterminatedByteLiteral,
+            help = None,
+            message = .to_string "unterminated byte literal",
+            span = (start, .pos cur),
+          })
     if !.eat "'" cur
-      return Err (LexError { code = Code::UnterminatedByteLiteral, help = None, message = .to_string "unterminated byte literal", span = (start, .pos cur) })
+      return Err (LexError {
+        code = Code::UnterminatedByteLiteral,
+        help = None,
+        message = .to_string "unterminated byte literal",
+        span = (start, .pos cur),
+      })
     value = case u8::try_from (u32::from ch) of
       Ok v -> v
       Err _ ->
-        return Err (LexError { code = Code::UnterminatedByteLiteral, help = None, message = format! \-> "`#{ch}` is not a single byte", span = (start, .pos cur) })
+        return Err (LexError {
+          code = Code::UnterminatedByteLiteral,
+          help = None,
+          message = format! \-> "`#{ch}` is not a single byte",
+          span = (start, .pos cur),
+        })
     return Ok (TokenKind::Byte value)
 
   if .eat "\"" cur
     mut text = String::new ()
     while !.starts_with "\"" cur
       if .is_eof cur
-        return Err (LexError { code = Code::UnterminatedByteLiteral, help = None, message = .to_string "unterminated byte string", span = (start, .pos cur) })
+        return Err (LexError {
+          code = Code::UnterminatedByteLiteral,
+          help = None,
+          message = .to_string "unterminated byte string",
+          span = (start, .pos cur),
+        })
       if .peek cur == Some '\\'
         .bump cur
         .push (scan_escape cur)? text
@@ -53,7 +73,12 @@ scan_byte cur =
     .eat "\"" cur
     return Ok (TokenKind::ByteStr text)
 
-  Err (LexError { code = Code::UnterminatedByteLiteral, help = None, message = .to_string "`b` must be followed by `'` or `\"`", span = (start, .pos cur) })
+  Err (LexError {
+    code = Code::UnterminatedByteLiteral,
+    help = None,
+    message = .to_string "`b` must be followed by `'` or `\"`",
+    span = (start, .pos cur),
+  })
 
 export(crate) scan_comment : &str -> Option<(TriviaKind, usize)>
 scan_comment rest =
@@ -107,7 +132,12 @@ scan_cstring cur =
   mut text = String::new ()
   while !.starts_with "\"" cur
     if .is_eof cur
-      return Err (LexError { code = Code::UnterminatedByteLiteral, help = None, message = .to_string "unterminated C string", span = (start, .pos cur) })
+      return Err (LexError {
+        code = Code::UnterminatedByteLiteral,
+        help = None,
+        message = .to_string "unterminated C string",
+        span = (start, .pos cur),
+      })
     if .peek cur == Some '\\'
       .bump cur
       .push (scan_escape cur)? text
@@ -123,7 +153,12 @@ scan_escape cur =
   ch = case .bump cur of
     Some c -> c
     None ->
-      return Err (LexError { code = Code::UnknownEscape, help = None, message = .to_string "unterminated escape sequence", span = (start, .pos cur) })
+      return Err (LexError {
+        code = Code::UnknownEscape,
+        help = None,
+        message = .to_string "unterminated escape sequence",
+        span = (start, .pos cur),
+      })
 
   decoded : Result<char, String> = case ch of
     'n' -> Ok '\n'
@@ -164,7 +199,12 @@ scan_escape cur =
 
   case decoded of
     Ok c -> Ok c
-    Err message -> Err (LexError { code = Code::UnknownEscape, help = None, message, span = (start, .pos cur) })
+    Err message -> Err (LexError {
+      code = Code::UnknownEscape,
+      help = None,
+      message,
+      span = (start, .pos cur),
+    })
 
 #[cfg(test)]
 decode : &str -> Result<char, String>
@@ -208,7 +248,12 @@ scan_number cur =
       .bump cur
       digits = .eat_while (\c -> valid c || c == '_') cur
       if .all (== '_') (.chars (.slice digits cur))
-        return Err (LexError { code = Code::MalformedNumber, help = None, message = format! \-> "#{name} literal has no digits", span = (start, .pos cur) })
+        return Err (LexError {
+          code = Code::MalformedNumber,
+          help = None,
+          message = format! \-> "#{name} literal has no digits",
+          span = (start, .pos cur),
+        })
       .eat_while (\c -> .is_ascii_alphanumeric c || c == '_') cur
       return Ok (TokenKind::Int (.to_string (.slice (start, .pos cur) cur)))
 
@@ -236,7 +281,12 @@ scan_number cur =
       .bump cur
     digits = .eat_while (\c -> .is_ascii_digit c || c == '_') cur
     if .is_empty (.slice digits cur)
-      return Err (LexError { code = Code::MalformedNumber, help = None, message = .to_string "exponent has no digits", span = (start, .pos cur) })
+      return Err (LexError {
+        code = Code::MalformedNumber,
+        help = None,
+        message = .to_string "exponent has no digits",
+        span = (start, .pos cur),
+      })
 
   .eat_while (\c -> .is_ascii_alphanumeric c || c == '_') cur
 
@@ -413,7 +463,12 @@ scan_quote cur =
   name_span = .eat_while (\c -> .is_ascii_alphanumeric c || c == '_') cur
   name = (cur.slice name_span).to_string ()
   if .is_empty name
-    return Err (LexError { code = Code::BadQuote, help = None, message = .to_string "a `'` must open a character literal or name a lifetime or label", span = (start, .pos cur) })
+    return Err (LexError {
+      code = Code::BadQuote,
+      help = None,
+      message = .to_string "a `'` must open a character literal or name a lifetime or label",
+      span = (start, .pos cur),
+    })
   Ok $ TokenKind::Label name
 
 export(crate) scan_raw_ident : &mut Cursor -> Result<TokenKind, LexError>
@@ -433,17 +488,30 @@ scan_raw_string cur =
   hashes = (cur.slice hash_span).len ()
 
   if !.eat "\"" cur
-    return Err (LexError { code = Code::UnterminatedRawString, help = None, message = .to_string "a raw string must open with `\"` after `r` and any `#`", span = (start, .pos cur) })
+    return Err (LexError {
+      code = Code::UnterminatedRawString,
+      help = None,
+      message = .to_string "a raw string must open with `\"` after `r` and any `#`",
+      span = (start, .pos cur),
+    })
 
   pad = .repeat hashes "#"
   closing = format! \-> "\"#{pad}"
   text_start = .pos cur
   while !.starts_with (&closing) cur
     if .is_none (.bump cur)
-      return Err (LexError { code = Code::UnterminatedRawString, help = None, message = format! \-> "unterminated raw string; expected closing `#{closing}`", span = (start, .pos cur) })
+      return Err (LexError {
+        code = Code::UnterminatedRawString,
+        help = None,
+        message = format! \-> "unterminated raw string; expected closing `#{closing}`",
+        span = (start, .pos cur),
+      })
   text = (cur.slice (text_start, .pos cur)).to_string ()
   .eat (&closing) cur
-  Ok (TokenKind::RawStr { text, hashes })
+  Ok (TokenKind::RawStr {
+    text,
+    hashes,
+  })
 
 export(crate) scan_rust_block : &mut Cursor<'_> -> usize -> Option<String>
 scan_rust_block cur base =
@@ -482,7 +550,12 @@ scan_token_tree cur =
     ch = case .bump cur of
       Some c -> c
       None ->
-        return Err (LexError { code = Code::UnbalancedDelimiter, help = Some (.to_string "close the macro body with its matching delimiter"), message = .to_string "unbalanced delimiter: this macro body is never closed", span = (start, start + 1) })
+        return Err (LexError {
+          code = Code::UnbalancedDelimiter,
+          help = Some (.to_string "close the macro body with its matching delimiter"),
+          message = .to_string "unbalanced delimiter: this macro body is never closed",
+          span = (start, start + 1),
+        })
     case ch of
       '(' -> .push ')' closers
       '[' -> .push ']' closers
@@ -491,7 +564,12 @@ scan_token_tree cur =
         expected = .pop closers
         if expected != Some ch
           wanted = .map_or (.to_string "nothing") (\c -> format! \-> "`#{c}`") expected
-          return Err (LexError { code = Code::UnbalancedDelimiter, help = Some (format! \-> "expected #{wanted} here"), message = format! \-> "unbalanced delimiter: `#{ch}` closes nothing open in this macro body", span = (at, at + 1) })
+          return Err (LexError {
+            code = Code::UnbalancedDelimiter,
+            help = Some (format! \-> "expected #{wanted} here"),
+            message = format! \-> "unbalanced delimiter: `#{ch}` closes nothing open in this macro body",
+            span = (at, at + 1),
+          })
         if .is_empty closers
           return Ok ()
       '"' -> (skip_rust_string cur at)?
@@ -514,7 +592,12 @@ skip_rust_string cur start =
         return Ok ()
       Some _ -> ()
       None ->
-        return Err (LexError { code = Code::UnterminatedString, help = None, message = .to_string "unterminated string in a macro body", span = (start, start + 1) })
+        return Err (LexError {
+          code = Code::UnterminatedString,
+          help = None,
+          message = .to_string "unterminated string in a macro body",
+          span = (start, start + 1),
+        })
 
 skip_rust_quote : &mut Cursor<'_> -> ()
 skip_rust_quote cur =
@@ -541,7 +624,12 @@ skip_rust_block_comment cur start =
       depth -= 1
       continue
     if .is_none (.bump cur)
-      return Err (LexError { code = Code::UnterminatedFence, help = Some (.to_string "close it with `*/`"), message = .to_string "unterminated `/* */` comment in a macro body", span = (start, start + 2) })
+      return Err (LexError {
+        code = Code::UnterminatedFence,
+        help = Some (.to_string "close it with `*/`"),
+        message = .to_string "unterminated `/* */` comment in a macro body",
+        span = (start, start + 2),
+      })
   Ok ()
 
 skip_rust_word : &mut Cursor<'_> -> usize -> Result<(), LexError>
@@ -568,7 +656,12 @@ skip_rust_word cur start =
   closing = format! \-> "\"#{pad}"
   while !.eat (&closing) cur
     if .is_none (.bump cur)
-      return Err (LexError { code = Code::UnterminatedRawString, help = None, message = format! \-> "unterminated raw string in a macro body; expected closing `#{closing}`", span = (start, start + 1) })
+      return Err (LexError {
+        code = Code::UnterminatedRawString,
+        help = None,
+        message = format! \-> "unterminated raw string in a macro body; expected closing `#{closing}`",
+        span = (start, start + 1),
+      })
   Ok ()
 
 export(crate) scan_string : &mut Cursor -> Result<TokenKind, LexError>
@@ -585,7 +678,12 @@ scan_string cur =
   body_start = .pos cur
   loop
     if .is_eof cur
-      return Err (LexError { code = Code::UnterminatedString, help = None, message = format! \-> "unterminated string literal; expected closing #{delim}", span = (start, .pos cur) })
+      return Err (LexError {
+        code = Code::UnterminatedString,
+        help = None,
+        message = format! \-> "unterminated string literal; expected closing #{delim}",
+        span = (start, .pos cur),
+      })
     if .starts_with delim cur
       break
     if .starts_with "\#{" cur
@@ -596,7 +694,12 @@ scan_string cur =
       .bump cur
       continue
     if !triple && .peek cur == Some '\n'
-      return Err (LexError { code = Code::UnterminatedString, help = None, message = .to_string "unterminated string literal: a single-quoted string may not span lines — use \"\"\" for a multi-line string", span = (start, .pos cur) })
+      return Err (LexError {
+        code = Code::UnterminatedString,
+        help = None,
+        message = .to_string "unterminated string literal: a single-quoted string may not span lines — use \"\"\" for a multi-line string",
+        span = (start, .pos cur),
+      })
     .bump cur
   body_end = .pos cur
   .eat delim cur
@@ -609,7 +712,10 @@ scan_string cur =
   else
     .to_string body
 
-  Ok (TokenKind::Str { parts = (split_parts (&owned) body_start)?, raw })
+  Ok (TokenKind::Str {
+    parts = (split_parts (&owned) body_start)?,
+    raw,
+  })
 
 export(crate) split_parts : &str -> usize -> Result<Vec<StrPart>, LexError>
 split_parts body base =
@@ -630,7 +736,10 @@ split_parts body base =
       split = split_format_spec inner
       expr = split.0
       spec = split.1
-      .push (StrPart::Interp { tokens = (lex_fragment expr (base + open))?, spec = .map str::to_string spec }) parts
+      .push (StrPart::Interp {
+        tokens = (lex_fragment expr (base + open))?,
+        spec = .map str::to_string spec,
+      }) parts
       continue
 
     if .peek cur == Some '\\'
@@ -655,7 +764,12 @@ skip_interpolation cur base =
     ch = case .bump cur of
       Some c -> c
       None ->
-        return Err (LexError { code = Code::UnterminatedInterpolation, help = None, message = .to_string "unterminated interpolation; expected `}`", span = (base + start, base + .pos cur) })
+        return Err (LexError {
+          code = Code::UnterminatedInterpolation,
+          help = None,
+          message = .to_string "unterminated interpolation; expected `}`",
+          span = (base + start, base + .pos cur),
+        })
     case ch of
       '{' -> depth += 1
       '}' -> depth -= 1
@@ -663,7 +777,12 @@ skip_interpolation cur base =
         loop
           case .bump cur of
             None ->
-              return Err (LexError { code = Code::UnterminatedInterpolation, help = None, message = .to_string "unterminated interpolation; expected `}`", span = (base + start, base + .pos cur) })
+              return Err (LexError {
+                code = Code::UnterminatedInterpolation,
+                help = None,
+                message = .to_string "unterminated interpolation; expected `}`",
+                span = (base + start, base + .pos cur),
+              })
             Some '\\' ->
               .bump cur
               ()

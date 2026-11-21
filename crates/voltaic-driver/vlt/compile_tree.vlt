@@ -5,7 +5,11 @@ import voltaic_diag::Diagnostic
 import std::path::Path
 import std::path::PathBuf
 
-export data Emitted { export r#rust String, export map String, export warnings Vec<Diagnostic> }
+export data Emitted {
+  export r#rust String,
+  export map String,
+  export warnings Vec<Diagnostic>,
+}
   deriving (Debug, Clone)
 
 export emit_file : &Path -> &str -> Result<Emitted, Vec<Diagnostic>>
@@ -19,7 +23,11 @@ emit_file source label =
   scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) (&text) label
   drop scope
-  Ok (Emitted { r#rust = emitted.0, map = voltaic_diag::render_map (&emitted.1), warnings })
+  Ok (Emitted {
+    r#rust = emitted.0,
+    map = voltaic_diag::render_map (&emitted.1),
+    warnings,
+  })
 
 export compile_tree : &Path -> &Path -> Result<Compiled, Vec<Diagnostic>>
 compile_tree src out =

@@ -2,32 +2,46 @@
 -- running the generated Rust — an update lowered to the wrong order prints
 -- the wrong number.
 
-data Point { x i32, y i32 }
+data Point {
+  x i32,
+  y i32,
+}
   deriving (Debug, Clone, PartialEq)
 
 main : ()
 main =
   -- Construction. `=` for a value, against `::` for a type.
-  p = Point { x = 10, y = 20 }
+  p = Point {
+    x = 10,
+    y = 20,
+  }
   println! \-> "#{p.x}"
   println! \-> "#{p.y}"
 
   -- Punning, in the direction Haskell had it first.
   x = 1
   y = 2
-  q = Point { x, y }
+  q = Point {
+    x,
+    y,
+  }
   println! \-> "#{q.x}"
   println! \-> "#{q.y}"
 
   -- Update. One of doc 18 §6's disclosed lowerings: a block, because Rust's
   -- own `Point { x: 99, ..p }` needs the type's path and the source gives
   -- only the value's name.
-  r = p { x = 99 }
+  r = p {
+    x = 99,
+  }
   println! \-> "#{r.x}"
   println! \-> "#{r.y}"
 
   -- Doc 03 §9.1's spread entry, when the source does name the type: `...q`
   -- is last, and reaches Rust as `..q`. `p` was moved into `r` above.
-  s = Point { y = 7, ...q }
+  s = Point {
+    y = 7,
+    ...q
+  }
   println! \-> "#{s.x} #{s.y}"
   ()

@@ -10,13 +10,17 @@ rust """
   }
 """
 
-export data MethodScope { previous MethodTable }
+export data MethodScope {
+  previous MethodTable,
+}
 
 instance MethodScope
   export enter : MethodTable -> Self
   enter table =
     previous = .with_borrow_mut (\slot -> std::mem::replace slot table) IN_SCOPE
-    MethodScope { previous }
+    MethodScope {
+      previous,
+    }
 
   export(crate) is_method : Span -> bool
   is_method at = .with_borrow (\table -> .holds at table) IN_SCOPE
@@ -28,12 +32,16 @@ instance Drop MethodScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export data MethodTable { spans BTreeSet<Span> }
+export data MethodTable {
+  spans BTreeSet<Span>,
+}
   deriving (Debug, Clone, Default)
 
 instance MethodTable
   export from_spans : &[Span] -> Self
-  from_spans every = MethodTable { spans = .collect (.copied (.iter every)) }
+  from_spans every = MethodTable {
+    spans = .collect (.copied (.iter every)),
+  }
 
   export(crate) holds : Span -> &self -> bool
   holds at self = .contains (&at) self.spans

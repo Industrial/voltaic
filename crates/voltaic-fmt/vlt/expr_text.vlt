@@ -258,16 +258,13 @@ operand expr required indent source = case expr of
 export(crate) pipeline_text : &Expr -> &Expr -> usize -> &str -> String
 pipeline_text lhs rhs indent source =
   power = .power BinaryOp::Pipeline
-  mut stages = vec! \-> operand rhs (power + 1) indent source
+  mut stages = vec! \-> operand rhs (power + 1) (indent + 1) source
   mut head = lhs
   while head is Expr::Binary { op = BinaryOp::Pipeline, lhs = left, rhs = right, .. }
-    .push (operand right (power + 1) indent source) stages
+    .push (operand right (power + 1) (indent + 1) source) stages
     head := left
   .reverse stages
   receiver = operand head power indent source
-  one_line = format! \-> "#{receiver} |> #{(.join " |> " stages)}"
-  if .len (indent_text indent) + .len one_line <= PIPELINE_WIDTH && !.contains '\n' one_line
-    return one_line
   pad = indent_text $ indent + 1
   mut out = receiver
   for stage in &stages
@@ -276,8 +273,6 @@ pipeline_text lhs rhs indent source =
     .push_str "|> " out
     .push_str stage out
   out
-
-export(crate) const PIPELINE_WIDTH : usize = 60
 
 export(crate) power_of : &Expr -> Option<u8>
 power_of expr = case expr of
@@ -358,12 +353,13 @@ export(crate) record_text : &Expr -> &[FieldInit] -> Option<&Expr> -> usize -> &
 record_text head fields base indent source =
   if .is_empty fields && .is_none base
     return format! \-> "#{(receiver head indent source)} {}"
+  pad = indent_text $ indent + 1
   mut printed : Vec<String> = (fields.iter ().map (\field -> case &field.value of
-    Some value -> format! \-> "#{field.name.text} = #{(expr_text value 0 indent source)}"
-    None -> .clone field.name.text)).collect ()
+    Some value -> format! \-> "#{pad}#{field.name.text} = #{(expr_text value 0 (indent + 1) source)},"
+    None -> format! \-> "#{pad}#{field.name.text},")).collect ()
   if base is Some spread
-    .push (format! \-> "...#{(expr_text spread 0 indent source)}") printed
-  format! \-> "#{(receiver head indent source)} { #{(.join ", " printed)} }"
+    .push (format! \-> "#{pad}...#{(expr_text spread 0 (indent + 1) source)}") printed
+  format! \-> "#{(receiver head indent source)} {\n#{(.join "\n" printed)}\n#{(indent_text indent)}}"
 
 export(crate) rust_hatch_text : &str -> usize -> String
 rust_hatch_text code indent =

@@ -23,10 +23,16 @@
 newtype Tag = Tag String
 
 data Profile
-  = Profile { name String, tag Tag, nickname Option<String> }
+  = Profile {
+    name String,
+    tag Tag,
+    nickname Option<String>,
+  }
 
 data User
-  = User { profile Option<Profile> }
+  = User {
+    profile Option<Profile>,
+  }
 
 -- The fallible operation everything below uses. `::` ascribes the parse's
 -- type, because `parse` is generic over its target and nothing else here says
@@ -34,7 +40,8 @@ data User
 parse_it : &str -> Result<i32, String>
 parse_it s =
   n = .parse s : Result<i32, core::num::ParseIntError>
-  n |> .map_err (\e -> .to_string e)
+  n
+    |> .map_err (\e -> .to_string e)
 
 -- `catch` takes the `Ok` value when there is one and the fallback when there
 -- is not — doc 03 §12.2. A `match`, not `unwrap_or_else`, for §12.1's
@@ -134,7 +141,13 @@ main =
   println! \-> "#{(reason "7")}"
   println! \-> "#{(reason "no")}"
 
-  u = Some (User { profile = Some (Profile { name = .to_string "ada", tag = Tag (.to_string "t1"), nickname = None }) })
+  u = Some (User {
+    profile = Some (Profile {
+      name = .to_string "ada",
+      tag = Tag (.to_string "t1"),
+      nickname = None,
+    }),
+  })
   empty = None : Option<User>
 
   println! \-> "#{(.is_some (first_name (&u)))}"

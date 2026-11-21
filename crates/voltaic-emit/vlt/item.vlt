@@ -325,7 +325,15 @@ shared_const decl =
     return None
   guard .as_slice block.stmts is [stmt] else
     return None
-  Some (ConstDecl { name = .clone decl.name, ty, value = .clone stmt.expr, is_static = false, visibility = .clone decl.visibility, span = decl.span, leading = .clone decl.leading })
+  Some (ConstDecl {
+    name = .clone decl.name,
+    ty,
+    value = .clone stmt.expr,
+    is_static = false,
+    visibility = .clone decl.visibility,
+    span = decl.span,
+    leading = .clone decl.leading,
+  })
 
 export(crate) signature : &Signature -> usize -> String
 signature sig indent =

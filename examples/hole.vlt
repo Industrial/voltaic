@@ -45,7 +45,9 @@ main =
   -- breaks the one-liner — so a single pipeline here would be output rustfmt
   -- rewrites, which `generated_rust_is_rustfmt_clean` refuses.
   borrowed = ["a", "bb"]
-  made = borrowed |> .into_iter |> .map (String::from _)
+  made = borrowed
+    |> .into_iter
+    |> .map (String::from _)
   owned : Vec<String> = .collect made
 
   -- 2. **A method awaiting its receiver**, which was unwritable before this row
@@ -54,7 +56,10 @@ main =
   -- rustc answers with `E0615`, *"attempted to take value of method"*. The
   -- README's own table claims `.trim` is `|x| x.trim()` and that claim is
   -- false. With a hole it is true.
-  trimmed : Vec<&str> = owned |> .iter |> .map (.trim _) |> .collect
+  trimmed : Vec<&str> = owned
+    |> .iter
+    |> .map (.trim _)
+    |> .collect
 
   -- 3. **A method's middle argument.** The receiver is last (plan 57), the map
   -- is supplied, the key is supplied, and the *middle* argument is abstracted.

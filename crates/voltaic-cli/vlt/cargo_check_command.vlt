@@ -7,7 +7,10 @@ import std::path::Path
 import std::path::PathBuf
 import std::process::Command
 
-export(crate) data CargoCheckArgs { export(crate) forwarded Vec<String>, export(crate) plain bool }
+export(crate) data CargoCheckArgs {
+  export(crate) forwarded Vec<String>,
+  export(crate) plain bool,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 export(crate) data Reported
@@ -19,7 +22,10 @@ export(crate) parse_cargo_check_args : &[String] -> CargoCheckArgs
 parse_cargo_check_args args =
   plain = .any (\a -> a == "--plain") (.iter args)
   forwarded : Vec<String> = (args.iter ().filter (\a -> .as_str a != "--plain")).cloned ().collect ()
-  CargoCheckArgs { forwarded, plain }
+  CargoCheckArgs {
+    forwarded,
+    plain,
+  }
 
 export(crate) cargo_check_command : &[String] -> Result<(), String>
 cargo_check_command args =
@@ -79,7 +85,14 @@ compiler_message line here =
   manifest = text_at (&value) "manifest_path"
   generated = resolve_rust (&file) (.map Path::new (.as_deref manifest)) here
   code = .and_then (\c -> text_at c "code") (.get "code" message)
-  rustc = RustcMessage { path = generated.display ().to_string (), line = number_at span "line_start", col = number_at span "column_start", level = .clone level, code, message = .unwrap_or_default (text_at message "message") }
+  rustc = RustcMessage {
+    path = generated.display ().to_string (),
+    line = number_at span "line_start",
+    col = number_at span "column_start",
+    level = .clone level,
+    code,
+    message = .unwrap_or_default (text_at message "message"),
+  }
   help = help_of message
 
   if mapped (&rustc) (&generated) here is Some found
@@ -98,7 +111,16 @@ compiler_message line here =
   else
     voltaic_diag::Severity::Error
   source = .unwrap_or_default (std::fs::read_to_string (&generated))
-  Some (Reported::Located (Diagnostic { code = DiagnosticCode::Foreign (.unwrap_or_else (\-> .clone level) (.clone rustc.code)), severity, message = rustc.message, span = (start, end), related = Vec::new (), help = note, path = shown (&generated) here, source }))
+  Some (Reported::Located (Diagnostic {
+    code = DiagnosticCode::Foreign (.unwrap_or_else (\-> .clone level) (.clone rustc.code)),
+    severity,
+    message = rustc.message,
+    span = (start, end),
+    related = Vec::new (),
+    help = note,
+    path = shown (&generated) here,
+    source,
+  }))
 
 text_at : &Value -> &str -> Option<String>
 text_at value key = .map String::from (.and_then (\x -> .as_str x) (.get key value))

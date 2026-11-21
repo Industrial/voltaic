@@ -31,7 +31,11 @@ build_command args =
   (.map_err (\e -> format! \-> "error: cannot write #{sidecar_shown}: #{e}") (std::fs::write (&sidecar) (voltaic_diag::render_map (&emitted.1))))?
   Ok ()
 
-export(crate) data BuildArgs { export(crate) input PathBuf, export(crate) output PathBuf, export(crate) plain bool }
+export(crate) data BuildArgs {
+  export(crate) input PathBuf,
+  export(crate) output PathBuf,
+  export(crate) plain bool,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 export(crate) default_output : &Path -> PathBuf
@@ -91,7 +95,11 @@ parse_build_args args =
     help = usage ()
     return Err (format! \-> "error: no input file\n\n#{help}")
   out = .unwrap_or_else (\-> default_output (&resolved)) output
-  Ok (BuildArgs { input = resolved, output = out, plain })
+  Ok (BuildArgs {
+    input = resolved,
+    output = out,
+    plain,
+  })
 
 test "rejects an unknown flag"
   args = [.to_string "--nope"]

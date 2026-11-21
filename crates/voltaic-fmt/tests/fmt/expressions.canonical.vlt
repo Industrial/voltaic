@@ -18,8 +18,12 @@ count : u64
 1 ..= 4
 maybe ?? 0
 risky catch 0
-xs |> len
-Point { x = 3.0, y = 4.0 }
+xs
+  |> len
+Point {
+  x = 3.0,
+  y = 4.0,
+}
 [ q * 2 | q in xs, q > 0 ]
 \q -> q + 1
 (> 0)

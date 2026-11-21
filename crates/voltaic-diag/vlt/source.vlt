@@ -2,19 +2,30 @@ export type Span = (usize, usize)
 
 export const VERSION : u32 = 1
 
-export data Origin { export span Span, export src_line usize, export src_col usize, export gen_col usize }
+export data Origin {
+  export span Span,
+  export src_line usize,
+  export src_col usize,
+  export gen_col usize,
+}
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
 instance Origin
   export map_col : &self -> usize -> usize
   map_col self gen_col = self.src_col + .saturating_sub self.gen_col gen_col
 
-export data SourceMap { export source_path String, origins Vec<Option<Origin>> }
+export data SourceMap {
+  export source_path String,
+  origins Vec<Option<Origin>>,
+}
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 instance SourceMap
   export new : impl Into<String> -> Vec<Option<Origin>> -> Self
-  new source_path origins = SourceMap { source_path = .into source_path, origins }
+  new source_path origins = SourceMap {
+    source_path = .into source_path,
+    origins,
+  }
 
   export len : &self -> usize
   len self = .len self.origins
@@ -76,7 +87,12 @@ parse_map text =
         parsed_src_line : Result<usize, _> = .parse src_line
         parsed_src_col : Result<usize, _> = .parse src_col
         parsed_gen_col : Result<usize, _> = .parse gen_col
-        origin = Origin { span = (0, 0), src_line = (.map_err (\_ -> format! \-> "record #{expected}'s source line is not a number") parsed_src_line)?, src_col = (.map_err (\_ -> format! \-> "record #{expected}'s source column is not a number") parsed_src_col)?, gen_col = (.map_err (\_ -> format! \-> "record #{expected}'s generated column is not a number") parsed_gen_col)? }
+        origin = Origin {
+          span = (0, 0),
+          src_line = (.map_err (\_ -> format! \-> "record #{expected}'s source line is not a number") parsed_src_line)?,
+          src_col = (.map_err (\_ -> format! \-> "record #{expected}'s source column is not a number") parsed_src_col)?,
+          gen_col = (.map_err (\_ -> format! \-> "record #{expected}'s generated column is not a number") parsed_gen_col)?,
+        }
         if origin.src_line == 0 || origin.src_col == 0 || origin.gen_col == 0
           return Err (format! \-> "record #{expected} has a zero line or column; both are 1-based")
         .push (Some origin) origins
@@ -86,15 +102,40 @@ parse_map text =
 
 #[cfg(test)]
 sample_origin : Origin
-sample_origin = Origin { span = (10, 15), src_line = 2, src_col = 3, gen_col = 5 }
+sample_origin = Origin {
+  span = (10, 15),
+  src_line = 2,
+  src_col = 3,
+  gen_col = 5,
+}
 
 #[cfg(test)]
 sample_map : SourceMap
-sample_map = SourceMap::new "a.vlt" (vec! \-> Some (Origin { span = (0, 5), src_line = 1, src_col = 1, gen_col = 1 }) \-> None \-> Some (Origin { span = (10, 15), src_line = 2, src_col = 3, gen_col = 5 }))
+sample_map = SourceMap::new "a.vlt" (vec! \-> Some (Origin {
+  span = (0, 5),
+  src_line = 1,
+  src_col = 1,
+  gen_col = 1,
+}) \-> None \-> Some (Origin {
+  span = (10, 15),
+  src_line = 2,
+  src_col = 3,
+  gen_col = 5,
+}))
 
 #[cfg(test)]
 sample : SourceMap
-sample = SourceMap::new "examples/phase1.vlt" (vec! \-> Some (Origin { span = (0, 0), src_line = 1, src_col = 1, gen_col = 4 }) \-> None \-> Some (Origin { span = (0, 0), src_line = 2, src_col = 3, gen_col = 5 }))
+sample = SourceMap::new "examples/phase1.vlt" (vec! \-> Some (Origin {
+  span = (0, 0),
+  src_line = 1,
+  src_col = 1,
+  gen_col = 4,
+}) \-> None \-> Some (Origin {
+  span = (0, 0),
+  src_line = 2,
+  src_col = 3,
+  gen_col = 5,
+}))
 
 test "shifts a column by the indentation difference"
   assert_eq! \-> .map_col 5 (sample_origin ()) \-> 3 \-> "the first character"

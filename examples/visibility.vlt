@@ -16,7 +16,10 @@
 
 -- Per-field visibility, which is the half doc 01 §22 could not express at
 -- all.
-export data Point { export x f64, y f64 }
+export data Point {
+  export x f64,
+  y f64,
+}
   deriving (Debug)
 
 -- A tuple field takes its marker inside parentheses, and a parenthesised
@@ -38,7 +41,10 @@ double d = d * 2.0
 
 main : ()
 main =
-  p = Point { x = 3.0, y = 4.0 }
+  p = Point {
+    x = 3.0,
+    y = 4.0,
+  }
   println! \-> "#{p.x}"
   println! \-> "#{(area (&p))}"
   println! \-> "#{(double (area (&p)))}"

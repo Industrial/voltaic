@@ -2,15 +2,27 @@ import crate::substitution::Substitution
 import crate::ty::Ty
 import crate::variable::Variable
 
-export data Mismatch { export left Ty, export right Ty, export occurs bool }
+export data Mismatch {
+  export left Ty,
+  export right Ty,
+  export occurs bool,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Mismatch
   export between : &Ty -> &Ty -> Self
-  between left right = Mismatch { left = .clone left, right = .clone right, occurs = false }
+  between left right = Mismatch {
+    left = .clone left,
+    right = .clone right,
+    occurs = false,
+  }
 
   export cycle : Variable -> &Ty -> Self
-  cycle v right = Mismatch { left = Ty::hole v, right = .clone right, occurs = true }
+  cycle v right = Mismatch {
+    left = Ty::hole v,
+    right = .clone right,
+    occurs = true,
+  }
 
   export is_cycle : &self -> bool
   is_cycle self = self.occurs

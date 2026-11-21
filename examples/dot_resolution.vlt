@@ -8,7 +8,9 @@
 -- and nothing else and `docs/DECLINED.md` recorded UFCS as "requires type
 -- knowledge to choose a shape". Lattice has the type knowledge.
 
-data Cursor { pos usize }
+data Cursor {
+  pos usize,
+}
 
 instance Cursor
   export depth : &self -> usize
@@ -54,7 +56,9 @@ counted v = .len v
 
 main : ()
 main =
-  c = Cursor { pos = 7 }
+  c = Cursor {
+    pos = 7,
+  }
   println! \-> "#{(held (&c))} #{(reached (&c))} #{(summed (&c))}"
   v : Vec<u64> = Vec::new ()
   println! \-> "#{(counted (&v))}"

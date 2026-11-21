@@ -51,7 +51,15 @@ class_decl p leading start visibility =
   mut ctx = MethodContext::for_class (&params)
   ctx.recording := Some $ .clone name.text
   members = (class_body p (&ctx))?
-  Ok (ClassDecl { name, params, supers, members, visibility, span = (start, (.prev_span p).1), leading })
+  Ok (ClassDecl {
+    name,
+    params,
+    supers,
+    members,
+    visibility,
+    span = (start, (.prev_span p).1),
+    leading,
+  })
 
 export(crate) class_member : &mut Parser -> &MethodContext -> Result<ClassMember, ParseError>
 class_member p ctx =
@@ -74,7 +82,12 @@ class_member p ctx =
     else
       None
     (.newline_with_trailing "expected a line break after the associated type" p)?
-    return Ok (ClassMember::AssocType { name = assoc, generics, value, leading })
+    return Ok (ClassMember::AssocType {
+      name = assoc,
+      generics,
+      value,
+      leading,
+    })
   if .check (&TokenKind::Kw Keyword::Const) p
     .advance p
     assoc = (.ident "expected a name after `const`" p)?
@@ -86,11 +99,20 @@ class_member p ctx =
     else
       None
     (.newline_with_trailing "expected a line break after the associated constant" p)?
-    return Ok (ClassMember::AssocConst { name = assoc, ty, value, visibility = member_visibility, leading })
+    return Ok (ClassMember::AssocConst {
+      name = assoc,
+      ty,
+      value,
+      visibility = member_visibility,
+      leading,
+    })
   reserved = .reserved ctx
   guard &(.peek p).kind is TokenKind::Ident peeked else
     return Err (ParseError::r#with Code::ExpectedName (.to_string "expected a member's name") (.peek_span p))
-  name = Ident { text = .clone peeked, span = .peek_span p }
+  name = Ident {
+    text = .clone peeked,
+    span = .peek_span p,
+  }
   has_signature = .is_some_and (\t -> t.kind == TokenKind::Colon) (.peek_at 1 p)
   head = if has_signature
     declared = (.ident "expected a member's name" p)?
@@ -147,7 +169,11 @@ constraints p =
       break
     guard .try_ident p is Some var else
       break
-    .push (Constraint { trait_name, var, span = (start, (.prev_span p).1) }) found
+    .push (Constraint {
+      trait_name,
+      var,
+      span = (start, (.prev_span p).1),
+    }) found
     if !.check (&TokenKind::Comma) p
       break
     .advance p
@@ -224,8 +250,16 @@ instance_decl p leading start =
     mut args = .clone first.args
     head = args.pop ().expect "the argument list is not empty"
     class_end = .map_or first.head.span.1 (\a -> a.span.1) (.last args)
-    class_app = TypeApp { head = .clone first.head, args, span = (first.head.span.0, class_end) }
-    target_app = TypeApp { head = .clone head, args = Vec::new (), span = head.span }
+    class_app = TypeApp {
+      head = .clone first.head,
+      args,
+      span = (first.head.span.0, class_end),
+    }
+    target_app = TypeApp {
+      head = .clone head,
+      args = Vec::new (),
+      span = head.span,
+    }
     (Some class_app, target_app)
   implemented = split.0
   target = split.1
@@ -234,7 +268,15 @@ instance_decl p leading start =
   mut ctx = MethodContext::for_instance (.as_deref var) (&subject)
   ctx.implementing := .map (\c -> .clone c.head.text) (.as_ref implemented)
   members = (class_body p (&ctx))?
-  Ok (InstanceDecl { r#class = implemented, target, constraints = limits, r#given = binder, members, span = (start, (.prev_span p).1), leading })
+  Ok (InstanceDecl {
+    r#class = implemented,
+    target,
+    constraints = limits,
+    r#given = binder,
+    members,
+    span = (start, (.prev_span p).1),
+    leading,
+  })
 
 export(crate) walk_member_for_tails : &ClassMember -> &mut Vec<ParseError> -> ()
 walk_member_for_tails member problems =

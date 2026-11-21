@@ -21,17 +21,34 @@ export data Side
 
 export data Gate
   = Identical
-  | Differs { line usize, was String, now String }
-  | Unreadable { side Side, problems Vec<Diagnostic> }
+  | Differs {
+    line usize,
+    was String,
+    now String,
+  }
+  | Unreadable {
+    side Side,
+    problems Vec<Diagnostic>,
+  }
   deriving (Debug, Clone)
 
 export gate : &Path -> &str -> &str -> Gate
 gate path original migrated = case transpile path original of
-  Err problems -> Gate::Unreadable { side = Side::Original, problems }
+  Err problems -> Gate::Unreadable {
+    side = Side::Original,
+    problems,
+  }
   Ok before -> case transpile path migrated of
-    Err problems -> Gate::Unreadable { side = Side::Migrated, problems }
+    Err problems -> Gate::Unreadable {
+      side = Side::Migrated,
+      problems,
+    }
     Ok after -> case first_difference (&before) (&after) of
-      Some found -> Gate::Differs { line = found.0, was = found.1, now = found.2 }
+      Some found -> Gate::Differs {
+        line = found.0,
+        was = found.1,
+        now = found.2,
+      }
       None -> Gate::Identical
 
 export first_difference : &str -> &str -> Option<(usize, String, String)>

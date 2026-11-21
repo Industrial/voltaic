@@ -385,9 +385,13 @@ fn a_field_selector_moves_and_rustc_says_so() {
     "rustc should name the selector's own binding:\n{}",
     checked.stderr
   );
+  // The source map is per line. The canonical layout gives each pipeline stage
+  // its own line, and rustc reports the one generated line the whole chain
+  // lowers to, so the error lands on the statement — `tags ps = ps`, line 27 —
+  // with the pipeline underlined, rather than on the `(.tag)` stage itself.
   assert!(
-    checked.stderr.contains("moved_selector.vlt:25:35"),
-    "reported against the section on line 25 of the .vlt:\n{}",
+    checked.stderr.contains("moved_selector.vlt:27:11"),
+    "reported against the pipeline on line 27 of the .vlt:\n{}",
     checked.stderr
   );
   assert!(

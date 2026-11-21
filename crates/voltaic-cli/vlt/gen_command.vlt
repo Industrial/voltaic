@@ -9,13 +9,28 @@ import std::path::PathBuf
 import std::process::Command
 import std::process::Stdio
 
-export(crate) data GenArgs { export(crate) dirs Option<(PathBuf, PathBuf)>, export(crate) workspace bool, export(crate) check bool, export(crate) rustfmt bool, export(crate) plain bool }
+export(crate) data GenArgs {
+  export(crate) dirs Option<(PathBuf, PathBuf)>,
+  export(crate) workspace bool,
+  export(crate) check bool,
+  export(crate) rustfmt bool,
+  export(crate) plain bool,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export(crate) data Job { export(crate) src PathBuf, export(crate) out PathBuf, export(crate) base Option<PathBuf> }
+export(crate) data Job {
+  export(crate) src PathBuf,
+  export(crate) out PathBuf,
+  export(crate) base Option<PathBuf>,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export(crate) data Tally { export(crate) written usize, export(crate) removed usize, export(crate) unchanged usize, export(crate) drift Vec<String> }
+export(crate) data Tally {
+  export(crate) written usize,
+  export(crate) removed usize,
+  export(crate) unchanged usize,
+  export(crate) drift Vec<String>,
+}
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 export(crate) parse_gen_args : &[String] -> Result<GenArgs, String>
@@ -38,11 +53,23 @@ parse_gen_args args =
   if workspace
     if !.is_empty paths
       return Err (.to_string "error: `gen --workspace` takes no paths; it finds the workspace above the current directory")
-    return Ok (GenArgs { dirs = None, workspace, check, rustfmt, plain })
+    return Ok (GenArgs {
+      dirs = None,
+      workspace,
+      check,
+      rustfmt,
+      plain,
+    })
   if .len paths != 2
     help = usage ()
     return Err (format! \-> "error: gen needs a source directory and an output directory, or --workspace\n\n#{help}")
-  Ok (GenArgs { dirs = Some (.clone paths[0], .clone paths[1]), workspace, check, rustfmt, plain })
+  Ok (GenArgs {
+    dirs = Some (.clone paths[0], .clone paths[1]),
+    workspace,
+    check,
+    rustfmt,
+    plain,
+  })
 
 export(crate) gen_command : &[String] -> Result<(), String>
 gen_command args =
@@ -103,7 +130,11 @@ summary tally check =
 export(crate) jobs : &GenArgs -> Result<Vec<Job>, String>
 jobs parsed =
   if .clone parsed.dirs is Some pair
-    return Ok (vec! \-> Job { src = pair.0, out = pair.1, base = None })
+    return Ok (vec! \-> Job {
+      src = pair.0,
+      out = pair.1,
+      base = None,
+    })
   here = (.map_err (\e -> format! \-> "error: cannot read the current directory: #{e}") (std::env::current_dir ()))?
   root = (.ok_or_else (\-> .to_string "error: --workspace found no directory holding both crates/ and Cargo.toml above this one") (voltaic_driver::workspace_above (&here)))?
   workspace_jobs (&root)
@@ -119,10 +150,18 @@ workspace_jobs root =
   for dir in crates
     vlt = .join "vlt" dir
     if .is_dir vlt
-      planned.push (Job { src = vlt, out = .join "src" dir, base = Some (.to_path_buf root) })
+      planned.push (Job {
+        src = vlt,
+        out = .join "src" dir,
+        base = Some (.to_path_buf root),
+      })
     tests = .join "tests" dir
     if .is_dir tests
-      planned.push (Job { src = .clone tests, out = tests, base = Some (.to_path_buf root) })
+      planned.push (Job {
+        src = .clone tests,
+        out = tests,
+        base = Some (.to_path_buf root),
+      })
   Ok planned
 
 shown_under : &Path -> Option<&Path> -> String

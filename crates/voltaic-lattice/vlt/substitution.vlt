@@ -2,12 +2,16 @@ import crate::ty::Ty
 import crate::variable::Variable
 import std::collections::BTreeMap
 
-export data Substitution { bound BTreeMap<Variable, Ty> }
+export data Substitution {
+  bound BTreeMap<Variable, Ty>,
+}
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 instance Substitution
   export new : Self
-  new = Substitution { bound = BTreeMap::new () }
+  new = Substitution {
+    bound = BTreeMap::new (),
+  }
 
   export len : &self -> usize
   len self = .len self.bound
@@ -36,7 +40,10 @@ instance Substitution
           .resolve found self
       else
         .clone t
-    Ty::Con { name, args, .. } -> Ty::Con { name = .clone name, args = (args.iter ().map (\a -> .resolve a self)).collect () }
+    Ty::Con { name, args, .. } -> Ty::Con {
+      name = .clone name,
+      args = (args.iter ().map (\a -> .resolve a self)).collect (),
+    }
     Ty::Nil -> Ty::Nil
 
 test "a fresh substitution binds nothing"

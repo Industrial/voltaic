@@ -6,19 +6,28 @@
 -- them restating what the fields already imply.
 
 -- All eight: `u64` supports every one of them.
-data Point { x u64, y u64 }
+data Point {
+  x u64,
+  y u64,
+}
 
 -- Seven. `String` has no `Copy`, so the intersection drops it and keeps the rest.
-data Named { label String }
+data Named {
+  label String,
+}
 
 -- Five. An `f64` has no `Eq`, no `Ord` and no `Hash`, so a declaration holding
 -- one cannot have them either — which is the intersection doing the work rather
 -- than a special case for floats.
-data Scaled { ratio f64 }
+data Scaled {
+  ratio f64,
+}
 
 -- `!Copy` opts out by name, because move semantics are sometimes the contract.
 -- Every field here is `Copy`, so without the marker this would have all eight.
-data !Copy Token { kind u64 }
+data !Copy Token {
+  kind u64,
+}
 
 -- **Nothing**, and that is the conservative direction on purpose. The emitter
 -- sees a field's type as text, so it cannot reason about a type it has no table
@@ -26,7 +35,9 @@ data !Copy Token { kind u64 }
 -- error, so an unknown type yields the empty set and the author writes
 -- `deriving (…)` as generation 1 did. Doc 86 §4.3's clause 2: Lattice derives
 -- only what `core` can derive.
-data Rooted { at std::path::PathBuf }
+data Rooted {
+  at std::path::PathBuf,
+}
   deriving (Debug, Clone)
 
 -- An explicit `#[derive(…)]` attribute is §4.3's escape hatch for a trait no
@@ -35,16 +46,31 @@ data Rooted { at std::path::PathBuf }
 -- top: doing that is `E0119`, *conflicting implementations*, and
 -- `examples/attributes.vlt` is where the first attempt at this found out.
 #[derive(Debug, Clone)]
-data Tagged { id u64 }
+data Tagged {
+  id u64,
+}
 
 main : ()
 main =
-  p = Point { x = 1, y = 2 }
-  n = Named { label = String::from "ab" }
-  s = Scaled { ratio = 0.5 }
-  t = Token { kind = 7 }
-  r = Rooted { at = std::path::PathBuf::from "/tmp" }
-  g = Tagged { id = 3 }
+  p = Point {
+    x = 1,
+    y = 2,
+  }
+  n = Named {
+    label = String::from "ab",
+  }
+  s = Scaled {
+    ratio = 0.5,
+  }
+  t = Token {
+    kind = 7,
+  }
+  r = Rooted {
+    at = std::path::PathBuf::from "/tmp",
+  }
+  g = Tagged {
+    id = 3,
+  }
   println! \-> "#{p.x} #{(.clone (&p)).y}"
   println! \-> "#{n.label} #{s.ratio} #{t.kind}"
   println! \-> "#{(.is_absolute (&r.at))} #{g.id}"

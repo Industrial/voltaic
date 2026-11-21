@@ -207,7 +207,9 @@ condition_head keyword condition indent =
     operand = pair.1
     if i > 0
       .push_str (&format! \-> "\n#{inner}&& ") out
-    one = emit_condition (&Condition { operands = vec! \-> .clone operand }) indent
+    one = emit_condition (&Condition {
+      operands = vec! \-> .clone operand,
+    }) indent
     .push_str (&one) out
   outer = .repeat indent " "
   .push_str (&format! \-> "\n#{outer}{\n") out

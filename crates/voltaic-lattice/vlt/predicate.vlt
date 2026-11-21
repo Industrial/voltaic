@@ -5,18 +5,27 @@ import std::fmt::Result
 
 export const LEN : &str = "len "
 
-export data Term { export weights BTreeMap<String, i64>, export constant i64 }
+export data Term {
+  export weights BTreeMap<String, i64>,
+  export constant i64,
+}
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 instance Term
   export literal : i64 -> Self
-  literal constant = Term { weights = BTreeMap::new (), constant }
+  literal constant = Term {
+    weights = BTreeMap::new (),
+    constant,
+  }
 
   export variable : &str -> Self
   variable name =
     mut weights = BTreeMap::new ()
     .insert (.to_string name) 1 weights
-    Term { weights, constant = 0 }
+    Term {
+      weights,
+      constant = 0,
+    }
 
   export length_of : &str -> Self
   length_of name = Term::variable (&format! \-> "#{LEN}#{name}")
@@ -35,7 +44,10 @@ instance Term
       else
         .insert (.clone pair.0) total weights
       ()
-    Term { weights, constant = self.constant + other.constant }
+    Term {
+      weights,
+      constant = self.constant + other.constant,
+    }
 
   export scaled : i64 -> &self -> Self
   scaled factor self =
@@ -45,7 +57,10 @@ instance Term
     for pair in .iter self.weights
       .insert (.clone pair.0) (*pair.1 * factor) weights
       ()
-    Term { weights, constant = self.constant * factor }
+    Term {
+      weights,
+      constant = self.constant * factor,
+    }
 
   export minus : &Term -> &self -> Self
   minus other self = .plus (&.scaled (-1) other) self
@@ -97,7 +112,11 @@ instance Comparison
     Comparison::Above -> Comparison::AtMost
 
 export data Predicate
-  = Compare { left Term, op Comparison, right Term }
+  = Compare {
+    left Term,
+    op Comparison,
+    right Term,
+  }
   | All Vec<Predicate>
   | Any Vec<Predicate>
   deriving (Debug, Clone, PartialEq, Eq)
@@ -110,7 +129,11 @@ instance Predicate
   never = Predicate::Any (Vec::new ())
 
   export compare : Term -> Comparison -> Term -> Self
-  compare left op right = Predicate::Compare { left, op, right }
+  compare left op right = Predicate::Compare {
+    left,
+    op,
+    right,
+  }
 
   export mentions : &self -> Vec<String>
   mentions self =

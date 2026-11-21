@@ -21,7 +21,10 @@ compile_file source out store fingerprint =
   key = cache_key (&text) fingerprint
   if .get (&key) store is Some hit
     cached = (write_outputs source out (&path) (&hit))?
-    return Ok (Outcome { written = cached, was_cached = true })
+    return Ok (Outcome {
+      written = cached,
+      was_cached = true,
+    })
 
   mut program = (.map_err (\failure -> diagnose source (&text) (&failure)) (voltaic_parser::parse_source (&text)))?
   analysis = crate::annotate::analyse_at (&mut program) source
@@ -30,13 +33,22 @@ compile_file source out store fingerprint =
   scope = voltaic_emit::MethodScope::enter (voltaic_emit::MethodTable::from_spans (.as_slice analysis.methods))
   emitted = voltaic_emit::emit_with_map (&program) (&text) (&path)
   drop scope
-  fresh = Cached { r#rust = emitted.0, map = voltaic_diag::render_map (&emitted.1) }
+  fresh = Cached {
+    r#rust = emitted.0,
+    map = voltaic_diag::render_map (&emitted.1),
+  }
 
   written = (write_outputs source out (&path) (&fresh))?
   .put (&key) (&fresh) store
-  Ok (Outcome { written, was_cached = false })
+  Ok (Outcome {
+    written,
+    was_cached = false,
+  })
 
-export(crate) data Outcome { export(crate) written PathBuf, export(crate) was_cached bool }
+export(crate) data Outcome {
+  export(crate) written PathBuf,
+  export(crate) was_cached bool,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 export(crate) write_outputs : &Path -> &Path -> &str -> &Cached -> Result<PathBuf, Vec<Diagnostic>>
@@ -57,7 +69,10 @@ write_outputs source out path content =
 
   Ok target
 
-export data Compiled { export inputs Vec<PathBuf>, export outputs Vec<PathBuf> }
+export data Compiled {
+  export inputs Vec<PathBuf>,
+  export outputs Vec<PathBuf>,
+}
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 instance Compiled
@@ -71,7 +86,10 @@ instance Compiled
   is_empty self = .is_empty self.inputs
 
 test "names every input for cargo"
-  compiled = Compiled { inputs = vec! \-> PathBuf::from "src/a.vlt" \-> PathBuf::from "src/b.vlt", outputs = vec! \-> PathBuf::from "out/a.rs" \-> PathBuf::from "out/b.rs" }
+  compiled = Compiled {
+    inputs = vec! \-> PathBuf::from "src/a.vlt" \-> PathBuf::from "src/b.vlt",
+    outputs = vec! \-> PathBuf::from "out/a.rs" \-> PathBuf::from "out/b.rs",
+  }
   assert_eq! \-> .rerun_directives compiled \-> vec! \-> "cargo::rerun-if-changed=src/a.vlt" \-> "cargo::rerun-if-changed=src/b.vlt"
 
 test "an empty run asks for no reruns"

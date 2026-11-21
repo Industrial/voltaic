@@ -70,7 +70,12 @@ upstream program from =
           MemberKind::Field
         else
           MemberKind::Method
-        known.members.push (voltaic_lattice::Member { owner = .clone m.owner, name = .clone m.name, ty = voltaic_lattice::Ty::Nil, kind })
+        known.members.push (voltaic_lattice::Member {
+          owner = .clone m.owner,
+          name = .clone m.name,
+          ty = voltaic_lattice::Ty::Nil,
+          kind,
+        })
         if !.contains (&.clone m.owner) (.as_slice known.types)
           known.types.push (.clone m.owner)
   known

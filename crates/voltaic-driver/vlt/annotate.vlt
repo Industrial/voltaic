@@ -16,12 +16,24 @@ import voltaic_diag::DiagnosticCode
 import voltaic_diag::Severity
 import std::path::Path
 
-data Filled { name String, ty Ty, span voltaic_ast::Span, modes Vec<(String, Mode)> }
+data Filled {
+  name String,
+  ty Ty,
+  span voltaic_ast::Span,
+  modes Vec<(String, Mode)>,
+}
 
-export data Unresolved { export name String, export shown String, export span voltaic_ast::Span }
+export data Unresolved {
+  export name String,
+  export shown String,
+  export span voltaic_ast::Span,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Analysis { export open Vec<Unresolved>, export methods Vec<Span> }
+export data Analysis {
+  export open Vec<Unresolved>,
+  export methods Vec<Span>,
+}
   deriving (Debug, Clone)
 
 export annotate : &mut Program -> Vec<Unresolved>
@@ -43,9 +55,17 @@ analyse_at program from =
   mut filled = Vec::new ()
   for definition in .iter found.definitions
     if .is_none definition.written
-      filled.push (Filled { name = .clone definition.name, ty = .judged (&outcome) definition, span = definition.span, modes = .clone definition.modes })
+      filled.push (Filled {
+        name = .clone definition.name,
+        ty = .judged (&outcome) definition,
+        span = definition.span,
+        modes = .clone definition.modes,
+      })
   if .is_empty filled
-    return Analysis { open = Vec::new (), methods }
+    return Analysis {
+      open = Vec::new (),
+      methods,
+    }
 
   mut open = Vec::new ()
   for item in .iter_mut program.items
@@ -54,10 +74,21 @@ analyse_at program from =
         if written_for (&f.name.text) f.span (.as_slice filled) is Some whole
           inferred_modes = modes_for (&f.name.text) f.span (.as_slice filled)
           if !fill f (&whole) (&inferred_modes)
-            open.push (Unresolved { name = .clone f.name.text, shown = .to_string whole, span = f.span })
+            open.push (Unresolved {
+              name = .clone f.name.text,
+              shown = .to_string whole,
+              span = f.span,
+            })
         else
-          open.push (Unresolved { name = .clone f.name.text, shown = .to_string "?", span = f.span })
-  Analysis { open, methods }
+          open.push (Unresolved {
+            name = .clone f.name.text,
+            shown = .to_string "?",
+            span = f.span,
+          })
+  Analysis {
+    open,
+    methods,
+  }
 
 method_spans : &Store -> &Outcome -> &Declarations -> Vec<Span>
 method_spans store outcome known =
@@ -110,8 +141,14 @@ fill f whole modes =
         prefix = .emits (receiver_mode modes)
         pair.0.name.text := format! \-> "#{prefix}self"
       else
-        pair.0.ty := Some (TypeExpr { text = .clone pair.1, span = pair.0.span })
-    f.sig.ret := Some (TypeExpr { text = .clone rows.1, span = f.sig.span })
+        pair.0.ty := Some (TypeExpr {
+          text = .clone pair.1,
+          span = pair.0.span,
+        })
+    f.sig.ret := Some (TypeExpr {
+      text = .clone rows.1,
+      span = f.sig.span,
+    })
     return true
   false
 
@@ -141,7 +178,16 @@ refusals path source open =
   shown = path.display ().to_string ()
   mut diagnostics = Vec::new ()
   for one in .iter open
-    diagnostics.push (Diagnostic { code = DiagnosticCode::from Code::SignatureNotInferred, severity = Severity::Error, message = format! \-> "cannot infer a signature for `#{one.name}`", span = one.span, related = Vec::new (), help = Some (format! \-> "Lattice reached `#{one.shown}`, which has no Rust spelling. Write the signature, or annotate a parameter so inference can reach one. `voltaic sig --why #{one.name}` shows the chain."), path = .clone shown, source = .to_string source })
+    diagnostics.push (Diagnostic {
+      code = DiagnosticCode::from Code::SignatureNotInferred,
+      severity = Severity::Error,
+      message = format! \-> "cannot infer a signature for `#{one.name}`",
+      span = one.span,
+      related = Vec::new (),
+      help = Some (format! \-> "Lattice reached `#{one.shown}`, which has no Rust spelling. Write the signature, or annotate a parameter so inference can reach one. `voltaic sig --why #{one.name}` shows the chain."),
+      path = .clone shown,
+      source = .to_string source,
+    })
   diagnostics
 
 test "the solver resolves a method and a field through an annotated receiver"

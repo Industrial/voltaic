@@ -1,0 +1,72 @@
+================================================================
+a record declared and built one field per line, with trailing commas
+================================================================
+
+data Point {
+  x f64,
+  y f64,
+}
+  deriving (Debug)
+
+main =
+  p = Point {
+    x = 3.0,
+    y = 4.0,
+  }
+  p
+
+----------------------------------------------------------------
+
+(source_file
+  (data_declaration
+    (type_identifier)
+    (record_fields
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier)))
+      (field_declaration
+        (identifier)
+        (type_expression
+          (identifier))))
+    (deriving
+      (type_identifier)))
+  (equation
+    (identifier)
+    (binding
+      (pattern_run
+        (identifier))
+      (record_literal
+        (type_identifier)
+        (record_literal_field
+          (identifier)
+          (number))
+        (record_literal_field
+          (identifier)
+          (number))))
+    (expression_statement
+      (identifier))))
+
+================================================================
+a where after a broken pipeline, at the stages' depth
+================================================================
+
+grid = pairs
+  |> .collect
+  where
+    pairs = 1
+
+----------------------------------------------------------------
+
+(source_file
+  (equation
+    (identifier)
+    (identifier)
+    (continuation
+      (operator)
+      (operator)
+      (identifier))
+    (where_clause
+      (equation
+        (identifier)
+        (number)))))

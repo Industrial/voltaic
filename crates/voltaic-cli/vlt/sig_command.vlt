@@ -4,15 +4,30 @@ import voltaic_parser::parse_source
 import std::path::Path
 import std::path::PathBuf
 
-export(crate) data SigArgs { export(crate) inputs Vec<PathBuf>, export(crate) why Option<String>, export(crate) verify bool, export(crate) emit bool, export(crate) require bool, export(crate) against Option<PathBuf> }
+export(crate) data SigArgs {
+  export(crate) inputs Vec<PathBuf>,
+  export(crate) why Option<String>,
+  export(crate) verify bool,
+  export(crate) emit bool,
+  export(crate) require bool,
+  export(crate) against Option<PathBuf>,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export(crate) data Agreement { export(crate) checked usize, export(crate) agreed usize, export(crate) differed Vec<(String, String, String)> }
+export(crate) data Agreement {
+  export(crate) checked usize,
+  export(crate) agreed usize,
+  export(crate) differed Vec<(String, String, String)>,
+}
   deriving (Debug, Clone, Default)
 
 instance Agreement
   export(crate) new : Self
-  new = Agreement { checked = 0, agreed = 0, differed = Vec::new () }
+  new = Agreement {
+    checked = 0,
+    agreed = 0,
+    differed = Vec::new (),
+  }
 
   export(crate) absorb : &Agreement -> &mut self -> ()
   absorb other self =
@@ -61,7 +76,14 @@ parse_sig_args args =
   if .is_empty inputs
     help = usage ()
     return Err (format! \-> "error: sig needs at least one .vlt\n\n#{help}")
-  Ok (SigArgs { inputs, why, verify, emit, require, against })
+  Ok (SigArgs {
+    inputs,
+    why,
+    verify,
+    emit,
+    require,
+    against,
+  })
 
 export(crate) sig_command : &[String] -> Result<(), String>
 sig_command args =

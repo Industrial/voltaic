@@ -174,7 +174,10 @@ test "a reference to an applied type keeps both layers"
   assert_eq! \-> .to_string (from_text "&Vec<u8>") \-> "&Vec<u8>"
 
 test "reading a written annotation goes through the same path"
-  written = TypeExpr { text = .to_string "Option<char>", span = (0, 12) }
+  written = TypeExpr {
+    text = .to_string "Option<char>",
+    span = (0, 12),
+  }
   assert_eq! \-> read (&written) \-> from_text "Option<char>"
 
 test "a lifetime is dropped, because Lattice does not infer lifetimes"

@@ -32,6 +32,7 @@ module.exports = grammar({
 		$._dedent,
 		$._fenced_comment,
 		$._token_tree_break,
+		$._bracket_break,
 	],
 
 	// Horizontal space and comments are invisible everywhere. A **newline** is
@@ -39,7 +40,16 @@ module.exports = grammar({
 	// newline is significant where the grammar expects one of the three
 	// externals, and whitespace where it does not — so a bracketed continuation
 	// line works without the scanner knowing about brackets.
-	extras: ($) => [/[ \t\r]/, $.comment],
+	//
+	// `_bracket_break` is the exception, and it is the scanner's: a line break
+	// where none of the three layout tokens is valid — inside `{`…`}`, `[`…`]`
+	// or `(`…`)`. The internal lexer cannot skip a `\n` there, so before it a
+	// record written one field per line, which is the canonical layout, was an
+	// ERROR from its first brace. It is an extra rather than a `\n` in the
+	// regex above because a bare `\n` would also swallow the line break the
+	// scanner declines on an inconsistent dedent, and that one must stay an
+	// error.
+	extras: ($) => [/[ \t\r]/, $.comment, $._bracket_break],
 
 	word: ($) => $.identifier,
 
@@ -300,7 +310,11 @@ module.exports = grammar({
 			),
 
 		record_fields: ($) =>
-			seq("{", optional(sep1($.field_declaration, ",")), "}"),
+			seq(
+				"{",
+				optional(seq(sep1($.field_declaration, ","), optional(","))),
+				"}",
+			),
 
 		// Plan 52 made `:` declare the type and `=` supply the value, which made
 		// `data Point = Point { x : f64, y : f64 }` Rust's struct syntax with the
@@ -755,6 +769,13 @@ module.exports = grammar({
 						field("body", $._expression),
 						$._indent,
 						repeat1($.continuation),
+						// The canonical layout breaks every pipeline, so `where` now
+						// routinely follows the last stage at the stages' own depth:
+						// `grid = pairs`, `  |> .collect`, `  where`. That `where` is
+						// inside the continuation block rather than one level in from
+						// the equation, so it is a `where_clause` without the indent
+						// the other branches' `where_clause` opens.
+						optional(alias($._where_body, $.where_clause)),
 						$._dedent,
 						optional($.where_clause),
 					),
@@ -788,13 +809,13 @@ module.exports = grammar({
 		// `expression_statement` holding an `ascription` and two bare
 		// `operator`s. A hollow reading is what plan 51 exists to catch and
 		// what an ERROR-only check cannot see.
-		where_clause: ($) =>
+		where_clause: ($) => seq($._indent, $._where_body, $._dedent),
+
+		_where_body: ($) =>
 			seq(
-				$._indent,
 				"where",
 				$._indent,
 				repeat1(choice($.signature, $.equation, $._statement)),
-				$._dedent,
 				$._dedent,
 			),
 
@@ -1535,7 +1556,7 @@ module.exports = grammar({
 						choice(
 							seq(
 								sep1($.record_literal_field, ","),
-								optional(seq(",", $.record_spread)),
+								optional(choice(seq(",", $.record_spread), ",")),
 							),
 							$.record_spread,
 						),

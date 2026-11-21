@@ -37,7 +37,9 @@ shout x = .into x
 -- `where`, whose role that document declared and nothing implemented until
 -- plan 84 leaf 3.
 total : given <I: IntoIterator<Item = u64>> I -> u64 where I::IntoIter: Clone
-total xs = xs |> .into_iter |> .sum
+total xs = xs
+  |> .into_iter
+  |> .sum
 
 -- A **relaxed bound**. There is no `=>` spelling for a negative bound, and the
 -- `?` had no respelling either — plan 84 leaf 0 found it reaching generated

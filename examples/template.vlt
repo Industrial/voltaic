@@ -39,10 +39,17 @@ deriving template Labelled
     labelled : &self -> String
     labelled self = zip_pairs (&[FieldNames]) (&[Fields])
 
-data Point { export x u32, export y u32 }
+data Point {
+  export x u32,
+  export y u32,
+}
   deriving (Debug, Clone, Labelled)
 
-data Triple { export a u32, export b u32, export c u32 }
+data Triple {
+  export a u32,
+  export b u32,
+  export c u32,
+}
   deriving (Debug, Clone, Labelled)
 
 -- The class the template implements, and the helper its body calls. Both are
@@ -62,7 +69,9 @@ one_pair pair = format! \-> "#{pair.0}=#{pair.1}"
 zip_pairs : &[&str] -> &[u32] -> String
 zip_pairs names values =
   paired = .zip (.iter values) (.iter names)
-  pairs : Vec<String> = paired |> .map one_pair |> .collect
+  pairs : Vec<String> = paired
+    |> .map one_pair
+    |> .collect
   .join ", " pairs
 
 export main : ()

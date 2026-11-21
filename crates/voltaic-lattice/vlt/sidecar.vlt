@@ -5,18 +5,31 @@ import std::fmt::Result
 
 export const HEADER : &str = "# voltaic 2 signature sidecar — generated, do not edit"
 
-export data Published { export name String, export judgement String }
+export data Published {
+  export name String,
+  export judgement String,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Member { export owner String, export name String, export is_field bool }
+export data Member {
+  export owner String,
+  export name String,
+  export is_field bool,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
-export data Sidecar { export published Vec<Published>, export members Vec<Member> }
+export data Sidecar {
+  export published Vec<Published>,
+  export members Vec<Member>,
+}
   deriving (Debug, Clone, Default, PartialEq, Eq)
 
 instance Sidecar
   export new : Self
-  new = Sidecar { published = Vec::new (), members = Vec::new () }
+  new = Sidecar {
+    published = Vec::new (),
+    members = Vec::new (),
+  }
 
   export len : &self -> usize
   len self = .len self.published
@@ -30,7 +43,11 @@ instance Sidecar
 export data Change
   = Added String
   | Removed String
-  | Altered { name String, before String, after String }
+  | Altered {
+    name String,
+    before String,
+    after String,
+  }
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Change
@@ -74,15 +91,28 @@ export of_report : &Report -> &crate::driver::Outcome -> Sidecar
 of_report found outcome =
   mut rows = Vec::new ()
   for definition in .iter found.definitions
-    rows.push (Published { name = .clone definition.name, judgement = judgement_of definition outcome })
+    rows.push (Published {
+      name = .clone definition.name,
+      judgement = judgement_of definition outcome,
+    })
   for constant in .iter found.constants
-    rows.push (Published { name = .clone constant.0, judgement = .to_string constant.1 })
+    rows.push (Published {
+      name = .clone constant.0,
+      judgement = .to_string constant.1,
+    })
   mut members : Vec<Member> = Vec::new ()
   for m in .iter found.known.members
-    row = Member { owner = .clone m.owner, name = .clone m.name, is_field = m.kind == crate::declarations::MemberKind::Field }
+    row = Member {
+      owner = .clone m.owner,
+      name = .clone m.name,
+      is_field = m.kind == crate::declarations::MemberKind::Field,
+    }
     if !.contains (&row) (.as_slice members)
       members.push row
-  Sidecar { published = rows, members }
+  Sidecar {
+    published = rows,
+    members,
+  }
 
 export render_sidecar : &Sidecar -> String
 render_sidecar sidecar =
@@ -108,13 +138,23 @@ read_sidecar text =
     if .is_empty trimmed || .starts_with '#' trimmed
       continue
     if .split_once " : " trimmed is Some halves
-      rows.push (Published { name = .to_string (.trim halves.0), judgement = .to_string (.trim halves.1) })
+      rows.push (Published {
+        name = .to_string (.trim halves.0),
+        judgement = .to_string (.trim halves.1),
+      })
       continue
     if .split_once ' ' trimmed is Some halves && .split_once '.' halves.0 is Some path
       rows_kind = .trim halves.1
       if rows_kind == "field" || rows_kind == "method"
-        members.push (Member { owner = .to_string path.0, name = .to_string path.1, is_field = rows_kind == "field" })
-  Sidecar { published = rows, members }
+        members.push (Member {
+          owner = .to_string path.0,
+          name = .to_string path.1,
+          is_field = rows_kind == "field",
+        })
+  Sidecar {
+    published = rows,
+    members,
+  }
 
 export compare : &Sidecar -> &Sidecar -> Vec<Change>
 compare before after =
@@ -124,14 +164,22 @@ compare before after =
       None -> found.push (Change::Removed (.clone row.name))
       Some now ->
         if now.judgement != row.judgement
-          found.push (Change::Altered { name = .clone row.name, before = .clone row.judgement, after = .clone now.judgement })
+          found.push (Change::Altered {
+            name = .clone row.name,
+            before = .clone row.judgement,
+            after = .clone now.judgement,
+          })
         ()
   for row in .iter after.published
     if .is_none (.find (&row.name) before)
       found.push (Change::Added (.clone row.name))
   found
 
-export data Unwritten { export name String, export inferred String, export span voltaic_ast::Span }
+export data Unwritten {
+  export name String,
+  export inferred String,
+  export span voltaic_ast::Span,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 export unwritten : &Report -> &crate::driver::Outcome -> Vec<Unwritten>
@@ -139,7 +187,11 @@ unwritten found outcome =
   mut missing = Vec::new ()
   for definition in .iter found.definitions
     if definition.published && .is_none definition.written
-      missing.push (Unwritten { name = .clone definition.name, inferred = judgement_of definition outcome, span = definition.span })
+      missing.push (Unwritten {
+        name = .clone definition.name,
+        inferred = judgement_of definition outcome,
+        span = definition.span,
+      })
   missing
 
 export breaking : &[Change] -> usize
@@ -194,7 +246,11 @@ test "visibility reaches the inferred definition, which is what the demand reads
   assert! \-> !(.expect "hidden" (.find "hidden" found)).published
 
 test "the report would name the inferred judgement, so the fix can be pasted"
-  shown = Unwritten { name = .to_string "across", inferred = .to_string "&Point -> f64 @ p shared", span = (0, 6) }
+  shown = Unwritten {
+    name = .to_string "across",
+    inferred = .to_string "&Point -> f64 @ p shared",
+    span = (0, 6),
+  }
   assert_eq! \-> shown.inferred \-> "&Point -> f64 @ p shared"
 
 test "a rendered sidecar starts with the header and nothing else when empty"
@@ -203,8 +259,14 @@ test "a rendered sidecar starts with the header and nothing else when empty"
 
 test "a sidecar round-trips through render and read"
   mut original = Sidecar::new ()
-  original.published.push (Published { name = .to_string "peek", judgement = .to_string "Option<char> @ self shared" })
-  original.published.push (Published { name = .to_string "bump", judgement = .to_string "Option<char> ! mut self @ self unique" })
+  original.published.push (Published {
+    name = .to_string "peek",
+    judgement = .to_string "Option<char> @ self shared",
+  })
+  original.published.push (Published {
+    name = .to_string "bump",
+    judgement = .to_string "Option<char> ! mut self @ self unique",
+  })
   assert_eq! \-> read_sidecar (&render_sidecar (&original)) \-> original
 
 test "reading ignores the header and blank lines"
@@ -237,7 +299,11 @@ test "a changed judgement is an alteration carrying both sides"
   after = read_sidecar "width : f32\n"
   changes = compare (&before) (&after)
   assert_eq! \-> .len changes \-> 1
-  assert_eq! \-> changes[0] \-> Change::Altered { name = .to_string "width", before = .to_string "f64", after = .to_string "f32" }
+  assert_eq! \-> changes[0] \-> Change::Altered {
+    name = .to_string "width",
+    before = .to_string "f64",
+    after = .to_string "f32",
+  }
   assert_eq! \-> breaking (.as_slice changes) \-> 1
 
 test "a mode change alone is an API change, because `shared` to `owned` is one"

@@ -92,11 +92,15 @@ test "accepts everything and says nothing"
   .report "a.vlt" true Silent
   .report "a.vlt" false Silent
 
-export(crate) data Store { dir PathBuf }
+export(crate) data Store {
+  dir PathBuf,
+}
 
 instance Store
   export(crate) new : &Path -> Self
-  new out = Store { dir = .join ".voltaic-cache" out }
+  new out = Store {
+    dir = .join ".voltaic-cache" out,
+  }
 
   paths : &blake3::Hash -> &self -> (PathBuf, PathBuf)
   paths key self =
@@ -110,7 +114,10 @@ instance Store
     text = (.ok (std::fs::read_to_string found.0))?
     map = (.ok (std::fs::read_to_string found.1))?
     (.ok (voltaic_diag::parse_map (&map)))?
-    Some (Cached { r#rust = text, map })
+    Some (Cached {
+      r#rust = text,
+      map,
+    })
 
   export(crate) put : &blake3::Hash -> &Cached -> &self -> ()
   put key cached self =
@@ -148,7 +155,10 @@ instance Drop Dir
 
 #[cfg(test)]
 entry : Cached
-entry = Cached { r#rust = .to_string "fn main() {}\n", map = .to_string "voltaic-map 1 a.vlt\n1 1 1 1\n" }
+entry = Cached {
+  r#rust = .to_string "fn main() {}\n",
+  map = .to_string "voltaic-map 1 a.vlt\n1 1 1 1\n",
+}
 
 test "a stored entry comes back"
   dir = Dir::new "roundtrip"
@@ -190,5 +200,8 @@ test "an unwritable store is simply always a miss"
   .put (&key) (&entry ()) store
   assert_eq! \-> .get (&key) store \-> None
 
-export(crate) data Cached { export(crate) r#rust String, export(crate) map String }
+export(crate) data Cached {
+  export(crate) r#rust String,
+  export(crate) map String,
+}
   deriving (Debug, Clone, PartialEq, Eq)

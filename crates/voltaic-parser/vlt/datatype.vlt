@@ -31,7 +31,14 @@ constructor p leading =
   name = (.ident "expected a constructor name" p)?
   shape = (constructor_fields p)?
   message = (trailing_message p)?
-  Ok (Constructor { name, fields = shape.0, field_visibility = shape.1, message, leading, span = (start, (.prev_span p).1) })
+  Ok (Constructor {
+    name,
+    fields = shape.0,
+    field_visibility = shape.1,
+    message,
+    leading,
+    span = (start, (.prev_span p).1),
+  })
 
 export(crate) trailing_message : &mut Parser -> Result<Option<String>, ParseError>
 trailing_message p = case &(.peek p).kind of
@@ -99,12 +106,26 @@ data_decl p leading start visibility =
     if .is_empty constructors && starts_a_field_type (&(.peek p).kind)
       row_leading = .peek_leading p
       shape = (constructor_fields p)?
-      .push (Constructor { name = .clone name, fields = shape.0, field_visibility = shape.1, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
+      .push (Constructor {
+        name = .clone name,
+        fields = shape.0,
+        field_visibility = shape.1,
+        message = None,
+        leading = row_leading,
+        span = (start, (.prev_span p).1),
+      }) constructors
       continue
     if .check (&TokenKind::LBrace) p && .is_empty constructors
       row_leading = .peek_leading p
       shape = (constructor_fields p)?
-      .push (Constructor { name = .clone name, fields = shape.0, field_visibility = shape.1, message = None, leading = row_leading, span = (start, (.prev_span p).1) }) constructors
+      .push (Constructor {
+        name = .clone name,
+        fields = shape.0,
+        field_visibility = shape.1,
+        message = None,
+        leading = row_leading,
+        span = (start, (.prev_span p).1),
+      }) constructors
       continue
     if .check (&TokenKind::Eq) p || .check (&TokenKind::Or) p
       row_leading = .peek_leading p
@@ -118,7 +139,18 @@ data_decl p leading start visibility =
   for _closer in 0 .. depth
     .skip_separators p
     (.expect (&TokenKind::Dedent) "expected the declaration to end" p)?
-  mut decl = DataDecl { name, generics = Vec::new (), constructors, derives, no_copy, is_newtype, is_union, visibility, span = (start, (.prev_span p).1), leading }
+  mut decl = DataDecl {
+    name,
+    generics = Vec::new (),
+    constructors,
+    derives,
+    no_copy,
+    is_newtype,
+    is_union,
+    visibility,
+    span = (start, (.prev_span p).1),
+    leading,
+  }
   generalise_data $ &mut decl
   (newtype_shape (&decl))?
   Ok decl
@@ -137,7 +169,12 @@ derive_template p leading start =
   (.expect (&TokenKind::Dedent) "expected the template's body to end" p)?
   if body.target.head.text != "Target"
     return Err $ ParseError::with_help Code::DeriveTemplateShape "a deriving template's `instance` must be for `Target`" "`Target` is the placeholder the declaration's own type name is substituted for — `instance Display Target`. An `instance` for a concrete type is not a template and belongs at module scope" body.target.head.span
-  Ok (DeriveTemplate { name, body, span = (start, (.prev_span p).1), leading })
+  Ok (DeriveTemplate {
+    name,
+    body,
+    span = (start, (.prev_span p).1),
+    leading,
+  })
 
 export(crate) r#deriving : &mut Parser -> Result<Vec<Ident>, ParseError>
 r#deriving p =
@@ -189,7 +226,14 @@ error_variant p =
       return Err (ParseError::expected "expected the variant's `Display` message, as a string literal" (.peek_span p))
   .advance p
   (.newline_with_trailing "expected a line break after the variant" p)?
-  Ok (ErrorVariant { name = read.0, fields = read.1, from = read.2, message, leading = Vec::new (), span = (start, (.prev_span p).1) })
+  Ok (ErrorVariant {
+    name = read.0,
+    fields = read.1,
+    from = read.2,
+    message,
+    leading = Vec::new (),
+    span = (start, (.prev_span p).1),
+  })
 
 export(crate) errors_decl : &mut Parser -> Vec<Trivia> -> usize -> Visibility -> Result<ErrorsDecl, ParseError>
 errors_decl p leading start visibility =
@@ -206,7 +250,13 @@ errors_decl p leading start visibility =
   (.expect (&TokenKind::Dedent) "expected the error variants to end" p)?
   if .is_empty variants
     return Err (ParseError::r#with Code::EmptyBody "an `errors` declaration must have at least one variant" (start, (.prev_span p).1))
-  Ok (ErrorsDecl { name, variants, visibility, span = (start, (.prev_span p).1), leading })
+  Ok (ErrorsDecl {
+    name,
+    variants,
+    visibility,
+    span = (start, (.prev_span p).1),
+    leading,
+  })
 
 export(crate) field_decl : &mut Parser -> Result<FieldDecl, ParseError>
 field_decl p =
@@ -217,9 +267,21 @@ field_decl p =
   if .check (&TokenKind::Colon) p
     .advance p
     ty = (capture_type p "expected a field type" TypeStop::Greedy)?
-    return Ok (FieldDecl { name, ty, visibility = marker, leading, span = (start, (.prev_span p).1) })
+    return Ok (FieldDecl {
+      name,
+      ty,
+      visibility = marker,
+      leading,
+      span = (start, (.prev_span p).1),
+    })
   ty = (capture_type p "expected a field type" TypeStop::Atom)?
-  Ok (FieldDecl { name, ty, visibility = marker, leading, span = (start, (.prev_span p).1) })
+  Ok (FieldDecl {
+    name,
+    ty,
+    visibility = marker,
+    leading,
+    span = (start, (.prev_span p).1),
+  })
 
 export(crate) generalise : &mut Signature -> &[Constraint] -> &[String] -> ()
 generalise sig constraints reserved =

@@ -13,13 +13,17 @@ rust """
   }
 """
 
-export(crate) data TemplateScope { previous TemplateTable }
+export(crate) data TemplateScope {
+  previous TemplateTable,
+}
 
 instance TemplateScope
   export(crate) enter : TemplateTable -> Self
   enter table =
     previous = .with_borrow_mut (\slot -> std::mem::replace slot table) IN_SCOPE
-    TemplateScope { previous }
+    TemplateScope {
+      previous,
+    }
 
   export(crate) lookup : &str -> Option<voltaic_ast::DeriveTemplate>
   lookup name = .with_borrow (\table -> .get name table) IN_SCOPE
@@ -31,7 +35,9 @@ instance Drop TemplateScope
     _dropped = .with_borrow_mut (\slot -> std::mem::replace slot restored) IN_SCOPE
     ()
 
-export(crate) data TemplateTable { by_name std::collections::BTreeMap<String, DeriveTemplate> }
+export(crate) data TemplateTable {
+  by_name std::collections::BTreeMap<String, DeriveTemplate>,
+}
   deriving (Debug, Clone, Default)
 
 instance TemplateTable
@@ -41,7 +47,9 @@ instance TemplateTable
     for item in items
       if item is Item::DeriveTemplate decl
         .insert (.clone decl.name.text) (.clone decl) by_name
-    TemplateTable { by_name }
+    TemplateTable {
+      by_name,
+    }
 
   export(crate) get : &str -> &self -> Option<DeriveTemplate>
   get name self = (self.by_name.get name).cloned ()

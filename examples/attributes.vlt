@@ -14,7 +14,10 @@
 -- `deriving` clause. §13.2 is careful that the native spelling is "not a
 -- replacement", so both reach the same Rust.
 #[derive(Debug, Clone)]
-data Point { x f64, y f64 }
+data Point {
+  x f64,
+  y f64,
+}
 
 -- A `deriving` clause on a `newtype`, which is where plan 53's
 -- `#[repr(transparent)]` has to slot in. The order is fixed and this golden
@@ -75,7 +78,10 @@ scaled p = magnitude p * threshold
 
 main : ()
 main =
-  p = Point { x = 3.0, y = 4.0 }
+  p = Point {
+    x = 3.0,
+    y = 4.0,
+  }
   println! \-> "#{(magnitude (&p))}"
   println! \-> "#{(scaled (&p))}"
   println! \-> "#{(counted 7)}"

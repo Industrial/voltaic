@@ -98,7 +98,7 @@ clause_text clause name indent source =
         r#test = case &r#guard.condition of
           Some condition -> condition_text condition (indent + 1) source
           None -> String::from "_"
-        arm = if same_line source r#guard.span.0 r#guard.body.span.0
+        arm = if continues_its_line source r#guard.body.span.0
           format! \-> " = #{(inline_body (&r#guard.body) (indent + 1) source)}"
         else
           format! \-> " =\n#{(block_text (&r#guard.body) (indent + 2) source)}"
@@ -155,14 +155,8 @@ constructor_head constructor indent = case &constructor.fields of
         .push_str (&format! \-> "(#{vis}#{pair.1.text})") out
     out
   ConstructorFields::Record fields ->
-    printed : Vec<String> = (fields.iter ().map (\field ->
-      vis = visibility_text (&field.visibility)
-      format! \-> "#{vis}#{field.name.text} #{field.ty.text}")).collect ()
-    if .is_empty printed
+    if .is_empty fields
       return format! \-> "#{constructor.name.text} {}"
-    documented = fields.iter ().any (\field -> !.is_empty field.leading)
-    if !documented
-      return format! \-> "#{constructor.name.text} { #{(.join ", " printed)} }"
     pad = indent_text $ indent + 1
     mut lines : Vec<String> = Vec::new ()
     for field in fields
@@ -327,6 +321,11 @@ same_line source left right =
   hi = .max left right
   n = .len source
   !.contains '\n' source[.min lo n .. .min hi n]
+
+export(crate) continues_its_line : &str -> usize -> bool
+continues_its_line source at =
+  before = source[0 .. .min at (.len source)].trim_end_matches ' '
+  !.is_empty before && !.ends_with '\n' before
 
 export(crate) signature_line : &FnDecl -> &str -> Option<String>
 signature_line decl source =

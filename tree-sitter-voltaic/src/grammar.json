@@ -716,24 +716,41 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "field_declaration"
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "field_declaration"
+                    },
+                    {
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "STRING",
+                            "value": ","
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "field_declaration"
+                          }
+                        ]
+                      }
+                    }
+                  ]
                 },
                 {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "STRING",
-                        "value": ","
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "field_declaration"
-                      }
-                    ]
-                  }
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": ","
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
                 }
               ]
             },
@@ -2082,6 +2099,23 @@
                   }
                 },
                 {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_where_body"
+                      },
+                      "named": true,
+                      "value": "where_clause"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
                   "type": "SYMBOL",
                   "name": "_dedent"
                 },
@@ -2202,6 +2236,19 @@
           "name": "_indent"
         },
         {
+          "type": "SYMBOL",
+          "name": "_where_body"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_dedent"
+        }
+      ]
+    },
+    "_where_body": {
+      "type": "SEQ",
+      "members": [
+        {
           "type": "STRING",
           "value": "where"
         },
@@ -2228,10 +2275,6 @@
               }
             ]
           }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_dedent"
         },
         {
           "type": "SYMBOL",
@@ -4692,15 +4735,24 @@
                         "type": "CHOICE",
                         "members": [
                           {
-                            "type": "SEQ",
+                            "type": "CHOICE",
                             "members": [
+                              {
+                                "type": "SEQ",
+                                "members": [
+                                  {
+                                    "type": "STRING",
+                                    "value": ","
+                                  },
+                                  {
+                                    "type": "SYMBOL",
+                                    "name": "record_spread"
+                                  }
+                                ]
+                              },
                               {
                                 "type": "STRING",
                                 "value": ","
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "record_spread"
                               }
                             ]
                           },
@@ -5384,6 +5436,10 @@
     {
       "type": "SYMBOL",
       "name": "comment"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_bracket_break"
     }
   ],
   "conflicts": [
@@ -5495,6 +5551,10 @@
     {
       "type": "SYMBOL",
       "name": "_token_tree_break"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_bracket_break"
     }
   ],
   "inline": [],

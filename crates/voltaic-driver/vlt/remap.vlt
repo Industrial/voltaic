@@ -11,11 +11,29 @@ remap message map vlt_path vlt_source vrs_path vrs_source =
   case .origin message.line map of
     Some origin ->
       shifted = .map_col message.col origin
-      Diagnostic { code, severity, message = .clone message.message, span = narrow origin.span vlt_source origin.src_line shifted, related = Vec::new (), help = None, path = .to_string vlt_path, source = .to_string vlt_source }
+      Diagnostic {
+        code,
+        severity,
+        message = .clone message.message,
+        span = narrow origin.span vlt_source origin.src_line shifted,
+        related = Vec::new (),
+        help = None,
+        path = .to_string vlt_path,
+        source = .to_string vlt_source,
+      }
     None ->
       offset = generated_offset vrs_source message.line message.col
       note = format! \-> "this is on a line Voltaic generated, so it has no place in your source; see #{vrs_path}:#{message.line}:#{message.col}"
-      Diagnostic { code, severity, message = .clone message.message, span = (offset, offset + 1), related = Vec::new (), help = Some note, path = .to_string vrs_path, source = .to_string vrs_source }
+      Diagnostic {
+        code,
+        severity,
+        message = .clone message.message,
+        span = (offset, offset + 1),
+        related = Vec::new (),
+        help = Some note,
+        path = .to_string vrs_path,
+        source = .to_string vrs_source,
+      }
 
 code_of : &RustcMessage -> DiagnosticCode
 code_of message = DiagnosticCode::Foreign $ .unwrap_or_else (\-> .clone message.level) $ .clone message.code
@@ -33,7 +51,16 @@ remap_file message map vlt_path vlt_source =
   offset = .unwrap_or_else (\-> .unwrap_or 0 (char_offset vlt_source origin.src_line 1)) $ .or_else (\-> char_offset vlt_source origin.src_line origin.src_col) $ char_offset vlt_source origin.src_line shifted
   n = .len vlt_source
   width = .map_or 0 char::len_utf8 (.next (.chars vlt_source[offset .. n]))
-  Some (Diagnostic { code = code_of message, severity = severity_of message, message = .clone message.message, span = (offset, offset + width), related = Vec::new (), help = None, path = .to_string vlt_path, source = .to_string vlt_source })
+  Some (Diagnostic {
+    code = code_of message,
+    severity = severity_of message,
+    message = .clone message.message,
+    span = (offset, offset + width),
+    related = Vec::new (),
+    help = None,
+    path = .to_string vlt_path,
+    source = .to_string vlt_source,
+  })
 
 #[cfg(test)]
 parsed_map : SourceMap
@@ -60,11 +87,28 @@ const VRS : &str = "fn add(a: i32, b: i32) -> i32 {\n    a + \"x\"\n}\n"
 
 #[cfg(test)]
 map_of : SourceMap
-map_of = SourceMap::new "p.vlt" (vec! \-> Some (voltaic_diag::Origin { span = (0, 30), src_line = 1, src_col = 1, gen_col = 1 }) \-> Some (voltaic_diag::Origin { span = (33, 40), src_line = 2, src_col = 3, gen_col = 5 }) \-> None)
+map_of = SourceMap::new "p.vlt" (vec! \-> Some (voltaic_diag::Origin {
+  span = (0, 30),
+  src_line = 1,
+  src_col = 1,
+  gen_col = 1,
+}) \-> Some (voltaic_diag::Origin {
+  span = (33, 40),
+  src_line = 2,
+  src_col = 3,
+  gen_col = 5,
+}) \-> None)
 
 #[cfg(test)]
 message_at : usize -> usize -> RustcMessage
-message_at line col = RustcMessage { path = .to_string "p.vrs", line, col, level = .to_string "error", code = Some (.to_string "E0277"), message = .to_string "cannot add `&str` to `i32`" }
+message_at line col = RustcMessage {
+  path = .to_string "p.vrs",
+  line,
+  col,
+  level = .to_string "error",
+  code = Some (.to_string "E0277"),
+  message = .to_string "cannot add `&str` to `i32`",
+}
 
 #[cfg(test)]
 run : &RustcMessage -> voltaic_diag::Diagnostic
@@ -195,7 +239,14 @@ test "narrows to a whole multibyte character"
   got = narrow span src 3 3
   assert_eq! \-> &src[got.0 .. got.1] \-> "é"
 
-export data RustcMessage { export path String, export line usize, export col usize, export level String, export code Option<String>, export message String }
+export data RustcMessage {
+  export path String,
+  export line usize,
+  export col usize,
+  export level String,
+  export code Option<String>,
+  export message String,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance RustcMessage
@@ -219,7 +270,14 @@ instance RustcMessage
     if level != "error" && level != "warning"
       return None
 
-    Some (RustcMessage { path = .to_string stem.0, line = line_no, col, level = .to_string level, code, message = .to_string message })
+    Some (RustcMessage {
+      path = .to_string stem.0,
+      line = line_no,
+      col,
+      level = .to_string level,
+      code,
+      message = .to_string message,
+    })
 
   export is_error : &self -> bool
   is_error self = self.level == "error"

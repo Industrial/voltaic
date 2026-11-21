@@ -15,7 +15,10 @@
 -- is the generation-1 spelling of the same type, and both emit the same struct:
 -- the constructor takes the type's own name, because that is what the `= Point`
 -- form already meant.
-data Point { x f64, y f64 }
+data Point {
+  x f64,
+  y f64,
+}
 
 -- A single unnamed field is `newtype`'s shape, so the keyword is deleted rather
 -- than respelled. `newtype Tag = Tag String` was generation 1's.
@@ -29,10 +32,16 @@ data Shape
   | Square f64
 
 -- Field punning, kept from generation 1 (§4.2): a bare name is `src: src`.
-data Cursor { src String, pos usize }
+data Cursor {
+  src String,
+  pos usize,
+}
 
 opened : String -> Cursor
-opened src = Cursor { src, pos = 0 }
+opened src = Cursor {
+  src,
+  pos = 0,
+}
 
 area : &Shape -> f64
 area s = case s of
@@ -44,7 +53,10 @@ labelled t = .len (&t.0)
 
 main : ()
 main =
-  p = Point { x = 1.5, y = 2.5 }
+  p = Point {
+    x = 1.5,
+    y = 2.5,
+  }
   c = opened (String::from "ab")
   t = Tag (String::from "xyz")
   println! \-> "#{p.x} #{p.y}"

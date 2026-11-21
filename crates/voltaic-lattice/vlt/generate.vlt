@@ -13,7 +13,17 @@ import voltaic_ast::Item
 import voltaic_ast::Program
 import voltaic_ast::Visibility
 
-export data Inferred { export name String, export ty Ty, export row crate::row::Row, export modes Vec<(String, crate::mode::Mode)>, export written Option<Ty>, export written_modes Vec<(String, crate::mode::Mode)>, export published bool, export owner Option<String>, export span voltaic_ast::Span }
+export data Inferred {
+  export name String,
+  export ty Ty,
+  export row crate::row::Row,
+  export modes Vec<(String, crate::mode::Mode)>,
+  export written Option<Ty>,
+  export written_modes Vec<(String, crate::mode::Mode)>,
+  export published bool,
+  export owner Option<String>,
+  export span voltaic_ast::Span,
+}
   deriving (Debug, Clone)
 
 instance Inferred
@@ -31,7 +41,12 @@ self_free t definition =
     return annotation::with_owner t target
   .clone t
 
-export data Report { export store Store, export definitions Vec<Inferred>, export known crate::declarations::Declarations, export constants Vec<(String, Ty)> }
+export data Report {
+  export store Store,
+  export definitions Vec<Inferred>,
+  export known crate::declarations::Declarations,
+  export constants Vec<(String, Ty)>,
+}
   deriving (Debug, Clone)
 
 instance Report
@@ -59,7 +74,12 @@ walk program =
   raise_receivers (.as_mut_slice definitions) program
   raise_rows (.as_mut_slice definitions) program
   constants = published_constants program
-  Report { store, definitions, known, constants }
+  Report {
+    store,
+    definitions,
+    known,
+    constants,
+  }
 
 published_constants : &Program -> Vec<(String, Ty)>
 published_constants program =
@@ -208,17 +228,36 @@ one f owner store globals =
   for p in .iter f.sig.params
     hole = .fresh_hole store
     if .as_ref p.ty is Some written
-      .require (Obligation::Unify { left = .clone hole, right = annotation::read written }) p.span Reason::Ascribed store
+      .require (Obligation::Unify {
+        left = .clone hole,
+        right = annotation::read written,
+      }) p.span Reason::Ascribed store
     if crate::infer_mode::binder_of (&p.name.text) == "self" && owner is Some target
-      .require (Obligation::Unify { left = .clone hole, right = Ty::named target }) p.span Reason::ClassRequirement store
+      .require (Obligation::Unify {
+        left = .clone hole,
+        right = Ty::named target,
+      }) p.span Reason::ClassRequirement store
     env.push (.clone p.name.text, .clone hole)
     params.push hole
   body = clause_type (.as_slice f.clauses) store (.as_slice env)
   if .as_ref f.sig.ret is Some written
-    .require (Obligation::Unify { left = .clone body, right = annotation::read written }) f.sig.span Reason::Ascribed store
+    .require (Obligation::Unify {
+      left = .clone body,
+      right = annotation::read written,
+    }) f.sig.span Reason::Ascribed store
   whole = arrow_of (.as_slice params) (&body)
   written = signature_type (&f.sig) owner
-  Inferred { name = .clone f.name.text, ty = whole, row = row_of (&f.sig) (.as_slice f.clauses), modes = modes_of (&f.sig) (.as_slice f.clauses), written, written_modes = written_modes_of (&f.sig), published = is_published (&f.visibility), owner = .map (\o -> .to_string o) owner, span = f.span }
+  Inferred {
+    name = .clone f.name.text,
+    ty = whole,
+    row = row_of (&f.sig) (.as_slice f.clauses),
+    modes = modes_of (&f.sig) (.as_slice f.clauses),
+    written,
+    written_modes = written_modes_of (&f.sig),
+    published = is_published (&f.visibility),
+    owner = .map (\o -> .to_string o) owner,
+    span = f.span,
+  }
 
 is_published : &Visibility -> bool
 is_published visibility = case visibility of
@@ -276,7 +315,10 @@ clause_type clauses store env =
     case &clause.body of
       ClauseBody::Plain block ->
         found = block_type block store env
-        .require (Obligation::Unify { left = .clone result, right = found }) clause.span Reason::EquationBody store
+        .require (Obligation::Unify {
+          left = .clone result,
+          right = found,
+        }) clause.span Reason::EquationBody store
         ()
       ClauseBody::Guarded arms ->
         for arm in .iter arms
@@ -284,9 +326,15 @@ clause_type clauses store env =
             for held in .sources condition
               seen = expr_type held store env
               if !.has_pattern condition
-                .require (Obligation::Unify { left = seen, right = Ty::named "bool" }) arm.span Reason::GuardCondition store
+                .require (Obligation::Unify {
+                  left = seen,
+                  right = Ty::named "bool",
+                }) arm.span Reason::GuardCondition store
           found = block_type (&arm.body) store env
-          .require (Obligation::Unify { left = .clone result, right = found }) arm.span Reason::EquationBody store
+          .require (Obligation::Unify {
+            left = .clone result,
+            right = found,
+          }) arm.span Reason::EquationBody store
   result
 
 export block_type : &Block -> &mut Store -> &[(String, Ty)] -> Ty
@@ -307,7 +355,11 @@ expr_type e store env = case e of
   Expr::Field { recv, name, span, .. } ->
     owner = expr_type recv store env
     result = .fresh_hole store
-    .require (Obligation::Member { recv = owner, name = .clone name.text, result = .clone result }) (*span) Reason::FieldAccess store
+    .require (Obligation::Member {
+      recv = owner,
+      name = .clone name.text,
+      result = .clone result,
+    }) (*span) Reason::FieldAccess store
     result
   Expr::Paren { inner, .. } -> expr_type inner store env
   Expr::Ident name -> lookup (&name.text) store env
@@ -315,7 +367,10 @@ expr_type e store env = case e of
   Expr::Ascribe { inner, ty, span, .. } ->
     declared = annotation::read ty
     seen = expr_type inner store env
-    .require (Obligation::Unify { left = seen, right = .clone declared }) (*span) Reason::Ascribed store
+    .require (Obligation::Unify {
+      left = seen,
+      right = .clone declared,
+    }) (*span) Reason::Ascribed store
     declared
   Expr::Binary { op, lhs, rhs, span, .. } ->
     left = expr_type lhs store env
@@ -327,14 +382,21 @@ expr_type e store env = case e of
     for a in .iter args
       seen.push (expr_type a store env)
     result = .fresh_hole store
-    .require (Obligation::Callable { callee = head, args = seen, result = .clone result }) (*span) Reason::CallCallee store
+    .require (Obligation::Callable {
+      callee = head,
+      args = seen,
+      result = .clone result,
+    }) (*span) Reason::CallCallee store
     result
   Expr::Block { body, .. } -> block_type body store env
   Expr::If { then_block, r#otherwise, span, .. } ->
     taken = block_type then_block store env
     if .as_ref (*r#otherwise) is Some other
       skipped = block_type other store env
-      .require (Obligation::Unify { left = .clone taken, right = skipped }) (*span) Reason::EquationBody store
+      .require (Obligation::Unify {
+        left = .clone taken,
+        right = skipped,
+      }) (*span) Reason::EquationBody store
     taken
   _ -> .fresh_hole store
 
@@ -344,14 +406,26 @@ str_ref = Ty::applied "&" (vec! \-> Ty::named "str")
 binary_type : BinaryOp -> Ty -> Ty -> voltaic_ast::Span -> &mut Store -> Ty
 binary_type op left right span store =
   if is_comparison op
-    .require (Obligation::Unify { left, right }) span Reason::EquationBody store
+    .require (Obligation::Unify {
+      left,
+      right,
+    }) span Reason::EquationBody store
     return Ty::named "bool"
   if op == BinaryOp::And || op == BinaryOp::Or
-    .require (Obligation::Unify { left, right = Ty::named "bool" }) span Reason::GuardCondition store
-    .require (Obligation::Unify { left = right, right = Ty::named "bool" }) span Reason::GuardCondition store
+    .require (Obligation::Unify {
+      left,
+      right = Ty::named "bool",
+    }) span Reason::GuardCondition store
+    .require (Obligation::Unify {
+      left = right,
+      right = Ty::named "bool",
+    }) span Reason::GuardCondition store
     return Ty::named "bool"
   if is_arithmetic op
-    .require (Obligation::Unify { left = .clone left, right }) span Reason::EquationBody store
+    .require (Obligation::Unify {
+      left = .clone left,
+      right,
+    }) span Reason::EquationBody store
     return left
   .fresh_hole store
 

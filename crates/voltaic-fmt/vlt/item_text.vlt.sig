@@ -15,5 +15,6 @@ target_text : &TypeApp -> String @ target shared
 leading_text : &Item -> usize -> String @ item shared, indent shared
 member_text : &ClassMember -> usize -> &str -> String @ member shared, indent shared, source shared
 same_line : &str -> usize -> usize -> bool @ source shared, left shared, right shared
+continues_its_line : &str -> usize -> bool @ source shared, at shared
 signature_line : &FnDecl -> &str -> Option<String> ! none @ decl shared, source shared
 visibility_text : &Visibility -> String @ visibility shared

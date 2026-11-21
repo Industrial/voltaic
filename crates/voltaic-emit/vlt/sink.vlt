@@ -257,14 +257,35 @@ test "a body line resolves to its first non-space"
 
 export(crate) const RUST_INDENT : usize = 4
 
-export(crate) data Sink { out String, source &'a str, current Option<Span>, origins Vec<Option<Origin>>, nested bool, pinned Option<usize> }
+export(crate) data Sink {
+  out String,
+  source &'a str,
+  current Option<Span>,
+  origins Vec<Option<Origin>>,
+  nested bool,
+  pinned Option<usize>,
+}
 
 instance (Sink 'a)
   export(crate) new : &'a str -> Self
-  new source = Sink { out = String::new (), source, current = None, origins = Vec::new (), nested = false, pinned = None }
+  new source = Sink {
+    out = String::new (),
+    source,
+    current = None,
+    origins = Vec::new (),
+    nested = false,
+    pinned = None,
+  }
 
   export(crate) nested : &'a str -> Self
-  nested source = Sink { out = String::new (), source, current = None, origins = Vec::new (), nested = true, pinned = None }
+  nested source = Sink {
+    out = String::new (),
+    source,
+    current = None,
+    origins = Vec::new (),
+    nested = true,
+    pinned = None,
+  }
 
   export(crate) mark : Span -> &mut self -> ()
   mark span self =
@@ -320,7 +341,12 @@ instance (Sink 'a)
     before = &self.source[0 .. span.0]
     src_line = .count (.matches '\n' before) + 1
     src_col = .map_or 1 (\l -> .count (.chars l) + 1) (.next (.rsplit '\n' before))
-    Some (Origin { span, src_line, src_col, gen_col = .gen_col_of_current_line self })
+    Some (Origin {
+      span,
+      src_line,
+      src_col,
+      gen_col = .gen_col_of_current_line self,
+    })
 
   gen_col_of_current_line : &self -> usize
   gen_col_of_current_line self =

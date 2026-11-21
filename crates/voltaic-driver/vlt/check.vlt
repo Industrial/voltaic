@@ -14,11 +14,17 @@ check path source =
   mut program = case voltaic_parser::parse_source source of
     Ok parsed -> parsed
     Err failure ->
-      return Ok (CheckOutcome { diagnostics = diagnose path source (&failure), failed = true })
+      return Ok (CheckOutcome {
+        diagnostics = diagnose path source (&failure),
+        failed = true,
+      })
 
   analysis = crate::annotate::analyse_at (&mut program) path
   if !.is_empty analysis.open
-    return Ok (CheckOutcome { diagnostics = crate::annotate::refusals path source (.as_slice analysis.open), failed = true })
+    return Ok (CheckOutcome {
+      diagnostics = crate::annotate::refusals path source (.as_slice analysis.open),
+      failed = true,
+    })
 
   mut diagnostics = crate::lint path source (Some (&program))
 
@@ -47,9 +53,15 @@ check path source =
     trimmed = .trim_end stderr
     return Err (format! \-> "error: rustc failed:\n#{trimmed}")
 
-  Ok (CheckOutcome { diagnostics, failed })
+  Ok (CheckOutcome {
+    diagnostics,
+    failed,
+  })
 
-export data CheckOutcome { export diagnostics Vec<Diagnostic>, export failed bool }
+export data CheckOutcome {
+  export diagnostics Vec<Diagnostic>,
+  export failed bool,
+}
   deriving (Debug, Clone, Default)
 
 export(crate) data ScratchDir PathBuf
@@ -93,9 +105,27 @@ diagnose path source failure =
   shown = path.display ().to_string ()
   case failure of
     ParseFailure::Lex e ->
-      vec! \-> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, related = Vec::new (), help = .clone e.help, path = shown, source = .to_string source }
+      vec! \-> Diagnostic {
+        code = .into e.code,
+        severity = voltaic_diag::Severity::Error,
+        message = .clone e.message,
+        span = e.span,
+        related = Vec::new (),
+        help = .clone e.help,
+        path = shown,
+        source = .to_string source,
+      }
     ParseFailure::Parse problems ->
-      (problems.iter ().map (\e -> Diagnostic { code = .into e.code, severity = voltaic_diag::Severity::Error, message = .clone e.message, span = e.span, related = Vec::new (), help = .clone e.help, path = .clone shown, source = .to_string source })).collect ()
+      (problems.iter ().map (\e -> Diagnostic {
+        code = .into e.code,
+        severity = voltaic_diag::Severity::Error,
+        message = .clone e.message,
+        span = e.span,
+        related = Vec::new (),
+        help = .clone e.help,
+        path = .clone shown,
+        source = .to_string source,
+      })).collect ()
 
 test "carries a lex errors code and help across"
   source = "main : ()\nmain =\n\tprint 1\n"
@@ -116,7 +146,16 @@ test "reports every recovered parse error"
 
 export(crate) io_diagnostic : &str -> String -> Diagnostic
 io_diagnostic path message =
-  Diagnostic { code = DiagnosticCode::Foreign (.to_string "io"), severity = voltaic_diag::Severity::Error, message, span = (0, 0), related = Vec::new (), help = None, path = .to_string path, source = String::new () }
+  Diagnostic {
+    code = DiagnosticCode::Foreign (.to_string "io"),
+    severity = voltaic_diag::Severity::Error,
+    message,
+    span = (0, 0),
+    related = Vec::new (),
+    help = None,
+    path = .to_string path,
+    source = String::new (),
+  }
 
 test "renders without a snippet"
   d = io_diagnostic "a.vlt" (.to_string "cannot read a.vlt: missing")

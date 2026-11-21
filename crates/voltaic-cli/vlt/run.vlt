@@ -43,7 +43,11 @@ run args =
     other ->
       unreachable! \-> "`#{other}` is Ready in COMMANDS but has no dispatch arm"
 
-export(crate) data Command { export(crate) name &'static str, export(crate) summary &'static str, export(crate) state State }
+export(crate) data Command {
+  export(crate) name &'static str,
+  export(crate) summary &'static str,
+  export(crate) state State,
+}
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
 instance Command
@@ -62,10 +66,21 @@ instance Command
       Some $ format! \-> "error: `#{self.name}` is not implemented yet — it is plan #{plan:02} (`#{id}`)"
 
 #[cfg(test)]
-const FMT : Command = Command { name = "fmt", summary = "format a .vlt in place", state = State::Planned { plan = 34, id = "formatter" } }
+const FMT : Command = Command {
+  name = "fmt",
+  summary = "format a .vlt in place",
+  state = State::Planned {
+    plan = 34,
+    id = "formatter",
+  },
+}
 
 #[cfg(test)]
-const BUILD : Command = Command { name = "build", summary = "transpile", state = State::Ready }
+const BUILD : Command = Command {
+  name = "build",
+  summary = "transpile",
+  state = State::Ready,
+}
 
 test "a ready command has nothing to announce"
   assert_eq! \-> .not_yet BUILD \-> None
@@ -77,12 +92,20 @@ test "a planned command names its plan"
   assert! \-> .contains "formatter" message \-> "#{message}"
 
 test "the help and version aliases are accepted"
-  help = Command { name = "--help", summary = "", state = State::Ready }
+  help = Command {
+    name = "--help",
+    summary = "",
+    state = State::Ready,
+  }
   for arg in ["--help", "-h", "help"]
     assert! \-> .matches arg help \-> "#{arg}"
   assert! \-> !.matches "--helpful" help
 
-  version = Command { name = "--version", summary = "", state = State::Ready }
+  version = Command {
+    name = "--version",
+    summary = "",
+    state = State::Ready,
+  }
   assert! \-> .matches "--version" version && .matches "-V" version
   assert! \-> !.matches "-v" version \-> "lowercase -v is not a version flag"
 
@@ -93,10 +116,49 @@ test "an ordinary command matches only itself"
 export(crate) data State
   = Ready
   #[allow(dead_code, reason = "the next declared-before-built command uses it; see above")]
-  | Planned { plan u32, id &'static str }
+  | Planned {
+    plan u32,
+    id &'static str,
+  }
   deriving (Debug, Clone, Copy, PartialEq, Eq)
 
-export(crate) const COMMANDS : &[Command] = &[Command { name = "build", summary = "transpile a .vlt to .vrs", state = State::Ready }, Command { name = "check", summary = "transpile, then report rustc's errors against the .vlt", state = State::Ready }, Command { name = "cargo-check", summary = "cargo check <args>, reporting its errors against the .vlt; --plain is not forwarded", state = State::Ready }, Command { name = "fmt", summary = "format .vlt files in place, or --check them", state = State::Ready }, Command { name = "gen", summary = "transpile a .vlt tree, or every crate with --workspace, rewriting only what changed; --check, --rustfmt", state = State::Ready }, Command { name = "sig", summary = "print the judgement Lattice inferred for every definition; --verify, --emit, --semver and --require-signatures", state = State::Ready }, Command { name = "watch", summary = "rebuild on change", state = State::Ready }, Command { name = "--version", summary = "print the version", state = State::Ready }, Command { name = "--help", summary = "print this message", state = State::Ready }]
+export(crate) const COMMANDS : &[Command] = &[Command {
+  name = "build",
+  summary = "transpile a .vlt to .vrs",
+  state = State::Ready,
+}, Command {
+  name = "check",
+  summary = "transpile, then report rustc's errors against the .vlt",
+  state = State::Ready,
+}, Command {
+  name = "cargo-check",
+  summary = "cargo check <args>, reporting its errors against the .vlt; --plain is not forwarded",
+  state = State::Ready,
+}, Command {
+  name = "fmt",
+  summary = "format .vlt files in place, or --check them",
+  state = State::Ready,
+}, Command {
+  name = "gen",
+  summary = "transpile a .vlt tree, or every crate with --workspace, rewriting only what changed; --check, --rustfmt",
+  state = State::Ready,
+}, Command {
+  name = "sig",
+  summary = "print the judgement Lattice inferred for every definition; --verify, --emit, --semver and --require-signatures",
+  state = State::Ready,
+}, Command {
+  name = "watch",
+  summary = "rebuild on change",
+  state = State::Ready,
+}, Command {
+  name = "--version",
+  summary = "print the version",
+  state = State::Ready,
+}, Command {
+  name = "--help",
+  summary = "print this message",
+  state = State::Ready,
+}]
 
 test "every command has a summary"
   for command in COMMANDS

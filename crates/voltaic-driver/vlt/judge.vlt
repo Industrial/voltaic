@@ -18,7 +18,16 @@ judge path source program =
   for failure in .contradictions (&found.store) outcome
     if .at failure.at found.store is Some held
       owner = enclosing (.as_slice found.definitions) held.provenance.span
-      diagnostics.push (Diagnostic { code = DiagnosticCode::from Code::LatticeConflict, severity = Severity::Warning, message = stated owner (&held.obligation) (&outcome), span = boundary owner held.provenance.span, related = sides (&found.store) failure.at (&held.obligation) (&outcome) held.provenance.span, help = Some (advice owner (&held.provenance)), path = .clone shown, source = .to_string source })
+      diagnostics.push (Diagnostic {
+        code = DiagnosticCode::from Code::LatticeConflict,
+        severity = Severity::Warning,
+        message = stated owner (&held.obligation) (&outcome),
+        span = boundary owner held.provenance.span,
+        related = sides (&found.store) failure.at (&held.obligation) (&outcome) held.provenance.span,
+        help = Some (advice owner (&held.provenance)),
+        path = .clone shown,
+        source = .to_string source,
+      })
   diagnostics
 
 enclosing : &[Inferred] -> Span -> Option<&Inferred>

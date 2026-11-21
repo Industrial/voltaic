@@ -8,21 +8,41 @@ import voltaic_lexer::LexError
 import voltaic_lexer::Token
 import voltaic_lexer::TokenKind
 
-export data ParseError { export code Code, export message String, export span Span, export help Option<String> }
+export data ParseError {
+  export code Code,
+  export message String,
+  export span Span,
+  export help Option<String>,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance ParseError
   export(crate) expected : impl Into<String> -> Span -> Self
   expected message span =
-    ParseError { code = Code::ExpectedToken, message = .into message, span, help = None }
+    ParseError {
+      code = Code::ExpectedToken,
+      message = .into message,
+      span,
+      help = None,
+    }
 
   export(crate) r#with : Code -> impl Into<String> -> Span -> Self
   r#with code message span =
-    ParseError { code, message = .into message, span, help = None }
+    ParseError {
+      code,
+      message = .into message,
+      span,
+      help = None,
+    }
 
   export(crate) with_help : Code -> impl Into<String> -> impl Into<String> -> Span -> Self
   with_help code message help span =
-    ParseError { code, message = .into message, span, help = Some (.into help) }
+    ParseError {
+      code,
+      message = .into message,
+      span,
+      help = Some (.into help),
+    }
 
 export data ParseFailure
   = Lex LexError

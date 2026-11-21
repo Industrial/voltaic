@@ -69,8 +69,16 @@ where_body params p =
       start = (.peek_span p).0
       decl = (.where_function p)?
       end = (.prev_span p).1
-      entry = Expr::Item { item = Box::new (Item::Fn decl), span = (start, end) }
-      .push (Stmt { expr = entry, span = (start, end), leading = Vec::new (), trailing = None }) locals
+      entry = Expr::Item {
+        item = Box::new (Item::Fn decl),
+        span = (start, end),
+      }
+      .push (Stmt {
+        expr = entry,
+        span = (start, end),
+        leading = Vec::new (),
+        trailing = None,
+      }) locals
       continue
     .push (stmt p)? locals
   (.expect (&TokenKind::Dedent) "expected the `where` bindings to end" p)?

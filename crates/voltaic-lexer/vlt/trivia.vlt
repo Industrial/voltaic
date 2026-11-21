@@ -1,14 +1,26 @@
 import crate::Span
 
-export data Trivia { export kind TriviaKind, export text String, export span Span }
+export data Trivia {
+  export kind TriviaKind,
+  export text String,
+  export span Span,
+}
   deriving (Debug, Clone, PartialEq, Eq)
 
 instance Trivia
   export(crate) comment : TriviaKind -> String -> Span -> Self
-  comment kind text span = Trivia { kind, text, span }
+  comment kind text span = Trivia {
+    kind,
+    text,
+    span,
+  }
 
   export(crate) blank : Span -> Self
-  blank span = Trivia { kind = TriviaKind::BlankLines, text = String::new (), span }
+  blank span = Trivia {
+    kind = TriviaKind::BlankLines,
+    text = String::new (),
+    span,
+  }
 
 export data TriviaKind
   = LineComment
