@@ -11,14 +11,96 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-21
+
+What a first real downstream user needed: heimdall, a Dioxus and id_effect
+application. Every item below was hit while writing real code and has a probe
+under `tests/probes/` (`moon run project-template:probes`); all 36 are green.
+
 ### Added
 
-- **`voltaic gen`**, the eighth subcommand (doc 86 §8.5): transpile a whole
-  `.vlt` tree to mirrored `.rs` + `.rs.map`, or every crate with `--workspace`.
-  Sidecars are written before builds, unchanged outputs are not rewritten,
-  outputs of deleted sources are swept, `--check` exits 1 listing what would
-  change, and `--rustfmt` formats each output and re-aligns its map. The driver
-  gains `compile_tree`, and `compile_dir` no longer rewrites a cache hit.
+- **`voltaic gen`** (doc 86 §8.5): transpile a whole `.vlt` tree to mirrored
+  `.rs` + `.rs.map`, or every crate with `--workspace` (`crates/*/vlt` →
+  `crates/*/src`, and `crates/*/tests/**/*.vlt` beside themselves).
+  - Sidecars are written before builds.
+  - Unchanged outputs are not rewritten, so mtimes stay stable.
+  - Outputs of deleted sources are swept: only files with a `.rs.map` beside
+    them, and a hand-written `.rs` is refused rather than overwritten.
+  - `--check` writes nothing and exits 1, listing `stale:` / `missing:` /
+    `orphaned:` paths one per line.
+  - `--rustfmt` formats each output and re-aligns its map.
+  - `compile_dir` no longer rewrites a cache hit.
+- **`voltaic cargo-check [cargo args]`** (doc 86 §8.6): runs `cargo check
+  --message-format=json` and reports each diagnostic against the `.vlt` through
+  the `.rs.map` beside the generated file. A span in a `rust` hatch maps to the
+  hatch's line. `--plain` is consumed, everything else is forwarded, and cargo's
+  exit code is passed through.
+- **Verbatim macro bodies.**
+  - `name! { … }`, `name!( … )` and `name![ … ]`, and an indented block under a
+    bare `name!`, pass through as Rust token trees with their bracket kind
+    kept. `rsx!`, `effect!` (with its `~` binds), `matches!` and `vec!` are
+    writable without a hatch.
+  - Nothing inside is Voltaic; `//` comments survive.
+  - Each body line maps to its own `.vlt` line.
+  - An unbalanced body is `VLT0012` at the opener.
+- **`async move`** blocks (doc 03 §14.3 and doc 31, both amended): a future that
+  owns its captures, for `use_resource(move || async move { … })` and
+  `from_async`. `async move` on a non-block is an error naming it.
+- **Instances define associated types**: `type Item = T` and `type Pair<T> =
+  (T, T)`.
+- **Keywords as member and path names**: `.catch`, `.with`, `.union`,
+  `Effect::catch`, and so on. A member or path segment that Rust reserves is
+  emitted raw (`r#type`).
+- **`\() -> e`**, the unit-pattern lambda.
+- **Path-headed instances**: `instance std::fmt::Display T`.
+- **Struct update** through doc 03 §9.1's spread, `P { x = 1, ...base }`.
+- **`(..)`** as the full range in argument position.
+- **`where` after a multi-line body.**
+- **`voltaic sig --emit`** publishes exported consts and statics, so
+  cross-crate resolution sees them.
+
+### Changed
+
+- **Equations name their parameters from the source.** A multi-equation function
+  takes, per position, a lower-case binder from any equation (`fn Badge(count:
+  u32)` rather than `__vlt_a0`). It falls back to `__vlt_aN` only when that name
+  would be ambiguous or would leak into an arm that does not bind it. Required
+  class members still use `__vlt_aN`.
+- **Attributes and comments on case arms, on later equations and on associated
+  members** reach the Rust. They were silently dropped.
+  - `#[cfg]` works on imports, items, statements, case arms and methods.
+  - On the only equation of a function it is `VLT0103`, because it belongs
+    above the signature.
+- **An attributed parameterless binding is a function, never a `const`**, so
+  `#[component]` and `#[inline]` land on what they are written for.
+- **Generated code is quieter under clippy**: plain-identifier format arguments
+  are inlined (`"{x}"`), the `();` unit tail is gone, and the error-data glob
+  `use` is allowed.
+
+### Fixed
+
+- **Silent miscompiles:**
+  - `newtype N = N (export T)` emitted `struct N<EXPORT>(…)`, and a
+    parenthesised field type got double parentheses.
+  - `caps![…]` in a type was taken for a type variable.
+  - A `.name` straight after a closure or `..` argument was attached to the
+    argument. It is now `VLT0115`, with the bracketed spelling in its help.
+  - A nested macro argument (`assert_eq! \-> env! "X" \-> …`) emitted
+    `env!()("X")`.
+- **`voltaic fmt` no longer changes meaning:**
+  - `f (())` became the zero-argument `f ()`.
+  - The parentheses in `((x)?).m ()` were dropped, giving the retired `?.`.
+  - The parentheses in `(t.0).0` were dropped. `t.0.0` now also parses, as
+    two tuple indices.
+  - Its meaning-preservation test now covers the formatter's own fixtures.
+- Associated consts in an instance keep `export`, their doc and their attributes.
+- Error-data variants keep their `-- |` docs.
+- The README's guard example uses `| _ =`.
+- A `rust """` hatch after a blank line mapped as synthetic.
+
+### Internal
+
+- The g2 seed is refreshed for the new surface.
 
 ## [0.2.0] - 2026-11-14
 
