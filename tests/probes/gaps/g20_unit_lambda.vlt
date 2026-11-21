@@ -2,4 +2,4 @@
 -- gap: G20
 -- A lambda whose parameter is the unit pattern, `\() -> e`.
 export ones : Vec<()> -> Vec<u32>
-ones xs = xs.into_iter ().map (\() -> 1).collect ()
+ones xs = (xs.into_iter ().map (\() -> 1)).collect ()

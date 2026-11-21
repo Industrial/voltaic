@@ -4,4 +4,4 @@
 export drain_all : Vec<u32> -> Vec<u32>
 drain_all v =
   mut w = v
-  w.drain (..).collect ()
+  (w.drain (..)).collect ()

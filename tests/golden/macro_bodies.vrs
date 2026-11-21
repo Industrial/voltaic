@@ -15,12 +15,12 @@ fn main() {
     let braced = format! { "{}{}", 4, 5 };
     let n = sizes.len();
     let m = braced.len();
-    println!("{} {} {}", n, ready, m);
+    println!("{n} {ready} {m}");
 
     // An item, which `\->` cannot carry because an argument is an expression.
     thread_local! { static MODE: std::cell::Cell<u8> = const { std::cell::Cell::new(7) }; };
     let mode = MODE.get();
-    println!("{}", mode);
+    println!("{mode}");
 
     // The indented form becomes `format! { … }`, its comment kept.
     let indented = format! {
@@ -30,6 +30,5 @@ fn main() {
         7
     };
     let k = indented.len();
-    println!("{}", k);
-    ();
+    println!("{k}");
 }

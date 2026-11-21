@@ -22,6 +22,7 @@ struct Circle {
 // `self` in a type marks the receiver — doc 18 §2.5, plan 67. The class
 // itself names no variable for the implementing type: that is `Self`.
 trait Shape {
+    // A comment above an associated constant reaches the trait.
     const SIDES: u32;
     fn area(&self) -> f64;
     // A default method, which is an ordinary equation: anything a function's
@@ -81,6 +82,13 @@ impl Square {
     }
 }
 
+// A trait named by path needs no import: the class head takes `::`.
+impl std::fmt::Display for Square {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "square of {}", self.side)
+    }
+}
+
 fn main() {
     let s = Square { side: 2.0 };
     let c = Circle { radius: 1.0 };
@@ -94,6 +102,6 @@ fn main() {
     // (doc 18 §5.2), so this needs nothing new.
     println!("{}", Square::SIDES);
     println!("{}", Circle::SIDES);
+    println!("{s}");
     println!("{}", Square::CORNERS);
-    ();
 }

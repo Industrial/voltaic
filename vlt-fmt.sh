@@ -30,6 +30,11 @@ cd "$(dirname "$0")"
 #   *supposed* not to parse; that is what their `.stderr` records.
 # - `tests/unreachable/` (5) — constructs the grammar does not reach, kept as
 #   witnesses that it does not reach them.
+# - `tests/probes/` — the heimdall probe corpus (`scripts/probes.sh`). A red
+#   probe is a program the compiler cannot yet handle, so it may not parse.
+# - `crates/voltaic-lexer/tests/macro_body/` (4) — **lexer** fixtures for
+#   verbatim macro bodies, read as token streams: an unclosed body and a
+#   bare top-level binding are the point, and neither is a program.
 # - `crates/voltaic-fmt/tests/fmt/` (7) — the formatter's **own** fixture pairs:
 #   an input beside its `.canonical.vlt` expectation. Formatting the inputs
 #   would delete the test.
@@ -42,7 +47,7 @@ cd "$(dirname "$0")"
 # - `crates/voltaic-cli/tests/check/syntax.vlt` — a deliberate parse error. The
 #   other nine files in that directory are canonical and are **not** excluded,
 #   which is why this is a file and not a directory.
-EXCLUDE='^(crates/voltaic-cli/tests/ui|tests/unreachable|tests/probes|crates/voltaic-fmt/tests/fmt|crates/voltaic-mcp/tests/fixtures)/|^examples/lexical\.vlt$|^crates/voltaic-cli/tests/check/syntax\.vlt$'
+EXCLUDE='^(crates/voltaic-cli/tests/ui|tests/unreachable|tests/probes|crates/voltaic-lexer/tests/macro_body|crates/voltaic-fmt/tests/fmt|crates/voltaic-mcp/tests/fixtures)/|^examples/lexical\.vlt$|^crates/voltaic-cli/tests/check/syntax\.vlt$'
 
 mapfile -t FILES < <(git ls-files '*.vlt' | grep -vE "$EXCLUDE")
 

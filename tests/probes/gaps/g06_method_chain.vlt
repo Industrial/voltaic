@@ -1,5 +1,6 @@
 -- leaf: v9
 -- gap: G6
--- A method chain whose middle link takes an argument.
+-- A method chain continuing a closure argument is refused, not miscompiled
+-- (doc: a link with arguments ends a chain; bracket the receiver instead).
 export doubled : Vec<u32> -> Vec<u32>
 doubled xs = xs.into_iter ().map (\x -> x * 2).collect ()

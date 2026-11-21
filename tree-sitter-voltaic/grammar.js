@@ -450,7 +450,10 @@ module.exports = grammar({
 				// enforce what the parser refuses.
 				optional($.given_binder),
 				optional($.constraints),
-				field("target", repeat1(choice($.type_identifier, $.identifier, $.path))),
+				field(
+					"target",
+					repeat1(choice($.type_identifier, $.identifier, $.path)),
+				),
 				choice($.block, $._newline),
 			),
 
@@ -1530,7 +1533,10 @@ module.exports = grammar({
 					// Doc 03 §9.1's spread entry, `...base`, is last when present.
 					optional(
 						choice(
-							seq(sep1($.record_literal_field, ","), optional(seq(",", $.record_spread))),
+							seq(
+								sep1($.record_literal_field, ","),
+								optional(seq(",", $.record_spread)),
+							),
 							$.record_spread,
 						),
 					),

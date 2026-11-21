@@ -11,12 +11,13 @@ as_errors : &DataDecl -> ErrorsDecl @ d shared
 emit_data : &mut Sink<'_> -> &DataDecl -> usize -> () @ out shared, d shared, indent shared
 error_message : &str -> (String, Vec<String>) @ raw shared
 emit_errors : &mut Sink<'_> -> &ErrorsDecl -> usize -> () @ out shared, d shared, indent shared
-emit_fields : &mut Sink<'_> -> &ConstructorFields -> usize -> bool -> () @ out shared, fields shared, indent shared, top shared
+unparenthesised : &str -> &str @ text owned
+emit_fields : &mut Sink<'_> -> &ConstructorFields -> &[Visibility] -> usize -> bool -> () @ out shared, fields shared, visibilities shared, indent shared, top shared
 emit_instance : &mut Sink<'_> -> &InstanceDecl -> usize -> () @ out shared, i shared, indent shared
 emit_member : &mut Sink<'_> -> &ClassMember -> usize -> () @ out shared, m shared, indent shared
 names_a_constructor : &Expr -> bool @ head shared
 one_field : &FieldInit -> usize -> String @ f shared, indent shared
-emit_record : &Expr -> &[FieldInit] -> usize -> String @ head shared, fields shared, indent shared
+emit_record : &Expr -> &[FieldInit] -> Option<&Expr> -> usize -> String @ head shared, fields shared, rest shared, indent shared
 ALL_DERIVES : &[&str]
 STRUCT_LIT_WIDTH : usize
 STRUCT_VARIANT_WIDTH : usize

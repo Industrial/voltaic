@@ -11,5 +11,4 @@ fn main() {
     println!("{}", headed.unwrap());
     let pathed = Option::or(None, fallback);
     println!("{}", pathed.unwrap());
-    ();
 }

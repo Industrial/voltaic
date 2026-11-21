@@ -97,10 +97,23 @@ async fn deferred() -> i32 {
     n
 }
 
+// `async move` makes the block **own** its captures, so the future outlives
+// the call and can cross threads — the `'static + Send` shape that
+// `use_resource` and `from_async` demand. Doc 03 §14.3, amended 2026-11-20.
+// Without `move` this is rustc's E0373 against the line that wrote it.
+fn owned_len(s: String) -> impl Future<Output = usize> + Send + 'static {
+    async move {
+        let trimmed = s.trim();
+        trimmed.len()
+    }
+}
+
 fn main() {
     println!("{}", block_on(double(21)));
     println!("{}", block_on(quadruple(2)));
     println!("{}", block_on(combined()));
     println!("{}", block_on(deferred()));
     block_on(announce());
+    let name = String::from("voltaic");
+    println!("{}", block_on(owned_len(name)));
 }

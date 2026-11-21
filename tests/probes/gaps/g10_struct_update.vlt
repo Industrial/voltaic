@@ -1,7 +1,7 @@
 -- leaf: v9
 -- gap: G10
--- Struct update syntax.
+-- Struct update through doc 03 §9.1's `...base` spread.
 export data P { export x u32, export y u32 }
 
 export moved : P -> P
-moved p = P { x = 1, ..p }
+moved p = P { x = 1, ...p }
